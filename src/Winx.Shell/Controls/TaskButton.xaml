@@ -1,0 +1,49 @@
+<UserControl x:Class="Winx.Shell.Controls.TaskButton"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Button Style="{StaticResource TaskbarButton}" Padding="0" ToolTip="{Binding Title}"
+            Click="Button_Click">
+        <Button.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="Cerrar ventana" Click="CloseWindow_Click" />
+            </ContextMenu>
+        </Button.ContextMenu>
+        <Grid Width="44" Height="40">
+            <Border CornerRadius="5" Background="{DynamicResource ActiveTaskBrush}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State}" Value="Active">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
+
+            <Image Source="{Binding Icon}" Width="24" Height="24"
+                   RenderOptions.BitmapScalingMode="HighQuality" />
+
+            <!-- Indicador inferior: corto = abierta, largo con acento = activa, ámbar = pide atención -->
+            <Border Height="3" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Width" Value="6" />
+                        <Setter Property="Background" Value="{DynamicResource InactiveIndicatorBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding State}" Value="Active">
+                                <Setter Property="Width" Value="16" />
+                                <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding State}" Value="Flashing">
+                                <Setter Property="Width" Value="16" />
+                                <Setter Property="Background" Value="#FFE8A33D" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
+        </Grid>
+    </Button>
+</UserControl>

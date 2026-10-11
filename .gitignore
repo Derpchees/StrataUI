@@ -1,0 +1,15 @@
+# Compilación .NET
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+*.binlog
+
+# Editor / sistema
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+desktop.ini

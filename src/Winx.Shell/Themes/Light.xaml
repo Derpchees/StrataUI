@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="TaskbarBackgroundBrush" Color="#FFEEEEEE" />
+    <SolidColorBrush x:Key="TaskbarBorderBrush" Color="#FFD6D6D6" />
+    <SolidColorBrush x:Key="ForegroundBrush" Color="#FF1B1B1B" />
+    <SolidColorBrush x:Key="SecondaryForegroundBrush" Color="#FF5C5C5C" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#14000000" />
+    <SolidColorBrush x:Key="PressedBrush" Color="#0A000000" />
+    <SolidColorBrush x:Key="ActiveTaskBrush" Color="#0F000000" />
+    <SolidColorBrush x:Key="InactiveIndicatorBrush" Color="#FF8A8A8A" />
+    <SolidColorBrush x:Key="FlyoutBackgroundBrush" Color="#FFF9F9F9" />
+    <SolidColorBrush x:Key="FlyoutBorderBrush" Color="#FFDADADA" />
+</ResourceDictionary>
