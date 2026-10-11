@@ -17,6 +17,7 @@ public abstract class FlyoutWindow : FluentWindow
 {
     private const int GapPx = 12;
     private bool _closing;
+    private FrameworkElement? _anchor;
 
     protected FlyoutWindow()
     {
@@ -25,6 +26,7 @@ public abstract class FlyoutWindow : FluentWindow
         ShowInTaskbar = false;
         Topmost = true;
         SizeToContent = SizeToContent.Height;
+        MinHeight = 0; // el estilo de FluentWindow impone un mínimo pensado para ventanas normales
         ExtendsContentIntoTitleBar = true;
         WindowBackdropType = WindowBackdropType.Acrylic;
         WindowCornerPreference = WindowCornerPreference.Round;
@@ -40,8 +42,11 @@ public abstract class FlyoutWindow : FluentWindow
 
     public void ShowAt(FrameworkElement anchor)
     {
+        _anchor = anchor;
         Show();
         PositionAbove(anchor);
+        // Si el contenido cambia de tamaño (listas que terminan de cargar), se mantiene pegado a la barra.
+        SizeChanged += (_, _) => PositionAbove(anchor);
         Activate();
         AnimateIn();
     }

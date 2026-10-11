@@ -6,7 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-10-11
+
 ### Añadido
+- Panel de red propio: conexión actual (nombre, estado de Internet, IP), activar/desactivar
+  Wi-Fi, buscar redes y conectarse con contraseña o desconectarse.
+- Panel de Bluetooth propio: activar/desactivar, dispositivos emparejados con su estado,
+  conectar/desconectar dispositivos de audio y quitar dispositivos.
 - Hub de configuración (WPF-UI, Mica) con secciones Barra de tareas, Bandeja del sistema,
   Apariencia y General. Se abre desde el menú de la barra o ejecutando `WINX.exe` otra vez.
 - Barra configurable: alineación (centro/izquierda), tamaño, segundos y fecha en el reloj.
@@ -44,4 +50,4 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Registro en `%LOCALAPPDATA%\WINX\logs\winx.log`.
 
 ### Pendiente
-- Inicio, centro de control y notificaciones propios (por ahora abren los de Windows).
+- Inicio y notificaciones propios (por ahora abren los de Windows).

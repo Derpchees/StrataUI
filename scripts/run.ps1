@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Cierra WINX si está abierto, lo compila y lo vuelve a abrir.
 .EXAMPLE

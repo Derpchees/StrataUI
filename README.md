@@ -17,8 +17,8 @@ a la normalidad.
 | Hub de configuración    | ✅ barra, bandeja, apariencia, optimización, general           |
 | Optimización (debloat)  | ✅ apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
 | Panel de volumen        | ✅ dispositivo de salida y volumen por aplicación              |
-| Panel de red            | ⏳ abre la configuración de Windows                            |
-| Panel de Bluetooth      | ⏳ abre la configuración de Windows                            |
+| Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
+| Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
 | Menú Inicio             | ⏳ abre el de Windows                                          |
 | Notificaciones          | ⏳ abre el centro de Windows                                   |
 
@@ -70,7 +70,7 @@ src/Winx.Shell/
   App.xaml(.cs)        Arranque, instancia única, ciclo de vida del shell
   Taskbar.xaml(.cs)    Barra de tareas (una por monitor)
   Controls/            Botón de tarea e ícono de bandeja
-  Flyouts/             Paneles flotantes (volumen, …)
+  Flyouts/             Paneles flotantes: volumen, red, Bluetooth
   Hub/                 Ventana de configuración y sus páginas
   Tweaks/              Motor de optimizaciones, catálogo, respaldo, apps Appx, elevación
   Services/            Tema, configuración, audio, estado del sistema, registro

@@ -160,9 +160,11 @@ public partial class Taskbar : AppBarWindow
 
     private void ClockButton_Click(object sender, RoutedEventArgs e) => ShellHelper.ShowNotificationCenter();
 
-    private void NetworkButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:network");
+    private void NetworkButton_Click(object sender, RoutedEventArgs e) =>
+        Flyouts.FlyoutManager.Toggle<Flyouts.NetworkFlyout>(NetworkButton);
 
-    private void BluetoothButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:bluetooth");
+    private void BluetoothButton_Click(object sender, RoutedEventArgs e) =>
+        Flyouts.FlyoutManager.Toggle<Flyouts.BluetoothFlyout>(BluetoothButton);
 
     private void VolumeButton_Click(object sender, RoutedEventArgs e) =>
         Flyouts.FlyoutManager.Toggle<Flyouts.VolumeFlyout>(VolumeButton);
