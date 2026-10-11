@@ -1,4 +1,5 @@
 using Winx.Shell.Hub.Pages;
+using Winx.Shell.Services;
 using Wpf.Ui.Controls;
 
 namespace Winx.Shell.Hub;
@@ -15,8 +16,13 @@ public partial class HubWindow : FluentWindow
     public HubWindow()
     {
         InitializeComponent();
+        ApplyBackdrop();
+        ThemeManager.ThemeChanged += ApplyBackdrop;
+        Closed += (_, _) => ThemeManager.ThemeChanged -= ApplyBackdrop;
         Loaded += (_, _) => Nav.Navigate(_startPage);
     }
+
+    private void ApplyBackdrop() => WindowBackdropType = ThemeManager.WindowBackdrop;
 
     /// <summary>Navega a una página por nombre: "Privacy", "PrivacyPage", "Apps"…</summary>
     public void NavigateTo(string page)

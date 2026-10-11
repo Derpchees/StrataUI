@@ -32,7 +32,7 @@ public partial class App : Application
     private readonly List<Taskbar> _taskbars = new();
     private Hub.HubWindow? _hub;
     private int _screenCount;
-    private int _barHeight;
+    private double _barHeight;
     private bool _exiting;
 
     /// <summary>Servicios de ManagedShell (bandeja, ventanas); disponibles mientras el shell corre.</summary>
@@ -112,7 +112,13 @@ public partial class App : Application
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnFatalException;
 
+        // WPF asigna como MainWindow la primera ventana creada, y WPF-UI modifica esa ventana al
+        // cambiar de tema (le quita los efectos de DWM). Una ventana invisible ocupa ese lugar
+        // para que la barra, el Hub y los paneles conserven su material de fondo.
+        MainWindow = new Window { ShowInTaskbar = false, ShowActivated = false };
+
         ThemeManager.Initialize();
+        Services.Themes.WindowsTheming.Initialize();
 
         var config = ShellManager.DefaultShellConfig;
         config.TaskIconSize = IconSize.Large;
@@ -126,7 +132,7 @@ public partial class App : Application
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         Settings.Changed += OnSettingsChanged;
-        _barHeight = Settings.Current.TaskbarHeight;
+        _barHeight = Taskbar.ReservedHeight;
 
         int hubIndex = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
         if (hubIndex >= 0)
@@ -204,9 +210,9 @@ public partial class App : Application
     private void OnSettingsChanged()
     {
         // El alto de una AppBar se fija al registrarla, así que cambiarlo requiere recrear las barras.
-        if (_exiting || Settings.Current.TaskbarHeight == _barHeight)
+        if (_exiting || Taskbar.ReservedHeight == _barHeight)
             return;
-        _barHeight = Settings.Current.TaskbarHeight;
+        _barHeight = Taskbar.ReservedHeight;
         CloseTaskbars();
         OpenTaskbars();
     }
@@ -291,6 +297,7 @@ public partial class App : Application
             _shell.Dispose();
             _shell = null;
         }
+        Services.Themes.WindowsTheming.Shutdown();
         ThemeManager.Shutdown();
         _audio?.Dispose();
 

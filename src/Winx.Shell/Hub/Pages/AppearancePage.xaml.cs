@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Winx.Shell.Services;
+using Winx.Shell.Services.Themes;
 
 namespace Winx.Shell.Hub.Pages;
 
@@ -20,21 +21,129 @@ public partial class AppearancePage : Page
         "#7A7574", "#5D5A58", "#68768A", "#515C6B", "#567C73", "#486860", "#498205", "#107C10",
     ];
 
-    private readonly bool _loading = true;
-
     public AppearancePage()
     {
         InitializeComponent();
 
         var s = Settings.Current;
-        ThemeBox.SelectedIndex = (int)s.Theme;
+        WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
         WindowsAccentSwitch.IsChecked = s.AccentColor is null;
+        BuildThemeGallery();
         BuildSwatches();
         UpdateSwatches();
         UpdateWallpaper();
-
-        _loading = false;
     }
+
+    // ── Galería de temas ───────────────────────────────────────────────────
+
+    private void BuildThemeGallery()
+    {
+        ThemeGallery.Children.Clear();
+        foreach (var theme in ThemeCatalog.All)
+        {
+            bool selected = theme.Kind == Settings.Current.Theme;
+            var card = new Button
+            {
+                Width = 168,
+                Margin = new Thickness(0, 0, 10, 10),
+                Padding = new Thickness(0),
+                Cursor = System.Windows.Input.Cursors.Hand,
+                ToolTip = theme.Description,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Content = BuildThemeCard(theme, selected),
+                Template = FlatTemplate(),
+            };
+            System.Windows.Automation.AutomationProperties.SetName(card, $"Tema {theme.Name}");
+            card.Click += (_, _) =>
+            {
+                Settings.Update(s => s.Theme = theme.Kind);
+                BuildThemeGallery();
+            };
+            ThemeGallery.Children.Add(card);
+        }
+    }
+
+    /// <summary>Miniatura: fondo de colores, una ventana y una barra con los colores reales del tema.</summary>
+    private FrameworkElement BuildThemeCard(ThemeInfo theme, bool selected)
+    {
+        bool light = theme.Light ?? ThemeManager.WindowsUsesLightTheme();
+        var palette = Palette.Build(theme, light, ThemeManager.Accent);
+        Brush Res(string key) => (Brush)palette[key];
+
+        var wallpaper = new LinearGradientBrush(Palette.Hex("#FF5B7FFF"), Palette.Hex("#FFFF7AB6"), 35);
+        wallpaper.GradientStops.Add(new GradientStop(Palette.Hex("#FFFFC46B"), 1));
+
+        var preview = new Grid { Height = 96, ClipToBounds = true };
+        preview.Children.Add(new Border { Background = wallpaper });
+        // Vidrio sin desenfoque real en la miniatura: se aumenta la opacidad para insinuarlo.
+        var window = new Border
+        {
+            Width = 92, Height = 52, Margin = new Thickness(14, 12, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+            CornerRadius = (CornerRadius)palette["WinxLargeCornerRadius"],
+            Background = Opaque(Res("WinxFlyoutBackgroundBrush"), light, theme),
+            BorderBrush = theme.Glass ? Res("WinxGlassEdgeBrush") : Res("WinxFlyoutBorderBrush"),
+            BorderThickness = new Thickness(1),
+            Child = new Border
+            {
+                Margin = new Thickness(8, 8, 0, 0), Width = 40, Height = 6,
+                HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+                CornerRadius = new CornerRadius(3), Background = Res("WinxAccentBrush"),
+            },
+        };
+        preview.Children.Add(window);
+        var taskbar = new Border
+        {
+            Height = 18, VerticalAlignment = VerticalAlignment.Bottom,
+            Background = Opaque(Res("WinxTaskbarBackgroundBrush"), light, theme),
+            Child = new Border
+            {
+                Width = 10, Height = 10, CornerRadius = new CornerRadius(theme.Radius / 3),
+                Background = Res("WinxAccentBrush"), HorizontalAlignment = HorizontalAlignment.Center,
+            },
+        };
+        preview.Children.Add(taskbar);
+        if (theme.Glass)
+            preview.Children.Add(new Border { Background = Res("WinxGlassHighlightBrush"), Opacity = 0.6, IsHitTestVisible = false });
+
+        var label = new StackPanel { Margin = new Thickness(10, 8, 10, 10) };
+        label.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = theme.Name });
+
+        var stack = new StackPanel();
+        stack.Children.Add(new Border { CornerRadius = new CornerRadius(6, 6, 0, 0), ClipToBounds = true, Child = preview });
+        stack.Children.Add(label);
+
+        return new Border
+        {
+            CornerRadius = new CornerRadius(8),
+            Background = (TryFindResource("CardBackgroundFillColorDefaultBrush") as Brush) ?? Brushes.Transparent,
+            BorderBrush = selected
+                ? (TryFindResource("AccentFillColorDefaultBrush") as Brush) ?? Brushes.DodgerBlue
+                : (TryFindResource("CardStrokeColorDefaultBrush") as Brush) ?? Brushes.Gray,
+            BorderThickness = new Thickness(selected ? 2 : 1),
+            Child = stack,
+        };
+    }
+
+    private static Brush Opaque(Brush brush, bool light, ThemeInfo theme)
+    {
+        if (brush is not SolidColorBrush solid || theme.Backdrop != Backdrop.Acrylic)
+            return brush;
+        // En la miniatura no hay Acrylic: se mezcla con el tono que tendría el desenfoque.
+        var frosted = light ? Palette.Hex("#D8F0F0F5") : Palette.Hex("#D0202024");
+        return new SolidColorBrush(Palette.Blend(frosted, solid.Color, solid.Color.A / 255.0));
+    }
+
+    private static ControlTemplate FlatTemplate()
+    {
+        var template = new ControlTemplate(typeof(Button));
+        template.VisualTree = new FrameworkElementFactory(typeof(ContentPresenter));
+        return template;
+    }
+
+    private void WindowsTheme_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.ApplyThemeToWindows = WindowsThemeSwitch.IsChecked == true);
 
     private void BuildSwatches()
     {
@@ -68,12 +177,6 @@ public partial class AppearancePage : Page
             swatch.BorderThickness = new Thickness(selected ? 3 : 0);
             swatch.BorderBrush = (Brush)FindResource("TextFillColorPrimaryBrush");
         }
-    }
-
-    private void Theme_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_loading)
-            Settings.Update(s => s.Theme = (WinxTheme)ThemeBox.SelectedIndex);
     }
 
     private void WindowsAccent_Click(object sender, RoutedEventArgs e)

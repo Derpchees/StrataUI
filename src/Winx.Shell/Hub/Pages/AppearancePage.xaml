@@ -8,20 +8,22 @@
         <StackPanel Style="{StaticResource HubPageContent}">
             <TextBlock Style="{StaticResource HubPageTitle}" Text="Apariencia" />
 
+            <TextBlock Style="{StaticResource HubSectionTitle}" Margin="0,0,0,8" Text="Tema" />
+            <WrapPanel x:Name="ThemeGallery" Margin="0,0,0,8" />
+
             <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="DarkTheme24" /></ui:CardControl.Icon>
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowSettings20" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="Tema de WINX" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="Barra, paneles y este Hub" />
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Aplicar el tema a Windows" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="Modo claro/oscuro del sistema y fondo del tema en el Explorador y el Panel de control. El contenido de esas ventanas sigue siendo sólido." />
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ComboBox x:Name="ThemeBox" MinWidth="180" SelectionChanged="Theme_Changed">
-                    <ComboBoxItem Content="Igual que Windows" />
-                    <ComboBoxItem Content="Claro" />
-                    <ComboBoxItem Content="Oscuro" />
-                </ComboBox>
+                <ui:ToggleSwitch x:Name="WindowsThemeSwitch" Click="WindowsTheme_Click" />
             </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Color de acento" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Color24" /></ui:CardControl.Icon>

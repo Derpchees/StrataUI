@@ -6,6 +6,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.3.0] - 2026-10-11
+
+### Añadido
+- Sistema de temas para toda la app (barra, paneles y Hub), con galería y vista previa en
+  Apariencia: **Sistema**, **Claro**, **Oscuro**, **Transparencia** (Acrylic),
+  **Liquid Glass** y **Liquid Glass oscuro** (estilo iOS/HyperOS: desenfoque limpio, tinte
+  mínimo, bordes de luz, barra flotante en forma de cápsula y paneles con esquinas grandes) y
+  **Material** (Material Design: superficies tonales derivadas del acento).
+- "Aplicar el tema a Windows": modo claro/oscuro y transparencia del sistema, y material de
+  fondo y barra de título oscura en las ventanas del Explorador y del Panel de control,
+  sin inyectar código. Los valores originales quedan en el respaldo.
+
+### Corregido
+- La cancelación de una búsqueda Wi-Fi al cerrar el panel ya no se registra como error.
+
 ## [0.2.1] - 2026-10-11
 
 ### Cambiado

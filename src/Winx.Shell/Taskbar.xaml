@@ -12,7 +12,7 @@
                      Topmost="True"
                      UseLayoutRounding="True"
                      FontFamily="{StaticResource UiFont}"
-                     Background="{DynamicResource WinxTaskbarBackgroundBrush}">
+                     Background="Transparent">
 
     <appbar:AppBarWindow.Resources>
         <conv:InverseBoolConverter x:Key="InverseBool" />
@@ -32,126 +32,138 @@
         </ContextMenu>
     </appbar:AppBarWindow.ContextMenu>
 
-    <Border BorderBrush="{DynamicResource WinxTaskbarBorderBrush}" BorderThickness="0,1,0,0">
+    <!-- La ventana es transparente: el color del tema lo pone este Border (sobre el desenfoque si
+         aplica). En temas flotantes se separa de los bordes y toma forma de cápsula. -->
+    <Border Background="{DynamicResource WinxTaskbarBackgroundBrush}"
+            BorderBrush="{DynamicResource WinxTaskbarEdgeBrush}"
+            BorderThickness="{DynamicResource WinxTaskbarBorderThickness}"
+            CornerRadius="{DynamicResource WinxTaskbarCornerRadius}"
+            Margin="{DynamicResource WinxTaskbarMargin}">
         <Grid>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <!-- Inicio + ventanas abiertas; alineación configurable desde el Hub -->
-            <!-- DockPanel (no StackPanel) para que la lista reciba un ancho limitado y pueda desplazarse -->
-            <DockPanel x:Name="TaskArea" Grid.Column="0" HorizontalAlignment="Center" LastChildFill="True">
-                <Button x:Name="StartButton" DockPanel.Dock="Left" Style="{StaticResource TaskbarButton}" Width="44"
-                        Padding="0" ToolTip="Inicio" Click="StartButton_Click">
-                    <Grid Width="16" Height="16" RenderTransformOrigin="0.5,0.5">
-                        <Grid.RenderTransform>
-                            <RotateTransform Angle="45" />
-                        </Grid.RenderTransform>
-                        <UniformGrid Rows="2" Columns="2">
-                            <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" />
-                            <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.75" />
-                            <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.75" />
-                            <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.5" />
-                        </UniformGrid>
-                    </Grid>
-                </Button>
-
-                <!-- Si no caben todas las ventanas, la rueda del mouse desplaza la lista -->
-                <ScrollViewer x:Name="TaskScroller" HorizontalScrollBarVisibility="Hidden"
-                              VerticalScrollBarVisibility="Disabled" Focusable="False"
-                              PreviewMouseWheel="TaskScroller_PreviewMouseWheel">
-                    <ItemsControl x:Name="TaskList" Focusable="False">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <controls:TaskButton />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </DockPanel>
-
-            <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                <StackPanel x:Name="TrayArea" Orientation="Horizontal">
-                    <ToggleButton x:Name="ChevronButton" Style="{StaticResource TaskbarButton}" Width="28"
-                                  Padding="0" ToolTip="Mostrar iconos ocultos"
-                                  IsChecked="{Binding IsOpen, ElementName=HiddenTrayPopup, Mode=TwoWay}"
-                                  IsHitTestVisible="{Binding IsOpen, ElementName=HiddenTrayPopup, Converter={StaticResource InverseBool}}">
-                        <TextBlock Style="{StaticResource IconText}" FontSize="11" Text="&#xE70E;" />
-                    </ToggleButton>
-                    <Popup x:Name="HiddenTrayPopup" PlacementTarget="{Binding ElementName=ChevronButton}"
-                           Placement="Top" VerticalOffset="-8" StaysOpen="False"
-                           AllowsTransparency="True" PopupAnimation="Fade">
-                        <Border Background="{DynamicResource WinxFlyoutBackgroundBrush}"
-                                BorderBrush="{DynamicResource WinxFlyoutBorderBrush}"
-                                BorderThickness="1" CornerRadius="8" Padding="6">
-                            <ItemsControl x:Name="HiddenTray" MaxWidth="168">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <controls:TrayIcon />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Border>
-                    </Popup>
-
-                    <ItemsControl x:Name="PinnedTray" Focusable="False">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <controls:TrayIcon />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-
-                <!-- Módulos de estado: cada uno abre su propio panel y se activa desde el Hub -->
-                <Button x:Name="NetworkButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
-                        Click="NetworkButton_Click">
-                    <TextBlock x:Name="NetworkGlyph" Style="{StaticResource IconText}" Text="&#xE701;" />
-                </Button>
-                <Button x:Name="BluetoothButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
-                        ToolTip="Bluetooth" Click="BluetoothButton_Click">
-                    <TextBlock Style="{StaticResource IconText}" Text="&#xE702;" />
-                </Button>
-                <Button x:Name="VolumeButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
-                        ToolTip="Volumen" Click="VolumeButton_Click" MouseWheel="VolumeButton_MouseWheel">
-                    <TextBlock x:Name="VolumeGlyph" Style="{StaticResource IconText}" Text="&#xE767;" />
-                </Button>
-                <Button x:Name="BatteryButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
-                        Visibility="Collapsed" Click="BatteryButton_Click">
-                    <TextBlock x:Name="BatteryGlyph" Style="{StaticResource IconText}" />
-                </Button>
-
-                <Button x:Name="ClockButton" Style="{StaticResource TaskbarButton}" Padding="10,0"
-                        Click="ClockButton_Click">
-                    <StackPanel>
-                        <TextBlock x:Name="TimeText" HorizontalAlignment="Right" FontSize="12" />
-                        <TextBlock x:Name="DateText" HorizontalAlignment="Right" FontSize="12" />
+            <!-- Brillo interior sutil del vidrio -->
+            <Border IsHitTestVisible="False" Background="{DynamicResource WinxGlassHighlightBrush}"
+                    CornerRadius="{DynamicResource WinxTaskbarCornerRadius}"
+                    Visibility="{DynamicResource WinxGlassVisibility}" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+    
+                <!-- Inicio + ventanas abiertas; alineación configurable desde el Hub -->
+                <!-- DockPanel (no StackPanel) para que la lista reciba un ancho limitado y pueda desplazarse -->
+                <DockPanel x:Name="TaskArea" Grid.Column="0" HorizontalAlignment="Center" LastChildFill="True">
+                    <Button x:Name="StartButton" DockPanel.Dock="Left" Style="{StaticResource TaskbarButton}" Width="44"
+                            Padding="0" ToolTip="Inicio" Click="StartButton_Click">
+                        <Grid Width="16" Height="16" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <RotateTransform Angle="45" />
+                            </Grid.RenderTransform>
+                            <UniformGrid Rows="2" Columns="2">
+                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" />
+                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.75" />
+                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.75" />
+                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.5" />
+                            </UniformGrid>
+                        </Grid>
+                    </Button>
+    
+                    <!-- Si no caben todas las ventanas, la rueda del mouse desplaza la lista -->
+                    <ScrollViewer x:Name="TaskScroller" HorizontalScrollBarVisibility="Hidden"
+                                  VerticalScrollBarVisibility="Disabled" Focusable="False"
+                                  PreviewMouseWheel="TaskScroller_PreviewMouseWheel">
+                        <ItemsControl x:Name="TaskList" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:TaskButton />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </DockPanel>
+    
+                <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <StackPanel x:Name="TrayArea" Orientation="Horizontal">
+                        <ToggleButton x:Name="ChevronButton" Style="{StaticResource TaskbarButton}" Width="28"
+                                      Padding="0" ToolTip="Mostrar iconos ocultos"
+                                      IsChecked="{Binding IsOpen, ElementName=HiddenTrayPopup, Mode=TwoWay}"
+                                      IsHitTestVisible="{Binding IsOpen, ElementName=HiddenTrayPopup, Converter={StaticResource InverseBool}}">
+                            <TextBlock Style="{StaticResource IconText}" FontSize="11" Text="&#xE70E;" />
+                        </ToggleButton>
+                        <Popup x:Name="HiddenTrayPopup" PlacementTarget="{Binding ElementName=ChevronButton}"
+                               Placement="Top" VerticalOffset="-8" StaysOpen="False"
+                               AllowsTransparency="True" PopupAnimation="Fade">
+                            <Border Background="{DynamicResource WinxPopupBackgroundBrush}"
+                                    BorderBrush="{DynamicResource WinxFlyoutBorderBrush}"
+                                    BorderThickness="1" CornerRadius="{DynamicResource WinxLargeCornerRadius}" Padding="6">
+                                <ItemsControl x:Name="HiddenTray" MaxWidth="168">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <controls:TrayIcon />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </Popup>
+    
+                        <ItemsControl x:Name="PinnedTray" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:TrayIcon />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
-                </Button>
-
-                <Border Width="12" Background="Transparent" ToolTip="Mostrar escritorio"
-                        MouseLeftButtonUp="ShowDesktop_Click">
-                    <Border Width="1" Height="16" HorizontalAlignment="Right"
-                            Background="{DynamicResource WinxTaskbarBorderBrush}" />
-                </Border>
-            </StackPanel>
+    
+                    <!-- Módulos de estado: cada uno abre su propio panel y se activa desde el Hub -->
+                    <Button x:Name="NetworkButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                            Click="NetworkButton_Click">
+                        <TextBlock x:Name="NetworkGlyph" Style="{StaticResource IconText}" Text="&#xE701;" />
+                    </Button>
+                    <Button x:Name="BluetoothButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                            ToolTip="Bluetooth" Click="BluetoothButton_Click">
+                        <TextBlock Style="{StaticResource IconText}" Text="&#xE702;" />
+                    </Button>
+                    <Button x:Name="VolumeButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                            ToolTip="Volumen" Click="VolumeButton_Click" MouseWheel="VolumeButton_MouseWheel">
+                        <TextBlock x:Name="VolumeGlyph" Style="{StaticResource IconText}" Text="&#xE767;" />
+                    </Button>
+                    <Button x:Name="BatteryButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                            Visibility="Collapsed" Click="BatteryButton_Click">
+                        <TextBlock x:Name="BatteryGlyph" Style="{StaticResource IconText}" />
+                    </Button>
+    
+                    <Button x:Name="ClockButton" Style="{StaticResource TaskbarButton}" Padding="10,0"
+                            Click="ClockButton_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="TimeText" HorizontalAlignment="Right" FontSize="12" />
+                            <TextBlock x:Name="DateText" HorizontalAlignment="Right" FontSize="12" />
+                        </StackPanel>
+                    </Button>
+    
+                    <Border Width="12" Background="Transparent" ToolTip="Mostrar escritorio"
+                            MouseLeftButtonUp="ShowDesktop_Click">
+                        <Border Width="1" Height="16" HorizontalAlignment="Right"
+                                Background="{DynamicResource WinxTaskbarBorderBrush}" />
+                    </Border>
+                </StackPanel>
+            </Grid>
         </Grid>
     </Border>
 </appbar:AppBarWindow>

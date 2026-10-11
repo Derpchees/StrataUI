@@ -9,7 +9,7 @@
             </ContextMenu>
         </Button.ContextMenu>
         <Grid Width="44">
-            <Border CornerRadius="5" Background="{DynamicResource WinxActiveTaskBrush}">
+            <Border CornerRadius="{DynamicResource WinxCornerRadius}" Background="{DynamicResource WinxActiveTaskBrush}">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed" />

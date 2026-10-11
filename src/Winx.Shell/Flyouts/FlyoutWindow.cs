@@ -5,6 +5,8 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using Winx.Shell.Services;
+using Winx.Shell.Services.Themes;
 using Wpf.Ui.Controls;
 using Forms = System.Windows.Forms;
 
@@ -28,7 +30,23 @@ public abstract class FlyoutWindow : FluentWindow
         SizeToContent = SizeToContent.Height;
         MinHeight = 0; // el estilo de FluentWindow impone un mínimo pensado para ventanas normales
         ExtendsContentIntoTitleBar = true;
-        WindowBackdropType = WindowBackdropType.Acrylic;
+        // Paneles: Acrylic como los de Windows; sólido en Material; en Liquid Glass, desenfoque
+        // limpio propio (sin el ruido ni la luminosidad del Acrylic) con esquinas grandes.
+        var theme = ThemeManager.Theme;
+        WindowBackdropType = theme.Backdrop == Backdrop.Acrylic ? WindowBackdropType.Acrylic : WindowBackdropType.None;
+        if (theme.Backdrop == Backdrop.Blur)
+        {
+            // WPF-UI pone el fondo sólido del tema al inicializar la ventana: se vuelve a
+            // dejar transparente después, o taparía el desenfoque.
+            SourceInitialized += (_, _) =>
+            {
+                Background = Brushes.Transparent;
+                WindowEffects.SetBlur(this, Backdrop.Blur);
+            };
+            Loaded += (_, _) => Background = Brushes.Transparent;
+        }
+        if (theme.PanelRadius > 8) // más que las esquinas de DWM: se recorta la ventana
+            SizeChanged += (_, _) => ClipToPanelRadius(theme.PanelRadius);
         WindowCornerPreference = WindowCornerPreference.Round;
         Opacity = 0; // se muestra al terminar de posicionarse, sin parpadeo
 
@@ -41,24 +59,59 @@ public abstract class FlyoutWindow : FluentWindow
     }
 
     /// <summary>
-    /// Todo el contenido va dentro de un único ScrollViewer: si el panel no cabe en la pantalla
-    /// aparece la barra de desplazamiento y la rueda del mouse funciona en cualquier parte.
-    /// (Las subclases no deben anidar otros ScrollViewer, que "atraparían" la rueda.)
+    /// El contenido de cada panel se coloca sobre las capas del tema y dentro de un único
+    /// ScrollViewer: si no cabe en la pantalla aparece la barra y la rueda funciona en cualquier
+    /// parte. (Las subclases no deben anidar otros ScrollViewer, que "atraparían" la rueda.)
     /// </summary>
     protected override void OnContentChanged(object oldContent, object newContent)
     {
-        if (newContent is UIElement element and not ScrollViewer)
+        if (newContent is UIElement element && !ReferenceEquals(newContent, _root))
         {
-            Content = new ScrollViewer
-            {
-                Content = element,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                PanningMode = PanningMode.VerticalOnly,
-            };
+            Content = BuildRoot(element);
             return;
         }
         base.OnContentChanged(oldContent, newContent);
+    }
+
+    private Grid? _root;
+
+    /// <summary>Capas del panel: tinte del tema, brillo del vidrio, borde de luz y contenido con scroll.</summary>
+    private Grid BuildRoot(UIElement content)
+    {
+        _root = new Grid();
+        _root.Children.Add(Layer("WinxFlyoutBackgroundBrush", null));
+        var highlight = Layer("WinxGlassHighlightBrush", null);
+        highlight.SetResourceReference(VisibilityProperty, "WinxGlassVisibility");
+        _root.Children.Add(highlight);
+        var edge = Layer(null, "WinxGlassEdgeBrush");
+        edge.BorderThickness = new Thickness(1);
+        _root.Children.Add(edge);
+        _root.Children.Add(new ScrollViewer
+        {
+            Content = content,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            PanningMode = PanningMode.VerticalOnly,
+        });
+        return _root;
+    }
+
+    private void ClipToPanelRadius(double radius)
+    {
+        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        var bounds = new Int32Rect(0, 0, (int)Math.Round(ActualWidth * scale), (int)Math.Round(ActualHeight * scale));
+        WindowEffects.SetRoundedRegion(this, bounds, (int)Math.Round(radius * scale));
+    }
+
+    private static Border Layer(string? background, string? border)
+    {
+        var layer = new Border { IsHitTestVisible = false };
+        layer.SetResourceReference(Border.CornerRadiusProperty, "WinxPanelCornerRadius");
+        if (background != null)
+            layer.SetResourceReference(Border.BackgroundProperty, background);
+        if (border != null)
+            layer.SetResourceReference(Border.BorderBrushProperty, border);
+        return layer;
     }
 
     public void ShowAt(FrameworkElement anchor)
@@ -117,7 +170,8 @@ public abstract class FlyoutWindow : FluentWindow
         var duration = TimeSpan.FromMilliseconds(160);
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        if (Content is FrameworkElement content)
+        // Se desliza solo el contenido; las capas de fondo quedan fijas sobre el Acrylic.
+        if (_root?.Children[^1] is FrameworkElement content)
         {
             var slide = new TranslateTransform(0, 16);
             content.RenderTransform = slide;

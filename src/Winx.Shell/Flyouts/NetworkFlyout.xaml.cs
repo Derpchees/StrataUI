@@ -86,6 +86,10 @@ public partial class NetworkFlyout : FlyoutWindow
             if (_rows.Count == 0)
                 ShowWifiHint("No se encontraron redes.");
         }
+        catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == unchecked((int)0x80004004))
+        {
+            // E_ABORT: el panel se cerró mientras buscaba; no es un error.
+        }
         catch (Exception ex)
         {
             Log.Error("Falló la búsqueda de redes", ex);

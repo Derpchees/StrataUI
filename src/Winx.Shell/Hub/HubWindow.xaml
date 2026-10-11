@@ -7,9 +7,9 @@
                  Width="1040" Height="720" MinWidth="780" MinHeight="520"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
-                 WindowBackdropType="Mica"
                  WindowCornerPreference="Round">
-    <Grid>
+    <!-- Tinte del tema sobre el material de fondo (opaco en Material, sutil en los de vidrio) -->
+    <Grid Background="{DynamicResource WinxHubTintBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

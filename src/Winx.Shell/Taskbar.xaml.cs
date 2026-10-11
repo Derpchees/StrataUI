@@ -13,6 +13,7 @@ using ManagedShell.WindowsTasks;
 using ManagedShell.WindowsTray;
 using Winx.Shell.Controls;
 using Winx.Shell.Services;
+using Winx.Shell.Services.Themes;
 using ShellNotifyIcon = ManagedShell.WindowsTray.NotifyIcon;
 
 namespace Winx.Shell;
@@ -26,7 +27,7 @@ public partial class Taskbar : AppBarWindow
 
     public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
-               screen, AppBarEdge.Bottom, AppBarMode.Normal, Settings.Current.TaskbarHeight)
+               screen, AppBarEdge.Bottom, AppBarMode.Normal, ReservedHeight)
     {
         _shell = shell;
         _multiMonitor = multiMonitor;
@@ -63,7 +64,40 @@ public partial class Taskbar : AppBarWindow
 
         App.Current.Audio.Changed += UpdateVolume;
         UpdateVolume();
+
+        SourceInitialized += (_, _) => ApplyBackdrop();
+        SizeChanged += (_, _) => ApplyBackdrop();
+        ThemeManager.ThemeChanged += OnThemeChanged;
     }
+
+    /// <summary>Alto reservado en pantalla: la barra más el margen inferior si flota.</summary>
+    public static double ReservedHeight =>
+        Settings.Current.TaskbarHeight + (ThemeManager.Theme.Floating ? ThemeCatalog.FloatingMargin : 0);
+
+    /// <summary>
+    /// Desenfoque detrás de la barra (Acrylic o vidrio limpio) y, si flota, recorte a la cápsula
+    /// para que ni el desenfoque ni los clics ocupen el margen alrededor.
+    /// </summary>
+    private void ApplyBackdrop()
+    {
+        var theme = ThemeManager.Theme;
+        WindowEffects.SetBlur(this, theme.Backdrop);
+        if (!theme.Floating || ActualWidth <= 0)
+        {
+            WindowEffects.SetRoundedRegion(this, null, 0);
+            return;
+        }
+        double scale = DpiScale;
+        int margin = (int)Math.Round(ThemeCatalog.FloatingMargin * scale);
+        int width = (int)Math.Round(ActualWidth * scale) - 2 * margin;
+        int height = (int)Math.Round(ActualHeight * scale) - margin;
+        WindowEffects.SetRoundedRegion(this, new Int32Rect(margin, 0, width, height), height / 2);
+    }
+
+    // WPF-UI termina de aplicar su tema de forma asíncrona sobre la ventana principal (la barra)
+    // y deshace el efecto: se reaplica cuando la app queda inactiva.
+    private void OnThemeChanged() =>
+        Dispatcher.BeginInvoke(ApplyBackdrop, DispatcherPriority.ApplicationIdle);
 
     private void ApplySettings()
     {
@@ -146,6 +180,7 @@ public partial class Taskbar : AppBarWindow
     {
         Settings.Changed -= ApplySettings;
         App.Current.Audio.Changed -= UpdateVolume;
+        ThemeManager.ThemeChanged -= OnThemeChanged;
         _clockTimer.Stop();
         _statusTimer.Stop();
         base.CustomClosing();

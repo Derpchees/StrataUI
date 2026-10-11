@@ -16,6 +16,7 @@ a la normalidad.
 | Bandeja del sistema     | ✅ íconos visibles u ocultos, configurable desde el Hub        |
 | Hub de configuración    | ✅ barra, bandeja, apariencia, optimización, general           |
 | Optimización (debloat)  | ✅ apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
+| Temas                   | ✅ Sistema, Claro, Oscuro, Transparencia, Liquid Glass (claro/oscuro), Material |
 | Panel de volumen        | ✅ dispositivo de salida y volumen por aplicación              |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
@@ -73,8 +74,9 @@ src/Winx.Shell/
   Flyouts/             Paneles flotantes: volumen, red, Bluetooth
   Hub/                 Ventana de configuración y sus páginas
   Tweaks/              Motor de optimizaciones, catálogo, respaldo, apps Appx, elevación
-  Services/            Tema, configuración, audio, estado del sistema, registro
-  Themes/              Paletas claro/oscuro y estilos de la barra
+  Services/            Configuración, audio, red, Bluetooth, estado del sistema, registro
+  Services/Themes/     Catálogo de temas, paleta generada, efectos de DWM, tema en Windows
+  Themes/              Estilos compartidos de la barra
 tests/Winx.Tests/      Pruebas del motor de optimizaciones y del catálogo
 ```
 

@@ -1,14 +1,15 @@
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Win32;
+using Winx.Shell.Services.Themes;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
 namespace Winx.Shell.Services;
 
 /// <summary>
-/// Tema claro/oscuro y color de acento de WINX. Por defecto siguen a Windows;
-/// el Hub permite fijarlos. Se aplica tanto a la barra como a los controles de WPF-UI.
+/// Aplica el tema de WINX (ver <see cref="ThemeCatalog"/>) a toda la app: genera la paleta,
+/// sincroniza WPF-UI y avisa a las ventanas para que actualicen su material de fondo.
 /// </summary>
 public static class ThemeManager
 {
@@ -17,6 +18,24 @@ public static class ThemeManager
     private static readonly Color DefaultAccent = Color.FromRgb(0x00, 0x78, 0xD4);
 
     private static ResourceDictionary? _current;
+
+    /// <summary>Se dispara después de aplicar un tema (las ventanas actualizan su fondo).</summary>
+    public static event Action? ThemeChanged;
+
+    public static ThemeInfo Theme => ThemeCatalog.Get(Settings.Current.Theme);
+
+    public static bool IsLight => Theme.Light ?? WindowsUsesLightTheme();
+
+    public static Color Accent =>
+        TryParseColor(Settings.Current.AccentColor) ?? GetWindowsAccentColor();
+
+    /// <summary>Material para ventanas FluentWindow (Hub, paneles) según el tema.</summary>
+    public static WindowBackdropType WindowBackdrop => Theme.Backdrop switch
+    {
+        Backdrop.Acrylic or Backdrop.Blur => WindowBackdropType.Acrylic,
+        Backdrop.Mica => WindowBackdropType.Mica,
+        _ => WindowBackdropType.None,
+    };
 
     public static void Initialize()
     {
@@ -30,16 +49,6 @@ public static class ThemeManager
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         Settings.Changed -= Apply;
     }
-
-    public static bool IsLight => Settings.Current.Theme switch
-    {
-        WinxTheme.Light => true,
-        WinxTheme.Dark => false,
-        _ => WindowsUsesLightTheme(),
-    };
-
-    public static Color Accent =>
-        TryParseColor(Settings.Current.AccentColor) ?? GetWindowsAccentColor();
 
     public static bool WindowsUsesLightTheme()
     {
@@ -72,30 +81,25 @@ public static class ThemeManager
 
     private static void Apply()
     {
+        var theme = Theme;
         bool light = IsLight;
+        var accent = Accent;
+
         var resources = Application.Current.Resources;
-        var next = new ResourceDictionary
-        {
-            Source = new Uri($"pack://application:,,,/Themes/{(light ? "Light" : "Dark")}.xaml", UriKind.Absolute),
-        };
+        var next = Palette.Build(theme, light, accent, Settings.Current.TaskbarHeight);
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);
         resources.MergedDictionaries.Add(next);
         _current = next;
 
-        var accent = Accent;
-        // Como Windows: sobre fondo oscuro se usa una variante clara del acento para que contraste.
-        resources["WinxAccentBrush"] = new SolidColorBrush(light ? accent : Lighten(accent, 0.4));
+        // WPF-UI: solo el tema de controles y el acento. El material de cada ventana lo pone
+        // cada ventana (pasar un backdrop aquí lo aplicaría a MainWindow, que es la barra).
+        var uiTheme = light ? ApplicationTheme.Light : ApplicationTheme.Dark;
+        ApplicationThemeManager.Apply(uiTheme, WindowBackdropType.None, updateAccent: false);
+        ApplicationAccentColorManager.Apply(accent, uiTheme, false, false);
 
-        var theme = light ? ApplicationTheme.Light : ApplicationTheme.Dark;
-        ApplicationThemeManager.Apply(theme, WindowBackdropType.Mica, updateAccent: false);
-        ApplicationAccentColorManager.Apply(accent, theme, false, false);
+        ThemeChanged?.Invoke();
     }
-
-    private static Color Lighten(Color color, double amount) => Color.FromRgb(
-        (byte)(color.R + (255 - color.R) * amount),
-        (byte)(color.G + (255 - color.G) * amount),
-        (byte)(color.B + (255 - color.B) * amount));
 
     private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {

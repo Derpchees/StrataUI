@@ -6,7 +6,7 @@ namespace Winx.Shell.Services;
 
 public enum TaskbarAlignment { Center, Left }
 
-public enum WinxTheme { System, Light, Dark }
+public enum WinxTheme { System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material }
 
 /// <summary>Preferencias de WINX, guardadas en %LOCALAPPDATA%\WINX\settings.json.</summary>
 public sealed class WinxSettings
@@ -27,6 +27,8 @@ public sealed class WinxSettings
     public WinxTheme Theme { get; set; } = WinxTheme.System;
     /// <summary>Color "#RRGGBB"; null = usar el acento de Windows.</summary>
     public string? AccentColor { get; set; }
+    /// <summary>Llevar el tema a Windows: modo claro/oscuro y fondo de las ventanas del Explorador.</summary>
+    public bool ApplyThemeToWindows { get; set; }
     /// <summary>Fondo que había antes de que WINX lo cambiara por primera vez.</summary>
     public string? OriginalWallpaper { get; set; }
 
