@@ -1,0 +1,40 @@
+<Page x:Class="Winx.Shell.Hub.Pages.TrayPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="Bandeja del sistema">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <TextBlock Style="{StaticResource HubPageTitle}" Text="Bandeja del sistema" />
+            <TextBlock Style="{StaticResource CardDescription}" Margin="0,-12,0,16"
+                       Text="Elige qué íconos se muestran siempre en la barra. Los demás quedan en el menú de íconos ocultos (^). Solo aparecen las apps que están abiertas ahora." />
+
+            <ItemsControl x:Name="IconList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:CardControl Style="{StaticResource HubCard}">
+                            <ui:CardControl.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Source="{Binding Image}" Width="20" Height="20" Margin="0,0,14,0"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Name}" />
+                                        <TextBlock Style="{StaticResource CardDescription}" Text="{Binding Detail}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource CardDescription}" VerticalAlignment="Center"
+                                           Margin="0,0,12,0" Text="Mostrar siempre" />
+                                <ui:ToggleSwitch IsChecked="{Binding IsPinned, Mode=OneWay}" Click="Pin_Click" />
+                            </StackPanel>
+                        </ui:CardControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock x:Name="EmptyText" Style="{StaticResource CardDescription}" Visibility="Collapsed"
+                       Text="No hay íconos en la bandeja en este momento." />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

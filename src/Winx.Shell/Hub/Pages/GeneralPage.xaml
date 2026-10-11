@@ -1,0 +1,57 @@
+<Page x:Class="Winx.Shell.Hub.Pages.GeneralPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="General">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <TextBlock Style="{StaticResource HubPageTitle}" Text="General" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Rocket24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Iniciar WINX con Windows" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Reemplaza la barra de Windows en cuanto inicias sesión" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="AutoStartSwitch" Click="AutoStart_Click" />
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="WINX" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Info24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock x:Name="VersionText" Style="{StaticResource CardTitle}" />
+                        <TextBlock x:Name="DataPathText" Style="{StaticResource CardDescription}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="Abrir carpeta de datos" Click="OpenData_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowSync24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Reiniciar WINX" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Vuelve a cargar la barra y los servicios" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="Reiniciar" Click="Restart_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Power24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Salir de WINX" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Cierra WINX y vuelve la barra de tareas de Windows" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="Salir" Appearance="Danger" Click="Exit_Click" />
+            </ui:CardControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

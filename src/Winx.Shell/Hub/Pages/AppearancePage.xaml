@@ -1,0 +1,64 @@
+<Page x:Class="Winx.Shell.Hub.Pages.AppearancePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="Apariencia">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <TextBlock Style="{StaticResource HubPageTitle}" Text="Apariencia" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="DarkTheme24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Tema de WINX" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Barra, paneles y este Hub" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="ThemeBox" MinWidth="180" SelectionChanged="Theme_Changed">
+                    <ComboBoxItem Content="Igual que Windows" />
+                    <ComboBoxItem Content="Claro" />
+                    <ComboBoxItem Content="Oscuro" />
+                </ComboBox>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Color24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Usar el color de acento de Windows" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Desactívalo para elegir un color propio para WINX" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="WindowsAccentSwitch" Click="WindowsAccent_Click" />
+            </ui:CardControl>
+
+            <Border x:Name="SwatchPanel" Margin="0,0,0,4" Padding="16" CornerRadius="8"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+                <WrapPanel x:Name="Swatches" />
+            </Border>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Fondo de pantalla" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="160" Height="90" CornerRadius="6" ClipToBounds="True" Margin="0,0,16,0"
+                                Background="{DynamicResource ControlFillColorDefaultBrush}">
+                            <Image x:Name="WallpaperPreview" Stretch="UniformToFill" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="360">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="Imagen del escritorio" />
+                            <TextBlock x:Name="WallpaperPath" Style="{StaticResource CardDescription}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button x:Name="RestoreWallpaperButton" Content="Restaurar original" Margin="0,0,8,0"
+                               Click="RestoreWallpaper_Click" />
+                    <ui:Button Content="Elegir imagen…" Appearance="Primary" Click="ChooseWallpaper_Click" />
+                </StackPanel>
+            </ui:CardControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

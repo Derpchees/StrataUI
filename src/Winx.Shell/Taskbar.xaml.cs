@@ -9,7 +9,6 @@ using ManagedShell;
 using ManagedShell.AppBar;
 using ManagedShell.Common.Helpers;
 using ManagedShell.Interop;
-using ManagedShell.UWPInterop;
 using ManagedShell.WindowsTasks;
 using ManagedShell.WindowsTray;
 using Winx.Shell.Controls;
@@ -20,8 +19,6 @@ namespace Winx.Shell;
 
 public partial class Taskbar : AppBarWindow
 {
-    private const double BarHeight = 48;
-
     private readonly ShellManager _shell;
     private readonly bool _multiMonitor;
     private readonly DispatcherTimer _clockTimer;
@@ -29,7 +26,7 @@ public partial class Taskbar : AppBarWindow
 
     public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
-               screen, AppBarEdge.Bottom, AppBarMode.Normal, BarHeight)
+               screen, AppBarEdge.Bottom, AppBarMode.Normal, Settings.Current.TaskbarHeight)
     {
         _shell = shell;
         _multiMonitor = multiMonitor;
@@ -56,11 +53,26 @@ public partial class Taskbar : AppBarWindow
         _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _clockTimer.Tick += (_, _) => UpdateClock();
         _clockTimer.Start();
-        UpdateClock();
 
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _statusTimer.Tick += (_, _) => UpdateStatus();
         _statusTimer.Start();
+
+        Settings.Changed += ApplySettings;
+        ApplySettings();
+    }
+
+    private void ApplySettings()
+    {
+        var s = Settings.Current;
+        TaskArea.HorizontalAlignment = s.TaskbarAlignment == TaskbarAlignment.Left
+            ? HorizontalAlignment.Left
+            : HorizontalAlignment.Center;
+        DateText.Visibility = s.ShowDate ? Visibility.Visible : Visibility.Collapsed;
+        NetworkButton.Visibility = s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
+        BluetoothButton.Visibility = s.ShowBluetoothModule ? Visibility.Visible : Visibility.Collapsed;
+        VolumeButton.Visibility = s.ShowVolumeModule ? Visibility.Visible : Visibility.Collapsed;
+        UpdateClock();
         UpdateStatus();
     }
 
@@ -106,7 +118,7 @@ public partial class Taskbar : AppBarWindow
     private void UpdateClock()
     {
         var now = DateTime.Now;
-        TimeText.Text = now.ToString("t");
+        TimeText.Text = now.ToString(Settings.Current.ShowSeconds ? "T" : "t");
         DateText.Text = now.ToString("d");
         ClockButton.ToolTip = now.ToString("D");
     }
@@ -116,28 +128,27 @@ public partial class Taskbar : AppBarWindow
         var network = SystemStatus.GetNetwork();
         NetworkGlyph.Text = network.Glyph.ToString();
         NetworkGlyph.Opacity = network.Connected ? 1 : 0.4;
+        NetworkButton.ToolTip = network.Description;
 
-        var battery = SystemStatus.GetBattery();
-        string tooltip = network.Description;
-        if (battery is null)
+        var battery = Settings.Current.ShowBatteryModule ? SystemStatus.GetBattery() : null;
+        BatteryButton.Visibility = battery is null ? Visibility.Collapsed : Visibility.Visible;
+        if (battery != null)
         {
-            BatteryGlyph.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            BatteryGlyph.Visibility = Visibility.Visible;
             BatteryGlyph.Text = battery.Glyph.ToString();
-            tooltip += $"\nBatería: {battery.Percent}%{(battery.Charging ? " (cargando)" : "")}";
+            BatteryButton.ToolTip = $"Batería: {battery.Percent}%{(battery.Charging ? " (cargando)" : "")}";
         }
-        StatusButton.ToolTip = tooltip;
     }
 
     protected override void CustomClosing()
     {
+        Settings.Changed -= ApplySettings;
         _clockTimer.Stop();
         _statusTimer.Stop();
         base.CustomClosing();
     }
+
+    private static void OpenUri(string uri) =>
+        Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
 
     // Mientras no existan los paneles propios (próximas versiones), se abren los de Windows.
 
@@ -145,18 +156,13 @@ public partial class Taskbar : AppBarWindow
 
     private void ClockButton_Click(object sender, RoutedEventArgs e) => ShellHelper.ShowNotificationCenter();
 
-    private void StatusButton_Click(object sender, RoutedEventArgs e)
-    {
-        try
-        {
-            ImmersiveShellHelper.ShowControlCenter();
-        }
-        catch (Exception ex)
-        {
-            Log.Error("No se pudo abrir el centro de control", ex);
-            ShellHelper.ShowActionCenter();
-        }
-    }
+    private void NetworkButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:network");
+
+    private void BluetoothButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:bluetooth");
+
+    private void VolumeButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:sound");
+
+    private void BatteryButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:batterysaver");
 
     private void ShowDesktop_Click(object sender, MouseButtonEventArgs e)
     {
@@ -167,10 +173,11 @@ public partial class Taskbar : AppBarWindow
         shellApp.ToggleDesktop();
     }
 
+    private void OpenHub_Click(object sender, RoutedEventArgs e) => App.Current.OpenHub();
+
     private void TaskManager_Click(object sender, RoutedEventArgs e) => ShellHelper.StartTaskManager();
 
-    private void WindowsSettings_Click(object sender, RoutedEventArgs e) =>
-        Process.Start(new ProcessStartInfo("ms-settings:") { UseShellExecute = true });
+    private void WindowsSettings_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:");
 
     private void RestartWinx_Click(object sender, RoutedEventArgs e) => App.Current.ExitShell(restart: true);
 

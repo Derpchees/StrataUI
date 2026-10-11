@@ -5,29 +5,59 @@ using Microsoft.Win32;
 namespace Winx.Shell.Services;
 
 /// <summary>
-/// Respeta la configuración de Windows 11 "Otros iconos de la bandeja del sistema":
-/// los íconos que el usuario promovió a la barra se anclan también en WINX.
+/// Persistencia de qué íconos de la bandeja están siempre visibles.
+/// La primera vez que WINX ve un ícono respeta la configuración de Windows 11
+/// ("Otros iconos de la bandeja del sistema"); a partir de ahí manda lo que elija el usuario.
 /// </summary>
 public static class TrayPromotion
 {
     private const string SettingsKey = @"Control Panel\NotifyIconSettings";
 
+    private static NotificationArea? _tray;
+
     public static void Attach(NotificationArea tray)
     {
+        _tray = tray;
         var promoted = LoadPromotedPaths();
         foreach (var icon in tray.TrayIcons)
-            PinIfPromoted(icon, promoted);
+            OnIconSeen(icon, promoted);
         tray.TrayIcons.CollectionChanged += (_, args) =>
         {
             foreach (var icon in args.NewItems?.OfType<NotifyIcon>() ?? [])
-                PinIfPromoted(icon, promoted);
+                OnIconSeen(icon, promoted);
         };
     }
 
-    private static void PinIfPromoted(NotifyIcon icon, HashSet<string> promoted)
+    /// <summary>Ancla o desancla un ícono y guarda la elección.</summary>
+    public static void SetPinned(NotifyIcon icon, bool pinned)
     {
+        if (pinned == icon.IsPinned)
+            return;
+        if (pinned)
+            icon.Pin();
+        else
+            icon.Unpin();
+        SavePinned();
+    }
+
+    private static void OnIconSeen(NotifyIcon icon, HashSet<string> promoted)
+    {
+        var known = Settings.Current.KnownTrayIcons;
+        if (string.IsNullOrEmpty(icon.Identifier) || known.Contains(icon.Identifier))
+            return;
+
+        known.Add(icon.Identifier);
         if (!icon.IsPinned && !string.IsNullOrEmpty(icon.Path) && promoted.Contains(icon.Path))
             icon.Pin();
+        SavePinned();
+    }
+
+    private static void SavePinned()
+    {
+        if (_tray is null)
+            return;
+        Settings.Current.PinnedTrayIcons = _tray.PinnedNotifyIcons;
+        Settings.Save();
     }
 
     private static HashSet<string> LoadPromotedPaths()

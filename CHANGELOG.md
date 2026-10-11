@@ -6,6 +6,18 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+- Hub de configuración (WPF-UI, Mica) con secciones Barra de tareas, Bandeja del sistema,
+  Apariencia y General. Se abre desde el menú de la barra o ejecutando `WINX.exe` otra vez.
+- Barra configurable: alineación (centro/izquierda), tamaño, segundos y fecha en el reloj.
+- Área de estado modular: Red, Bluetooth, Volumen y Batería se activan por separado.
+- Gestión de la bandeja: elegir qué íconos se muestran siempre y cuáles quedan ocultos;
+  la elección se guarda entre sesiones.
+- Tema de WINX (sistema/claro/oscuro), color de acento propio y cambio de fondo de pantalla
+  con opción de restaurar el original.
+- Inicio automático con Windows.
+- Configuración en `%LOCALAPPDATA%\WINX\settings.json`.
+
 ## [0.1.0] - 2026-10-11
 
 ### Añadido

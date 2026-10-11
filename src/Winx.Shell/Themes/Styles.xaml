@@ -6,7 +6,7 @@
 
     <!-- Botón plano con esquinas redondeadas y estados hover/pressed, base de toda la barra. -->
     <Style x:Key="TaskbarButton" TargetType="ButtonBase">
-        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource WinxForegroundBrush}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="8,0" />
@@ -22,10 +22,10 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource HoverBrush}" />
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource WinxHoverBrush}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PressedBrush}" />
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource WinxPressedBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -36,15 +36,7 @@
     <Style x:Key="IconText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
         <Setter Property="FontSize" Value="15" />
-        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource WinxForegroundBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
-    </Style>
-
-    <Style TargetType="ToolTip">
-        <Setter Property="Background" Value="{DynamicResource FlyoutBackgroundBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource ForegroundBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource FlyoutBorderBrush}" />
-        <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
-        <Setter Property="Padding" Value="8,5" />
     </Style>
 </ResourceDictionary>

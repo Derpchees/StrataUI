@@ -1,10 +1,15 @@
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Win32;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 
 namespace Winx.Shell.Services;
 
-/// <summary>Sigue el tema claro/oscuro y el color de acento de Windows.</summary>
+/// <summary>
+/// Tema claro/oscuro y color de acento de WINX. Por defecto siguen a Windows;
+/// el Hub permite fijarlos. Se aplica tanto a la barra como a los controles de WPF-UI.
+/// </summary>
 public static class ThemeManager
 {
     private const string PersonalizeKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
@@ -17,18 +22,32 @@ public static class ThemeManager
     {
         Apply();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
+        Settings.Changed += Apply;
     }
 
-    public static void Shutdown() =>
+    public static void Shutdown()
+    {
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
+        Settings.Changed -= Apply;
+    }
 
-    public static bool IsLightTheme()
+    public static bool IsLight => Settings.Current.Theme switch
+    {
+        WinxTheme.Light => true,
+        WinxTheme.Dark => false,
+        _ => WindowsUsesLightTheme(),
+    };
+
+    public static Color Accent =>
+        TryParseColor(Settings.Current.AccentColor) ?? GetWindowsAccentColor();
+
+    public static bool WindowsUsesLightTheme()
     {
         using var key = Registry.CurrentUser.OpenSubKey(PersonalizeKey);
         return key?.GetValue("SystemUsesLightTheme") is int value && value == 1;
     }
 
-    public static Color GetAccentColor()
+    public static Color GetWindowsAccentColor()
     {
         using var key = Registry.CurrentUser.OpenSubKey(DwmKey);
         if (key?.GetValue("AccentColor") is not int raw)
@@ -37,21 +56,40 @@ public static class ThemeManager
         return Color.FromRgb((byte)abgr, (byte)(abgr >> 8), (byte)(abgr >> 16));
     }
 
+    public static Color? TryParseColor(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex))
+            return null;
+        try
+        {
+            return (Color)ColorConverter.ConvertFromString(hex);
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
     private static void Apply()
     {
+        bool light = IsLight;
         var resources = Application.Current.Resources;
-        var theme = IsLightTheme() ? "Light" : "Dark";
         var next = new ResourceDictionary
         {
-            Source = new Uri($"pack://application:,,,/Themes/{theme}.xaml", UriKind.Absolute),
+            Source = new Uri($"pack://application:,,,/Themes/{(light ? "Light" : "Dark")}.xaml", UriKind.Absolute),
         };
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);
-        resources.MergedDictionaries.Insert(0, next);
+        resources.MergedDictionaries.Add(next);
         _current = next;
-        var accent = GetAccentColor();
+
+        var accent = Accent;
         // Como Windows: sobre fondo oscuro se usa una variante clara del acento para que contraste.
-        resources["AccentBrush"] = new SolidColorBrush(IsLightTheme() ? accent : Lighten(accent, 0.4));
+        resources["WinxAccentBrush"] = new SolidColorBrush(light ? accent : Lighten(accent, 0.4));
+
+        var theme = light ? ApplicationTheme.Light : ApplicationTheme.Dark;
+        ApplicationThemeManager.Apply(theme, WindowBackdropType.Mica, updateAccent: false);
+        ApplicationAccentColorManager.Apply(accent, theme, false, false);
     }
 
     private static Color Lighten(Color color, double amount) => Color.FromRgb(

@@ -1,13 +1,19 @@
 <Application x:Class="Winx.Shell.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- Controles Fluent (Hub, menús contextuales, tooltips) -->
+                <ui:ThemesDictionary Theme="Dark" />
+                <ui:ControlsDictionary />
+                <!-- Estilos propios de la barra; la paleta claro/oscuro la agrega ThemeManager -->
                 <ResourceDictionary Source="Themes/Styles.xaml" />
+                <ResourceDictionary Source="Hub/HubStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <SolidColorBrush x:Key="AccentBrush" Color="#FF0078D4" />
+            <SolidColorBrush x:Key="WinxAccentBrush" Color="#FF0078D4" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

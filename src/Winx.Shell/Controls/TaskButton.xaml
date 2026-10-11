@@ -8,8 +8,8 @@
                 <MenuItem Header="Cerrar ventana" Click="CloseWindow_Click" />
             </ContextMenu>
         </Button.ContextMenu>
-        <Grid Width="44" Height="40">
-            <Border CornerRadius="5" Background="{DynamicResource ActiveTaskBrush}">
+        <Grid Width="44">
+            <Border CornerRadius="5" Background="{DynamicResource WinxActiveTaskBrush}">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed" />
@@ -30,11 +30,11 @@
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Width" Value="6" />
-                        <Setter Property="Background" Value="{DynamicResource InactiveIndicatorBrush}" />
+                        <Setter Property="Background" Value="{DynamicResource WinxInactiveIndicatorBrush}" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding State}" Value="Active">
                                 <Setter Property="Width" Value="16" />
-                                <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource WinxAccentBrush}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding State}" Value="Flashing">
                                 <Setter Property="Width" Value="16" />
