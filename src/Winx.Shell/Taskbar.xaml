@@ -124,7 +124,7 @@
                     <TextBlock Style="{StaticResource IconText}" Text="&#xE702;" />
                 </Button>
                 <Button x:Name="VolumeButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
-                        ToolTip="Volumen" Click="VolumeButton_Click">
+                        ToolTip="Volumen" Click="VolumeButton_Click" MouseWheel="VolumeButton_MouseWheel">
                     <TextBlock x:Name="VolumeGlyph" Style="{StaticResource IconText}" Text="&#xE767;" />
                 </Button>
                 <Button x:Name="BatteryButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"

@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="ManagedShell" Version="0.0.374" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
   </ItemGroup>
 

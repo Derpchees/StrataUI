@@ -60,6 +60,9 @@ public partial class Taskbar : AppBarWindow
 
         Settings.Changed += ApplySettings;
         ApplySettings();
+
+        App.Current.Audio.Changed += UpdateVolume;
+        UpdateVolume();
     }
 
     private void ApplySettings()
@@ -142,6 +145,7 @@ public partial class Taskbar : AppBarWindow
     protected override void CustomClosing()
     {
         Settings.Changed -= ApplySettings;
+        App.Current.Audio.Changed -= UpdateVolume;
         _clockTimer.Stop();
         _statusTimer.Stop();
         base.CustomClosing();
@@ -160,7 +164,31 @@ public partial class Taskbar : AppBarWindow
 
     private void BluetoothButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:bluetooth");
 
-    private void VolumeButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:sound");
+    private void VolumeButton_Click(object sender, RoutedEventArgs e) =>
+        Flyouts.FlyoutManager.Toggle<Flyouts.VolumeFlyout>(VolumeButton);
+
+    private void VolumeButton_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var audio = App.Current.Audio;
+        audio.Volume += e.Delta > 0 ? 0.02f : -0.02f;
+        if (audio.Mute && e.Delta > 0)
+            audio.Mute = false;
+        e.Handled = true;
+    }
+
+    private void UpdateVolume()
+    {
+        var audio = App.Current.Audio;
+        int percent = (int)Math.Round(audio.Volume * 100);
+        VolumeGlyph.Text = !audio.HasDevice || audio.Mute ? ""   // silenciado
+            : percent == 0 ? ""
+            : percent < 33 ? ""
+            : percent < 66 ? ""
+            : "";
+        VolumeButton.ToolTip = !audio.HasDevice ? "Sin dispositivo de audio"
+            : audio.Mute ? $"Volumen: silenciado ({percent}%)"
+            : $"Volumen: {percent}%";
+    }
 
     private void BatteryButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:batterysaver");
 

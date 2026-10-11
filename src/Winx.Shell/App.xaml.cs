@@ -34,6 +34,11 @@ public partial class App : Application
     /// <summary>Servicios de ManagedShell (bandeja, ventanas); disponibles mientras el shell corre.</summary>
     public ShellManager Shell => _shell ?? throw new InvalidOperationException("El shell no está iniciado");
 
+    private Services.Audio.AudioService? _audio;
+
+    /// <summary>Audio del sistema (se crea al primer uso, en el hilo de la UI).</summary>
+    public Services.Audio.AudioService Audio => _audio ??= new Services.Audio.AudioService();
+
     public static string Version =>
         typeof(App).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
@@ -212,6 +217,7 @@ public partial class App : Application
 
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         Settings.Changed -= OnSettingsChanged;
+        Flyouts.FlyoutManager.CloseAll();
         _hub?.Close();
         _shell?.AppBarManager.SignalGracefulShutdown();
         CloseTaskbars();
@@ -222,6 +228,7 @@ public partial class App : Application
             _shell = null;
         }
         ThemeManager.Shutdown();
+        _audio?.Dispose();
 
         _exitWait?.Unregister(null);
         _exitEvent?.Dispose();

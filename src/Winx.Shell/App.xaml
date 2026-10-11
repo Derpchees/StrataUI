@@ -12,6 +12,7 @@
                 <!-- Estilos propios de la barra; la paleta claro/oscuro la agrega ThemeManager -->
                 <ResourceDictionary Source="Themes/Styles.xaml" />
                 <ResourceDictionary Source="Hub/HubStyles.xaml" />
+                <ResourceDictionary Source="Flyouts/FlyoutStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <SolidColorBrush x:Key="WinxAccentBrush" Color="#FF0078D4" />
         </ResourceDictionary>
