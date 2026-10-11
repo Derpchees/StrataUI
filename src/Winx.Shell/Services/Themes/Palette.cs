@@ -9,7 +9,7 @@ namespace Winx.Shell.Services.Themes;
 /// </summary>
 public static class Palette
 {
-    public static ResourceDictionary Build(ThemeInfo theme, bool light, Color accent, double barHeight = 48)
+    public static ResourceDictionary Build(ThemeInfo theme, bool light, Color accent, double barHeight = 48, bool liveGlass = false)
     {
         // Base neutra (equivalente a la paleta de Windows 11)
         Color background = light ? Hex("#EEEEEE") : Hex("#1C1C1C");
@@ -53,6 +53,12 @@ public static class Palette
             hubTint = light ? Hex("#1AFFFFFF") : Hex("#1A000000");
             foreground = light ? Hex("#111114") : Colors.White;
             secondary = light ? Hex("#4A4A52") : Hex("#D0D0D6");
+            if (liveGlass)
+            {
+                // Con refracción en vivo el shader ya tiñe y da brillo: sin capas encima.
+                background = Colors.Transparent;
+                flyout = Colors.Transparent;
+            }
         }
         else if (theme.Backdrop == Backdrop.Acrylic)
         {
@@ -83,7 +89,7 @@ public static class Palette
             ["WinxHubTintBrush"] = Brush(hubTint),
             ["WinxAccentBrush"] = Brush(accentShown),
             ["WinxGlassEdgeBrush"] = theme.Glass ? GlassRim(light) : Brushes.Transparent,
-            ["WinxGlassHighlightBrush"] = theme.Glass ? GlassSheen(light) : Brushes.Transparent,
+            ["WinxGlassHighlightBrush"] = theme.Glass && !liveGlass ? GlassSheen(light) : Brushes.Transparent,
             ["WinxGlassVisibility"] = theme.Glass ? Visibility.Visible : Visibility.Collapsed,
             ["WinxCornerRadius"] = new CornerRadius(theme.Radius),
             ["WinxLargeCornerRadius"] = new CornerRadius(theme.Radius + 4),
@@ -96,7 +102,90 @@ public static class Palette
             ["WinxTaskbarBorderThickness"] = theme.Floating ? new Thickness(1) : new Thickness(0, 1, 0, 0),
             ["WinxTaskbarEdgeBrush"] = theme.Glass ? GlassRim(light) : Brush(border),
         };
+        AddControlOverrides(dict, theme, light, accent, background);
         return dict;
+    }
+
+    /// <summary>
+    /// Sobrescribe los pinceles de WPF-UI que usan los controles (tarjetas del Hub, botones, cajas
+    /// de texto, menús contextuales, tooltips, desplegables) para que sigan el tema y no se queden
+    /// con el gris por defecto. Los temas Sistema/Claro/Oscuro usan los de WPF-UI tal cual.
+    /// </summary>
+    private static void AddControlOverrides(ResourceDictionary dict, ThemeInfo theme, bool light, Color accent, Color barColor)
+    {
+        Color card, cardHover, cardBorder, control, controlHover, controlPressed, input, popup, popupBorder, selected, appBackground;
+
+        if (theme.Glass)
+        {
+            card = light ? Hex("#59FFFFFF") : Hex("#1FFFFFFF");
+            cardHover = light ? Hex("#80FFFFFF") : Hex("#2EFFFFFF");
+            cardBorder = light ? Hex("#80FFFFFF") : Hex("#24FFFFFF");
+            control = light ? Hex("#66FFFFFF") : Hex("#26FFFFFF");
+            controlHover = light ? Hex("#8CFFFFFF") : Hex("#38FFFFFF");
+            controlPressed = light ? Hex("#40FFFFFF") : Hex("#1AFFFFFF");
+            input = light ? Hex("#B3FFFFFF") : Hex("#59000000");
+            // Los popups de WPF no tienen desenfoque detrás: casi opacos para que se lean.
+            popup = light ? Hex("#F2F5F5F8") : Hex("#F21C1C20");
+            popupBorder = light ? Hex("#FFFFFFFF") : Hex("#33FFFFFF");
+            selected = light ? Hex("#73FFFFFF") : Hex("#26FFFFFF");
+            appBackground = Colors.Transparent;
+        }
+        else if (theme.Tonal)
+        {
+            // Material Design 3: contenedores tonales a distintas alturas, sin bordes.
+            var surface = light ? Hex("#FEF7FF") : Hex("#141218");
+            card = Blend(surface, accent, light ? 0.10 : 0.12);
+            cardHover = Blend(surface, accent, light ? 0.16 : 0.18);
+            cardBorder = Colors.Transparent;
+            control = Blend(surface, accent, light ? 0.20 : 0.24);
+            controlHover = Blend(surface, accent, light ? 0.26 : 0.30);
+            controlPressed = Blend(surface, accent, light ? 0.32 : 0.36);
+            input = Blend(surface, accent, light ? 0.14 : 0.16);
+            popup = Blend(surface, accent, light ? 0.12 : 0.14);
+            popupBorder = Colors.Transparent;
+            selected = WithAlpha(accent, 0x40);
+            appBackground = barColor;
+        }
+        else
+        {
+            return;
+        }
+
+        void Set(string key, Color color) => dict[key] = Brush(color);
+
+        Set("ApplicationBackgroundBrush", appBackground);
+        foreach (var key in new[] { "CardBackground", "CardBackgroundFillColorDefaultBrush", "ExpanderHeaderBackground" })
+            Set(key, card);
+        foreach (var key in new[] { "CardBackgroundPointerOver", "CardBackgroundFillColorSecondaryBrush", "ExpanderContentBackground" })
+            Set(key, cardHover);
+        Set("CardBackgroundPressed", controlPressed);
+        foreach (var key in new[] { "CardBorderBrush", "CardStrokeColorDefaultBrush", "ExpanderHeaderBorderBrush" })
+            Set(key, cardBorder);
+
+        foreach (var key in new[] { "ButtonBackground", "ComboBoxBackground", "ComboBoxBackgroundFocused", "ToggleButtonBackground",
+                                    "TextControlBackground", "ControlFillColorDefaultBrush" })
+            Set(key, control);
+        foreach (var key in new[] { "ButtonBackgroundPointerOver", "ComboBoxBackgroundPointerOver", "ToggleButtonBackgroundPointerOver",
+                                    "TextControlBackgroundPointerOver", "ControlFillColorSecondaryBrush" })
+            Set(key, controlHover);
+        foreach (var key in new[] { "ButtonBackgroundPressed", "ToggleButtonBackgroundPressed", "ControlFillColorTertiaryBrush" })
+            Set(key, controlPressed);
+        Set("TextControlBackgroundFocused", input);
+
+        foreach (var key in new[] { "ContextMenuBackground", "ToolTipBackground", "FlyoutBackground", "ComboBoxDropDownBackground",
+                                    "SnackBarBackground", "MessageBoxBackground", "ContentDialogBackground" })
+            Set(key, popup);
+        foreach (var key in new[] { "ContextMenuBorderBrush", "ToolTipBorderBrush", "FlyoutBorderBrush", "ComboBoxDropDownBorderBrush" })
+            Set(key, popupBorder);
+
+        foreach (var key in new[] { "NavigationViewItemBackgroundSelectedLeftFluent", "NavigationViewItemBackgroundSelected",
+                                    "ComboBoxItemBackgroundSelected", "SubtleFillColorSecondaryBrush" })
+            Set(key, selected);
+        Set("NavigationViewItemBackgroundPointerOver", WithAlpha(selected, (byte)(selected.A * 2 / 3)));
+
+        // Esquinas: más redondeadas en Material y vidrio (los controles de WPF-UI las leen de aquí).
+        dict["ControlCornerRadius"] = new CornerRadius(theme.Tonal ? 12 : 8);
+        dict["PopupCornerRadius"] = new CornerRadius(theme.Tonal ? 16 : 12);
     }
 
     /// <summary>

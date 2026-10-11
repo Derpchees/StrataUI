@@ -36,6 +36,9 @@ public sealed class WinxSettings
     public WinxTheme Theme { get; set; } = WinxTheme.System;
     /// <summary>Color "#RRGGBB"; null = usar el acento de Windows.</summary>
     public string? AccentColor { get; set; }
+    /// <summary>Liquid Glass con refracción real (captura del fondo + shader). Oculta la barra y
+    /// los paneles de las capturas de pantalla; desactivado usa el desenfoque de Windows.</summary>
+    public bool LiveGlass { get; set; } = true;
     /// <summary>Llevar el tema a Windows: modo claro/oscuro y fondo de las ventanas del Explorador.</summary>
     public bool ApplyThemeToWindows { get; set; }
     /// <summary>Fondo que había antes de que WINX lo cambiara por primera vez.</summary>

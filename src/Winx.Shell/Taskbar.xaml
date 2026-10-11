@@ -39,7 +39,8 @@
             BorderThickness="{DynamicResource WinxTaskbarBorderThickness}"
             CornerRadius="{DynamicResource WinxTaskbarCornerRadius}"
             Margin="{DynamicResource WinxTaskbarMargin}">
-        <Grid>
+        <!-- En Liquid Glass con refracción en vivo, aquí se inserta la superficie de vidrio (por código) -->
+        <Grid x:Name="GlassHost">
             <!-- Brillo interior sutil del vidrio -->
             <Border IsHitTestVisible="False" Background="{DynamicResource WinxGlassHighlightBrush}"
                     CornerRadius="{DynamicResource WinxTaskbarCornerRadius}"

@@ -12,6 +12,18 @@
             <WrapPanel x:Name="ThemeGallery" Margin="0,0,0,8" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Drop24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Refracción en vivo (Liquid Glass)" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="Vidrio real: el fondo se curva en los bordes con colores vivos. Mientras esté activo, la barra y los paneles no aparecen en capturas de pantalla ni grabaciones." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="LiveGlassSwitch" Click="LiveGlass_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowSettings20" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>

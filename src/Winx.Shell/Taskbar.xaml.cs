@@ -70,6 +70,17 @@ public partial class Taskbar : AppBarWindow
         ThemeManager.ThemeChanged += OnThemeChanged;
     }
 
+    /// <summary>
+    /// Cambia el alto reservado sin destruir la barra (recrearla obligaba a Windows a
+    /// reacomodar todas las ventanas maximizadas dos veces).
+    /// </summary>
+    public void Resize(double height)
+    {
+        DesiredHeight = height;
+        Height = height;
+        UpdatePosition();
+    }
+
     /// <summary>Alto reservado en pantalla: la barra más el margen inferior si flota.</summary>
     public static double ReservedHeight =>
         Settings.Current.TaskbarHeight + (ThemeManager.Theme.Floating ? ThemeCatalog.FloatingMargin : 0);
@@ -78,10 +89,15 @@ public partial class Taskbar : AppBarWindow
     /// Desenfoque detrás de la barra (Acrylic o vidrio limpio) y, si flota, recorte a la cápsula
     /// para que ni el desenfoque ni los clics ocupen el margen alrededor.
     /// </summary>
+    private LiquidGlassSurface? _glass;
+
     private void ApplyBackdrop()
     {
         var theme = ThemeManager.Theme;
+        // Con refracción en vivo el shader pinta el vidrio; el desenfoque de DWM queda debajo
+        // solo para suavizar el borde antialiasado.
         WindowEffects.SetBlur(this, theme.Backdrop);
+        UpdateGlassSurface();
         if (!theme.Floating || ActualWidth <= 0)
         {
             WindowEffects.SetRoundedRegion(this, null, 0);
@@ -92,6 +108,26 @@ public partial class Taskbar : AppBarWindow
         int width = (int)Math.Round(ActualWidth * scale) - 2 * margin;
         int height = (int)Math.Round(ActualHeight * scale) - margin;
         WindowEffects.SetRoundedRegion(this, new Int32Rect(margin, 0, width, height), height / 2);
+    }
+
+    private void UpdateGlassSurface()
+    {
+        bool wanted = ThemeManager.UseLiveGlass;
+        if (wanted && _glass is null)
+        {
+            _glass = new LiquidGlassSurface { Refraction = 14, Frost = 3 };
+            GlassHost.Children.Insert(0, _glass);
+        }
+        else if (!wanted && _glass != null)
+        {
+            GlassHost.Children.Remove(_glass);
+            _glass = null;
+        }
+        if (_glass != null)
+        {
+            _glass.CornerRadius = Settings.Current.TaskbarHeight / 2;
+            _glass.SetLook(ThemeManager.IsLight);
+        }
     }
 
     // WPF-UI termina de aplicar su tema de forma asíncrona sobre la ventana principal (la barra)

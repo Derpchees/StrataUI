@@ -79,6 +79,18 @@ public abstract class FlyoutWindow : FluentWindow
     private Grid BuildRoot(UIElement content)
     {
         _root = new Grid();
+        if (ThemeManager.UseLiveGlass && !FillWorkArea)
+        {
+            // Vidrio líquido real: más esmerilado que la barra para que el texto se lea bien.
+            var glass = new Controls.LiquidGlassSurface
+            {
+                Refraction = 20,
+                Frost = 5,
+                CornerRadius = ThemeManager.Theme.PanelRadius,
+            };
+            glass.SetLook(ThemeManager.IsLight);
+            _root.Children.Add(glass);
+        }
         _root.Children.Add(Layer("WinxFlyoutBackgroundBrush", null));
         var highlight = Layer("WinxGlassHighlightBrush", null);
         highlight.SetResourceReference(VisibilityProperty, "WinxGlassVisibility");

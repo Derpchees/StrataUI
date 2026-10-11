@@ -26,6 +26,10 @@ public static class ThemeManager
 
     public static bool IsLight => Theme.Light ?? WindowsUsesLightTheme();
 
+    /// <summary>Tema de vidrio con refracción real activa (y soportada por el equipo).</summary>
+    public static bool UseLiveGlass =>
+        Theme.Glass && Settings.Current.LiveGlass && Services.Themes.Glass.LiquidGlassEffect.IsSupported;
+
     public static Color Accent =>
         TryParseColor(Settings.Current.AccentColor) ?? GetWindowsAccentColor();
 
@@ -37,7 +41,7 @@ public static class ThemeManager
         _ => WindowBackdropType.None,
     };
 
-    private static (WinxTheme, string?, int) _appliedKey;
+    private static (WinxTheme, string?, int, bool) _appliedKey;
 
     public static void Initialize()
     {
@@ -56,7 +60,7 @@ public static class ThemeManager
     private static void OnSettingsChanged()
     {
         var s = Settings.Current;
-        if ((s.Theme, s.AccentColor, s.TaskbarHeight) != _appliedKey)
+        if ((s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass) != _appliedKey)
             Apply();
     }
 
@@ -91,34 +95,58 @@ public static class ThemeManager
 
     private static void Apply()
     {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
         var s = Settings.Current;
-        _appliedKey = (s.Theme, s.AccentColor, s.TaskbarHeight);
+        _appliedKey = (s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass);
         var theme = Theme;
         bool light = IsLight;
         var accent = Accent;
 
+        // 1) WPF-UI: recargar su tema re-evalúa todos los controles abiertos, así que solo se hace
+        //    si cambió claro/oscuro. El material de cada ventana lo pone cada ventana (pasar un
+        //    backdrop aquí lo aplicaría a MainWindow).
+        var uiTheme = light ? ApplicationTheme.Light : ApplicationTheme.Dark;
+        if (uiTheme != _uiTheme)
+        {
+            ApplicationThemeManager.Apply(uiTheme, WindowBackdropType.None, updateAccent: false);
+            _uiTheme = uiTheme;
+            _uiAccent = null;
+        }
+        if (accent != _uiAccent)
+        {
+            ApplicationAccentColorManager.Apply(accent, uiTheme, false, false);
+            _uiAccent = accent;
+        }
+
+        // 2) Paleta de WINX al final: así sus claves sobrescriben las de WPF-UI (tarjetas, menús,
+        //    tooltips) y todo el programa sigue el tema, no solo la barra.
         var resources = Application.Current.Resources;
-        var next = Palette.Build(theme, light, accent, Settings.Current.TaskbarHeight);
+        var next = Palette.Build(theme, light, accent, Settings.Current.TaskbarHeight, UseLiveGlass);
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);
         resources.MergedDictionaries.Add(next);
         _current = next;
-
-        // WPF-UI: solo el tema de controles y el acento. El material de cada ventana lo pone
-        // cada ventana (pasar un backdrop aquí lo aplicaría a MainWindow, que es la barra).
-        var uiTheme = light ? ApplicationTheme.Light : ApplicationTheme.Dark;
-        ApplicationThemeManager.Apply(uiTheme, WindowBackdropType.None, updateAccent: false);
-        ApplicationAccentColorManager.Apply(accent, uiTheme, false, false);
+        _appliedLook = (theme.Kind, light, accent);
 
         ThemeChanged?.Invoke();
+        Log.Info($"Tema {theme.Name} ({(light ? "claro" : "oscuro")}) aplicado en {watch.ElapsedMilliseconds} ms");
     }
+
+    private static ApplicationTheme? _uiTheme;
+    private static Color? _uiAccent;
+    private static (WinxTheme, bool, Color) _appliedLook;
 
     private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {
-        if (e.Category is UserPreferenceCategory.General or UserPreferenceCategory.Color
-            or UserPreferenceCategory.VisualStyle)
+        if (e.Category is not (UserPreferenceCategory.General or UserPreferenceCategory.Color
+                               or UserPreferenceCategory.VisualStyle))
+            return;
+        // Windows manda "General" por muchos motivos (fondo, fuentes…): solo se reaplica si
+        // cambió algo que el tema usa (claro/oscuro de Windows o su acento).
+        Application.Current.Dispatcher.BeginInvoke(() =>
         {
-            Application.Current.Dispatcher.BeginInvoke(Apply);
-        }
+            if ((Theme.Kind, IsLight, Accent) != _appliedLook)
+                Apply();
+        });
     }
 }

@@ -6,6 +6,24 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.5.0] - 2026-10-11
+
+### Añadido
+- **Liquid Glass con refracción real**: la barra, los paneles y el menú Inicio capturan lo que
+  hay detrás y lo muestran a través de un shader propio (refracción de lente en los bordes,
+  aberración cromática, saturación, tinte y brillo especular). Opción "Refracción en vivo" en
+  Apariencia; mientras está activa, esas ventanas no aparecen en capturas ni grabaciones.
+
+### Cambiado
+- Los temas Material y Liquid Glass ahora cubren toda la app: tarjetas, botones, cajas de texto,
+  menús contextuales, tooltips, desplegables y la selección del menú lateral del Hub.
+
+### Corregido
+- Aplicar un tema congelaba WINX: el aviso WM_SETTINGCHANGE al sistema se enviaba de forma
+  síncrona desde el hilo de la interfaz. Ahora va en segundo plano (aplicar tarda ~10 ms).
+- Cambiar entre barra fija y flotante recreaba la barra; ahora solo cambia de alto.
+- El tema de controles se recargaba ante cualquier aviso del sistema aunque no cambiara nada.
+
 ## [0.4.0] - 2026-10-11
 
 ### Añadido

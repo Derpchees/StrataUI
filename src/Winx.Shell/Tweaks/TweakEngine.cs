@@ -54,7 +54,7 @@ public static class TweakEngine
         }
 
         Log.Info($"Ajuste '{tweak.Id}' → {tweak.Choices[state]}");
-        RunRefresh(tweak.Refresh);
+        RefreshInBackground(tweak.Refresh);
         return ApplyResult.Applied;
     }
 
@@ -72,8 +72,8 @@ public static class TweakEngine
                 Backup.Reload();
             }
         }
-        RunRefresh(TweakRefresh.Theme);
-        RunRefresh(TweakRefresh.Mouse);
+        RefreshInBackground(TweakRefresh.Theme);
+        RefreshInBackground(TweakRefresh.Mouse);
         ExplorerRestartNeeded?.Invoke();
         return failed.Count == 0 && Backup.Data.Values.Count == 0;
     }
@@ -142,6 +142,17 @@ public static class TweakEngine
 
     // --- Aplicar en vivo lo que Windows solo lee al iniciar sesión ---
 
+    /// <summary>
+    /// Avisa a Windows del cambio en segundo plano. WM_SETTINGCHANGE se envía a cada ventana
+    /// abierta y espera a que la procese: hacerlo en el hilo de la UI congelaba WINX segundos.
+    /// </summary>
+    public static void RefreshInBackground(TweakRefresh refresh)
+    {
+        if (refresh == TweakRefresh.Explorer)
+            ExplorerRestartNeeded?.Invoke();
+        _ = Task.Run(() => RunRefresh(refresh));
+    }
+
     private static void RunRefresh(TweakRefresh refresh)
     {
         try
@@ -153,7 +164,6 @@ public static class TweakEngine
                     break;
                 case TweakRefresh.Explorer:
                     Broadcast(null);
-                    ExplorerRestartNeeded?.Invoke();
                     break;
                 case TweakRefresh.Mouse:
                     ApplyMouse();

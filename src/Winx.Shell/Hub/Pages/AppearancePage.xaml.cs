@@ -27,6 +27,7 @@ public partial class AppearancePage : Page
 
         var s = Settings.Current;
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
+        LiveGlassSwitch.IsChecked = s.LiveGlass;
         WindowsAccentSwitch.IsChecked = s.AccentColor is null;
         BuildThemeGallery();
         BuildSwatches();
@@ -55,12 +56,29 @@ public partial class AppearancePage : Page
                 Template = FlatTemplate(),
             };
             System.Windows.Automation.AutomationProperties.SetName(card, $"Tema {theme.Name}");
+            card.Tag = theme.Kind;
             card.Click += (_, _) =>
             {
-                Settings.Update(s => s.Theme = theme.Kind);
-                BuildThemeGallery();
+                // Primero se marca la selección (respuesta inmediata) y después se aplica el tema.
+                UpdateGallerySelection(theme.Kind);
+                Dispatcher.BeginInvoke(() => Settings.Update(s => s.Theme = theme.Kind),
+                                       System.Windows.Threading.DispatcherPriority.Background);
             };
             ThemeGallery.Children.Add(card);
+        }
+    }
+
+    private void UpdateGallerySelection(WinxTheme selected)
+    {
+        foreach (Button card in ThemeGallery.Children)
+        {
+            if (card.Content is not Border frame)
+                continue;
+            bool isSelected = (WinxTheme)card.Tag == selected;
+            frame.BorderThickness = new Thickness(isSelected ? 2 : 1);
+            frame.BorderBrush = isSelected
+                ? (TryFindResource("AccentFillColorDefaultBrush") as Brush) ?? Brushes.DodgerBlue
+                : (TryFindResource("CardStrokeColorDefaultBrush") as Brush) ?? Brushes.Gray;
         }
     }
 
@@ -141,6 +159,9 @@ public partial class AppearancePage : Page
         template.VisualTree = new FrameworkElementFactory(typeof(ContentPresenter));
         return template;
     }
+
+    private void LiveGlass_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.LiveGlass = LiveGlassSwitch.IsChecked == true);
 
     private void WindowsTheme_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.ApplyThemeToWindows = WindowsThemeSwitch.IsChecked == true);

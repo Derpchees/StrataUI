@@ -221,12 +221,11 @@ public partial class App : Application
     private void OnSettingsChanged()
     {
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey);
-        // El alto de una AppBar se fija al registrarla, así que cambiarlo requiere recrear las barras.
         if (_exiting || Taskbar.ReservedHeight == _barHeight)
             return;
         _barHeight = Taskbar.ReservedHeight;
-        CloseTaskbars();
-        OpenTaskbars();
+        foreach (var taskbar in _taskbars)
+            taskbar.Resize(_barHeight);
     }
 
     /// <summary>
