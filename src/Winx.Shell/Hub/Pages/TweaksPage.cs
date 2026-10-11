@@ -47,7 +47,15 @@ public abstract class TweaksPage : Page
         foreach (var tweak in TweakCatalog.All.Where(t => t.Category == category))
             content.Children.Add(BuildCard(tweak));
 
-        Content = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = content };
+        // CanContentScroll=false en la página evita que WPF-UI la envuelva en otro ScrollViewer
+        // (con altura infinita la página nunca desplaza y su ScrollViewer se queda con la rueda).
+        ScrollViewer.SetCanContentScroll(this, false);
+        Content = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            CanContentScroll = false,
+            Content = content,
+        };
 
         TweakEngine.ExplorerRestartNeeded += ShowExplorerBanner;
         Unloaded += (_, _) => TweakEngine.ExplorerRestartNeeded -= ShowExplorerBanner;

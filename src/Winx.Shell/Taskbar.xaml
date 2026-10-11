@@ -40,8 +40,9 @@
             </Grid.ColumnDefinitions>
 
             <!-- Inicio + ventanas abiertas; alineación configurable desde el Hub -->
-            <StackPanel x:Name="TaskArea" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
-                <Button x:Name="StartButton" Style="{StaticResource TaskbarButton}" Width="44"
+            <!-- DockPanel (no StackPanel) para que la lista reciba un ancho limitado y pueda desplazarse -->
+            <DockPanel x:Name="TaskArea" Grid.Column="0" HorizontalAlignment="Center" LastChildFill="True">
+                <Button x:Name="StartButton" DockPanel.Dock="Left" Style="{StaticResource TaskbarButton}" Width="44"
                         Padding="0" ToolTip="Inicio" Click="StartButton_Click">
                     <Grid Width="16" Height="16" RenderTransformOrigin="0.5,0.5">
                         <Grid.RenderTransform>
@@ -56,19 +57,24 @@
                     </Grid>
                 </Button>
 
-                <ItemsControl x:Name="TaskList" Focusable="False">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <controls:TaskButton />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
+                <!-- Si no caben todas las ventanas, la rueda del mouse desplaza la lista -->
+                <ScrollViewer x:Name="TaskScroller" HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled" Focusable="False"
+                              PreviewMouseWheel="TaskScroller_PreviewMouseWheel">
+                    <ItemsControl x:Name="TaskList" Focusable="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <controls:TaskButton />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
 
             <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
             <StackPanel Grid.Column="1" Orientation="Horizontal">

@@ -43,41 +43,39 @@
         <ui:ProgressRing x:Name="ScanProgress" IsIndeterminate="True" Width="24" Height="24" Margin="0,4"
                          Visibility="Collapsed" />
 
-        <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
-            <ItemsControl x:Name="NetworkList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel>
-                            <Button Style="{StaticResource FlyoutRow}" Click="Network_Click">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <ui:SymbolIcon Symbol="{Binding SignalSymbol}" FontSize="18" Margin="0,0,12,0" />
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Ssid}" />
-                                        <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Detail}" />
-                                    </StackPanel>
-                                    <ui:SymbolIcon Grid.Column="2" Symbol="LockClosed24" FontSize="14"
-                                                   Visibility="{Binding LockVisibility}"
-                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                </Grid>
-                            </Button>
-                            <!-- Panel de conexión al seleccionar una red -->
-                            <StackPanel Margin="40,2,10,10" Visibility="{Binding ExpandedVisibility}">
-                                <PasswordBox Margin="0,0,0,8" Visibility="{Binding PasswordVisibility}"
-                                             Loaded="PasswordBox_Loaded" KeyDown="PasswordBox_KeyDown" />
-                                <TextBlock Style="{StaticResource FlyoutHint}" Margin="0,0,0,8" Text="{Binding Message}"
-                                           Visibility="{Binding MessageVisibility}" />
-                                <ui:Button HorizontalAlignment="Right" Appearance="Primary" MinWidth="110"
-                                           Content="{Binding ActionText}" Click="NetworkAction_Click" />
-                            </StackPanel>
+        <ItemsControl x:Name="NetworkList">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel>
+                        <Button Style="{StaticResource FlyoutRow}" Click="Network_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="{Binding SignalSymbol}" FontSize="18" Margin="0,0,12,0" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Ssid}" />
+                                    <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Detail}" />
+                                </StackPanel>
+                                <ui:SymbolIcon Grid.Column="2" Symbol="LockClosed24" FontSize="14"
+                                               Visibility="{Binding LockVisibility}"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                        </Button>
+                        <!-- Panel de conexión al seleccionar una red -->
+                        <StackPanel Margin="40,2,10,10" Visibility="{Binding ExpandedVisibility}">
+                            <PasswordBox Margin="0,0,0,8" Visibility="{Binding PasswordVisibility}"
+                                         Loaded="PasswordBox_Loaded" KeyDown="PasswordBox_KeyDown" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Margin="0,0,0,8" Text="{Binding Message}"
+                                       Visibility="{Binding MessageVisibility}" />
+                            <ui:Button HorizontalAlignment="Right" Appearance="Primary" MinWidth="110"
+                                       Content="{Binding ActionText}" Click="NetworkAction_Click" />
                         </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </StackPanel>
 </flyouts:FlyoutWindow>

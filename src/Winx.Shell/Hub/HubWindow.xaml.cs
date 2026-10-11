@@ -3,7 +3,11 @@ using Wpf.Ui.Controls;
 
 namespace Winx.Shell.Hub;
 
-/// <summary>Ventana central de configuración de WINX.</summary>
+/// <summary>
+/// Ventana central de configuración de WINX.
+/// Las páginas declaran ScrollViewer.CanContentScroll="False" y traen su propio ScrollViewer:
+/// así WPF-UI no las envuelve en uno con altura infinita (que impedía desplazar con la rueda).
+/// </summary>
 public partial class HubWindow : FluentWindow
 {
     private Type _startPage = typeof(TaskbarPage);

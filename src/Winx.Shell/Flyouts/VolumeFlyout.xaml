@@ -3,12 +3,10 @@
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                       xmlns:flyouts="clr-namespace:Winx.Shell.Flyouts"
-                      Title="Volumen" Width="380">
-    <StackPanel Margin="14,16,14,14">
-        <TextBlock Style="{StaticResource FlyoutTitle}" Margin="4,0,0,0" Text="Volumen" />
-
-        <!-- Volumen general del dispositivo predeterminado -->
-        <Grid Margin="0,12,0,0">
+                      Title="Volumen" Width="360">
+    <StackPanel Margin="12,14,12,10">
+        <!-- Volumen general del dispositivo predeterminado: lo único visible por defecto -->
+        <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -23,20 +21,41 @@
             <TextBlock x:Name="MasterPercent" Grid.Column="2" Style="{StaticResource FlyoutPercent}" />
         </Grid>
 
-        <TextBlock Style="{StaticResource FlyoutSection}" Text="DISPOSITIVO DE SALIDA" />
-        <ItemsControl x:Name="DeviceList">
+        <Separator Margin="0,10,0,4" Opacity="0.4" />
+
+        <!-- Dispositivo de salida (plegable) -->
+        <Button x:Name="DevicesHeader" Style="{StaticResource FlyoutRow}" Click="DevicesHeader_Click">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon Symbol="SpeakerSettings24" FontSize="16" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="Dispositivo de salida" />
+                    <TextBlock x:Name="CurrentDeviceText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <ui:SymbolIcon x:Name="DevicesChevron" Grid.Column="2" Symbol="ChevronDown24" FontSize="14"
+                               RenderTransformOrigin="0.5,0.5">
+                    <ui:SymbolIcon.RenderTransform>
+                        <RotateTransform />
+                    </ui:SymbolIcon.RenderTransform>
+                </ui:SymbolIcon>
+            </Grid>
+        </Button>
+        <ItemsControl x:Name="DeviceList" Margin="28,0,0,4" Visibility="Collapsed">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Button Style="{StaticResource FlyoutRow}" Click="Device_Click">
+                    <Button Style="{StaticResource FlyoutRow}" Padding="10,6" Click="Device_Click">
                         <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <ui:SymbolIcon Symbol="Speaker224" FontSize="16" Margin="0,0,12,0" />
-                            <TextBlock Grid.Column="1" Style="{StaticResource FlyoutText}" Text="{Binding Name}" />
-                            <ui:SymbolIcon Grid.Column="2" Symbol="Checkmark24" FontSize="16" Margin="8,0,0,0"
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" ToolTip="{Binding Name}" />
+                            <ui:SymbolIcon Grid.Column="1" Symbol="Checkmark24" FontSize="14" Margin="8,0,0,0"
                                            Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}">
                                 <ui:SymbolIcon.Style>
                                     <Style TargetType="ui:SymbolIcon">
@@ -55,36 +74,63 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <TextBlock Style="{StaticResource FlyoutSection}" Text="APLICACIONES" />
-        <ItemsControl x:Name="AppList">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Margin="0,2,0,6">
-                        <StackPanel Orientation="Horizontal" Margin="4,0,0,2">
-                            <Image Source="{Binding Icon}" Width="16" Height="16" Margin="0,0,8,0"
-                                   RenderOptions.BitmapScalingMode="HighQuality" />
-                            <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Name}" />
-                        </StackPanel>
-                        <Grid>
+        <!-- Volumen por aplicación (plegable) -->
+        <Button x:Name="AppsHeader" Style="{StaticResource FlyoutRow}" Click="AppsHeader_Click">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon Symbol="Apps24" FontSize="16" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="Aplicaciones" />
+                    <TextBlock x:Name="AppsSummaryText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap" />
+                </StackPanel>
+                <ui:SymbolIcon x:Name="AppsChevron" Grid.Column="2" Symbol="ChevronDown24" FontSize="14"
+                               RenderTransformOrigin="0.5,0.5">
+                    <ui:SymbolIcon.RenderTransform>
+                        <RotateTransform />
+                    </ui:SymbolIcon.RenderTransform>
+                </ui:SymbolIcon>
+            </Grid>
+        </Button>
+        <StackPanel x:Name="AppsPanel" Margin="4,4,0,0" Visibility="Collapsed">
+            <ItemsControl x:Name="AppList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,0,0,4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <Button Style="{StaticResource FlyoutIconButton}" Command="{Binding ToggleMute}">
-                                <ui:SymbolIcon Symbol="{Binding MuteSymbol}" FontSize="16" />
+                            <!-- Ícono de la app: clic para silenciarla -->
+                            <Button Style="{StaticResource FlyoutIconButton}" Command="{Binding ToggleMute}"
+                                    ToolTip="{Binding Name}">
+                                <Grid>
+                                    <Image Source="{Binding Icon}" Width="18" Height="18"
+                                           RenderOptions.BitmapScalingMode="HighQuality" Opacity="{Binding IconOpacity}" />
+                                    <ui:SymbolIcon Symbol="SpeakerMute24" FontSize="12" HorizontalAlignment="Right"
+                                                   VerticalAlignment="Bottom" Margin="0,0,-4,-4"
+                                                   Visibility="{Binding MutedVisibility}" />
+                                    <ui:SymbolIcon Symbol="Speaker224" FontSize="16" Visibility="{Binding FallbackIconVisibility}" />
+                                </Grid>
                             </Button>
-                            <Slider Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
-                                    Minimum="0" Maximum="100" IsMoveToPointEnabled="True"
-                                    Value="{Binding Volume, Mode=TwoWay}" />
+                            <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Name}" TextWrapping="NoWrap"
+                                           TextTrimming="CharacterEllipsis" />
+                                <Slider Minimum="0" Maximum="100" IsMoveToPointEnabled="True"
+                                        Value="{Binding Volume, Mode=TwoWay}" />
+                            </StackPanel>
                             <TextBlock Grid.Column="2" Style="{StaticResource FlyoutPercent}"
                                        Text="{Binding Volume, StringFormat={}{0:0}}" />
                         </Grid>
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock x:Name="NoAppsText" Style="{StaticResource FlyoutHint}" Margin="4,0,0,4"
-                   Text="Ninguna aplicación está usando el audio ahora." Visibility="Collapsed" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="NoAppsText" Style="{StaticResource FlyoutHint}" Margin="4,0,0,4"
+                       Text="Ninguna aplicación está usando el audio ahora." Visibility="Collapsed" />
+        </StackPanel>
     </StackPanel>
 </flyouts:FlyoutWindow>

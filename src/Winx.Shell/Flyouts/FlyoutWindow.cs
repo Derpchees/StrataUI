@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -17,7 +18,6 @@ public abstract class FlyoutWindow : FluentWindow
 {
     private const int GapPx = 12;
     private bool _closing;
-    private FrameworkElement? _anchor;
 
     protected FlyoutWindow()
     {
@@ -40,13 +40,37 @@ public abstract class FlyoutWindow : FluentWindow
         };
     }
 
+    /// <summary>
+    /// Todo el contenido va dentro de un único ScrollViewer: si el panel no cabe en la pantalla
+    /// aparece la barra de desplazamiento y la rueda del mouse funciona en cualquier parte.
+    /// (Las subclases no deben anidar otros ScrollViewer, que "atraparían" la rueda.)
+    /// </summary>
+    protected override void OnContentChanged(object oldContent, object newContent)
+    {
+        if (newContent is UIElement element and not ScrollViewer)
+        {
+            Content = new ScrollViewer
+            {
+                Content = element,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                PanningMode = PanningMode.VerticalOnly,
+            };
+            return;
+        }
+        base.OnContentChanged(oldContent, newContent);
+    }
+
     public void ShowAt(FrameworkElement anchor)
     {
-        _anchor = anchor;
         Show();
+        LimitHeightToScreen(anchor);
         PositionAbove(anchor);
-        // Si el contenido cambia de tamaño (listas que terminan de cargar), se mantiene pegado a la barra.
-        SizeChanged += (_, _) => PositionAbove(anchor);
+        // Si el contenido cambia de tamaño (secciones que se expanden, listas que terminan de cargar),
+        // se mantiene pegado a la barra. Se difiere hasta después del render: al disparar SizeChanged
+        // la ventana nativa todavía tiene el tamaño anterior.
+        SizeChanged += (_, _) => Dispatcher.BeginInvoke(() => PositionAbove(anchor),
+                                                        System.Windows.Threading.DispatcherPriority.Render);
         Activate();
         AnimateIn();
     }
@@ -59,18 +83,28 @@ public abstract class FlyoutWindow : FluentWindow
         Dispatcher.BeginInvoke(Close);
     }
 
+    private void LimitHeightToScreen(FrameworkElement anchor)
+    {
+        var center = anchor.PointToScreen(new Point(anchor.ActualWidth / 2, 0));
+        var work = Forms.Screen.FromPoint(new System.Drawing.Point((int)center.X, (int)center.Y)).WorkingArea;
+        double scale = VisualTreeHelper.GetDpi(this).DpiScaleY;
+        MaxHeight = work.Height / scale - 2 * GapPx;
+    }
+
     private void PositionAbove(FrameworkElement anchor)
     {
+        if (_closing || !anchor.IsVisible)
+            return;
         var hwnd = new WindowInteropHelper(this).Handle;
-        GetWindowRect(hwnd, out var self);
-        int width = self.Right - self.Left;
-        int height = self.Bottom - self.Top;
+        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        // Tamaño según WPF (ya actualizado), convertido a píxeles físicos.
+        int width = (int)Math.Ceiling(ActualWidth * scale);
+        int height = (int)Math.Ceiling(ActualHeight * scale);
 
         // Todo en píxeles físicos: PointToScreen ya los devuelve así en modo PerMonitorV2.
         var anchorRight = anchor.PointToScreen(new Point(anchor.ActualWidth, 0));
         var anchorCenter = anchor.PointToScreen(new Point(anchor.ActualWidth / 2, 0));
         var work = Forms.Screen.FromPoint(new System.Drawing.Point((int)anchorCenter.X, (int)anchorCenter.Y)).WorkingArea;
-        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
         int gap = (int)(GapPx * scale);
 
         int x = Math.Clamp((int)anchorRight.X - width, work.Left + gap, work.Right - width - gap);
@@ -94,12 +128,6 @@ public abstract class FlyoutWindow : FluentWindow
     private const uint SWP_NOSIZE = 0x0001;
     private const uint SWP_NOZORDER = 0x0004;
     private const uint SWP_NOACTIVATE = 0x0010;
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Rect { public int Left, Top, Right, Bottom; }
-
-    [DllImport("user32.dll")]
-    private static extern bool GetWindowRect(IntPtr hwnd, out Rect rect);
 
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);

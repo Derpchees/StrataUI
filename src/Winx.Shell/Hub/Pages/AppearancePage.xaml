@@ -2,8 +2,9 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      Title="Apariencia">
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+      Title="Apariencia"
+      ScrollViewer.CanContentScroll="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
             <TextBlock Style="{StaticResource HubPageTitle}" Text="Apariencia" />
 

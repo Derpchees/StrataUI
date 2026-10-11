@@ -6,6 +6,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.2.1] - 2026-10-11
+
+### Cambiado
+- Panel de volumen compacto: por defecto solo muestra el volumen general; "Dispositivo de salida"
+  y "Aplicaciones" son secciones plegables (contraídas) con un resumen. En cada app, el ícono
+  funciona como botón de silencio.
+
+### Corregido
+- Las páginas del Hub no se podían desplazar ni con la barra ni con la rueda del mouse:
+  WPF-UI las envolvía en un ScrollViewer con altura infinita que además capturaba la rueda.
+- Los paneles flotantes se limitan al alto de la pantalla y muestran barra de desplazamiento;
+  al expandir una sección se reacomodan sobre la barra en lugar de taparla.
+- Con muchas ventanas abiertas, los botones de la barra se cortaban; ahora se desplazan con la
+  rueda del mouse.
+
 ## [0.2.0] - 2026-10-11
 
 ### Añadido

@@ -47,12 +47,26 @@ public partial class VolumeFlyout : FlyoutWindow
         MasterSlider.IsEnabled = MasterMuteButton.IsEnabled = _audio.HasDevice;
     }
 
-    private void UpdateDevices() => DeviceList.ItemsSource = _audio.GetOutputDevices();
+    private void UpdateDevices()
+    {
+        var devices = _audio.GetOutputDevices();
+        DeviceList.ItemsSource = devices;
+        CurrentDeviceText.Text = devices.FirstOrDefault(d => d.IsDefault)?.Name ?? "Sin dispositivo";
+    }
 
     /// <summary>Reconstruye la lista solo si cambiaron las apps, para no interrumpir un arrastre.</summary>
     private void RefreshApps()
     {
         var apps = _audio.GetApps();
+        AppsSummaryText.Text = apps.Count switch
+        {
+            0 => "Ninguna usando el audio",
+            1 => "1 aplicación",
+            _ => $"{apps.Count} aplicaciones",
+        };
+        if (AppsPanel.Visibility != Visibility.Visible)
+            return; // contraída: solo se actualiza el resumen
+
         bool sameApps = apps.Select(a => a.Key).SequenceEqual(_rows.Select(r => r.App.Key));
         if (sameApps)
         {
@@ -63,6 +77,23 @@ public partial class VolumeFlyout : FlyoutWindow
         _rows = apps.Select(a => new AppRow(a)).ToList();
         AppList.ItemsSource = _rows;
         NoAppsText.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private static void ToggleSection(FrameworkElement section, UIElement chevron)
+    {
+        bool expand = section.Visibility != Visibility.Visible;
+        section.Visibility = expand ? Visibility.Visible : Visibility.Collapsed;
+        if (chevron.RenderTransform is RotateTransform rotate)
+            rotate.Angle = expand ? 180 : 0;
+    }
+
+    private void DevicesHeader_Click(object sender, RoutedEventArgs e) => ToggleSection(DeviceList, DevicesChevron);
+
+    private void AppsHeader_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleSection(AppsPanel, AppsChevron);
+        _rows.Clear(); // fuerza a reconstruir con el estado actual al expandir
+        RefreshApps();
     }
 
     private void MasterSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -113,7 +144,17 @@ public partial class VolumeFlyout : FlyoutWindow
         public string Name => App.Name;
         public ImageSource? Icon => App.Icon;
         public ICommand ToggleMute { get; }
-        public SymbolRegular MuteSymbol => _mute ? SymbolRegular.SpeakerMute24 : SymbolRegular.Speaker224;
+
+        // El ícono de la app hace de botón de silencio: atenuado y con indicador cuando está silenciada.
+        public double IconOpacity => _mute ? 0.4 : 1;
+        public Visibility MutedVisibility => _mute ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility FallbackIconVisibility => App.Icon is null ? Visibility.Visible : Visibility.Collapsed;
+
+        private void NotifyMute()
+        {
+            OnPropertyChanged(nameof(IconOpacity));
+            OnPropertyChanged(nameof(MutedVisibility));
+        }
 
         public double Volume
         {
@@ -128,7 +169,7 @@ public partial class VolumeFlyout : FlyoutWindow
                 {
                     App.Mute = false;
                     _mute = false;
-                    OnPropertyChanged(nameof(MuteSymbol));
+                    NotifyMute();
                 }
                 OnPropertyChanged();
             }
@@ -147,7 +188,7 @@ public partial class VolumeFlyout : FlyoutWindow
                 return; // la sesión desapareció; la próxima actualización la quitará
             }
             OnPropertyChanged(nameof(Volume));
-            OnPropertyChanged(nameof(MuteSymbol));
+            NotifyMute();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

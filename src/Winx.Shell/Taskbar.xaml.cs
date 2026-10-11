@@ -169,6 +169,14 @@ public partial class Taskbar : AppBarWindow
     private void VolumeButton_Click(object sender, RoutedEventArgs e) =>
         Flyouts.FlyoutManager.Toggle<Flyouts.VolumeFlyout>(VolumeButton);
 
+    private void TaskScroller_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (TaskScroller.ScrollableWidth <= 0)
+            return;
+        TaskScroller.ScrollToHorizontalOffset(TaskScroller.HorizontalOffset - e.Delta / 2.0);
+        e.Handled = true;
+    }
+
     private void VolumeButton_MouseWheel(object sender, MouseWheelEventArgs e)
     {
         var audio = App.Current.Audio;
