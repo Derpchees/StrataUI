@@ -17,6 +17,15 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   con opción de restaurar el original.
 - Inicio automático con Windows.
 - Configuración en `%LOCALAPPDATA%\WINX\settings.json`.
+- Panel de volumen propio: volumen general, cambio de dispositivo de salida y volumen por
+  aplicación. La rueda del mouse sobre el ícono ajusta el volumen.
+- Sección **Optimización** del Hub, inspirada en Win11Debloat: apps preinstaladas, privacidad,
+  IA, sistema, Windows Update, apariencia de Windows, Explorador, multitarea, juegos y Brave.
+  Cada cambio guarda el valor original (`tweaks-backup.json`) y se puede deshacer en Respaldo;
+  también permite crear un punto de restauración. Lo que requiere administrador pide UAC
+  solo para ese cambio.
+- `WINX.exe --hub <página>` abre el Hub en una sección (p. ej. `--hub Privacy`).
+- `scripts/run.ps1` para cerrar, compilar y relanzar WINX; proyecto de pruebas `tests/Winx.Tests`.
 
 ## [0.1.0] - 2026-10-11
 

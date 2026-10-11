@@ -38,6 +38,46 @@
                         <ui:SymbolIcon Symbol="PaintBrush24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Optimización">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Wrench24" />
+                    </ui:NavigationViewItem.Icon>
+                    <ui:NavigationViewItem.MenuItems>
+                        <ui:NavigationViewItem Content="Apps preinstaladas" TargetPageType="{x:Type pages:AppsPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Delete24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Privacidad" TargetPageType="{x:Type pages:PrivacyPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="ShieldLock24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Inteligencia artificial" TargetPageType="{x:Type pages:AIPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="BrainCircuit24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Sistema" TargetPageType="{x:Type pages:SystemTweaksPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Windows Update" TargetPageType="{x:Type pages:UpdatePage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="ArrowSync24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Apariencia de Windows" TargetPageType="{x:Type pages:WindowsAppearancePage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="DarkTheme24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Explorador" TargetPageType="{x:Type pages:ExplorerPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Folder24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Multitarea" TargetPageType="{x:Type pages:MultitaskingPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="SquareMultiple24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Juegos" TargetPageType="{x:Type pages:GamingPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Games24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Navegadores" TargetPageType="{x:Type pages:BrowsersPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Globe24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="Respaldo" TargetPageType="{x:Type pages:BackupPage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="History24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
+                    </ui:NavigationViewItem.MenuItems>
+                </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem Content="General" TargetPageType="{x:Type pages:GeneralPage}">

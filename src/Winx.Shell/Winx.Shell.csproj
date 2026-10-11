@@ -16,6 +16,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Winx.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- WinForms solo se usa para Screen/SystemInformation; evitamos choques de nombres con WPF. -->
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />

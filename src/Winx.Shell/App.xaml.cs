@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using ManagedShell;
@@ -18,6 +19,9 @@ public partial class App : Application
     private const string OpenHubEventName = @"Local\WINX.Shell.OpenHub";
     private const string RestoreArg = "--restore-taskbar";
     private const string ExitArg = "--exit";
+
+    private static readonly string HubRequestPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WINX", "hub-request.txt");
 
     private Mutex? _mutex;
     private EventWaitHandle? _exitEvent;
@@ -56,6 +60,13 @@ public partial class App : Application
             return;
         }
 
+        // Tareas de administrador lanzadas por la instancia principal vía UAC (ver Tweaks/Elevation).
+        if (e.Args.Length > 0 && e.Args[0] is "--apply-tweak" or "--restore-tweaks" or "--restore-point")
+        {
+            Shutdown(Tweaks.TweakEngine.RunElevatedCommand(e.Args));
+            return;
+        }
+
         // Pide a la instancia en ejecución que se cierre limpiamente (restaura la barra de Windows).
         if (e.Args.Contains(ExitArg, StringComparer.OrdinalIgnoreCase))
         {
@@ -74,6 +85,13 @@ public partial class App : Application
             // Abrir WINX otra vez mientras ya corre muestra el Hub de la instancia existente.
             if (EventWaitHandle.TryOpenExisting(OpenHubEventName, out var openHub))
             {
+                // "--hub Privacy" abre directamente esa página del Hub.
+                int hubArg = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
+                if (hubArg >= 0 && hubArg + 1 < e.Args.Length)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(HubRequestPath)!);
+                    File.WriteAllText(HubRequestPath, e.Args[hubArg + 1]);
+                }
                 // Este proceso lo lanzó el usuario, así que puede ceder el permiso de primer plano.
                 AllowSetForegroundWindow(AsfwAny);
                 openHub.Set();
@@ -109,6 +127,14 @@ public partial class App : Application
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         Settings.Changed += OnSettingsChanged;
         _barHeight = Settings.Current.TaskbarHeight;
+
+        int hubIndex = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
+        if (hubIndex >= 0)
+        {
+            OpenHub();
+            if (hubIndex + 1 < e.Args.Length)
+                _hub?.NavigateTo(e.Args[hubIndex + 1]);
+        }
 
         // ManagedShell termina de inicializar los estados de las ventanas de forma asíncrona.
         var activeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -185,6 +211,33 @@ public partial class App : Application
         OpenTaskbars();
     }
 
+    /// <summary>
+    /// Reinicia el Explorador para aplicar ajustes y luego reinicia WINX, que vuelve a ocultar
+    /// la barra nativa y a registrar la bandeja sobre el nuevo Explorador.
+    /// </summary>
+    public void RestartExplorer()
+    {
+        Log.Info("Reiniciando el Explorador");
+        foreach (var explorer in Process.GetProcessesByName("explorer"))
+        {
+            try
+            {
+                explorer.Kill();
+                explorer.WaitForExit(5000);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("No se pudo cerrar el Explorador", ex);
+            }
+        }
+        // Windows suele relanzarlo solo (AutoRestartShell); si no, lo iniciamos.
+        Thread.Sleep(1500);
+        if (Process.GetProcessesByName("explorer").Length == 0)
+            Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+        Thread.Sleep(2000);
+        ExitShell(restart: true);
+    }
+
     public void OpenHub()
     {
         if (_exiting)
@@ -195,6 +248,17 @@ public partial class App : Application
             _hub.Closed += (_, _) => _hub = null;
         }
         _hub.Show();
+        if (File.Exists(HubRequestPath))
+        {
+            try
+            {
+                _hub.NavigateTo(File.ReadAllText(HubRequestPath).Trim());
+                File.Delete(HubRequestPath);
+            }
+            catch (IOException)
+            {
+            }
+        }
         if (_hub.WindowState == WindowState.Minimized)
             _hub.WindowState = WindowState.Normal;
         // Topmost momentáneo: garantiza que quede encima aunque Windows niegue el foco.
