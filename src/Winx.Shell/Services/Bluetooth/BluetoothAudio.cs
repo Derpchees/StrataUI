@@ -56,6 +56,7 @@ internal static class BluetoothAudio
         using var enumerator = new MMDeviceEnumerator();
         foreach (var endpoint in enumerator.EnumerateAudioEndPoints(DataFlow.All, DeviceState.All))
         {
+            using var _ = endpoint; // objeto COM: se libera en cada vuelta
             try
             {
                 var topology = endpoint.DeviceTopology;

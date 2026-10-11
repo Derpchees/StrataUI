@@ -57,9 +57,15 @@ public abstract class TweaksPage : Page
             Content = content,
         };
 
-        TweakEngine.ExplorerRestartNeeded += ShowExplorerBanner;
+        // Suscripción en Loaded (no en el constructor): la página se descarga al navegar a otra
+        // sección y se vuelve a cargar al regresar.
+        Loaded += (_, _) =>
+        {
+            TweakEngine.ExplorerRestartNeeded -= ShowExplorerBanner;
+            TweakEngine.ExplorerRestartNeeded += ShowExplorerBanner;
+            _refreshers.ForEach(r => r());
+        };
         Unloaded += (_, _) => TweakEngine.ExplorerRestartNeeded -= ShowExplorerBanner;
-        Loaded += (_, _) => _refreshers.ForEach(r => r());
     }
 
     private CardControl BuildCard(Tweak tweak)

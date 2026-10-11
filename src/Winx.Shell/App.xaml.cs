@@ -128,6 +128,9 @@ public partial class App : Application
         _shell = new ShellManager(config);
 
         TrayPromotion.Attach(_shell.NotificationArea);
+        Services.StartMenu.StartMenuService.Initialize();
+        Services.StartMenu.WinKeyHook.WinPressed += OnWinKey;
+        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey);
         OpenTaskbars();
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
@@ -207,8 +210,17 @@ public partial class App : Application
         });
     }
 
+    /// <summary>Tecla Windows: abre el menú Inicio de la barra principal.</summary>
+    private void OnWinKey()
+    {
+        var taskbar = _taskbars.FirstOrDefault(t => t.IsPrimary) ?? _taskbars.FirstOrDefault();
+        if (taskbar != null)
+            StartMenu.StartMenuLauncher.Toggle(taskbar.StartAnchor);
+    }
+
     private void OnSettingsChanged()
     {
+        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey);
         // El alto de una AppBar se fija al registrarla, así que cambiarlo requiere recrear las barras.
         if (_exiting || Taskbar.ReservedHeight == _barHeight)
             return;
@@ -221,26 +233,30 @@ public partial class App : Application
     /// Reinicia el Explorador para aplicar ajustes y luego reinicia WINX, que vuelve a ocultar
     /// la barra nativa y a registrar la bandeja sobre el nuevo Explorador.
     /// </summary>
-    public void RestartExplorer()
+    public async void RestartExplorer()
     {
         Log.Info("Reiniciando el Explorador");
-        foreach (var explorer in Process.GetProcessesByName("explorer"))
+        // En segundo plano: esperar en el hilo de la UI congelaría la barra y los paneles.
+        await Task.Run(async () =>
         {
-            try
+            foreach (var explorer in Process.GetProcessesByName("explorer"))
             {
-                explorer.Kill();
-                explorer.WaitForExit(5000);
+                try
+                {
+                    explorer.Kill();
+                    explorer.WaitForExit(5000);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("No se pudo cerrar el Explorador", ex);
+                }
             }
-            catch (Exception ex)
-            {
-                Log.Error("No se pudo cerrar el Explorador", ex);
-            }
-        }
-        // Windows suele relanzarlo solo (AutoRestartShell); si no, lo iniciamos.
-        Thread.Sleep(1500);
-        if (Process.GetProcessesByName("explorer").Length == 0)
-            Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
-        Thread.Sleep(2000);
+            // Windows suele relanzarlo solo (AutoRestartShell); si no, lo iniciamos.
+            await Task.Delay(1500);
+            if (Process.GetProcessesByName("explorer").Length == 0)
+                Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+            await Task.Delay(2000);
+        });
         ExitShell(restart: true);
     }
 
@@ -287,6 +303,8 @@ public partial class App : Application
 
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         Settings.Changed -= OnSettingsChanged;
+        Services.StartMenu.WinKeyHook.Update(false);
+        Services.StartMenu.StartMenuService.Shutdown();
         Flyouts.FlyoutManager.CloseAll();
         _hub?.Close();
         _shell?.AppBarManager.SignalGracefulShutdown();

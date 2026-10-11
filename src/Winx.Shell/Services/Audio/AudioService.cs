@@ -11,9 +11,14 @@ namespace Winx.Shell.Services.Audio;
 
 public sealed record AudioDevice(string Id, string Name, bool IsDefault);
 
-/// <summary>Una aplicación con audio; agrupa todas las sesiones del mismo ejecutable.</summary>
-public sealed class AudioApp
+/// <summary>
+/// Una aplicación con audio; agrupa todas las sesiones del mismo ejecutable.
+/// Envuelve objetos COM: hay que liberarla cuando deja de usarse.
+/// </summary>
+public sealed class AudioApp : IDisposable
 {
+    public void Dispose() => Sessions.ForEach(s => s.Dispose());
+
     internal AudioApp(string key, string name, ImageSource? icon, List<AudioSessionControl> sessions)
     {
         Key = key;
@@ -86,10 +91,13 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
     public IReadOnlyList<AudioDevice> GetOutputDevices()
     {
         string? defaultId = _device?.ID;
-        return _enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active)
-            .Select(d => new AudioDevice(d.ID, d.FriendlyName, d.ID == defaultId))
-            .OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
+        var devices = new List<AudioDevice>();
+        foreach (var device in _enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+        {
+            using (device)
+                devices.Add(new AudioDevice(device.ID, device.FriendlyName, device.ID == defaultId));
+        }
+        return devices.OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
     public void SetDefaultDevice(string id) => PolicyConfig.SetDefaultEndpoint(id);
@@ -108,7 +116,10 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
         {
             var session = sessions[i];
             if (session.State == AudioSessionState.AudioSessionStateExpired)
+            {
+                session.Dispose();
                 continue;
+            }
 
             var (key, name, icon) = Describe(session);
             if (!groups.TryGetValue(key, out var group))

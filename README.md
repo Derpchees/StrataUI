@@ -20,7 +20,7 @@ a la normalidad.
 | Panel de volumen        | ✅ dispositivo de salida y volumen por aplicación              |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
-| Menú Inicio             | ⏳ abre el de Windows                                          |
+| Menú Inicio             | ✅ estilos Windows 11, Lista y Pantalla completa; tecla Windows |
 | Notificaciones          | ⏳ abre el centro de Windows                                   |
 
 ## Requisitos
@@ -72,6 +72,7 @@ src/Winx.Shell/
   Taskbar.xaml(.cs)    Barra de tareas (una por monitor)
   Controls/            Botón de tarea e ícono de bandeja
   Flyouts/             Paneles flotantes: volumen, red, Bluetooth
+  StartMenu/           Menú Inicio: modelo común y los tres estilos
   Hub/                 Ventana de configuración y sus páginas
   Tweaks/              Motor de optimizaciones, catálogo, respaldo, apps Appx, elevación
   Services/            Configuración, audio, red, Bluetooth, estado del sistema, registro

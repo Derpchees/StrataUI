@@ -1,0 +1,58 @@
+<UserControl x:Class="Winx.Shell.StartMenu.StartFooter"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:start="clr-namespace:Winx.Shell.StartMenu">
+    <!-- Pie del menú: usuario a la izquierda; configuración de WINX y energía a la derecha -->
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Button Style="{StaticResource FlyoutRow}" HorizontalAlignment="Left" Padding="8,6"
+                Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="User"
+                ToolTip="Abrir tu carpeta de usuario">
+            <StackPanel Orientation="Horizontal">
+                <Grid Width="32" Height="32" Margin="0,0,10,0">
+                    <Ellipse Fill="{DynamicResource WinxAccentBrush}" />
+                    <TextBlock Text="{Binding UserInitials}" FontSize="13" FontWeight="SemiBold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                </Grid>
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding UserName}" />
+            </StackPanel>
+        </Button>
+
+        <Button Grid.Column="1" Style="{StaticResource FlyoutIconButton}" Width="40" Height="40"
+                Command="{x:Static start:StartCommands.OpenHub}" ToolTip="Configuración de WINX">
+            <ui:SymbolIcon Symbol="Settings24" FontSize="18" />
+        </Button>
+
+        <Button x:Name="PowerButton" Grid.Column="2" Style="{StaticResource FlyoutIconButton}" Width="40" Height="40"
+                ToolTip="Energía" Click="PowerButton_Click">
+            <ui:SymbolIcon Symbol="Power24" FontSize="18" />
+            <Button.ContextMenu>
+                <ContextMenu Placement="Top">
+                    <MenuItem Header="Bloquear" Command="{x:Static start:StartCommands.Power}" CommandParameter="Lock">
+                        <MenuItem.Icon><ui:SymbolIcon Symbol="LockClosed24" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Cerrar sesión" Command="{x:Static start:StartCommands.Power}" CommandParameter="SignOut">
+                        <MenuItem.Icon><ui:SymbolIcon Symbol="SignOut24" /></MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem Header="Suspender" Command="{x:Static start:StartCommands.Power}" CommandParameter="Sleep">
+                        <MenuItem.Icon><ui:SymbolIcon Symbol="WeatherMoon24" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Reiniciar" Command="{x:Static start:StartCommands.Power}" CommandParameter="Restart">
+                        <MenuItem.Icon><ui:SymbolIcon Symbol="ArrowClockwise24" /></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Apagar" Command="{x:Static start:StartCommands.Power}" CommandParameter="PowerOff">
+                        <MenuItem.Icon><ui:SymbolIcon Symbol="Power24" /></MenuItem.Icon>
+                    </MenuItem>
+                </ContextMenu>
+            </Button.ContextMenu>
+        </Button>
+    </Grid>
+</UserControl>

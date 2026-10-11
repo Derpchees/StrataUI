@@ -53,7 +53,7 @@ public abstract class FlyoutWindow : FluentWindow
         Deactivated += (_, _) => CloseFlyout();
         PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Escape)
+            if (e.Key == Key.Escape && !HandleEscape())
                 CloseFlyout();
         };
     }
@@ -86,7 +86,7 @@ public abstract class FlyoutWindow : FluentWindow
         var edge = Layer(null, "WinxGlassEdgeBrush");
         edge.BorderThickness = new Thickness(1);
         _root.Children.Add(edge);
-        _root.Children.Add(new ScrollViewer
+        _root.Children.Add(!ScrollContent ? content : new ScrollViewer
         {
             Content = content,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -96,8 +96,19 @@ public abstract class FlyoutWindow : FluentWindow
         return _root;
     }
 
+    /// <summary>
+    /// False en paneles de alto fijo que desplazan solo una parte (el menú Inicio): así su
+    /// ScrollViewer interno recibe un alto limitado y no hay dos scrolls anidados.
+    /// </summary>
+    protected virtual bool ScrollContent => true;
+
+    /// <summary>El panel ocupa toda el área de trabajo del monitor (menú a pantalla completa).</summary>
+    protected virtual bool FillWorkArea => false;
+
     private void ClipToPanelRadius(double radius)
     {
+        if (FillWorkArea)
+            return; // a pantalla completa no lleva esquinas
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
         var bounds = new Int32Rect(0, 0, (int)Math.Round(ActualWidth * scale), (int)Math.Round(ActualHeight * scale));
         WindowEffects.SetRoundedRegion(this, bounds, (int)Math.Round(radius * scale));
@@ -114,10 +125,19 @@ public abstract class FlyoutWindow : FluentWindow
         return layer;
     }
 
+    /// <summary>Permite a un panel usar Esc para otra cosa (p. ej. borrar la búsqueda) antes de cerrarse.</summary>
+    protected virtual bool HandleEscape() => false;
+
+    /// <summary>Alineación horizontal respecto al botón que abre el panel.</summary>
+    protected virtual FlyoutPlacement Placement => FlyoutPlacement.Right;
+
     public void ShowAt(FrameworkElement anchor)
     {
+        if (FillWorkArea)
+            SizeToContent = SizeToContent.Manual;
         Show();
-        LimitHeightToScreen(anchor);
+        if (!FillWorkArea)
+            LimitHeightToScreen(anchor);
         PositionAbove(anchor);
         // Si el contenido cambia de tamaño (secciones que se expanden, listas que terminan de cargar),
         // se mantiene pegado a la barra. Se difiere hasta después del render: al disparar SizeChanged
@@ -160,7 +180,20 @@ public abstract class FlyoutWindow : FluentWindow
         var work = Forms.Screen.FromPoint(new System.Drawing.Point((int)anchorCenter.X, (int)anchorCenter.Y)).WorkingArea;
         int gap = (int)(GapPx * scale);
 
-        int x = Math.Clamp((int)anchorRight.X - width, work.Left + gap, work.Right - width - gap);
+        if (FillWorkArea)
+        {
+            SetWindowPos(hwnd, IntPtr.Zero, work.Left, work.Top, work.Width, work.Height, SWP_NOZORDER | SWP_NOACTIVATE);
+            return;
+        }
+
+        var anchorLeft = anchor.PointToScreen(new Point(0, 0));
+        int preferred = Placement switch
+        {
+            FlyoutPlacement.Center => (int)anchorCenter.X - width / 2,
+            FlyoutPlacement.Left => (int)anchorLeft.X,
+            _ => (int)anchorRight.X - width,
+        };
+        int x = Math.Clamp(preferred, work.Left + gap, work.Right - width - gap);
         int y = work.Bottom - height - gap;
         SetWindowPos(hwnd, IntPtr.Zero, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
@@ -186,6 +219,8 @@ public abstract class FlyoutWindow : FluentWindow
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
 }
+
+public enum FlyoutPlacement { Right, Center, Left }
 
 /// <summary>Garantiza un solo panel abierto y que el botón funcione como interruptor.</summary>
 public static class FlyoutManager

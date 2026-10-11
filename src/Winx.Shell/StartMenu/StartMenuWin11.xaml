@@ -1,0 +1,87 @@
+<start:StartMenuBase x:Class="Winx.Shell.StartMenu.StartMenuWin11"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                     xmlns:start="clr-namespace:Winx.Shell.StartMenu"
+                     Title="Inicio" Width="660" Height="720" SizeToContent="Manual">
+    <Grid Margin="24,22,24,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TextBox x:Name="SearchBox" PlaceholderText="Escribe para buscar apps"
+                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+            <ui:TextBox.Icon>
+                <ui:SymbolIcon Symbol="Search24" />
+            </ui:TextBox.Icon>
+        </ui:TextBox>
+
+        <Grid Grid.Row="1" Margin="0,18,0,0">
+            <!-- Inicio: anclados y recientes -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding HomeVisible, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <Grid Margin="8,0,0,6">
+                        <TextBlock Style="{StaticResource StartSectionTitle}" Text="Anclado" />
+                        <ui:Button HorizontalAlignment="Right" Padding="10,4" Click="ShowAll_Click"
+                                   Content="Todas las apps  ›" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTile}"
+                                  ItemsPanel="{StaticResource WrapItems}" />
+
+                    <StackPanel Visibility="{Binding HasRecent, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,18,0,6" Text="Recientes" />
+                        <ItemsControl ItemsSource="{Binding Recent}" ItemTemplate="{StaticResource RecentRow}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Todas las apps, por letra -->
+            <Grid Visibility="{Binding AllAppsVisible, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Grid Margin="8,0,0,6">
+                    <TextBlock Style="{StaticResource StartSectionTitle}" Text="Todas las apps" />
+                    <ui:Button HorizontalAlignment="Right" Padding="10,4" Click="Back_Click" Content="‹  Atrás" />
+                </Grid>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppRow}">
+                        <ItemsControl.GroupStyle>
+                            <StaticResource ResourceKey="LetterGroups" />
+                        </ItemsControl.GroupStyle>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+
+            <!-- Resultados de búsqueda -->
+            <Grid Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,0,0,6" Text="Resultados" />
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}" />
+                        <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
+                                   Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
+                                   Text="No hay apps con ese nombre. Pulsa Enter para ejecutarlo como comando." />
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+
+        <Separator Grid.Row="2" Margin="0,10,0,8" Opacity="0.35" />
+        <start:StartFooter Grid.Row="3" />
+    </Grid>
+</start:StartMenuBase>

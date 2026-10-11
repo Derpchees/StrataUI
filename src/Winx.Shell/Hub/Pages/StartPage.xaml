@@ -1,0 +1,62 @@
+<Page x:Class="Winx.Shell.Hub.Pages.StartPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="Menú Inicio"
+      ScrollViewer.CanContentScroll="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <TextBlock Style="{StaticResource HubPageTitle}" Text="Menú Inicio" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Grid24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Estilo" />
+                        <TextBlock x:Name="StyleDescription" Style="{StaticResource CardDescription}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="StyleBox" MinWidth="200" SelectionChanged="Style_Changed">
+                    <ComboBoxItem Content="Windows 11" />
+                    <ComboBoxItem Content="Lista (Windows 10/7)" />
+                    <ComboBoxItem Content="Pantalla completa" />
+                </ComboBox>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="History24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Mostrar archivos recientes" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="En el estilo Windows 11, debajo de las apps ancladas" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="RecentSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Keyboard24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Abrir con la tecla Windows" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="La tecla Windows abre el menú de WINX en lugar del de Windows. Los atajos como Win+E o Win+R siguen funcionando." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="WinKeySwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Pin24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Apps ancladas" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="Clic derecho sobre una app en el menú para anclarla o desanclarla. Aquí puedes volver a la selección inicial." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="Restablecer" Click="ResetPinned_Click" />
+            </ui:CardControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

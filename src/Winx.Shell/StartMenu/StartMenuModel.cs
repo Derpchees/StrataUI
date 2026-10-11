@@ -1,0 +1,163 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Input;
+using Winx.Shell.Flyouts;
+using Winx.Shell.Services;
+using Winx.Shell.Services.StartMenu;
+
+namespace Winx.Shell.StartMenu;
+
+/// <summary>Estado compartido por los tres estilos de menú Inicio.</summary>
+public sealed class StartMenuModel : INotifyPropertyChanged
+{
+    private string _query = "";
+    private bool _showAllApps;
+    private IReadOnlyList<StartApp> _results = [];
+
+    public StartMenuModel()
+    {
+        var source = new CollectionViewSource { Source = StartMenuService.Apps };
+        source.GroupDescriptions.Add(new PropertyGroupDescription(nameof(StartApp.Group)));
+        AllApps = source.View;
+        Recent = Settings.Current.StartShowRecent ? StartMenuService.GetRecent(8) : [];
+    }
+
+    public ObservableCollection<StartApp> Pinned => StartMenuService.Pinned;
+    public ICollectionView AllApps { get; }
+    public IReadOnlyList<RecentItem> Recent { get; }
+    public bool HasRecent => Recent.Count > 0;
+    public string UserName => StartMenuService.UserName;
+    public string UserInitials => StartMenuService.UserInitials;
+
+    public string Query
+    {
+        get => _query;
+        set
+        {
+            _query = value;
+            Results = StartMenuService.Search(value);
+            Notify();
+            Notify(nameof(IsSearching));
+            Notify(nameof(NoResults));
+            NotifyViews();
+        }
+    }
+
+    public bool IsSearching => _query.Trim().Length > 0;
+
+    public IReadOnlyList<StartApp> Results
+    {
+        get => _results;
+        private set { _results = value; Notify(); }
+    }
+
+    public bool NoResults => IsSearching && _results.Count == 0;
+
+    public bool ShowAllApps
+    {
+        get => _showAllApps;
+        set { _showAllApps = value; Notify(); NotifyViews(); }
+    }
+
+    // Qué sección se ve (estilo Windows 11): búsqueda > todas las apps > inicio.
+    public bool HomeVisible => !IsSearching && !_showAllApps;
+    public bool AllAppsVisible => !IsSearching && _showAllApps;
+
+    private void NotifyViews()
+    {
+        Notify(nameof(HomeVisible));
+        Notify(nameof(AllAppsVisible));
+    }
+
+    /// <summary>Enter en el buscador: abre el primer resultado o ejecuta el texto como comando.</summary>
+    public void Submit()
+    {
+        if (_results.Count > 0)
+            StartCommands.Launch.Execute(_results[0]);
+        else if (IsSearching && StartMenuService.RunCommand(_query))
+            FlyoutManager.CloseAll();
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void Notify([CallerMemberName] string? name = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+/// <summary>Acciones del menú, accesibles desde cualquier plantilla (incluidos menús contextuales).</summary>
+public static class StartCommands
+{
+    public static ICommand Launch { get; } = new Relay(p =>
+    {
+        (p as StartApp)?.Launch();
+        FlyoutManager.CloseAll();
+    });
+
+    public static ICommand OpenRecent { get; } = new Relay(p =>
+    {
+        (p as RecentItem)?.Open();
+        FlyoutManager.CloseAll();
+    });
+
+    public static ICommand TogglePin { get; } = new Relay(p =>
+    {
+        if (p is StartApp app)
+            StartMenuService.SetPinned(app, !app.IsPinned);
+    });
+
+    public static ICommand OpenFolder { get; } = new Relay(p =>
+    {
+        switch (p as string)
+        {
+            case "Documents": StartMenuService.OpenFolder(Environment.SpecialFolder.MyDocuments); break;
+            case "Downloads": StartMenuService.OpenDownloads(); break;
+            case "Pictures": StartMenuService.OpenFolder(Environment.SpecialFolder.MyPictures); break;
+            case "Music": StartMenuService.OpenFolder(Environment.SpecialFolder.MyMusic); break;
+            case "Videos": StartMenuService.OpenFolder(Environment.SpecialFolder.MyVideos); break;
+            case "User": StartMenuService.OpenFolder(Environment.SpecialFolder.UserProfile); break;
+        }
+        FlyoutManager.CloseAll();
+    });
+
+    public static ICommand OpenHub { get; } = new Relay(_ =>
+    {
+        FlyoutManager.CloseAll();
+        App.Current.OpenHub();
+    });
+
+    public static ICommand Power { get; } = new Relay(p =>
+    {
+        FlyoutManager.CloseAll();
+        switch (p as string)
+        {
+            case "Lock": StartMenuService.Lock(); break;
+            case "SignOut": StartMenuService.SignOut(); break;
+            case "Sleep": StartMenuService.Sleep(); break;
+            case "Restart": StartMenuService.Restart(); break;
+            case "PowerOff": StartMenuService.PowerOff(); break;
+        }
+    });
+
+    private sealed class Relay(Action<object?> execute) : ICommand
+    {
+        public event EventHandler? CanExecuteChanged { add { } remove { } }
+        public bool CanExecute(object? parameter) => true;
+        public void Execute(object? parameter) => execute(parameter);
+    }
+}
+
+/// <summary>Abre el estilo de menú elegido en el Hub.</summary>
+public static class StartMenuLauncher
+{
+    public static void Toggle(FrameworkElement anchor)
+    {
+        switch (Settings.Current.StartStyle)
+        {
+            case StartMenuStyle.List: FlyoutManager.Toggle<StartMenuList>(anchor); break;
+            case StartMenuStyle.Fullscreen: FlyoutManager.Toggle<StartMenuFullscreen>(anchor); break;
+            default: FlyoutManager.Toggle<StartMenuWin11>(anchor); break;
+        }
+    }
+}

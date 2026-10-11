@@ -13,6 +13,7 @@
                 <ResourceDictionary Source="Themes/Styles.xaml" />
                 <ResourceDictionary Source="Hub/HubStyles.xaml" />
                 <ResourceDictionary Source="Flyouts/FlyoutStyles.xaml" />
+                <ResourceDictionary Source="StartMenu/StartMenuStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <SolidColorBrush x:Key="WinxAccentBrush" Color="#FF0078D4" />
         </ResourceDictionary>

@@ -1,0 +1,105 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:start="clr-namespace:Winx.Shell.StartMenu">
+
+    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+    <Style x:Key="StartSectionTitle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+    </Style>
+
+    <!-- Menú contextual común a cualquier app: anclar / desanclar -->
+    <ContextMenu x:Key="AppContextMenu" x:Shared="False">
+        <MenuItem Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" Header="Abrir" />
+        <MenuItem Command="{x:Static start:StartCommands.TogglePin}" CommandParameter="{Binding}">
+            <MenuItem.Style>
+                <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                    <Setter Property="Header" Value="Anclar a Inicio" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                            <Setter Property="Header" Value="Desanclar de Inicio" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </MenuItem.Style>
+        </MenuItem>
+    </ContextMenu>
+
+    <!-- App en cuadrícula: ícono grande y nombre debajo -->
+    <DataTemplate x:Key="AppTile">
+        <Button Style="{StaticResource FlyoutRow}" Width="96" Padding="4,10,4,8" HorizontalContentAlignment="Center"
+                Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
+                ToolTip="{Binding Name}" ContextMenu="{StaticResource AppContextMenu}">
+            <StackPanel>
+                <Image Source="{Binding Icon}" Width="32" Height="32" Margin="0,0,0,6"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock Text="{Binding Name}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap"
+                           TextTrimming="CharacterEllipsis" MaxHeight="32" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            </StackPanel>
+        </Button>
+    </DataTemplate>
+
+    <!-- App grande para pantalla completa -->
+    <DataTemplate x:Key="AppTileLarge">
+        <Button Style="{StaticResource FlyoutRow}" Width="128" Padding="6,14,6,10" HorizontalContentAlignment="Center"
+                Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
+                ToolTip="{Binding Name}" ContextMenu="{StaticResource AppContextMenu}">
+            <StackPanel>
+                <Image Source="{Binding Icon}" Width="48" Height="48" Margin="0,0,0,8"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock Text="{Binding Name}" FontSize="13" TextAlignment="Center" TextWrapping="Wrap"
+                           TextTrimming="CharacterEllipsis" MaxHeight="36" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+            </StackPanel>
+        </Button>
+    </DataTemplate>
+
+    <!-- App en lista: ícono y nombre en una fila -->
+    <DataTemplate x:Key="AppRow">
+        <Button Style="{StaticResource FlyoutRow}" Padding="10,6"
+                Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
+                ContextMenu="{StaticResource AppContextMenu}">
+            <StackPanel Orientation="Horizontal">
+                <Image Source="{Binding Icon}" Width="24" Height="24" Margin="0,0,12,0"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" />
+            </StackPanel>
+        </Button>
+    </DataTemplate>
+
+    <!-- Archivo reciente -->
+    <DataTemplate x:Key="RecentRow">
+        <Button Style="{StaticResource FlyoutRow}" Padding="10,6"
+                Command="{x:Static start:StartCommands.OpenRecent}" CommandParameter="{Binding}" ToolTip="{Binding Path}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Image Source="{Binding Icon}" Width="24" Height="24" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" />
+                    <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding WhenText}" TextWrapping="NoWrap" />
+                </StackPanel>
+            </Grid>
+        </Button>
+    </DataTemplate>
+
+    <!-- Encabezado de letra en "Todas las apps" -->
+    <GroupStyle x:Key="LetterGroups">
+        <GroupStyle.HeaderTemplate>
+            <DataTemplate>
+                <TextBlock Text="{Binding Name}" Margin="10,10,0,4" FontWeight="SemiBold"
+                           Foreground="{DynamicResource WinxAccentBrush}" />
+            </DataTemplate>
+        </GroupStyle.HeaderTemplate>
+    </GroupStyle>
+
+    <ItemsPanelTemplate x:Key="WrapItems">
+        <WrapPanel />
+    </ItemsPanelTemplate>
+</ResourceDictionary>

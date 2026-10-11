@@ -191,7 +191,13 @@ public partial class Taskbar : AppBarWindow
 
     // Mientras no existan los paneles propios (próximas versiones), se abren los de Windows.
 
-    private void StartButton_Click(object sender, RoutedEventArgs e) => ShellHelper.ShowStartMenu();
+    /// <summary>Botón Inicio (lo usa también la tecla Windows para anclar el menú).</summary>
+    public FrameworkElement StartAnchor => StartButton;
+
+    public bool IsPrimary => Screen.Primary;
+
+    private void StartButton_Click(object sender, RoutedEventArgs e) =>
+        StartMenu.StartMenuLauncher.Toggle(StartButton);
 
     private void ClockButton_Click(object sender, RoutedEventArgs e) => ShellHelper.ShowNotificationCenter();
 

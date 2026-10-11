@@ -37,17 +37,27 @@ public static class ThemeManager
         _ => WindowBackdropType.None,
     };
 
+    private static (WinxTheme, string?, int) _appliedKey;
+
     public static void Initialize()
     {
         Apply();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
-        Settings.Changed += Apply;
+        Settings.Changed += OnSettingsChanged;
     }
 
     public static void Shutdown()
     {
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
-        Settings.Changed -= Apply;
+        Settings.Changed -= OnSettingsChanged;
+    }
+
+    /// <summary>Solo se reaplica si cambió algo que afecta al tema (no, p. ej., los segundos del reloj).</summary>
+    private static void OnSettingsChanged()
+    {
+        var s = Settings.Current;
+        if ((s.Theme, s.AccentColor, s.TaskbarHeight) != _appliedKey)
+            Apply();
     }
 
     public static bool WindowsUsesLightTheme()
@@ -81,6 +91,8 @@ public static class ThemeManager
 
     private static void Apply()
     {
+        var s = Settings.Current;
+        _appliedKey = (s.Theme, s.AccentColor, s.TaskbarHeight);
         var theme = Theme;
         bool light = IsLight;
         var accent = Accent;

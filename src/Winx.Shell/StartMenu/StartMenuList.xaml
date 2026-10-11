@@ -1,0 +1,72 @@
+<start:StartMenuBase x:Class="Winx.Shell.StartMenu.StartMenuList"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                     xmlns:start="clr-namespace:Winx.Shell.StartMenu"
+                     Title="Inicio" Width="640" Height="660" SizeToContent="Manual">
+    <Grid Margin="14,14,14,12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="270" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Izquierda: lista alfabética de todas las apps, o resultados al buscar -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <ItemsControl ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppRow}"
+                              Visibility="{Binding HomeVisible, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl.GroupStyle>
+                        <StaticResource ResourceKey="LetterGroups" />
+                    </ItemsControl.GroupStyle>
+                </ItemsControl>
+                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}"
+                              Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}" />
+                <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
+                           Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
+                           Text="Sin resultados. Enter lo ejecuta como comando." />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Derecha: anclados y accesos a carpetas -->
+        <ScrollViewer Grid.Column="1" Margin="12,0,0,0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,4,0,6" Text="Anclado" />
+                <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTile}"
+                              ItemsPanel="{StaticResource WrapItems}" />
+
+                <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,16,0,6" Text="Carpetas" />
+                <UniformGrid Columns="2">
+                    <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Documents">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Document24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Documentos" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Downloads">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Descargas" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Pictures">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Image24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Imágenes" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Music">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="MusicNote224" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Música" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Videos">
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Video24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Videos" /></StackPanel>
+                    </Button>
+                </UniformGrid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <ui:TextBox x:Name="SearchBox" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0"
+                    PlaceholderText="Buscar apps" Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                    KeyDown="Search_KeyDown">
+            <ui:TextBox.Icon>
+                <ui:SymbolIcon Symbol="Search24" />
+            </ui:TextBox.Icon>
+        </ui:TextBox>
+        <start:StartFooter Grid.Row="2" Grid.ColumnSpan="2" Margin="0,8,0,0" />
+    </Grid>
+</start:StartMenuBase>

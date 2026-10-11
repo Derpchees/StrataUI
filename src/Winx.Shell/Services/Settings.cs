@@ -8,6 +8,8 @@ public enum TaskbarAlignment { Center, Left }
 
 public enum WinxTheme { System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material }
 
+public enum StartMenuStyle { Windows11, List, Fullscreen }
+
 /// <summary>Preferencias de WINX, guardadas en %LOCALAPPDATA%\WINX\settings.json.</summary>
 public sealed class WinxSettings
 {
@@ -16,6 +18,13 @@ public sealed class WinxSettings
     public int TaskbarHeight { get; set; } = 48;
     public bool ShowSeconds { get; set; }
     public bool ShowDate { get; set; } = true;
+
+    // Menú Inicio
+    public StartMenuStyle StartStyle { get; set; } = StartMenuStyle.Windows11;
+    public bool StartShowRecent { get; set; } = true;
+    public bool StartUseWinKey { get; set; } = true;
+    /// <summary>IDs de apps ancladas (AppUserModelID / nombre de análisis); null = primera vez.</summary>
+    public List<string>? PinnedStartApps { get; set; }
 
     // Módulos del área de estado
     public bool ShowNetworkModule { get; set; } = true;

@@ -6,6 +6,26 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.4.0] - 2026-10-11
+
+### Añadido
+- Menú Inicio propio con tres estilos, elegibles en Hub › Menú Inicio:
+  **Windows 11** (buscador, anclados, recientes, "Todas las apps" por letra),
+  **Lista** (estilo Windows 10/7, con accesos a carpetas) y **Pantalla completa** (tipo Launchpad).
+- Catálogo de apps desde `shell:AppsFolder` (Win32 y Store), búsqueda con prioridad por inicio de
+  palabra, Enter abre el primer resultado o ejecuta el texto como comando, anclar/desanclar con
+  clic derecho, perfil de usuario y menú de energía (bloquear, cerrar sesión, suspender,
+  reiniciar, apagar).
+- La tecla Windows abre el menú de WINX; los atajos (Win+E, Win+R…) siguen funcionando.
+
+### Corregido
+- Fuga de objetos COM en el panel de volumen (sesiones de audio creadas cada 1,5 s sin liberar)
+  y en la detección de audio Bluetooth.
+- El aviso "Reiniciar el Explorador" dejaba de aparecer al volver a una página de optimización.
+- Cualquier cambio de configuración reaplicaba el tema completo (parpadeo del Hub).
+- Reiniciar el Explorador congelaba la interfaz unos segundos.
+- El hook de teclado corre en su propio hilo: un bloqueo de la interfaz ya no retrasa el teclado.
+
 ## [0.3.0] - 2026-10-11
 
 ### Añadido

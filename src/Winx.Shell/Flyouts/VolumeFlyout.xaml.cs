@@ -29,6 +29,7 @@ public partial class VolumeFlyout : FlyoutWindow
             _refreshTimer.Stop();
             _audio.Changed -= UpdateMaster;
             _audio.DevicesChanged -= UpdateDevices;
+            DisposeRows();
         };
 
         UpdateMaster();
@@ -64,19 +65,29 @@ public partial class VolumeFlyout : FlyoutWindow
             1 => "1 aplicación",
             _ => $"{apps.Count} aplicaciones",
         };
-        if (AppsPanel.Visibility != Visibility.Visible)
-            return; // contraída: solo se actualiza el resumen
-
         bool sameApps = apps.Select(a => a.Key).SequenceEqual(_rows.Select(r => r.App.Key));
-        if (sameApps)
+        if (AppsPanel.Visibility != Visibility.Visible || sameApps)
         {
-            foreach (var row in _rows)
-                row.Sync();
+            // Solo se necesitaba el resumen o la lista no cambió: se liberan las sesiones nuevas
+            // y se refrescan los valores de las filas existentes.
+            foreach (var app in apps)
+                app.Dispose();
+            if (sameApps)
+                foreach (var row in _rows)
+                    row.Sync();
             return;
         }
+        DisposeRows();
         _rows = apps.Select(a => new AppRow(a)).ToList();
         AppList.ItemsSource = _rows;
         NoAppsText.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void DisposeRows()
+    {
+        foreach (var row in _rows)
+            row.App.Dispose();
+        _rows.Clear();
     }
 
     private static void ToggleSection(FrameworkElement section, UIElement chevron)
@@ -92,7 +103,8 @@ public partial class VolumeFlyout : FlyoutWindow
     private void AppsHeader_Click(object sender, RoutedEventArgs e)
     {
         ToggleSection(AppsPanel, AppsChevron);
-        _rows.Clear(); // fuerza a reconstruir con el estado actual al expandir
+        DisposeRows(); // fuerza a reconstruir con el estado actual al expandir
+        AppList.ItemsSource = null;
         RefreshApps();
     }
 

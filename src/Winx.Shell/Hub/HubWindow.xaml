@@ -28,6 +28,11 @@
                         <ui:SymbolIcon Symbol="PanelBottom20" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="Menú Inicio" TargetPageType="{x:Type pages:StartPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Grid24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="Bandeja del sistema" TargetPageType="{x:Type pages:TrayPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Apps24" />

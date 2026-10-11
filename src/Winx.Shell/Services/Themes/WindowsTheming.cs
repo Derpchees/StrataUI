@@ -22,12 +22,14 @@ public static class WindowsTheming
     public static void Initialize()
     {
         ThemeManager.ThemeChanged += Update;
+        Settings.Changed += Update; // el interruptor no cambia el tema, pero hay que reaccionar
         Update();
     }
 
     public static void Shutdown()
     {
         ThemeManager.ThemeChanged -= Update;
+        Settings.Changed -= Update;
         StopWatching();
         ForEachExplorerWindow(ResetWindow);
     }
