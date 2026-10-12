@@ -6,6 +6,44 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.12.0] - 2026-10-12
+
+### Añadido
+- **Centro de notificaciones** propio junto al reloj (y con Win+N): las notificaciones de Windows
+  con su app y hora, quitar una o todas, clic para abrir la app, "No molestar" y calendario. El
+  reloj muestra cuántas hay.
+- **Avisos emergentes** de notificaciones en el monitor y la esquina elegidos en el Hub, con
+  duración configurable; no aparecen con "No molestar" ni con una app a pantalla completa.
+- **Brillo**: botón y panel con un control por monitor (DDC/CI en monitores externos, WMI en la
+  pantalla del portátil) y uno para todos; la rueda del mouse sobre el botón lo ajusta.
+- **Bandeja ordenable** como en Windows: arrastrar reordena los íconos ocultos, y entre la barra y
+  los ocultos los ancla o desancla (la flecha ^ se abre al pasar por encima).
+- **Huecos en el menú Inicio**: "Dejar un espacio antes/después"; soltar una app sobre un hueco la
+  coloca ahí sin correr las demás.
+- Clic derecho en las apps del menú Inicio: **Ejecutar como administrador**, **Abrir ubicación del
+  archivo** y **Desinstalar** (las de la Tienda se quitan tras confirmar; las demás abren su
+  desinstalador).
+- **Actualizaciones** en el Hub: busca versiones nuevas en GitHub (automáticamente al iniciar y
+  cada 6 horas, desactivable), muestra las novedades e instala con un clic.
+- **Instalador** (Inno Setup): por usuario, sin administrador, con inicio automático opcional;
+  cierra WINX al actualizar y lo vuelve a abrir.
+
+### Cambiado
+- **Hub rediseñado**: portada con accesos rápidos, navegación por grupos (Personalización,
+  Sistema), cabecera con ícono y descripción en cada página. Los módulos del área de estado y el
+  reloj pasan a la página "Bandeja y área de estado".
+- **Menos consumo**: red y batería se actualizan cuando Windows avisa en lugar de cada 5 s en cada
+  barra; un solo reloj para todas las barras que, sin segundos, despierta una vez por minuto;
+  WINX devuelve la memoria que no usa tras arrancar y al cerrar paneles (de ~300 MB a ~20 MB de
+  conjunto de trabajo en reposo); el instalador lleva el código precompilado (arranque más rápido).
+- `--exit` espera a que la instancia en ejecución termine de cerrarse.
+- El registro se rota al pasar de 5 MB (`winx.old.log`).
+
+### Corregido
+- "Desactivar la búsqueda web (Bing)" y demás directivas en `HKCU\Software\Policies` fallaban sin
+  permisos: ahora piden administrador (UAC), también al restaurarlas.
+- "Anclar a Inicio"/"Desanclar de Inicio" y "DISPOSITIVOS EMPAREJADOS" no se traducían.
+
 ## [0.11.1] - 2026-10-11
 
 ### Corregido

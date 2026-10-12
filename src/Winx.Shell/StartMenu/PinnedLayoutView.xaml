@@ -15,8 +15,17 @@
                     RenderTransformOrigin="0.5,0.5">
                 <Button.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="{l:T 'Abrir'}" Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" />
+                        <MenuItem Header="{l:T 'Abrir'}" Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" FontWeight="SemiBold" />
+                        <MenuItem Header="{l:T 'Ejecutar como administrador'}" Command="{x:Static start:StartCommands.RunAsAdmin}" CommandParameter="{Binding}"
+                                  Visibility="{Binding CanRunAsAdmin, Converter={StaticResource BoolToVis}}" />
+                        <MenuItem Header="{l:T 'Abrir ubicación del archivo'}" Command="{x:Static start:StartCommands.OpenLocation}" CommandParameter="{Binding}"
+                                  Visibility="{Binding CanOpenLocation, Converter={StaticResource BoolToVis}}" />
+                        <Separator />
+                        <MenuItem Header="{l:T 'Dejar un espacio antes'}" Click="GapBefore_Click" />
+                        <MenuItem Header="{l:T 'Dejar un espacio después'}" Click="GapAfter_Click" />
+                        <Separator />
                         <MenuItem Header="{l:T 'Desanclar de Inicio'}" Command="{x:Static start:StartCommands.TogglePin}" CommandParameter="{Binding}" />
+                        <MenuItem Header="{l:T 'Desinstalar'}" Command="{x:Static start:StartCommands.Uninstall}" CommandParameter="{Binding}" />
                     </ContextMenu>
                 </Button.ContextMenu>
                 <StackPanel>
@@ -40,6 +49,9 @@
                     <ContextMenu>
                         <MenuItem Header="{l:T 'Abrir carpeta'}" Click="FolderOpen_Click" />
                         <MenuItem Header="{l:T 'Desagrupar'}" Click="FolderUngroup_Click" />
+                        <Separator />
+                        <MenuItem Header="{l:T 'Dejar un espacio antes'}" Click="GapBefore_Click" />
+                        <MenuItem Header="{l:T 'Dejar un espacio después'}" Click="GapAfter_Click" />
                     </ContextMenu>
                 </Button.ContextMenu>
                 <StackPanel>
@@ -60,6 +72,41 @@
                     </Border>
                     <TextBlock Text="{Binding Name}" FontSize="12" Visibility="{DynamicResource StartTileLabelVisibility}" TextAlignment="Center" TextTrimming="CharacterEllipsis"
                                HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+
+        <!-- Hueco: celda vacía del mismo tamaño que un mosaico; se ve su contorno al pasar el mouse
+             o al arrastrar. Soltar algo encima lo coloca ahí. -->
+        <DataTemplate DataType="{x:Type svc:PinGapView}">
+            <Button Width="{DynamicResource StartTileWidth}" Padding="4,10,4,8" Focusable="False"
+                    PreviewMouseLeftButtonDown="Tile_PreviewMouseDown" PreviewMouseMove="Tile_PreviewMouseMove"
+                    RenderTransformOrigin="0.5,0.5" ToolTip="{l:T 'Espacio vacío'}">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Outline" Background="Transparent" BorderThickness="1" CornerRadius="{DynamicResource WinxCornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="Transparent" />
+                            </Border.BorderBrush>
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Outline" Property="BorderBrush" Value="{DynamicResource WinxFlyoutBorderBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+                <Button.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{l:T 'Quitar espacio'}" Click="GapRemove_Click" />
+                    </ContextMenu>
+                </Button.ContextMenu>
+                <!-- Mismo alto que un mosaico: ícono y nombre invisibles -->
+                <StackPanel Opacity="0">
+                    <Border Width="{DynamicResource StartTileIconSize}" Height="{DynamicResource StartTileIconSize}" Margin="{DynamicResource StartTileIconMargin}" />
+                    <TextBlock Text=" " FontSize="12" Visibility="{DynamicResource StartTileLabelVisibility}" />
                 </StackPanel>
             </Button>
         </DataTemplate>

@@ -31,9 +31,23 @@ public partial class TrayIcon : UserControl
 
     private static uint CursorParam => MouseHelper.GetCursorPositionParam();
 
+    /// <summary>Se empezó a arrastrar el ícono (para reordenar la bandeja).</summary>
+    public static event Action<TrayIcon>? DragStarted;
+
+    /// <summary>
+    /// El clic izquierdo se envía a la app al soltar, no al pulsar: así un arrastre (para ordenar)
+    /// no llega a la app como clic.
+    /// </summary>
+    private Point? _pressedAt;
+
     private void OnMouseDown(object sender, MouseButtonEventArgs e)
     {
         e.Handled = true;
+        if (e.ChangedButton == MouseButton.Left)
+        {
+            _pressedAt = e.GetPosition(this);
+            return;
+        }
         Icon?.IconMouseDown(e.ChangedButton, CursorParam, Forms.SystemInformation.DoubleClickTime);
     }
 
@@ -41,6 +55,13 @@ public partial class TrayIcon : UserControl
     {
         // Marcarlo como manejado evita que se abra el menú contextual de la barra.
         e.Handled = true;
+        if (e.ChangedButton == MouseButton.Left)
+        {
+            if (_pressedAt is null)
+                return; // terminó un arrastre
+            _pressedAt = null;
+            Icon?.IconMouseDown(MouseButton.Left, CursorParam, Forms.SystemInformation.DoubleClickTime);
+        }
         Icon?.IconMouseUp(e.ChangedButton, CursorParam, Forms.SystemInformation.DoubleClickTime);
     }
 
@@ -63,5 +84,26 @@ public partial class TrayIcon : UserControl
 
     private void OnMouseLeave(object sender, MouseEventArgs e) => Icon?.IconMouseLeave(CursorParam);
 
-    private void OnMouseMove(object sender, MouseEventArgs e) => Icon?.IconMouseMove(CursorParam);
+    private void OnMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_pressedAt is { } start && e.LeftButton == MouseButtonState.Pressed)
+        {
+            var delta = e.GetPosition(this) - start;
+            if (Math.Abs(delta.X) > SystemParameters.MinimumHorizontalDragDistance
+                || Math.Abs(delta.Y) > SystemParameters.MinimumVerticalDragDistance)
+            {
+                _pressedAt = null;
+                DragStarted?.Invoke(this);
+                return;
+            }
+        }
+        else if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            _pressedAt = null;
+        }
+        Icon?.IconMouseMove(CursorParam);
+    }
+
+    /// <summary>Ícono de la bandeja que representa este control.</summary>
+    public ShellNotifyIcon? NotifyIcon => Icon;
 }

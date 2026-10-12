@@ -11,7 +11,7 @@ namespace Winx.Shell.Hub;
 /// </summary>
 public partial class HubWindow : FluentWindow
 {
-    private Type _startPage = typeof(TaskbarPage);
+    private Type _startPage = typeof(HomePage);
 
     public HubWindow()
     {

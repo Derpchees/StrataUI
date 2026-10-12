@@ -145,12 +145,13 @@ public partial class PinnedLayoutView : UserControl
     {
         StartApp app => PinLayout.EntryIdOf(app.Id),
         PinFolderView folder => folder.Id,
+        PinGapView gap => gap.Id,
         _ => null,
     };
 
     // ── Destino bajo el cursor ──────────────────────────────────────────────
 
-    private static bool IsTile(DependencyObject d) => d is Button { DataContext: StartApp or PinFolderView };
+    private static bool IsTile(DependencyObject d) => d is Button { DataContext: StartApp or PinFolderView or PinGapView };
 
     private FrameworkElement? TileAt(Point position) => Ancestor(position, IsTile) as FrameworkElement;
 
@@ -185,8 +186,11 @@ public partial class PinnedLayoutView : UserControl
 
     private static DropZone ZoneOf(FrameworkElement tile, Point p, PinDrag drag)
     {
+        // Sobre un hueco, cualquier punto lo ocupa (se muestra como "fusionar": el mosaico crece).
+        if (tile.DataContext is PinGapView)
+            return DropZone.Merge;
         bool center = p.X > tile.ActualWidth * 0.28 && p.X < tile.ActualWidth * 0.72;
-        bool canMerge = drag.FromFolderId != null || (drag.EntryId != null && !IsFolderEntry(drag.EntryId));
+        bool canMerge = drag.FromFolderId != null || (drag.EntryId != null && !IsFolderEntry(drag.EntryId) && !IsGapEntry(drag.EntryId));
         if (center && canMerge && EntryIdOf(tile.DataContext) != drag.EntryId)
             return DropZone.Merge;
         return p.X < tile.ActualWidth / 2 ? DropZone.Before : DropZone.After;
@@ -195,11 +199,20 @@ public partial class PinnedLayoutView : UserControl
     private static bool IsFolderEntry(string entryId) =>
         PinLayout.Sections.SelectMany(s => s.Tiles).OfType<PinFolderView>().Any(f => f.Id == entryId);
 
+    private static bool IsGapEntry(string entryId) =>
+        PinLayout.Sections.SelectMany(s => s.Tiles).OfType<PinGapView>().Any(g => g.Id == entryId);
+
     private static void DropOnTile(FrameworkElement tile, Point p, PinDrag drag)
     {
         var targetId = EntryIdOf(tile.DataContext);
         if (targetId is null || targetId == drag.EntryId || PinLayout.PositionOf(targetId) is not { } target)
             return;
+
+        if (tile.DataContext is PinGapView)
+        {
+            PinLayout.DropOnGap(targetId, drag.EntryId, drag.FromFolderId, drag.AppId);
+            return;
+        }
 
         var zone = ZoneOf(tile, p, drag);
         if (zone == DropZone.Merge)
@@ -243,6 +256,24 @@ public partial class PinnedLayoutView : UserControl
         }
         s.ScaleX = s.ScaleY = scale;
         t.X = offset;
+    }
+
+    // ── Huecos ──────────────────────────────────────────────────────────────
+
+    private void GapBefore_Click(object sender, RoutedEventArgs e) => InsertGap(sender, after: false);
+
+    private void GapAfter_Click(object sender, RoutedEventArgs e) => InsertGap(sender, after: true);
+
+    private static void InsertGap(object sender, bool after)
+    {
+        if (EntryIdOf(MenuTarget(sender)?.DataContext) is { } entryId)
+            PinLayout.InsertGap(entryId, after);
+    }
+
+    private void GapRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuTarget(sender)?.DataContext is PinGapView gap)
+            PinLayout.RemoveGap(gap.Id);
     }
 
     // ── Carpetas ────────────────────────────────────────────────────────────

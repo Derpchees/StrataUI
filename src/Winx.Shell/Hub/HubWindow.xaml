@@ -29,6 +29,13 @@
                            IsPaneToggleVisible="False"
                            OpenPaneLength="250">
             <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Content="{l:T 'Resumen'}" TargetPageType="{x:Type pages:HomePage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Home24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItemHeader Text="{l:T 'Personalización'}" Margin="0,12,0,0" />
                 <ui:NavigationViewItem Content="{l:T 'Barra de tareas'}" TargetPageType="{x:Type pages:TaskbarPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PanelBottom20" />
@@ -39,9 +46,14 @@
                         <ui:SymbolIcon Symbol="Grid24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Bandeja del sistema'}" TargetPageType="{x:Type pages:TrayPage}">
+                <ui:NavigationViewItem Content="{l:T 'Bandeja y área de estado'}" TargetPageType="{x:Type pages:TrayPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Apps24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{l:T 'Notificaciones'}" TargetPageType="{x:Type pages:NotificationsPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Alert24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{l:T 'Apariencia'}" TargetPageType="{x:Type pages:AppearancePage}">
@@ -49,6 +61,8 @@
                         <ui:SymbolIcon Symbol="PaintBrush24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+
+                <ui:NavigationViewItemHeader Text="{l:T 'Sistema'}" Margin="0,12,0,0" />
                 <ui:NavigationViewItem Content="{l:T 'Optimización'}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Wrench24" />
@@ -91,6 +105,11 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="{l:T 'Actualizaciones'}" TargetPageType="{x:Type pages:UpdatesPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="ArrowDownload24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{l:T 'General'}" TargetPageType="{x:Type pages:GeneralPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />

@@ -13,15 +13,18 @@ a la normalidad.
 | Componente              | Estado                                                        |
 |-------------------------|---------------------------------------------------------------|
 | Barra de tareas         | ✅ una por monitor, en cualquier borde (abajo, arriba, izquierda, derecha), alineación y tamaño configurables |
-| Bandeja del sistema     | ✅ íconos visibles u ocultos, configurable desde el Hub        |
-| Hub de configuración    | ✅ barra, bandeja, apariencia, optimización, general           |
+| Bandeja del sistema     | ✅ íconos visibles u ocultos; se ordenan arrastrando, también entre la barra y los ocultos |
+| Hub de configuración    | ✅ portada, barra, menú Inicio, bandeja y área de estado, notificaciones, apariencia, optimización, actualizaciones, general |
 | Optimización (debloat)  | ✅ apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
 | Temas                   | ✅ Sistema, Claro, Oscuro, Transparencia, Liquid Glass (claro/oscuro), Material |
 | Panel de sonido         | ✅ salida y entrada con mosaicos de dispositivos, opciones (balance, mejoras de audio, modo exclusivo, llamadas) y volumen por aplicación |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
-| Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas y secciones, tecla Windows |
-| Notificaciones          | ⏳ abre el centro de Windows                                   |
+| Brillo                  | ✅ cada monitor por DDC/CI (y pantalla de portátil por WMI), todos a la vez, rueda del mouse |
+| Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas, secciones y huecos, tecla Windows; clic derecho: ejecutar como administrador, abrir ubicación, desinstalar |
+| Notificaciones          | ✅ centro propio junto al reloj (Win+N), avisos en el monitor y la esquina elegidos, No molestar, calendario |
+| Actualizaciones         | ✅ búsqueda automática en GitHub Releases e instalación con un clic |
+| Instalador              | ✅ Inno Setup, por usuario y sin administrador (`scripts\build-installer.ps1`) |
 | Idiomas                 | ✅ español e inglés, según el idioma de Windows o elegido en el Hub |
 
 ## Requisitos
@@ -32,9 +35,17 @@ a la normalidad.
 ## Compilar y ejecutar
 
 ```powershell
-.\scripts\run.ps1          # cierra WINX si está abierto, compila y lo vuelve a abrir
+.\scripts\run.ps1              # cierra WINX si está abierto, compila y lo vuelve a abrir
 dotnet test tests\Winx.Tests -c Release
+.\scripts\build-installer.ps1  # artifacts\WINX-Setup-X.Y.Z.exe (requiere Inno Setup 6)
 ```
+
+### Publicar una versión
+
+1. Generar el instalador con `scripts\build-installer.ps1`.
+2. Crear en GitHub (`Derpchees/WINX`) una publicación con la etiqueta `vX.Y.Z`, las notas del
+   CHANGELOG y el `.exe` adjunto. El Hub (Actualizaciones) la encuentra por esa etiqueta y descarga
+   el `.exe`.
 
 Clic derecho en un espacio vacío de la barra → **Configuración de WINX** abre el Hub;
 **Salir de WINX** vuelve a la barra de Windows.
@@ -44,8 +55,8 @@ Clic derecho en un espacio vacío de la barra → **Configuración de WINX** abr
 | Argumento            | Efecto                                                                 |
 |----------------------|------------------------------------------------------------------------|
 | *(sin argumentos)*   | Inicia WINX; si ya está abierto, muestra el Hub.                       |
-| `--hub <página>`     | Abre el Hub en una página: `Taskbar`, `Tray`, `Appearance`, `Apps`, `Privacy`, `AI`, `Backup`… |
-| `--exit`             | Cierra limpiamente la instancia en ejecución.                          |
+| `--hub <página>`     | Abre el Hub en una página: `Home`, `Taskbar`, `Start`, `Tray`, `Notifications`, `Appearance`, `Updates`, `Privacy`, `Backup`… |
+| `--exit`             | Cierra limpiamente la instancia en ejecución (y espera a que termine). |
 | `--restore-taskbar`  | Emergencia: vuelve a mostrar la barra de Windows si WINX se cerró mal. |
 
 (`--apply-tweak`, `--restore-tweaks`, `--restore-point` y `--audio-property` son de uso interno:
@@ -76,15 +87,20 @@ src/Winx.Shell/
   App.xaml(.cs)        Arranque, instancia única, ciclo de vida del shell
   Taskbar.xaml(.cs)    Barra de tareas (una por monitor)
   Controls/            Botón de tarea e ícono de bandeja
-  Flyouts/             Paneles flotantes: sonido, red, Bluetooth
+  Flyouts/             Paneles flotantes: sonido, red, Bluetooth, brillo, centro de notificaciones
+  Notifications/       Avisos emergentes de notificaciones
   StartMenu/           Menú Inicio: modelo común, estilos, anclados con carpetas y secciones
   Hub/                 Ventana de configuración y sus páginas
   Tweaks/              Motor de optimizaciones, catálogo, respaldo, apps Appx, elevación
-  Services/            Configuración, audio, red, Bluetooth, estado del sistema, registro
+  Services/            Configuración, audio, red, Bluetooth, brillo, notificaciones, actualizaciones,
+                       estado del sistema, memoria, registro
   Services/Themes/     Catálogo de temas, paleta generada, efectos de DWM, tema en Windows
   Themes/              Estilos compartidos de la barra
   Localization/        Traducciones de la interfaz (en.json; el español está en el código)
-tests/Winx.Tests/      Pruebas: optimizaciones, catálogo, anclados, audio, barra, traducciones
+tests/Winx.Tests/      Pruebas: optimizaciones, catálogo, anclados, audio, barra, traducciones,
+                       desinstalador, actualizaciones
+installer/             Script de Inno Setup
+scripts/               run.ps1 (compilar y relanzar), build-installer.ps1
 ```
 
 ## Créditos

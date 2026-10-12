@@ -35,6 +35,10 @@ public sealed class StartApp : INotifyPropertyChanged
 
     public bool IsPinned => StartMenuService.IsPinned(Id);
 
+    // Para el menú contextual (se consultan al abrirlo).
+    public bool CanOpenLocation => AppActions.CanOpenLocation(this);
+    public bool CanRunAsAdmin => AppActions.CanRunAsAdmin(this);
+
     internal void NotifyPinned() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinned)));
 
     public void Launch()

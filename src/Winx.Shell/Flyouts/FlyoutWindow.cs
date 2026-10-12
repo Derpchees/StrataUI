@@ -334,6 +334,7 @@ public static class FlyoutManager
             };
             flyout.Closed += (_, _) =>
             {
+                MemoryTrim.Schedule(TimeSpan.FromSeconds(5));
                 _lastClosedType = typeof(T);
                 _lastClosedAt = DateTime.UtcNow;
                 if (ReferenceEquals(_open, flyout))

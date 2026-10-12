@@ -121,6 +121,27 @@ public static class StartCommands
             StartMenuService.SetPinned(app, !app.IsPinned);
     });
 
+    public static ICommand OpenLocation { get; } = new Relay(p =>
+    {
+        FlyoutManager.CloseAll();
+        if (p is StartApp app)
+            AppActions.OpenLocation(app);
+    });
+
+    public static ICommand RunAsAdmin { get; } = new Relay(p =>
+    {
+        FlyoutManager.CloseAll();
+        if (p is StartApp app)
+            AppActions.RunAsAdmin(app);
+    });
+
+    public static ICommand Uninstall { get; } = new Relay(async p =>
+    {
+        FlyoutManager.CloseAll();
+        if (p is StartApp app)
+            await AppActions.UninstallAsync(app);
+    });
+
     public static ICommand OpenFolder { get; } = new Relay(p =>
     {
         switch (p as string)

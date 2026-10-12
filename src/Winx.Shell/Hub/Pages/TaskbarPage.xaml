@@ -2,12 +2,13 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
+      xmlns:hub="clr-namespace:Winx.Shell.Hub"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="{l:T 'Barra de tareas'}"
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <TextBlock Style="{StaticResource HubPageTitle}" Text="{l:T 'Barra de tareas'}" />
+            <hub:PageHeader Icon="PanelBottom20" Title="{l:T 'Barra de tareas'}" Subtitle="{l:T 'Alineación, tamaño y una barra por monitor.'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlignCenterHorizontal24" /></ui:CardControl.Icon>
@@ -96,69 +97,6 @@
                 </ui:CardControl>
             </StackPanel>
 
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Reloj'}" />
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Clock24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar segundos'}" VerticalAlignment="Center" />
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="SecondsSwitch" Click="Clock_Changed" />
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CalendarLtr24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar fecha'}" VerticalAlignment="Center" />
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="DateSwitch" Click="Clock_Changed" />
-            </ui:CardControl>
-
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Módulos del área de estado'}" />
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Wifi124" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Red'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Estado de la conexión y redes Wi-Fi'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="NetworkSwitch" Click="Modules_Changed" />
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Bluetooth24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Bluetooth'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Activar Bluetooth y conectar dispositivos'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="BluetoothSwitch" Click="Modules_Changed" />
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Speaker224" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Volumen'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Dispositivo de salida y volumen por aplicación'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="VolumeSwitch" Click="Modules_Changed" />
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Battery524" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Batería'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Solo aparece en equipos con batería'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="BatterySwitch" Click="Modules_Changed" />
-            </ui:CardControl>
         </StackPanel>
     </ScrollViewer>
 </Page>

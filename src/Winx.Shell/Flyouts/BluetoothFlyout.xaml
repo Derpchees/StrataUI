@@ -15,7 +15,7 @@
             <ui:ToggleSwitch x:Name="RadioSwitch" Grid.Column="1" Click="RadioSwitch_Click" />
         </Grid>
 
-        <TextBlock Style="{StaticResource FlyoutSection}" Text="DISPOSITIVOS EMPAREJADOS" />
+        <TextBlock Style="{StaticResource FlyoutSection}" Text="{l:T 'DISPOSITIVOS EMPAREJADOS'}" />
         <TextBlock x:Name="Hint" Style="{StaticResource FlyoutHint}" Margin="4,0,0,6" Visibility="Collapsed" />
         <ui:ProgressRing x:Name="Loading" IsIndeterminate="True" Width="24" Height="24" Margin="0,4" />
 

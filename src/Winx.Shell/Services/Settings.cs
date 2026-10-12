@@ -38,9 +38,16 @@ public sealed class PinEntry
 
     [System.Text.Json.Serialization.JsonIgnore]
     public bool IsFolder => FolderApps != null;
+
+    /// <summary>Espacio vacío que ocupa una celda (sin app ni carpeta).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsGap => FolderApps is null && AppId is null;
 }
 
 public enum StartIconKind { Winx, Windows, WindowsMono, Circle, Dot, Grid, Search }
+
+/// <summary>Esquina de la pantalla donde aparecen los avisos.</summary>
+public enum NotificationCorner { BottomRight, BottomLeft, TopRight, TopLeft }
 
 /// <summary>Preferencias de WINX, guardadas en %LOCALAPPDATA%\WINX\settings.json.</summary>
 public sealed class WinxSettings
@@ -91,6 +98,25 @@ public sealed class WinxSettings
     public bool ShowBluetoothModule { get; set; } = true;
     public bool ShowVolumeModule { get; set; } = true;
     public bool ShowBatteryModule { get; set; } = true;
+    /// <summary>Solo aparece si algún monitor permite cambiar el brillo (DDC/CI o pantalla integrada).</summary>
+    public bool ShowBrightnessModule { get; set; } = true;
+
+    // Notificaciones
+    /// <summary>Centro de notificaciones de WINX (desactivado: el reloj abre el de Windows).</summary>
+    public bool NotificationsEnabled { get; set; } = true;
+    /// <summary>Avisos emergentes cuando llega una notificación.</summary>
+    public bool NotificationBanners { get; set; } = true;
+    /// <summary>Monitor de los avisos (nombre de dispositivo); null = el principal de WINX.</summary>
+    public string? NotificationScreen { get; set; }
+    public NotificationCorner NotificationCorner { get; set; } = NotificationCorner.BottomRight;
+    /// <summary>Segundos que se ve cada aviso.</summary>
+    public int NotificationSeconds { get; set; } = 6;
+    /// <summary>No molestar: las notificaciones llegan al centro, pero sin avisos.</summary>
+    public bool NotificationDoNotDisturb { get; set; }
+
+    // Actualizaciones
+    public bool AutoCheckUpdates { get; set; } = true;
+    public DateTime? LastUpdateCheck { get; set; }
 
     /// <summary>Idioma de la interfaz: "auto" (el de Windows), "es", "en"…</summary>
     public string Language { get; set; } = "auto";
@@ -110,6 +136,8 @@ public sealed class WinxSettings
     // Bandeja: null = primera ejecución (se importan los íconos promovidos en Windows).
     public string[]? PinnedTrayIcons { get; set; }
     public List<string> KnownTrayIcons { get; set; } = new();
+    /// <summary>Orden de los íconos ocultos (identificadores); los que no están van al final.</summary>
+    public List<string> HiddenTrayOrder { get; set; } = new();
 }
 
 public static class Settings

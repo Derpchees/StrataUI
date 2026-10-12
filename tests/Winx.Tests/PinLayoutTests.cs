@@ -21,7 +21,7 @@ public sealed class PinLayoutTests
     private static List<PinSection> Layout => Settings.Current.StartLayout!;
 
     private static string[] Ids(int section) =>
-        Layout[section].Items.Select(e => e.IsFolder ? "[" + string.Join(",", e.FolderApps!) + "]" : e.AppId!).ToArray();
+        Layout[section].Items.Select(e => e.IsGap ? "_" : e.IsFolder ? "[" + string.Join(",", e.FolderApps!) + "]" : e.AppId!).ToArray();
 
     [Fact]
     public void Move_reorders_within_and_between_sections()
@@ -105,5 +105,41 @@ public sealed class PinLayoutTests
         Assert.Single(Layout);
         Assert.Equal(["x", "y"], Ids(0));
         Assert.Null(Settings.Current.PinnedStartApps);
+    }
+
+    [Fact]
+    public void Gaps_are_inserted_and_removed()
+    {
+        PinLayout.InsertGap("e-b", after: false);
+        PinLayout.InsertGap("e-c", after: true);
+        Assert.Equal(["a", "_", "b", "c", "_"], Ids(0));
+
+        PinLayout.RemoveGap(Layout[0].Items[1].Id);
+        Assert.Equal(["a", "b", "c", "_"], Ids(0));
+    }
+
+    [Fact]
+    public void Dropping_on_a_gap_swaps_places()
+    {
+        // La app ocupa el hueco y el hueco queda donde estaba: las demás no se corren.
+        PinLayout.InsertGap("e-c", after: true);
+        var gap = Layout[0].Items[3].Id;
+        PinLayout.DropOnGap(gap, "e-a");
+        Assert.Equal(["_", "b", "c", "a"], Ids(0));
+
+        // También entre secciones.
+        PinLayout.DropOnGap(Layout[0].Items[0].Id, "e-d");
+        Assert.Equal(["d", "b", "c", "a"], Ids(0));
+        Assert.Equal(["_"], Ids(1));
+    }
+
+    [Fact]
+    public void A_gap_is_never_merged_into_a_folder()
+    {
+        PinLayout.InsertGap("e-a", after: true);
+        var gap = Layout[0].Items[1].Id;
+        PinLayout.Merge(gap, "e-c");
+        PinLayout.Merge("e-c", gap);
+        Assert.Equal(["a", "_", "b", "c"], Ids(0));
     }
 }

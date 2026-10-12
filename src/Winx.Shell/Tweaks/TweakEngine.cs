@@ -61,11 +61,11 @@ public static class TweakEngine
     /// <summary>Restaura todos los valores respaldados. Devuelve false si quedó algo pendiente.</summary>
     public static async Task<bool> RestoreAllAsync()
     {
-        var failed = Backup.Restore(Hive.CurrentUser);
-        if (Backup.Data.Values.Values.Any(v => v.Hive == Hive.LocalMachine))
+        var failed = Backup.Restore(admin: false);
+        if (Backup.HasAdminValues)
         {
             if (Elevation.IsAdmin)
-                failed.AddRange(Backup.Restore(Hive.LocalMachine));
+                failed.AddRange(Backup.Restore(admin: true));
             else
             {
                 await Elevation.RunSelfAsync("--restore-tweaks", Backup.FilePath);
@@ -109,7 +109,7 @@ public static class TweakEngine
                     ApplyLocal(tweak, int.Parse(args[2], CultureInfo.InvariantCulture), new TweakBackup(args[3]));
                     return 0;
                 case "--restore-tweaks":
-                    return new TweakBackup(args[1]).Restore(Hive.LocalMachine).Count == 0 ? 0 : 2;
+                    return new TweakBackup(args[1]).Restore(admin: true).Count == 0 ? 0 : 2;
                 case "--restore-point":
                     SystemRestore.Create("WINX");
                     return 0;

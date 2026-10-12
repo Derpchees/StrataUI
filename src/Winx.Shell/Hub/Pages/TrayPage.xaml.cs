@@ -26,6 +26,14 @@ public partial class TrayPage : Page
     public TrayPage()
     {
         InitializeComponent();
+        var s = Settings.Current;
+        SecondsSwitch.IsChecked = s.ShowSeconds;
+        DateSwitch.IsChecked = s.ShowDate;
+        NetworkSwitch.IsChecked = s.ShowNetworkModule;
+        BluetoothSwitch.IsChecked = s.ShowBluetoothModule;
+        VolumeSwitch.IsChecked = s.ShowVolumeModule;
+        BatterySwitch.IsChecked = s.ShowBatteryModule;
+        BrightnessSwitch.IsChecked = s.ShowBrightnessModule;
         _onIconsChanged = (_, _) => Dispatcher.BeginInvoke(Refresh);
         Loaded += (_, _) =>
         {
@@ -77,4 +85,21 @@ public partial class TrayPage : Page
         if (sender is ToggleButton { DataContext: TrayIconItem item } toggle)
             TrayPromotion.SetPinned(item.Icon, toggle.IsChecked == true);
     }
+
+    // ── Área de estado y reloj ──────────────────────────────────────────────
+
+    private void Clock_Changed(object sender, RoutedEventArgs e) => Settings.Update(s =>
+    {
+        s.ShowSeconds = SecondsSwitch.IsChecked == true;
+        s.ShowDate = DateSwitch.IsChecked == true;
+    });
+
+    private void Modules_Changed(object sender, RoutedEventArgs e) => Settings.Update(s =>
+    {
+        s.ShowNetworkModule = NetworkSwitch.IsChecked == true;
+        s.ShowBluetoothModule = BluetoothSwitch.IsChecked == true;
+        s.ShowVolumeModule = VolumeSwitch.IsChecked == true;
+        s.ShowBatteryModule = BatterySwitch.IsChecked == true;
+        s.ShowBrightnessModule = BrightnessSwitch.IsChecked == true;
+    });
 }

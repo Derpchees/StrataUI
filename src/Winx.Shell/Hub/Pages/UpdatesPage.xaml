@@ -1,0 +1,82 @@
+<Page x:Class="Winx.Shell.Hub.Pages.UpdatesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
+      xmlns:hub="clr-namespace:Winx.Shell.Hub"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="{l:T 'Actualizaciones'}"
+      ScrollViewer.CanContentScroll="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <hub:PageHeader Icon="ArrowDownload24" Title="{l:T 'Actualizaciones'}"
+                            Subtitle="{l:T 'Nuevas versiones de WINX, con sus novedades.'}" />
+
+            <!-- Estado: versión instalada y resultado de la última búsqueda -->
+            <Border CornerRadius="10" Padding="20,18" BorderThickness="1"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="40" Height="40" Margin="0,0,16,0" VerticalAlignment="Center">
+                        <ui:SymbolIcon x:Name="StateIcon" Symbol="CheckmarkCircle24" FontSize="34" />
+                        <ui:ProgressRing x:Name="Checking" IsIndeterminate="True" Width="34" Height="34" Visibility="Collapsed" />
+                    </Grid>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock x:Name="StateTitle" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock x:Name="StateDetail" Style="{StaticResource CardDescription}" Margin="0,2,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:Button x:Name="CheckButton" Content="{l:T 'Buscar actualizaciones'}" Icon="{ui:SymbolIcon ArrowSync24}"
+                                   Click="Check_Click" />
+                        <ui:Button x:Name="InstallButton" Appearance="Primary" Margin="8,0,0,0" Visibility="Collapsed"
+                                   Content="{l:T 'Descargar e instalar'}" Icon="{ui:SymbolIcon ArrowDownload24}" Click="Install_Click" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <ProgressBar x:Name="DownloadProgress" Margin="0,8,0,0" Height="4" Minimum="0" Maximum="1" Visibility="Collapsed" />
+
+            <!-- Novedades de la versión disponible -->
+            <StackPanel x:Name="NotesPanel" Visibility="Collapsed">
+                <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Novedades'}" />
+                <Border CornerRadius="10" Padding="20,16" BorderThickness="1"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                    <StackPanel>
+                        <TextBlock x:Name="NotesText" FontSize="13" TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <ui:HyperlinkButton Margin="-8,10,0,0" Content="{l:T 'Ver en GitHub'}" Click="Page_Click" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Opciones'}" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowClockwise24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Buscar actualizaciones automáticamente'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Al iniciar y cada 6 horas. Si hay una versión nueva, aparece un aviso; nunca se instala sin preguntar.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="AutoSwitch" Click="Auto_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Info24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock x:Name="VersionText" Style="{StaticResource CardTitle}" />
+                        <TextBlock x:Name="SourceText" Style="{StaticResource CardDescription}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="{l:T 'Historial de versiones'}" Click="Page_Click" />
+            </ui:CardControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

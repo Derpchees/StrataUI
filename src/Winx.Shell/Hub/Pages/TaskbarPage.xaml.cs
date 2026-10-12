@@ -19,12 +19,6 @@ public partial class TaskbarPage : Page
         CenterAppsSwitch.IsChecked = s.TaskbarCenterApps;
         HeightBox.SelectedItem = HeightBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == s.TaskbarHeight.ToString()) ?? HeightBox.Items[1];
-        SecondsSwitch.IsChecked = s.ShowSeconds;
-        DateSwitch.IsChecked = s.ShowDate;
-        NetworkSwitch.IsChecked = s.ShowNetworkModule;
-        BluetoothSwitch.IsChecked = s.ShowBluetoothModule;
-        VolumeSwitch.IsChecked = s.ShowVolumeModule;
-        BatterySwitch.IsChecked = s.ShowBatteryModule;
         Select(AppsModeBox, s.TaskbarAppsMode.ToString());
         StatusAllSwitch.IsChecked = s.StatusOnAllTaskbars;
         BuildMainScreenBox();
@@ -172,18 +166,4 @@ public partial class TaskbarPage : Page
             return;
         Settings.Update(s => s.TaskbarHeight = int.Parse(tag));
     }
-
-    private void Clock_Changed(object sender, RoutedEventArgs e) => Settings.Update(s =>
-    {
-        s.ShowSeconds = SecondsSwitch.IsChecked == true;
-        s.ShowDate = DateSwitch.IsChecked == true;
-    });
-
-    private void Modules_Changed(object sender, RoutedEventArgs e) => Settings.Update(s =>
-    {
-        s.ShowNetworkModule = NetworkSwitch.IsChecked == true;
-        s.ShowBluetoothModule = BluetoothSwitch.IsChecked == true;
-        s.ShowVolumeModule = VolumeSwitch.IsChecked == true;
-        s.ShowBatteryModule = BatterySwitch.IsChecked == true;
-    });
 }

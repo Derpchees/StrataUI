@@ -14,7 +14,15 @@
     <ApplicationIcon>Assets\winx.ico</ApplicationIcon>
     <!-- El DPI lo declara el manifiesto (correcto para WPF); el aviso es solo para apps WinForms. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
+    <!-- Memoria: el recolector concurrente reserva un hilo y memoria extra que un shell en reposo
+         no necesita; ConserveMemory compacta antes para no acumular huecos. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="5" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Winx.Tests" />
@@ -35,6 +43,7 @@
   <ItemGroup>
     <PackageReference Include="ManagedShell" Version="0.0.374" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="System.Management" Version="10.0.12" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
   </ItemGroup>
 

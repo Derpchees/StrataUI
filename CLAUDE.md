@@ -41,12 +41,24 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y
   lanzado con `Elevation.RunSelfAsync(...)` (UAC). El proceso elevado valida sus argumentos y
   solo hace lo previsto (ver `AudioDeviceOptions.RunElevated`, `TweakEngine.RunElevatedCommand`).
+- **Notificaciones**: `NotificationService` lee las de Windows con `UserNotificationListener`
+  consultando cada 2 s (sin identidad de paquete no llega el evento de cambios). Los avisos los
+  muestra `Notifications/NotificationBannerWindow` (una ventana sin foco, en el monitor y la
+  esquina del Hub); el centro es `Flyouts/NotificationFlyout`. Los avisos propios de WINX (prueba,
+  actualización) llevan `IsLocal` y opcionalmente `OnClick`. En la PC del usuario Windows no
+  muestra sus propios avisos emergentes, así que no hay duplicados.
+- **Página nueva del Hub**: `Hub/Pages/XxxPage.xaml` con `<hub:PageHeader Icon=… Title=… Subtitle=…/>`
+  al principio, entrada en `HubWindow.xaml` (grupo Personalización o Sistema) y, si conviene, un
+  mosaico en `HomePage`. `--hub Xxx` la abre.
+- **Consumo**: nada de temporizadores por barra; usar eventos (`SystemStatus.Changed`, el reloj
+  compartido de `Taskbar`) y `MemoryTrim.Schedule(...)` después de crear muchos objetos de golpe.
 
 ## Compilar, ejecutar y probar
 
 ```powershell
 .\scripts\run.ps1                          # cierra WINX, compila y lo vuelve a abrir
 dotnet test tests\Winx.Tests -c Release    # pruebas (xUnit)
+.\scripts\build-installer.ps1              # artifacts\WINX-Setup-X.Y.Z.exe (Inno Setup 6, ya instalado)
 ```
 
 - Argumentos útiles: `WINX.exe --hub Taskbar` abre el Hub en una página, `--exit` cierra la
@@ -70,6 +82,9 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
 3. Actualizar la tabla "Estado" del README si cambió lo que hace un componente.
 4. Commit `feat(área): resumen (vX.Y.Z)` y **etiqueta anotada**:
    `git tag -a vX.Y.Z -m "WINX vX.Y.Z: resumen"` (no etiquetas simples).
+   Generar también el instalador (`build-installer.ps1`). Las actualizaciones del Hub buscan
+   publicaciones de GitHub en `Derpchees/WINX` (`UpdateService.Repository`) con la etiqueta
+   `vX.Y.Z` y el `.exe` adjunto; publicarlas solo si el usuario lo pide (es hacer push).
 5. Commits intermedios durante el trabajo están bien; la versión se cierra al terminar la tanda,
    antes de pasar a otra cosa.
 
@@ -81,7 +96,10 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
 
 ## Probar en la PC del usuario
 
-El usuario usa la instancia de WINX que relanzo y cambia opciones por su cuenta.
+El usuario usa la instancia de WINX que relanzo y cambia opciones por su cuenta. Quiere que
+**yo haga todas las pruebas** antes de pedirle nada (abrir paneles, clics, arrastres, capturas,
+instalar y desinstalar en una carpeta temporal); a él solo lo que no se puede automatizar (UAC,
+tecla Windows, Win+N).
 
 - Antes de pruebas que cambian opciones, respaldar `%LOCALAPPDATA%\WINX\settings.json` y
   restaurarlo después (respetando lo que el usuario haya elegido mientras tanto).
@@ -94,7 +112,12 @@ El usuario usa la instancia de WINX que relanzo y cambia opciones por su cuenta.
 - Su PC: Windows en inglés (en-US), así que WINX se ve en inglés salvo que elija Español en el
   Hub; los títulos de ventana también están traducidos ("Volume", "Start"). Dos monitores de
   2560×1440: el principal de Windows es `\\.\DISPLAY1` (X = 0, 100 %) y el otro está a su
-  izquierda (X negativa, 125 %).
+  izquierda (X negativa, 125 %). Usa las barras en vertical: la principal de WINX (con la bandeja)
+  está en el borde derecho del monitor izquierdo. Sus monitores aceptan brillo por DDC/CI.
+- En el monitor de 125 % las coordenadas de una captura pueden no coincidir con las de WINX: para
+  ubicar un control, usar el `BoundingRectangle` de UIA o registrar `PointToScreen` desde WINX.
+- UIA: buscar por nombre devuelve también la tarjeta y el texto; quedarse con el elemento que
+  tenga `InvokePattern`. Los elementos de la navegación del Hub no lo tienen (hacer clic).
 - Automatización (UIA): la barra y el Hub se llaman los dos "WINX"; distinguirlos por tamaño.
   Invocar el botón de un panel lo abre o lo cierra: comprobar antes si ya está abierto.
 - El gancho de teclado ignora las teclas simuladas (`SendInput`): la tecla Windows y Win+X no se
@@ -120,6 +143,12 @@ El usuario usa la instancia de WINX que relanzo y cambia opciones por su cuenta.
 - **Traducciones**: la clave es el texto en español, así que una palabra con dos sentidos comparte
   traducción ("Inicio" del menú y la página "Inicio" del Explorador). Si el sentido cambia, usar
   textos distintos ("Inicio del Explorador").
+- **Glifos de Segoe Fluent** en C#: escribirlos como `''`, no el carácter; al reescribir un
+  archivo copiando el texto, los caracteres de uso privado se pierden y queda `''`.
+- **Directivas en HKCU**: `HKCU\Software\Policies` solo la escriben administradores (los ajustes
+  ahí piden UAC: `RegSetting.NeedsAdminFor`).
+- **DDC/CI**: el identificador de un monitor físico puede valer 0; no usarlo como "no hay".
+- **Bandeja**: el clic izquierdo se envía a la app al soltar (para distinguirlo de un arrastre).
 - **Barras verticales**: cualquier cosa nueva en la barra debe funcionar en los cuatro bordes
   (orientación en `Taskbar.ApplyOrientation`, indicador en `TaskButton.FitTo`, posición de
   ventanas emergentes según `Position`).

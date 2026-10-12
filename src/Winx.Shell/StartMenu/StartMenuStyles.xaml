@@ -12,21 +12,27 @@
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     </Style>
 
-    <!-- Menú contextual común a cualquier app: anclar / desanclar -->
+    <!-- Menú contextual común a cualquier app: abrir, anclar, ubicación, administrador, desinstalar -->
     <ContextMenu x:Key="AppContextMenu" x:Shared="False">
-        <MenuItem Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" Header="{l:T 'Abrir'}" />
+        <MenuItem Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" Header="{l:T 'Abrir'}" FontWeight="SemiBold" />
+        <MenuItem Command="{x:Static start:StartCommands.RunAsAdmin}" CommandParameter="{Binding}" Header="{l:T 'Ejecutar como administrador'}"
+                  Visibility="{Binding CanRunAsAdmin, Converter={StaticResource BoolToVis}}" />
+        <MenuItem Command="{x:Static start:StartCommands.OpenLocation}" CommandParameter="{Binding}" Header="{l:T 'Abrir ubicación del archivo'}"
+                  Visibility="{Binding CanOpenLocation, Converter={StaticResource BoolToVis}}" />
+        <Separator />
         <MenuItem Command="{x:Static start:StartCommands.TogglePin}" CommandParameter="{Binding}">
             <MenuItem.Style>
                 <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                    <Setter Property="Header" Value="Anclar a Inicio" />
+                    <Setter Property="Header" Value="{l:T 'Anclar a Inicio'}" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsPinned}" Value="True">
-                            <Setter Property="Header" Value="Desanclar de Inicio" />
+                            <Setter Property="Header" Value="{l:T 'Desanclar de Inicio'}" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </MenuItem.Style>
         </MenuItem>
+        <MenuItem Command="{x:Static start:StartCommands.Uninstall}" CommandParameter="{Binding}" Header="{l:T 'Desinstalar'}" />
     </ContextMenu>
 
     <!-- App en cuadrícula: ícono grande y nombre debajo -->

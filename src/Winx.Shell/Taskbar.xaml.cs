@@ -25,10 +25,9 @@ public partial class Taskbar : AppBarWindow
 {
     private readonly ShellManager _shell;
     private readonly bool _multiMonitor;
-    private readonly DispatcherTimer _clockTimer;
-    private readonly DispatcherTimer _statusTimer;
 
     private readonly ICollectionView _taskView;
+    private readonly ICollectionView? _hiddenTrayView;
     private TaskbarAppsMode _appsMode;
 
     public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, bool isMain)
@@ -53,11 +52,18 @@ public partial class Taskbar : AppBarWindow
         _taskView = CreateTaskView();
         TaskList.ItemsSource = _taskView;
 
+        // El texto del tooltip del reloj se arma al abrirlo (fecha y notificaciones pendientes).
+        ClockButton.ToolTip = " ";
+        ClockButton.ToolTipOpening += (_, _) => ClockButton.ToolTip = ClockToolTip();
+        Services.Notifications.NotificationService.Changed += UpdateNotificationBadge;
+
         if (isMain)
         {
             var tray = shell.NotificationArea;
             PinnedTray.ItemsSource = tray.PinnedIcons;
-            HiddenTray.ItemsSource = tray.UnpinnedIcons;
+            _hiddenTrayView = TrayPromotion.CreateHiddenView(tray);
+            HiddenTray.ItemsSource = _hiddenTrayView;
+            TrayIcon.DragStarted += OnTrayDragStarted;
             ((INotifyCollectionChanged)tray.UnpinnedIcons).CollectionChanged += (_, _) => UpdateChevron();
             UpdateChevron();
             LocationChanged += (_, _) => ReportTrayPosition();
@@ -68,19 +74,16 @@ public partial class Taskbar : AppBarWindow
             TrayArea.Visibility = Visibility.Collapsed;
         }
 
-        _clockTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _clockTimer.Tick += (_, _) => UpdateClock();
-        _clockTimer.Start();
-
-        _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _statusTimer.Tick += (_, _) => UpdateStatus();
-        _statusTimer.Start();
+        ClockTick += UpdateClock;
+        StartSharedClock();
+        SystemStatus.Changed += UpdateStatus;
 
         Settings.Changed += ApplySettings;
         ApplySettings();
 
         App.Current.Audio.Changed += UpdateVolume;
         UpdateVolume();
+        Services.Brightness.BrightnessService.Changed += ApplySettings;
 
         SourceInitialized += (_, _) => ApplyBackdrop();
         SizeChanged += (_, _) => ApplyBackdrop();
@@ -169,12 +172,15 @@ public partial class Taskbar : AppBarWindow
         TrayArea.Orientation = Orientation.Vertical;
         PinnedTray.ItemsPanel = Panel(typeof(WrapPanel));
         PinnedTray.HorizontalAlignment = HorizontalAlignment.Center;
-        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, VolumeButton, BatteryButton })
+        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton })
         {
             button.HorizontalAlignment = HorizontalAlignment.Center;
             button.Height = 36;
         }
         ClockButton.Padding = new Thickness(2, 6, 2, 6);
+        ClockContent.Orientation = Orientation.Vertical;
+        NotificationBadge.Margin = new Thickness(0, 4, 0, 0);
+        NotificationBadge.HorizontalAlignment = HorizontalAlignment.Center;
         TimeText.HorizontalAlignment = DateText.HorizontalAlignment = HorizontalAlignment.Center;
         TimeText.FontSize = DateText.FontSize = 11;
 
@@ -292,9 +298,13 @@ public partial class Taskbar : AppBarWindow
         NetworkButton.Visibility = status && s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
         BluetoothButton.Visibility = status && s.ShowBluetoothModule ? Visibility.Visible : Visibility.Collapsed;
         VolumeButton.Visibility = status && s.ShowVolumeModule ? Visibility.Visible : Visibility.Collapsed;
+        BrightnessButton.Visibility = status && s.ShowBrightnessModule && Services.Brightness.BrightnessService.Available
+            ? Visibility.Visible : Visibility.Collapsed;
         ClockButton.Visibility = status ? Visibility.Visible : Visibility.Collapsed;
+        RescheduleClock();
         UpdateClock();
         UpdateStatus();
+        UpdateNotificationBadge();
     }
 
     /// <summary>
@@ -376,12 +386,52 @@ public partial class Taskbar : AppBarWindow
         });
     }
 
+    // ── Reloj compartido ────────────────────────────────────────────────────
+    // Un solo temporizador para todas las barras, alineado al cambio de minuto (o de segundo si se
+    // muestran): sin segundos, WINX despierta una vez por minuto en lugar de cada segundo.
+
+    private static DispatcherTimer? _sharedClock;
+    private static event Action? ClockTick;
+
+    private static void StartSharedClock()
+    {
+        if (_sharedClock != null)
+            return;
+        _sharedClock = new DispatcherTimer(DispatcherPriority.Normal);
+        _sharedClock.Tick += (_, _) =>
+        {
+            ScheduleNextTick();
+            ClockTick?.Invoke();
+        };
+        ScheduleNextTick();
+        _sharedClock.Start();
+    }
+
+    private static void ScheduleNextTick()
+    {
+        var now = DateTime.Now;
+        var next = Settings.Current.ShowSeconds
+            ? now.AddTicks(TimeSpan.TicksPerSecond - now.Ticks % TimeSpan.TicksPerSecond)
+            : now.AddTicks(TimeSpan.TicksPerMinute - now.Ticks % TimeSpan.TicksPerMinute);
+        // Unos milisegundos de margen para no caer justo antes del cambio.
+        _sharedClock!.Interval = next - now + TimeSpan.FromMilliseconds(30);
+    }
+
+    /// <summary>Al mostrar u ocultar los segundos cambia el ritmo del reloj.</summary>
+    private static void RescheduleClock()
+    {
+        if (_sharedClock is null)
+            return;
+        _sharedClock.Stop();
+        ScheduleNextTick();
+        _sharedClock.Start();
+    }
+
     private void UpdateClock()
     {
         var now = DateTime.Now;
         TimeText.Text = now.ToString(Settings.Current.ShowSeconds ? "T" : "t");
         DateText.Text = IsVertical ? now.ToString(ShortDateWithoutYear()) : now.ToString("d");
-        ClockButton.ToolTip = now.ToString("D");
     }
 
     /// <summary>
@@ -416,9 +466,14 @@ public partial class Taskbar : AppBarWindow
     {
         Settings.Changed -= ApplySettings;
         App.Current.Audio.Changed -= UpdateVolume;
+        Services.Brightness.BrightnessService.Changed -= ApplySettings;
+        Services.Notifications.NotificationService.Changed -= UpdateNotificationBadge;
         ThemeManager.ThemeChanged -= OnThemeChanged;
-        _clockTimer.Stop();
-        _statusTimer.Stop();
+        TrayIcon.DragStarted -= OnTrayDragStarted;
+        if (_hiddenTrayView != null)
+            TrayPromotion.ReleaseHiddenView(_hiddenTrayView);
+        ClockTick -= UpdateClock;
+        SystemStatus.Changed -= UpdateStatus;
         base.CustomClosing();
     }
 
@@ -443,7 +498,30 @@ public partial class Taskbar : AppBarWindow
     private void StartButton_Click(object sender, RoutedEventArgs e) =>
         StartMenu.StartMenuLauncher.Toggle(StartButton);
 
-    private void ClockButton_Click(object sender, RoutedEventArgs e) => ShellHelper.ShowNotificationCenter();
+    private void ClockButton_Click(object sender, RoutedEventArgs e) => ToggleNotificationCenter();
+
+    /// <summary>Centro de notificaciones de WINX junto al reloj (o el de Windows si está desactivado).</summary>
+    public void ToggleNotificationCenter()
+    {
+        if (Settings.Current.NotificationsEnabled)
+            Flyouts.FlyoutManager.Toggle<Flyouts.NotificationFlyout>(ClockButton);
+        else
+            ShellHelper.ShowNotificationCenter();
+    }
+
+    private void UpdateNotificationBadge()
+    {
+        int count = Services.Notifications.NotificationService.Items.Count;
+        NotificationBadge.Visibility = count > 0 && Settings.Current.NotificationsEnabled ? Visibility.Visible : Visibility.Collapsed;
+        NotificationCount.Text = count > 99 ? "99+" : count.ToString();
+    }
+
+    private static string ClockToolTip()
+    {
+        int count = Services.Notifications.NotificationService.Items.Count;
+        string date = DateTime.Now.ToString("D");
+        return count > 0 ? date + "\n" + Loc.F("{0} notificaciones", count) : date;
+    }
 
     private void NetworkButton_Click(object sender, RoutedEventArgs e) =>
         Flyouts.FlyoutManager.Toggle<Flyouts.NetworkFlyout>(NetworkButton);
@@ -453,6 +531,21 @@ public partial class Taskbar : AppBarWindow
 
     private void VolumeButton_Click(object sender, RoutedEventArgs e) =>
         Flyouts.FlyoutManager.Toggle<Flyouts.VolumeFlyout>(VolumeButton);
+
+    private void BrightnessButton_Click(object sender, RoutedEventArgs e) =>
+        Flyouts.FlyoutManager.Toggle<Flyouts.BrightnessFlyout>(BrightnessButton);
+
+    /// <summary>La rueda sobre el botón cambia el brillo del monitor de esta barra.</summary>
+    private void BrightnessButton_MouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        var center = BrightnessButton.PointToScreen(new Point(BrightnessButton.ActualWidth / 2, BrightnessButton.ActualHeight / 2));
+        if (Services.Brightness.BrightnessService.MonitorAt(new System.Drawing.Point((int)center.X, (int)center.Y)) is { } monitor)
+        {
+            monitor.Percent += e.Delta > 0 ? 5 : -5;
+            BrightnessButton.ToolTip = Loc.F("Brillo: {0}%", monitor.Percent);
+        }
+        e.Handled = true;
+    }
 
     private void TaskScroller_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {

@@ -6,8 +6,8 @@ namespace Winx.Shell.Services.StartMenu;
 /// <summary>
 /// Intercepta la tecla Windows pulsada sola para abrir el menú Inicio de WINX en lugar del de
 /// Windows. Los atajos (Win+E, Win+R, Win+Shift+S…) no se tocan: si se pulsa otra tecla mientras
-/// Win está abajo, la combinación sigue su curso normal; la excepción es Win+X, que abre el menú del
-/// clic derecho en Inicio de WINX.
+/// Win está abajo, la combinación sigue su curso normal; las excepciones son Win+X, que abre el menú del
+/// clic derecho en Inicio de WINX, y Win+N, que abre su centro de notificaciones.
 /// </summary>
 /// <remarks>
 /// Windows abre su Inicio al soltar Win sin haber pulsado otra tecla. Justo antes de dejar pasar
@@ -18,7 +18,7 @@ public static class WinKeyHook
 {
     private const int WhKeyboardLl = 13;
     private const int WmKeyDown = 0x0100, WmKeyUp = 0x0101, WmSysKeyDown = 0x0104, WmSysKeyUp = 0x0105;
-    private const int VkLWin = 0x5B, VkRWin = 0x5C, VkMask = 0xFF, VkX = 0x58;
+    private const int VkLWin = 0x5B, VkRWin = 0x5C, VkMask = 0xFF, VkX = 0x58, VkN = 0x4E;
     private const uint LlkhfInjected = 0x10;
     private const uint KeyEventFKeyUp = 0x0002;
 
@@ -31,6 +31,8 @@ public static class WinKeyHook
     private static bool _winDown;
     private static bool _comboUsed;
     private static bool _maskOnRelease;
+    private static volatile bool _handleWin;
+    private static volatile bool _handleWinN;
 
     /// <summary>Win se pulsó y soltó sola (se invoca en el hilo de la UI).</summary>
     public static event Action? WinPressed;
@@ -38,13 +40,21 @@ public static class WinKeyHook
     /// <summary>Win+X: el menú del clic derecho en Inicio (se invoca en el hilo de la UI).</summary>
     public static event Action? WinXPressed;
 
+    /// <summary>Win+N: el centro de notificaciones (se invoca en el hilo de la UI).</summary>
+    public static event Action? WinNPressed;
+
     /// <summary>
     /// El hook vive en un hilo propio con su bucle de mensajes: si la UI se bloquea un momento,
     /// el teclado del sistema no se retrasa (Windows espera al hook en cada tecla) ni Windows
     /// desinstala el hook por tardar demasiado.
     /// </summary>
-    public static void Update(bool enabled)
+    /// <param name="winKey">Tecla Windows sola y Win+X (menú Inicio de WINX).</param>
+    /// <param name="winN">Win+N (centro de notificaciones de WINX).</param>
+    public static void Update(bool winKey, bool winN)
     {
+        _handleWin = winKey;
+        _handleWinN = winN;
+        bool enabled = winKey || winN;
         if (enabled && _thread == null)
         {
             var ready = new ManualResetEventSlim();
@@ -100,7 +110,14 @@ public static class WinKeyHook
                         _comboUsed = _maskOnRelease = false;
                     _winDown = true;
                 }
-                else if (!isWin && down && _winDown && info.VkCode == VkX)
+                else if (!isWin && down && _winDown && info.VkCode == VkN && _handleWinN)
+                {
+                    // Igual que Win+X: la N no llega a Windows y se enmascara al soltar Win.
+                    _comboUsed = _maskOnRelease = true;
+                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => WinNPressed?.Invoke());
+                    return (IntPtr)1;
+                }
+                else if (!isWin && down && _winDown && info.VkCode == VkX && _handleWin)
                 {
                     // Win+X: se abre el menú de WINX y la X no llega a Windows. Al soltar Win hay
                     // que enmascararlo, porque Windows solo vio Win y abriría su Inicio.
@@ -115,7 +132,7 @@ public static class WinKeyHook
                 else if (isWin && up)
                 {
                     _winDown = false;
-                    if (!_comboUsed)
+                    if (!_comboUsed && _handleWin)
                     {
                         SendMaskKey();
                         System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => WinPressed?.Invoke());

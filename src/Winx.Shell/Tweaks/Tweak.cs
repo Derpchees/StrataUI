@@ -23,6 +23,15 @@ public sealed record RegSetting(
     string? OwnerKey = null)
 {
     public string Key => $"{(Hive == Hive.LocalMachine ? "HKLM" : "HKCU")}\\{Path}\\{Name}";
+
+    public bool NeedsAdmin => NeedsAdminFor(Hive, Path);
+
+    /// <summary>
+    /// HKLM y las directivas: HKCU\Software\Policies también está protegida (solo administradores
+    /// escriben ahí, aunque esté en la colmena del usuario).
+    /// </summary>
+    public static bool NeedsAdminFor(Hive hive, string path) =>
+        hive == Hive.LocalMachine || path.StartsWith(@"Software\Policies\", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed record Tweak(
@@ -38,5 +47,5 @@ public sealed record Tweak(
 
     public string[] Choices => Options ?? Toggle;
     public bool IsToggle => Options is null;
-    public bool RequiresAdmin => Settings.Any(s => s.Hive == Hive.LocalMachine);
+    public bool RequiresAdmin => Settings.Any(s => s.NeedsAdmin);
 }

@@ -79,6 +79,13 @@ public partial class App : Application
             {
                 running.Set();
                 running.Dispose();
+                // Espera a que termine de cerrarse: el instalador y el desinstalador usan --exit
+                // y no deben tocar los archivos mientras la instancia aún los usa.
+                foreach (var other in Process.GetProcessesByName("WINX").Where(p => p.Id != Environment.ProcessId))
+                {
+                    using (other)
+                        other.WaitForExit(15000);
+                }
             }
             Shutdown();
             return;
@@ -134,13 +141,18 @@ public partial class App : Application
         _shell = new ShellManager(config);
 
         TrayPromotion.Attach(_shell.NotificationArea);
+        SystemStatus.Initialize();
         Services.StartMenu.StartMenuService.Initialize();
         Services.StartMenu.WinKeyHook.WinPressed += OnWinKey;
-        Services.StartMenu.WinKeyHook.WinXPressed += () =>
-            (_taskbars.FirstOrDefault(t => t.IsMain) ?? _taskbars.FirstOrDefault())?.ShowWinXMenu();
-        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey);
+        Services.StartMenu.WinKeyHook.WinXPressed += () => MainTaskbar?.ShowWinXMenu();
+        Services.StartMenu.WinKeyHook.WinNPressed += () => MainTaskbar?.ToggleNotificationCenter();
+        UpdateKeyHook();
         OpenTaskbars();
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
+        _ = Services.Brightness.BrightnessService.RefreshAsync();
+        Services.Notifications.NotificationService.Arrived += OnNotificationArrived;
+        Services.Notifications.NotificationService.Update();
+        Services.Updates.UpdateService.UpdateSchedule();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged += OnWindowsPreferenceChanged;
         Settings.Changed += OnSettingsChanged;
@@ -162,6 +174,9 @@ public partial class App : Application
             MarkForegroundWindowActive();
         };
         activeTimer.Start();
+
+        // Lo que se cargó al arrancar (íconos, catálogo de apps, temas) ya no hace falta en memoria.
+        MemoryTrim.Schedule(TimeSpan.FromSeconds(20));
     }
 
     /// <summary>ManagedShell solo marca la ventana activa cuando cambia el foco;
@@ -252,6 +267,7 @@ public partial class App : Application
             Log.Info("Cambió el número de monitores; recreando barras");
             CloseTaskbars();
             OpenTaskbars();
+            _ = Services.Brightness.BrightnessService.RefreshAsync();
         });
     }
 
@@ -268,17 +284,38 @@ public partial class App : Application
                 taskbar.RefreshFromWindows();
         });
 
+    /// <summary>
+    /// Aviso emergente de una notificación nueva, salvo con "No molestar", con los avisos
+    /// desactivados o mientras una app ocupa la pantalla completa (juegos, videos, presentaciones).
+    /// </summary>
+    private void OnNotificationArrived(Services.Notifications.WinxNotification item)
+    {
+        var s = Settings.Current;
+        bool quiet = !s.NotificationBanners || s.NotificationDoNotDisturb
+                     || _shell?.FullScreenHelper.FullScreenApps.Count > 0;
+        if (item.IsLocal || !quiet)
+            Notifications.NotificationBannerWindow.ShowBanner(item);
+    }
+
     /// <summary>Tecla Windows: abre el menú Inicio de la barra principal.</summary>
     private void OnWinKey()
     {
-        var taskbar = _taskbars.FirstOrDefault(t => t.IsMain) ?? _taskbars.FirstOrDefault();
+        var taskbar = MainTaskbar;
         if (taskbar != null)
             StartMenu.StartMenuLauncher.Toggle(taskbar.StartAnchor);
     }
 
+    private static void UpdateKeyHook() =>
+        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled);
+
+    /// <summary>Barra principal de WINX (bandeja, tecla Windows, Win+X, Win+N).</summary>
+    private Taskbar? MainTaskbar => _taskbars.FirstOrDefault(t => t.IsMain) ?? _taskbars.FirstOrDefault();
+
     private void OnSettingsChanged()
     {
-        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey);
+        UpdateKeyHook();
+        Services.Notifications.NotificationService.Update();
+        Services.Updates.UpdateService.UpdateSchedule();
         if (_exiting)
             return;
         if (BarLayoutKey() != _barLayout)
@@ -329,6 +366,13 @@ public partial class App : Application
         ExitShell(restart: true);
     }
 
+    /// <summary>Abre el Hub en una página ("Updates", "Notifications"…).</summary>
+    public void OpenHub(string page)
+    {
+        OpenHub();
+        _hub?.NavigateTo(page);
+    }
+
     public void OpenHub()
     {
         if (_exiting)
@@ -336,7 +380,11 @@ public partial class App : Application
         if (_hub is null)
         {
             _hub = new Hub.HubWindow();
-            _hub.Closed += (_, _) => _hub = null;
+            _hub.Closed += (_, _) =>
+            {
+                _hub = null;
+                MemoryTrim.Schedule(TimeSpan.FromSeconds(3));
+            };
         }
         _hub.Show();
         if (File.Exists(HubRequestPath))
@@ -373,7 +421,9 @@ public partial class App : Application
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
-        Services.StartMenu.WinKeyHook.Update(false);
+        Services.StartMenu.WinKeyHook.Update(false, false);
+        Services.Notifications.NotificationService.Shutdown();
+        Notifications.NotificationBannerWindow.CloseAll();
         Services.StartMenu.StartMenuService.Shutdown();
         Flyouts.FlyoutManager.CloseAll();
         _hub?.Close();
@@ -388,6 +438,9 @@ public partial class App : Application
         Services.Themes.WindowsTheming.Shutdown();
         ThemeManager.Shutdown();
         _audio?.Dispose();
+        Services.Brightness.BrightnessService.Shutdown();
+        SystemStatus.Shutdown();
+        Services.Updates.UpdateService.Shutdown();
 
         _exitWait?.Unregister(null);
         _exitEvent?.Dispose();

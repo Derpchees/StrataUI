@@ -65,7 +65,7 @@ public sealed class TweakEngineTests : IDisposable
         Assert.Equal(0, Read(Root, "Existing"));
         Assert.Equal(1, Read(Root, "Policy"));
 
-        var failed = new TweakBackup(_backupPath).Restore(Hive.CurrentUser);
+        var failed = new TweakBackup(_backupPath).Restore(admin: false);
 
         Assert.Empty(failed);
         Assert.Equal(7, Read(Root, "Existing"));
@@ -81,7 +81,7 @@ public sealed class TweakEngineTests : IDisposable
 
         TweakEngine.ApplyLocal(tweak, 1, backup);
         TweakEngine.ApplyLocal(tweak, 2, backup);
-        new TweakBackup(_backupPath).Restore(Hive.CurrentUser);
+        new TweakBackup(_backupPath).Restore(admin: false);
 
         Assert.Equal(2, Read(Root, "Mode"));
     }
@@ -135,5 +135,14 @@ public sealed class TweakCatalogTests
     {
         foreach (var setting in TweakCatalog.All.SelectMany(t => t.Settings).Where(s => s.OwnerKey != null))
             Assert.StartsWith(setting.OwnerKey!, setting.Path, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void User_policies_require_admin()
+    {
+        // HKCU\Software\Policies solo la escriben administradores (fallaba "búsqueda web de Bing").
+        var bing = TweakCatalog.All.Single(t => t.Id == "bing-search");
+        Assert.True(bing.RequiresAdmin);
+        Assert.False(RegSetting.NeedsAdminFor(Hive.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Search"));
     }
 }

@@ -59,11 +59,19 @@ public sealed class TweakBackup
         Save();
     }
 
-    /// <summary>Restaura los valores de una colmena; los que fallan quedan para reintentar.</summary>
-    public List<string> Restore(Hive hive)
+    /// <summary>Quedan valores que solo un administrador puede restaurar (HKLM, directivas).</summary>
+    public bool HasAdminValues => Data.Values.Values.Any(NeedsAdmin);
+
+    private static bool NeedsAdmin(Entry entry) => RegSetting.NeedsAdminFor(entry.Hive, entry.Path);
+
+    /// <summary>
+    /// Restaura los valores que pide el permiso (los de administrador o los del usuario); los que
+    /// fallan quedan para reintentar.
+    /// </summary>
+    public List<string> Restore(bool admin)
     {
         var failed = new List<string>();
-        foreach (var (key, entry) in Data.Values.Where(v => v.Value.Hive == hive).ToList())
+        foreach (var (key, entry) in Data.Values.Where(v => NeedsAdmin(v.Value) == admin).ToList())
         {
             try
             {

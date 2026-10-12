@@ -16,6 +16,11 @@ public static class Log
     public static void Error(string message, Exception? ex = null) =>
         Write("ERROR", ex is null ? message : $"{message}: {ex}");
 
+    /// <summary>Al pasar de este tamaño, el registro pasa a winx.old.log y se empieza otro.</summary>
+    private const long MaxBytes = 5 * 1024 * 1024;
+
+    private static int _writes;
+
     private static void Write(string level, string message)
     {
         try
@@ -23,6 +28,13 @@ public static class Log
             lock (Gate)
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+                // Se revisa al primer mensaje y luego cada tanto (un error repetido llegó a 165 MB).
+                if (_writes++ % 200 == 0)
+                {
+                    var info = new FileInfo(FilePath);
+                    if (info.Exists && info.Length > MaxBytes)
+                        File.Move(FilePath, Path.ChangeExtension(FilePath, ".old.log"), overwrite: true);
+                }
                 File.AppendAllText(FilePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {message}{Environment.NewLine}");
             }
         }

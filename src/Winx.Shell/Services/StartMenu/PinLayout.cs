@@ -16,13 +16,19 @@ public sealed class PinFolderView(PinEntry entry, IReadOnlyList<StartApp> apps)
     public IReadOnlyList<ImageSource?> Preview => Apps.Take(4).Select(a => a.Icon).ToList();
 }
 
+/// <summary>Hueco entre anclados: ocupa una celda vacía.</summary>
+public sealed class PinGapView(PinEntry entry)
+{
+    public string Id => entry.Id;
+}
+
 /// <summary>Sección de anclados tal como se muestra en el menú.</summary>
 public sealed class PinSectionView(PinSection section, IEnumerable<object> tiles) : INotifyPropertyChanged
 {
     public PinSection Section { get; } = section;
     public string Id => Section.Id;
     public string Name => Section.Name;
-    /// <summary><see cref="StartApp"/> o <see cref="PinFolderView"/>, en orden.</summary>
+    /// <summary><see cref="StartApp"/>, <see cref="PinFolderView"/> o <see cref="PinGapView"/>, en orden.</summary>
     public ObservableCollection<object> Tiles { get; } = new(tiles);
     public event PropertyChangedEventHandler? PropertyChanged { add { } remove { } }
 }
@@ -75,7 +81,9 @@ public static class PinLayout
             var tiles = new List<object>();
             foreach (var entry in section.Items)
             {
-                if (entry.IsFolder)
+                if (entry.IsGap)
+                    tiles.Add(new PinGapView(entry));
+                else if (entry.IsFolder)
                 {
                     var apps = entry.FolderApps!.Select(Find).Where(a => a != null).Select(a => a!).ToList();
                     if (apps.Count > 0)
@@ -146,7 +154,7 @@ public static class PinLayout
             return;
         var dragged = FindEntry(draggedEntryId);
         var (section, target) = FindEntryWithSection(targetEntryId);
-        if (dragged is null || target is null || section is null || dragged.IsFolder)
+        if (dragged is null || target is null || section is null || dragged.IsFolder || dragged.IsGap || target.IsGap)
             return;
 
         Detach(draggedEntryId);
@@ -178,6 +186,58 @@ public static class PinLayout
         NormalizeFolder(folderSection, folder);
         Commit();
         return entry.Id;
+    }
+
+    /// <summary>Deja un espacio vacío antes o después de un elemento.</summary>
+    public static void InsertGap(string entryId, bool after)
+    {
+        var (section, entry) = FindEntryWithSection(entryId);
+        if (section is null || entry is null)
+            return;
+        section.Items.Insert(section.Items.IndexOf(entry) + (after ? 1 : 0), new PinEntry());
+        Commit();
+    }
+
+    public static void RemoveGap(string gapId)
+    {
+        if (FindEntry(gapId) is { IsGap: true })
+        {
+            Detach(gapId);
+            Commit();
+        }
+    }
+
+    /// <summary>
+    /// Suelta sobre un hueco: el elemento ocupa esa celda y el hueco pasa a donde estaba (así se
+    /// puede colocar una app en cualquier celda sin correr las demás). Una app que sale de una
+    /// carpeta simplemente ocupa el hueco.
+    /// </summary>
+    public static void DropOnGap(string gapId, string? entryId, string? fromFolderId = null, string? appId = null)
+    {
+        var (gapSection, gap) = FindEntryWithSection(gapId);
+        if (gapSection is null || gap is not { IsGap: true } || gapId == entryId)
+            return;
+        int gapIndex = gapSection.Items.IndexOf(gap);
+
+        if (entryId != null)
+        {
+            var (section, entry) = FindEntryWithSection(entryId);
+            if (section is null || entry is null)
+                return;
+            int index = section.Items.IndexOf(entry);
+            section.Items[index] = gap;
+            gapSection.Items[gapIndex] = entry;
+        }
+        else if (fromFolderId != null && appId != null)
+        {
+            var (folderSection, folder) = FindEntryWithSection(fromFolderId);
+            if (folderSection is null || folder?.FolderApps is null)
+                return;
+            folder.FolderApps.Remove(appId);
+            gapSection.Items[gapIndex] = new PinEntry { AppId = appId };
+            NormalizeFolder(folderSection, folder);
+        }
+        Commit();
     }
 
     public static void RenameFolder(string folderId, string name)

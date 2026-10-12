@@ -4,8 +4,8 @@
 
     <!-- Contenedor estándar de las páginas del Hub -->
     <Style x:Key="HubPageContent" TargetType="StackPanel">
-        <Setter Property="Margin" Value="32,8,32,32" />
-        <Setter Property="MaxWidth" Value="900" />
+        <Setter Property="Margin" Value="36,16,36,40" />
+        <Setter Property="MaxWidth" Value="920" />
     </Style>
 
     <Style x:Key="HubPageTitle" TargetType="TextBlock">
@@ -15,15 +15,18 @@
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     </Style>
 
+    <!-- Título de grupo de tarjetas: pequeño y con más aire arriba, como en Configuración de Windows -->
     <Style x:Key="HubSectionTitle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Margin" Value="0,20,0,8" />
+        <Setter Property="Margin" Value="2,24,0,8" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
     </Style>
 
     <Style x:Key="HubCard" TargetType="ui:CardControl" BasedOn="{StaticResource {x:Type ui:CardControl}}">
         <Setter Property="Margin" Value="0,0,0,4" />
+        <Setter Property="Padding" Value="18,14" />
+        <Setter Property="MinHeight" Value="68" />
     </Style>
 
     <Style x:Key="CardTitle" TargetType="TextBlock">
@@ -35,5 +38,57 @@
         <Setter Property="FontSize" Value="12" />
         <Setter Property="TextWrapping" Value="Wrap" />
         <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+    </Style>
+
+    <!-- Mosaico de acceso rápido de la portada: ícono, título y descripción -->
+    <Style x:Key="HubTile" TargetType="Button">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="10" Padding="16,14" BorderThickness="1"
+                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                        <ContentPresenter />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CardBackgroundFillColorSecondaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.85" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Opción de la esquina en el selector de posición de los avisos -->
+    <Style x:Key="CornerOption" TargetType="RadioButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Margin" Value="8" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd" CornerRadius="5" BorderThickness="1.5"
+                            Background="{DynamicResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource WinxAccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource WinxAccentBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource WinxAccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>

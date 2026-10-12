@@ -6,6 +6,7 @@ using Winx.Shell.Tweaks;
 using Wpf.Ui.Controls;
 using TextBlock = System.Windows.Controls.TextBlock;
 using Winx.Shell.Services.Localization;
+using PageHeader = Winx.Shell.Hub.PageHeader;
 
 namespace Winx.Shell.Hub.Pages;
 
@@ -20,18 +21,17 @@ public abstract class TweaksPage : Page
     private readonly TextBlock _status;
     private readonly List<Action> _refreshers = new();
 
-    protected TweaksPage(string category, string title, string description)
+    protected TweaksPage(string category, string title, string description, SymbolRegular icon)
     {
         _category = category;
         Title = title;
 
         var content = new StackPanel { Style = (Style)FindResource("HubPageContent") };
-        content.Children.Add(new TextBlock { Style = (Style)FindResource("HubPageTitle"), Text = title });
-        content.Children.Add(new TextBlock
+        content.Children.Add(new PageHeader
         {
-            Style = (Style)FindResource("CardDescription"),
-            Margin = new Thickness(0, -12, 0, 16),
-            Text = description + " " + Loc.T("Cada cambio se puede deshacer en Optimización › Respaldo."),
+            Icon = icon,
+            Title = title,
+            Subtitle = description + " " + Loc.T("Cada cambio se puede deshacer en Optimización › Respaldo."),
         });
 
         _explorerBanner = BuildExplorerBanner();
@@ -169,28 +169,28 @@ public abstract class TweaksPage : Page
 }
 
 public sealed class PrivacyPage() : TweaksPage(TweakCatalog.Privacy, Loc.T("Privacidad"),
-    Loc.T("Telemetría, anuncios, sugerencias y rastreo."));
+    Loc.T("Telemetría, anuncios, sugerencias y rastreo."), SymbolRegular.ShieldLock24);
 
 public sealed class AIPage() : TweaksPage(TweakCatalog.AI, Loc.T("Inteligencia artificial"),
-    Loc.T("Copilot, Recall y las funciones de IA integradas en las apps de Windows."));
+    Loc.T("Copilot, Recall y las funciones de IA integradas en las apps de Windows."), SymbolRegular.BrainCircuit24);
 
 public sealed class SystemTweaksPage() : TweaksPage(TweakCatalog.System, Loc.T("Sistema"),
-    Loc.T("Comportamiento general de Windows."));
+    Loc.T("Comportamiento general de Windows."), SymbolRegular.Desktop24);
 
 public sealed class UpdatePage() : TweaksPage(TweakCatalog.Update, "Windows Update",
-    Loc.T("Cómo y cuándo se instalan las actualizaciones."));
+    Loc.T("Cómo y cuándo se instalan las actualizaciones."), SymbolRegular.ArrowSync24);
 
 public sealed class WindowsAppearancePage() : TweaksPage(TweakCatalog.Appearance, Loc.T("Apariencia de Windows"),
-    Loc.T("Tema y efectos visuales del sistema (no de WINX)."));
+    Loc.T("Tema y efectos visuales del sistema (no de WINX)."), SymbolRegular.DarkTheme24);
 
 public sealed class ExplorerPage() : TweaksPage(TweakCatalog.Explorer, Loc.T("Explorador de archivos"),
-    Loc.T("Qué muestra el Explorador y cómo."));
+    Loc.T("Qué muestra el Explorador y cómo."), SymbolRegular.Folder24);
 
 public sealed class MultitaskingPage() : TweaksPage(TweakCatalog.Multitasking, Loc.T("Multitarea"),
-    Loc.T("Ajuste de ventanas y Alt+Tab."));
+    Loc.T("Ajuste de ventanas y Alt+Tab."), SymbolRegular.SquareMultiple24);
 
 public sealed class GamingPage() : TweaksPage(TweakCatalog.Gaming, Loc.T("Juegos"),
-    Loc.T("Xbox Game Bar y grabación en segundo plano."));
+    Loc.T("Xbox Game Bar y grabación en segundo plano."), SymbolRegular.Games24);
 
 public sealed class BrowsersPage() : TweaksPage(TweakCatalog.Browsers, Loc.T("Navegadores"),
-    Loc.T("Funciones extra de los navegadores instalados."));
+    Loc.T("Funciones extra de los navegadores instalados."), SymbolRegular.Globe24);

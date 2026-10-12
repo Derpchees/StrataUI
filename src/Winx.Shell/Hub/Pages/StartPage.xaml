@@ -2,12 +2,13 @@
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
+      xmlns:hub="clr-namespace:Winx.Shell.Hub"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="{l:T 'Menú Inicio'}"
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <TextBlock Style="{StaticResource HubPageTitle}" Text="{l:T 'Menú Inicio'}" />
+            <hub:PageHeader Icon="Grid24" Title="{l:T 'Menú Inicio'}" Subtitle="{l:T 'Estilo del menú, apps ancladas y botones.'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Grid24" /></ui:CardControl.Icon>

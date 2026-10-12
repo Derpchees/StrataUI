@@ -1,10 +1,15 @@
-﻿using System.Net.NetworkInformation;
+using System.Net.NetworkInformation;
+using Microsoft.Win32;
 using Forms = System.Windows.Forms;
 using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services;
 
-/// <summary>Glifos (Segoe Fluent Icons) que resumen red y batería.</summary>
+/// <summary>
+/// Glifos (Segoe Fluent Icons) que resumen red y batería. Se calculan una vez para todas las
+/// barras y se recalculan cuando Windows avisa de un cambio (más una revisión lenta de respaldo),
+/// en lugar de recorrer los adaptadores de red cada pocos segundos en cada barra.
+/// </summary>
 public static class SystemStatus
 {
     private const char WifiGlyph = '';
@@ -16,7 +21,60 @@ public static class SystemStatus
 
     public record BatteryInfo(char Glyph, int Percent, bool Charging);
 
-    public static NetworkInfo GetNetwork()
+    private static NetworkInfo? _network;
+    private static BatteryInfo? _battery;
+    private static bool _batteryRead;
+    private static System.Windows.Threading.DispatcherTimer? _fallback;
+
+    /// <summary>Cambió la red o la batería (se invoca en el hilo de la UI).</summary>
+    public static event Action? Changed;
+
+    /// <summary>Empieza a escuchar los avisos de Windows (al iniciar WINX).</summary>
+    public static void Initialize()
+    {
+        NetworkChange.NetworkAddressChanged += (_, _) => Invalidate();
+        NetworkChange.NetworkAvailabilityChanged += (_, _) => Invalidate();
+        SystemEvents.PowerModeChanged += (_, _) => Invalidate();
+        // Respaldo: el porcentaje de batería baja sin que Windows avise de cada punto.
+        _fallback = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        _fallback.Tick += (_, _) => Invalidate();
+        _fallback.Start();
+    }
+
+    public static void Shutdown() => _fallback?.Stop();
+
+    private static void Invalidate()
+    {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null)
+            return;
+        dispatcher.BeginInvoke(() =>
+        {
+            var network = ReadNetwork();
+            var battery = ReadBattery();
+            bool changed = network != _network || battery != _battery;
+            _network = network;
+            _battery = battery;
+            _batteryRead = true;
+            if (changed)
+                Changed?.Invoke();
+        });
+    }
+
+    public static NetworkInfo GetNetwork() => _network ??= ReadNetwork();
+
+    /// <summary>Devuelve null en equipos sin batería.</summary>
+    public static BatteryInfo? GetBattery()
+    {
+        if (!_batteryRead)
+        {
+            _battery = ReadBattery();
+            _batteryRead = true;
+        }
+        return _battery;
+    }
+
+    private static NetworkInfo ReadNetwork()
     {
         var up = NetworkInterface.GetAllNetworkInterfaces()
             .Where(n => n.OperationalStatus == OperationalStatus.Up
@@ -32,8 +90,7 @@ public static class SystemStatus
             : new NetworkInfo(EthernetGlyph, true, $"Ethernet: {up[0].Name}");
     }
 
-    /// <summary>Devuelve null en equipos sin batería.</summary>
-    public static BatteryInfo? GetBattery()
+    private static BatteryInfo? ReadBattery()
     {
         var power = Forms.SystemInformation.PowerStatus;
         if (power.BatteryChargeStatus.HasFlag(Forms.BatteryChargeStatus.NoSystemBattery)
