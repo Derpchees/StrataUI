@@ -23,8 +23,10 @@ Primera versión estable, con instalador para descargar desde GitHub Releases.
   crea una tarea programada a tu nombre que ejecuta una copia protegida en Archivos de programa
   (así ningún programa sin permisos puede aprovecharla). Se inician al hacer clic en el contador de
   FPS, desde el Hub o al abrir WINX, y el Hub permite quitar el permiso. El contador mide la app que
-  ocupa el monitor elegido y se puede mostrar en la barra de otro. La temperatura de la CPU
-  necesita el controlador PawnIO (pawnio.eu); el Hub avisa si falta.
+  ocupa el monitor elegido y se puede mostrar en la barra de otro. Con el permiso ya dado, empiezan
+  solas al abrir WINX. La temperatura de la CPU necesita el controlador PawnIO (pawnio.eu): el Hub
+  lo instala con un botón. Una GPU integrada (Intel) muestra la de la CPU, que es el mismo chip; sin
+  dato se ve "-- °C" y el tooltip explica por qué.
 - **Liberar RAM**: botón para la barra que vacía la memoria que las apps no usan y la caché en
   espera; junto a la barra dice "Liberando RAM…" y después cuánto liberó.
 - **Clic derecho en los elementos de la barra**: abrir su página de Configuración de Windows

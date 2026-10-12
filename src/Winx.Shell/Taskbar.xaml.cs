@@ -657,6 +657,9 @@ public partial class Taskbar : AppBarWindow
         StatusPanel.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
 
         bool meters = Has(BarItem.Cpu) || Has(BarItem.Gpu) || Has(BarItem.Ram) || Has(BarItem.Fps);
+        // Temperaturas y FPS: con el permiso ya dado, las lecturas empiezan solas (sin preguntar).
+        if (Has(BarItem.Cpu) || Has(BarItem.Gpu) || Has(BarItem.Fps))
+            Sensors.StartQuietly();
         if (meters != _metersOn)
         {
             _metersOn = meters;
@@ -702,7 +705,12 @@ public partial class Taskbar : AppBarWindow
         if (!_metersOn)
             return;
         bool temps = S.ShowTemperatures;
-        string sensorsHint = Sensors.Running ? "" : "\n" + Loc.T("Clic en el contador de FPS para activar temperaturas y FPS.");
+        // Sin dato, "-- °C" (con la temperatura activada siempre se ve, también en vertical) y el
+        // tooltip dice por qué: lecturas detenidas o, en la CPU, falta PawnIO.
+        string why = !Sensors.Running ? "\n" + Loc.T("Clic en el contador de FPS (o Hub › Barra de tareas) para activar temperaturas y FPS.")
+            : Sensors.MissingPawnIo ? "\n" + Loc.T("La temperatura de la CPU necesita PawnIO: instálalo desde Hub › Barra de tareas.")
+            : "\n" + Loc.T("Este equipo no informa esa temperatura.");
+        const string NoTemp = "-- °C";
 
         // En vertical no cabe "RAM 87%" en una línea: nombre arriba y el número abajo.
         string Value(string name, double? percent) =>
@@ -717,14 +725,12 @@ public partial class Taskbar : AppBarWindow
         }
 
         CpuValue.Text = Value("CPU", SystemMonitor.CpuPercent);
-        CpuDetail.Text = temps && Sensors.CpuTemperature is { } cpuTemp ? $"{cpuTemp:0} °C" : "";
-        CpuButton.ToolTip = Loc.T("Uso de la CPU") + (temps && Sensors.CpuTemperature is null
-            ? (Sensors.Running && Sensors.MissingPawnIo ? "\n" + Loc.T("La temperatura de la CPU necesita PawnIO (pawnio.eu).") : sensorsHint)
-            : "");
+        CpuDetail.Text = !temps ? "" : Sensors.CpuTemperature is { } cpuTemp ? $"{cpuTemp:0} °C" : NoTemp;
+        CpuButton.ToolTip = Loc.T("Uso de la CPU") + (temps && Sensors.CpuTemperature is null ? why : "");
 
         GpuValue.Text = Value("GPU", SystemMonitor.GpuPercent);
-        GpuDetail.Text = temps && Sensors.GpuTemperature is { } gpuTemp ? $"{gpuTemp:0} °C" : "";
-        GpuButton.ToolTip = Loc.T("Uso de la GPU") + (temps && Sensors.GpuTemperature is null ? sensorsHint : "");
+        GpuDetail.Text = !temps ? "" : Sensors.GpuTemperature is { } gpuTemp ? $"{gpuTemp:0} °C" : NoTemp;
+        GpuButton.ToolTip = Loc.T("Uso de la GPU") + (temps && Sensors.GpuTemperature is null ? why : "");
 
         RamValue.Text = Value("RAM", SystemMonitor.RamTotal > 0 ? SystemMonitor.RamPercent : null);
         RamDetail.Text = SystemMonitor.RamTotal > 0 ? $"{SystemMonitor.RamUsed / 1073741824.0:0.0} GB" : "";

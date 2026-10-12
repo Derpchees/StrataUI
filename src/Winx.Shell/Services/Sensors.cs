@@ -206,6 +206,21 @@ public static class Sensors
         }
     }
 
+    private static bool _quietTried;
+
+    /// <summary>
+    /// Inicia las lecturas solo si el permiso ya está dado (la tarea existe y está al día): nunca
+    /// pregunta. Lo usan las barras con medidores al abrir WINX. Una vez por sesión.
+    /// </summary>
+    public static async void StartQuietly()
+    {
+        if (Running || Starting || _quietTried)
+            return;
+        _quietTried = true;
+        if (await Task.Run(SensorsTask.IsReady))
+            await StartAsync();
+    }
+
     private static bool Fail(string message)
     {
         Log.Info(message);
@@ -417,10 +432,14 @@ public static class Sensors
         public (double? Cpu, double? Gpu) Read()
         {
             double? cpu = null, gpu = null;
+            bool integrated = false;
             try
             {
                 foreach (var hardware in _computer.Hardware)
                 {
+                    // Intel integrada: no informa temperatura propia; está en el mismo chip que la CPU.
+                    if (hardware.HardwareType == LibreHardwareMonitor.Hardware.HardwareType.GpuIntel)
+                        integrated = true;
                     hardware.Update();
                     var temps = hardware.Sensors
                         .Where(s => s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature && s.Value is > 0)
@@ -445,6 +464,8 @@ public static class Sensors
             catch (Exception)
             {
             }
+            if (gpu is null && integrated)
+                gpu = cpu;
             return (cpu, gpu);
         }
 

@@ -59,8 +59,10 @@ public static class SensorsTask
     {
         try
         {
+            // Misma versión completa (incluye el commit): una copia de otra compilación se renueva.
             if (!File.Exists(ProtectedExe)
-                || FileVersionInfo.GetVersionInfo(ProtectedExe).ProductVersion?.StartsWith(App.Version, StringComparison.Ordinal) != true)
+                || FileVersionInfo.GetVersionInfo(ProtectedExe).ProductVersion
+                   != FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion)
                 return false;
             return RunSchtasks($"/Query /TN \"{TaskName(UserSid)}\"") == 0;
         }

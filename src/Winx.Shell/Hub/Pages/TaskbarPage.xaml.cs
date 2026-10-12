@@ -262,6 +262,45 @@ public partial class TaskbarPage : Page
         SensorsButton.Content = Sensors.Running ? Loc.T("Detener") : Loc.T("Iniciar");
         SensorsButton.IsEnabled = SensorsRemoveButton.IsEnabled = !Sensors.Starting;
         PawnIoBar.IsOpen = !Sensors.PawnIoInstalled;
+        PawnIoButton.Visibility = PawnIoBar.IsOpen ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// Instala PawnIO con winget (su instalador pide permiso a Windows) y reinicia las lecturas
+    /// para que la temperatura de la CPU aparezca. Sin winget, abre su página.
+    /// </summary>
+    private async void PawnIo_Click(object sender, RoutedEventArgs e)
+    {
+        PawnIoButton.IsEnabled = false;
+        PawnIoButton.Content = Loc.T("Instalando…");
+        try
+        {
+            var info = new System.Diagnostics.ProcessStartInfo("winget",
+                "install --id namazso.PawnIO -e --silent --accept-package-agreements --accept-source-agreements")
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            using (var process = System.Diagnostics.Process.Start(info)!)
+                await process.WaitForExitAsync();
+            if (Sensors.PawnIoInstalled)
+            {
+                Log.Info("PawnIO instalado desde el Hub");
+                Sensors.Stop();
+                await Sensors.StartAsync();
+            }
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            // Sin winget: la página de PawnIO.
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://pawnio.eu") { UseShellExecute = true });
+        }
+        finally
+        {
+            PawnIoButton.IsEnabled = true;
+            PawnIoButton.Content = Loc.T("Instalar PawnIO");
+            UpdateSensors();
+        }
     }
 
     private async void Sensors_Click(object sender, RoutedEventArgs e)
