@@ -6,6 +6,58 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.0.0] - 2026-10-12
+
+Primera versión estable, con instalador para descargar desde GitHub Releases.
+
+### Añadido
+- **Qué lleva cada barra**: Hub › Barra de tareas muestra una fila por barra con sus elementos (menú Inicio, bandeja, red, Bluetooth, brillo,
+  batería, volumen, reloj y notificaciones, multimedia y los nuevos medidores). Se arrastran para
+  ordenarlos o pasarlos a otra barra, **también directamente en la barra** (un clic sigue abriendo
+  su panel); en el Hub, con + se agregan y con × se quitan. La bandeja va en una sola
+  barra, y esa recibe la tecla Windows. Quien no cambie nada conserva lo de siempre.
+- **Medidores de rendimiento**: uso de CPU, de GPU (el motor más ocupado, como el Administrador de
+  tareas) y de RAM, sin permisos especiales. En las barras verticales van en tres líneas cortas.
+- **Temperaturas y contador de FPS** con las "lecturas avanzadas": un proceso aparte con permiso
+  de administrador. **Windows lo pide una sola vez** (y otra después de cada actualización): WINX
+  crea una tarea programada a tu nombre que ejecuta una copia protegida en Archivos de programa
+  (así ningún programa sin permisos puede aprovecharla). Se inician al hacer clic en el contador de
+  FPS, desde el Hub o al abrir WINX, y el Hub permite quitar el permiso. El contador mide la app que
+  ocupa el monitor elegido y se puede mostrar en la barra de otro. La temperatura de la CPU
+  necesita el controlador PawnIO (pawnio.eu); el Hub avisa si falta.
+- **Liberar RAM**: botón para la barra que vacía la memoria que las apps no usan y la caché en
+  espera; junto a la barra dice "Liberando RAM…" y después cuánto liberó.
+- **Clic derecho en los elementos de la barra**: abrir su página de Configuración de Windows
+  (red, Bluetooth, pantalla, sonido, energía, fecha y hora, notificaciones…), sus opciones en WINX
+  o quitarlo de esa barra.
+- **Acento del fondo de pantalla**: Hub › Apariencia › Origen del color (el de Windows, del fondo o
+  propio). Con Wallpaper Engine sale de la vista previa del fondo puesto. Mientras Wallpaper Engine
+  tenga "Adjust Windows color" activado, la opción queda en pausa con un aviso: los dos se pisarían
+  (y Wallpaper Engine copia el color que puso el autor de cada fondo, a menudo negro).
+- Con "Aplicar el tema a Windows", Windows usa también el acento de WINX (Inicio, Configuración,
+  barras de título) y recupera el suyo al desactivarlo.
+- Botones del pie del menú Inicio: se ordenan arrastrando en el Hub.
+- Notificaciones con la imagen del aviso (foto del remitente o logotipo del sitio), como en Windows.
+
+### Cambiado
+- **Las animaciones elegidas se aplican a toda la app**: también a menús contextuales, tooltips,
+  íconos ocultos de la bandeja, carpetas del menú Inicio, el Hub y sus páginas, y a la salida de
+  los avisos.
+- El acento se ve igual en WINX y en los controles del Hub, y nunca queda invisible (un acento casi
+  negro se aclara sobre el tema oscuro). WINX nota cuando cambia el acento de Windows.
+- **Hub reorganizado**: Personalización tiene Barra de tareas (qué lleva cada barra, reloj y
+  rendimiento), Bandeja del sistema, Menú Inicio, Notificaciones, Apariencia, Control multimedia y
+  Paneles (sonido, brillo, avisos en pantalla, batería); lo que depende de algo va como subopción
+  debajo. Optimización aparece desplegada.
+- Instalador: asistente completo (bienvenida, carpeta de instalación, carpeta del menú Inicio,
+  tareas y resumen) y opción de instalar para todos los usuarios.
+
+### Corregido
+- **Íconos de las notificaciones**: las de apps web en una pestaña normal salen con el ícono y el
+  nombre del sitio (WINX lee el aviso original de la base de datos de notificaciones de Windows). Las
+  apps de escritorio que registran su ícono para avisos (Thunderbird, TeamViewer, avisos del
+  sistema) ya no salen con el genérico, y las apps sin identidad dejaron de compartir ícono entre sí.
+
 ## [0.17.0] - 2026-10-12
 
 ### Cambiado

@@ -8,7 +8,22 @@
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <hub:PageHeader Icon="PanelBottom20" Title="{l:T 'Barra de tareas'}" Subtitle="{l:T 'Alineación, tamaño y una barra por monitor.'}" />
+            <hub:PageHeader Icon="PanelBottom20" Title="{l:T 'Barra de tareas'}" Subtitle="{l:T 'Qué lleva cada barra, alineación, tamaño, monitores, reloj y rendimiento.'}" />
+
+            <!-- ── Qué lleva cada barra ─────────────────────────────────────── -->
+            <Grid Margin="2,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource HubSectionTitle}" Margin="0" VerticalAlignment="Center" Text="{l:T 'Qué lleva cada barra'}" />
+                <ui:Button Grid.Column="1" Content="{l:T 'Restablecer'}" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetLayout_Click" />
+            </Grid>
+            <TextBlock Style="{StaticResource CardDescription}" Margin="2,4,0,10" TextWrapping="Wrap"
+                       Text="{l:T 'Arrastra los elementos para ordenarlos o pasarlos a otra barra (también en la barra misma). Con + agregas uno a esa barra; con × lo quitas. Clic derecho en un elemento de la barra: su configuración en Windows.'}" />
+            <hub:BarItemsEditor x:Name="BarEditor" />
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Barra'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlignCenterHorizontal24" /></ui:CardControl.Icon>
@@ -108,16 +123,88 @@
                 </ui:CardControl>
             </StackPanel>
 
-            <!-- Qué lleva cada barra (red, sonido, reloj, bandeja…) se elige en "Elementos de la barra". -->
-            <ui:CardControl Style="{StaticResource HubCard}" Click="BarItems_Click" Cursor="Hand">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Apps24" /></ui:CardControl.Icon>
+            <!-- ── Reloj ─────────────────────────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Reloj'}" />
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Clock24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar segundos'}" VerticalAlignment="Center" />
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="SecondsSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CalendarLtr24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar fecha'}" VerticalAlignment="Center" />
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="DateSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <!-- ── Rendimiento ───────────────────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Rendimiento'}" />
+            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon DeveloperBoard24}" IsExpanded="True">
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'CPU, GPU, RAM y FPS'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'El uso se lee sin permisos especiales. Las temperaturas y los FPS necesitan las lecturas avanzadas: Windows pide permiso la primera vez y después de cada actualización de WINX.'}" />
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <StackPanel>
+                    <Grid Style="{StaticResource HubSubOption}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar temperaturas'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Debajo del uso de la CPU y de la GPU'}" />
+                        </StackPanel>
+                        <ui:ToggleSwitch x:Name="TemperaturesSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
+                    </Grid>
+                    <Grid Style="{StaticResource HubSubOption}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Lecturas avanzadas'}" />
+                            <TextBlock x:Name="SensorsState" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <ui:Button x:Name="SensorsButton" Click="Sensors_Click" />
+                            <ui:Button x:Name="SensorsRemoveButton" Margin="8,0,0,0" Content="{l:T 'Quitar el permiso'}"
+                                       ToolTip="{l:T 'Borra la tarea con permiso de administrador (pide permiso para borrarla)'}" Click="SensorsRemove_Click" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid Style="{StaticResource HubSubOption}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Iniciarlas al abrir WINX'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Sin pedir permiso, una vez concedido'}" />
+                        </StackPanel>
+                        <ui:ToggleSwitch x:Name="SensorsStartupSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
+                    </Grid>
+                    <Grid Style="{StaticResource HubSubOption}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor que mide el contador de FPS'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                       Text="{l:T 'Cuenta los FPS de la app que ocupa ese monitor, aunque el contador esté en la barra de otro.'}" />
+                        </StackPanel>
+                        <ComboBox x:Name="FpsScreenBox" Grid.Column="1" MinWidth="200" SelectionChanged="FpsScreen_Changed" />
+                    </Grid>
+                    <ui:InfoBar x:Name="PawnIoBar" Margin="0,4,0,0" Severity="Informational" IsClosable="False" IsOpen="False"
+                                Title="{l:T 'Temperatura de la CPU'}"
+                                Message="{l:T 'Windows solo deja leerla con el controlador PawnIO (gratuito y firmado). Instálalo desde pawnio.eu y reinicia las lecturas avanzadas.'}" />
+                </StackPanel>
+            </ui:CardExpander>
+            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Broom24}">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Qué lleva cada barra'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Inicio, bandeja, red, sonido, reloj y los demás elementos se eligen y ordenan en Elementos de la barra.'}" />
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Liberar RAM'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Vacía la memoria que las apps no están usando y la caché en espera. Usa el mismo permiso que las lecturas avanzadas.'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ui:SymbolIcon Symbol="ChevronRight24" />
             </ui:CardControl>
 
         </StackPanel>

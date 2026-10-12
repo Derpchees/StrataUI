@@ -86,6 +86,26 @@ public class BarLayoutTests
     }
 
     [Fact]
+    public void Sensors_task_has_a_stable_name_and_pipe_per_user()
+    {
+        const string sid = "S-1-5-21-1111111111-2222222222-3333333333-1001";
+        Assert.Equal(SensorsTask.PipeName(sid), SensorsTask.PipeName(sid));
+        Assert.Matches(@"^WINX-sensors-[0-9a-f]{32}$", SensorsTask.PipeName(sid));
+        Assert.NotEqual(SensorsTask.TaskName(sid), SensorsTask.TaskName("S-1-5-21-1-2-3-1002"));
+    }
+
+    [Fact]
+    public void Sensors_task_xml_runs_elevated_for_that_user()
+    {
+        var xml = System.Xml.Linq.XDocument.Parse(SensorsTask.TaskXml("S-1-5-21-1-2-3-1001", @"C:\Program Files\WINX & Co\WINX.exe"));
+        string text = xml.ToString();
+        Assert.Contains("<RunLevel>HighestAvailable</RunLevel>", text);
+        Assert.Contains("<UserId>S-1-5-21-1-2-3-1001</UserId>", text);
+        Assert.Contains("--sensors-task", text);
+        Assert.Contains("WINX &amp; Co", text);
+    }
+
+    [Fact]
     public void Sensor_lines_are_read()
     {
         Sensors.Apply("cpu=54.5;gpu=;pawnio=0;fps=1234:144,99:60");

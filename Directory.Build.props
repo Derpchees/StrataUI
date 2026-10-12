@@ -1,7 +1,7 @@
 ﻿<Project>
   <!-- VersiÃ³n Ãºnica de toda la soluciÃ³n. ActualÃ­zala junto con CHANGELOG.md y el tag de git (vX.Y.Z). -->
   <PropertyGroup>
-    <Version>0.17.0</Version>
+    <Version>1.0.0</Version>
     <Product>WINX</Product>
     <Company>WINX</Company>
     <Copyright>Â© 2026 WINX</Copyright>

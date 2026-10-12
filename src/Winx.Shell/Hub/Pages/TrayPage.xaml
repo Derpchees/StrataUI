@@ -4,196 +4,42 @@
       xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
       xmlns:hub="clr-namespace:Winx.Shell.Hub"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      Title="{l:T 'Elementos de la barra'}"
+      Title="{l:T 'Bandeja del sistema'}"
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <hub:PageHeader Icon="Apps24" Title="{l:T 'Elementos de la barra'}"
-                            Subtitle="{l:T 'Qué lleva cada barra, en qué orden, y las opciones de cada elemento.'}" />
+            <hub:PageHeader Icon="ChevronUp24" Title="{l:T 'Bandeja del sistema'}"
+                            Subtitle="{l:T 'Qué íconos de apps se ven siempre en la barra y cuáles van a los ocultos.'}" />
 
-            <!-- ── Qué lleva cada barra ─────────────────────────────────────── -->
-            <Grid Margin="2,0,0,4">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource HubSectionTitle}" Margin="0" VerticalAlignment="Center" Text="{l:T 'Qué lleva cada barra'}" />
-                <ui:Button Grid.Column="1" Content="{l:T 'Restablecer'}" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetLayout_Click" />
-            </Grid>
-            <TextBlock Style="{StaticResource CardDescription}" Margin="2,4,0,10" TextWrapping="Wrap"
-                       Text="{l:T 'Arrastra los elementos para ordenarlos o pasarlos a otra barra. Con + agregas uno a esa barra; con × lo quitas. Inicio va siempre delante de las ventanas abiertas y la bandeja va en una sola barra.'}" />
-            <StackPanel x:Name="BarList" />
+            <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
+                       Text="{l:T 'Elige qué íconos se muestran siempre en la barra. Los demás quedan en el menú de íconos ocultos (^). Solo aparecen las apps que están abiertas ahora. En la barra también puedes arrastrarlos para ordenarlos o moverlos entre la barra y los ocultos.'}" />
 
-            <!-- ── Opciones de cada elemento ────────────────────────────────── -->
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Opciones de los elementos'}" />
-
-            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon Clock24}">
-                <ui:CardExpander.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Reloj y notificaciones'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Hora, fecha y centro de notificaciones'}" />
-                    </StackPanel>
-                </ui:CardExpander.Header>
-                <StackPanel>
-                    <Grid Style="{StaticResource HubSubOption}">
-                        <TextBlock Style="{StaticResource CardTitle}" VerticalAlignment="Center" Text="{l:T 'Mostrar segundos'}" />
-                        <ui:ToggleSwitch x:Name="SecondsSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
-                    </Grid>
-                    <Grid Style="{StaticResource HubSubOption}">
-                        <TextBlock Style="{StaticResource CardTitle}" VerticalAlignment="Center" Text="{l:T 'Mostrar fecha'}" />
-                        <ui:ToggleSwitch x:Name="DateSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
-                    </Grid>
-                </StackPanel>
-            </ui:CardExpander>
-
-            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon MusicNote224}">
-                <ui:CardExpander.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Multimedia'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Carátula, canción, artista y álbum de lo que suena en cualquier app (Spotify, Reproductor multimedia, Deezer, YouTube en el navegador…). Clic: abre la app; clic central: pausa.'}" />
-                    </StackPanel>
-                </ui:CardExpander.Header>
-                <Grid Style="{StaticResource HubSubOption}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Controles multimedia'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Anterior, reproducir o pausar y siguiente junto a la canción'}" />
-                    </StackPanel>
-                    <ui:ToggleSwitch x:Name="MediaControlsSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
-                </Grid>
-            </ui:CardExpander>
-
-            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon Speaker224}">
-                <ui:CardExpander.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Volumen y brillo'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Brillo de cada monitor (DDC/CI) o de la pantalla del portátil. La rueda del mouse sobre el botón lo ajusta.'}" />
-                    </StackPanel>
-                </ui:CardExpander.Header>
-                <Grid Style="{StaticResource HubSubOption}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Avisos en pantalla'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Junto a la barra al cambiar el volumen o el brillo, al silenciar y al pulsar Bloq Mayús, Bloq Num o Bloq Despl.'}" />
-                    </StackPanel>
-                    <ui:ToggleSwitch x:Name="OsdSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
-                </Grid>
-            </ui:CardExpander>
-
-            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon Battery524}">
-                <ui:CardExpander.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Batería'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Solo aparece en equipos con batería. Clic: nivel, tiempo restante y modo de energía.'}" />
-                    </StackPanel>
-                </ui:CardExpander.Header>
-                <Grid Style="{StaticResource HubSubOption}">
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Porcentaje de la batería'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'El número dentro del ícono, con un rayo mientras carga'}" />
-                    </StackPanel>
-                    <ui:ToggleSwitch x:Name="BatteryPercentSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
-                </Grid>
-            </ui:CardExpander>
-
-            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon DeveloperBoard24}">
-                <ui:CardExpander.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Rendimiento: CPU, GPU, RAM y FPS'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'El uso se lee sin permisos especiales. Las temperaturas y los FPS necesitan las lecturas avanzadas, que piden permiso de administrador.'}" />
-                    </StackPanel>
-                </ui:CardExpander.Header>
-                <StackPanel>
-                    <Grid Style="{StaticResource HubSubOption}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar temperaturas'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Debajo del uso de la CPU y de la GPU'}" />
-                        </StackPanel>
-                        <ui:ToggleSwitch x:Name="TemperaturesSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
-                    </Grid>
-                    <Grid Style="{StaticResource HubSubOption}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,12,0">
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Lecturas avanzadas'}" />
-                            <TextBlock x:Name="SensorsState" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <ui:Button x:Name="SensorsButton" Grid.Column="1" Click="Sensors_Click" />
-                    </Grid>
-                    <Grid Style="{StaticResource HubSubOption}">
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Iniciarlas al abrir WINX'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Windows pedirá permiso cada vez que se abra WINX'}" />
-                        </StackPanel>
-                        <ui:ToggleSwitch x:Name="SensorsStartupSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
-                    </Grid>
-                    <Grid Style="{StaticResource HubSubOption}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,12,0">
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor que mide el contador de FPS'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                       Text="{l:T 'Cuenta los FPS de la app que ocupa ese monitor, aunque el contador esté en la barra de otro.'}" />
-                        </StackPanel>
-                        <ComboBox x:Name="FpsScreenBox" Grid.Column="1" MinWidth="200" SelectionChanged="FpsScreen_Changed" />
-                    </Grid>
-                    <ui:InfoBar x:Name="PawnIoBar" Margin="0,4,0,0" Severity="Informational" IsClosable="False" IsOpen="False"
-                                Title="{l:T 'Temperatura de la CPU'}"
-                                Message="{l:T 'Windows solo deja leerla con el controlador PawnIO (gratuito y firmado). Instálalo desde pawnio.eu y reinicia las lecturas avanzadas.'}" />
-                </StackPanel>
-            </ui:CardExpander>
-
-            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Broom24}">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Liberar RAM'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Vacía la memoria que las apps no están usando y la caché en espera. Pide permiso de administrador (salvo con las lecturas avanzadas abiertas).'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-            </ui:CardControl>
-
-            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon ChevronUp24}" IsExpanded="True">
-                <ui:CardExpander.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Íconos de la bandeja'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Elige qué íconos se muestran siempre en la barra. Los demás quedan en el menú de íconos ocultos (^). Solo aparecen las apps que están abiertas ahora. En la barra también puedes arrastrarlos para ordenarlos o moverlos entre la barra y los ocultos.'}" />
-                    </StackPanel>
-                </ui:CardExpander.Header>
-                <StackPanel>
-                    <ItemsControl x:Name="IconList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Style="{StaticResource HubSubOption}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Image Source="{Binding Image}" Width="20" Height="20" Margin="0,0,14,0"
-                                               RenderOptions.BitmapScalingMode="HighQuality" />
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Name}" />
-                                            <TextBlock Style="{StaticResource CardDescription}" Text="{Binding Detail}" />
-                                        </StackPanel>
+            <ItemsControl x:Name="IconList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:CardControl Style="{StaticResource HubCard}">
+                            <ui:CardControl.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Source="{Binding Image}" Width="20" Height="20" Margin="0,0,14,0"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Name}" />
+                                        <TextBlock Style="{StaticResource CardDescription}" Text="{Binding Detail}" />
                                     </StackPanel>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <TextBlock Style="{StaticResource CardDescription}" VerticalAlignment="Center"
-                                                   Margin="0,0,12,0" Text="{l:T 'Mostrar siempre'}" />
-                                        <ui:ToggleSwitch IsChecked="{Binding IsPinned, Mode=OneWay}" Click="Pin_Click" />
-                                    </StackPanel>
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <TextBlock x:Name="EmptyText" Style="{StaticResource CardDescription}" Visibility="Collapsed"
-                               Text="{l:T 'No hay íconos en la bandeja en este momento.'}" />
-                </StackPanel>
-            </ui:CardExpander>
+                                </StackPanel>
+                            </ui:CardControl.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource CardDescription}" VerticalAlignment="Center"
+                                           Margin="0,0,12,0" Text="{l:T 'Mostrar siempre'}" />
+                                <ui:ToggleSwitch IsChecked="{Binding IsPinned, Mode=OneWay}" Click="Pin_Click" />
+                            </StackPanel>
+                        </ui:CardControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock x:Name="EmptyText" Style="{StaticResource CardDescription}" Visibility="Collapsed"
+                       Text="{l:T 'No hay íconos en la bandeja en este momento.'}" />
         </StackPanel>
     </ScrollViewer>
 </Page>

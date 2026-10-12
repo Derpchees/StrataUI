@@ -45,6 +45,8 @@ public partial class Taskbar
             TrayDragMove(icon);
         else if (_taskDrag is { } window)
             TaskDragMove(window);
+        else if (_itemDrag is { } item)
+            ItemDragMove(item);
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
@@ -60,6 +62,11 @@ public partial class Taskbar
             EndTaskDrag();
             e.Handled = true;
         }
+        else if (_itemDrag != null)
+        {
+            EndItemDrag();
+            e.Handled = true;
+        }
     }
 
     protected override void OnLostMouseCapture(MouseEventArgs e)
@@ -69,6 +76,8 @@ public partial class Taskbar
             EndTrayDrag();
         if (_taskDrag != null && ReferenceEquals(e.OriginalSource, this))
             EndTaskDrag();
+        if (_itemDrag != null && ReferenceEquals(e.OriginalSource, this))
+            EndItemDrag();
     }
 
     private void EndTrayDrag()

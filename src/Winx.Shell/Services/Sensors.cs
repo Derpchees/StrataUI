@@ -22,8 +22,6 @@ namespace Winx.Shell.Services;
 /// </remarks>
 public static class Sensors
 {
-    public const string HelperArg = "--sensors";
-    private static readonly Regex PipeName = new(@"^WINX-sensors-[0-9a-f]{32}$");
 
     private static NamedPipeServerStream? _pipe;
     private static StreamWriter? _writer;
@@ -166,43 +164,34 @@ public static class Sensors
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out int value, int size);
 
-    /// <summary>Inicia el proceso elevado (pide UAC). Devuelve false si se canceló o falló.</summary>
+    /// <summary>
+    /// Inicia el proceso elevado. Con la tarea de <see cref="SensorsTask"/> no pregunta; la primera
+    /// vez (o tras actualizar WINX) pide UAC para crearla. Si la tarea no se puede usar, se lanza
+    /// elevado directamente (UAC cada vez). Devuelve false si se canceló o falló.
+    /// </summary>
     public static async Task<bool> StartAsync()
     {
         if (Running || Starting)
             return Running;
         Starting = true;
         Changed?.Invoke();
-        string name = "WINX-sensors-" + Guid.NewGuid().ToString("N");
         try
         {
+            bool ready = await Task.Run(SensorsTask.IsReady) || await SensorsTask.InstallAsync();
+            if (!ready)
+                return Fail("Lecturas avanzadas: no se aceptó el permiso");
+            string name = SensorsTask.PipeName(SensorsTask.UserSid);
             _pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
             var wait = _pipe.WaitForConnectionAsync();
-            var info = new ProcessStartInfo(Environment.ProcessPath!)
-            {
-                UseShellExecute = true,
-                Verb = "runas",
-                WindowStyle = ProcessWindowStyle.Hidden,
-            };
-            info.ArgumentList.Add(HelperArg);
-            info.ArgumentList.Add(name);
-            info.ArgumentList.Add(Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
-            using (Process.Start(info))
-            {
-            }
-            if (await Task.WhenAny(wait, Task.Delay(TimeSpan.FromSeconds(30))) != wait)
-                throw new TimeoutException("El proceso de lecturas no se conectó");
+            if (!await Task.Run(SensorsTask.Run))
+                return Fail("No se pudo iniciar la tarea de lecturas avanzadas");
+            if (await Task.WhenAny(wait, Task.Delay(TimeSpan.FromSeconds(20))) != wait)
+                return Fail("El proceso de lecturas no se conectó");
             _writer = new StreamWriter(_pipe) { AutoFlush = true };
             Running = true;
-            Log.Info("Lecturas avanzadas iniciadas");
+            Log.Info("Lecturas avanzadas iniciadas (tarea programada)");
             _ = ReadLoopAsync(_pipe);
             return true;
-        }
-        catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == Tweaks.Elevation.Cancelled)
-        {
-            Log.Info("Lecturas avanzadas: UAC cancelado");
-            Close();
-            return false;
         }
         catch (Exception ex)
         {
@@ -217,12 +206,21 @@ public static class Sensors
         }
     }
 
+    private static bool Fail(string message)
+    {
+        Log.Info(message);
+        Close();
+        return false;
+    }
+
     public static void Stop() => Close();
 
-    /// <summary>Libera la RAM con el proceso elevado; false si no está abierto.</summary>
+    /// <summary>Libera la RAM con el proceso elevado (lo inicia si hace falta); false si no se pudo.</summary>
     public static async Task<bool> FreeRamAsync()
     {
-        if (!Running || _writer is null)
+        if (!Running && !await StartAsync())
+            return false;
+        if (_writer is null)
             return false;
         _freed = new TaskCompletionSource<bool>();
         await _writer.WriteLineAsync("free");
@@ -314,26 +312,15 @@ public static class Sensors
     // ── Proceso elevado ─────────────────────────────────────────────────────
 
     /// <summary>
-    /// WINX.exe --sensors &lt;tubería&gt; &lt;pid de WINX&gt;: valida los argumentos, se conecta a la tubería
-    /// de ese WINX y solo manda lecturas y atiende "free". Termina cuando WINX se cierra.
+    /// WINX.exe --sensors-task (lo inicia la tarea de <see cref="SensorsTask"/>): se conecta a la
+    /// tubería del usuario, comprueba que quien la abrió sea WINX y solo manda lecturas y atiende
+    /// "free". Termina cuando ese WINX se cierra.
     /// </summary>
     public static int RunHelper(string[] args)
     {
-        if (args.Length != 3 || !PipeName.IsMatch(args[1]) || !int.TryParse(args[2], out int parentId))
+        if (args.Length != 1)
             return 2;
-        Process parent;
-        try
-        {
-            parent = Process.GetProcessById(parentId);
-            if (!parent.ProcessName.Equals("WINX", StringComparison.OrdinalIgnoreCase))
-                return 2;
-        }
-        catch (ArgumentException)
-        {
-            return 2;
-        }
-
-        using var pipe = new NamedPipeClientStream(".", args[1], PipeDirection.InOut);
+        using var pipe = new NamedPipeClientStream(".", SensorsTask.PipeName(SensorsTask.UserSid), PipeDirection.InOut);
         try
         {
             pipe.Connect(10000);
@@ -341,6 +328,19 @@ public static class Sensors
         catch (TimeoutException)
         {
             return 3;
+        }
+        Process parent;
+        try
+        {
+            if (!GetNamedPipeServerProcessId(pipe.SafePipeHandle, out uint serverId))
+                return 2;
+            parent = Process.GetProcessById((int)serverId);
+            if (!parent.ProcessName.Equals("WINX", StringComparison.OrdinalIgnoreCase))
+                return 2;
+        }
+        catch (ArgumentException)
+        {
+            return 2;
         }
         var writer = new StreamWriter(pipe) { AutoFlush = true };
         var writeLock = new object();
@@ -592,17 +592,6 @@ public static class Sensors
         private static extern bool CloseHandle(IntPtr handle);
     }
 
-    /// <summary>
-    /// WINX.exe --free-ram: libera la RAM en un proceso elevado de corta vida (cuando las lecturas
-    /// avanzadas no están abiertas).
-    /// </summary>
-    public const string FreeRamArg = "--free-ram";
-
-    public static int RunFreeRam(string[] args)
-    {
-        if (args.Length != 1)
-            return 2;
-        FreeMemory.Run();
-        return 0;
-    }
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool GetNamedPipeServerProcessId(Microsoft.Win32.SafeHandles.SafePipeHandle pipe, out uint processId);
 }

@@ -8,15 +8,24 @@ WINX corre **encima del Explorador de Windows** (los archivos y el escritorio si
 y oculta por completo los componentes nativos mientras está abierto. Al cerrarlo, todo vuelve
 a la normalidad.
 
+## Descargar
+
+Descarga `WINX-Setup-X.Y.Z.exe` de la última versión en
+[Releases](https://github.com/Derpchees/WINX/releases/latest), ábrelo y sigue el asistente
+(puedes elegir la carpeta e instalarlo solo para ti o para todos los usuarios). Trae todo lo que
+necesita, no hace falta instalar .NET. Después, el Hub avisa e instala las actualizaciones.
+
 ## Estado
 
 | Componente              | Estado                                                        |
 |-------------------------|---------------------------------------------------------------|
 | Barra de tareas         | ✅ una o dos por monitor (bordes opuestos, repartiendo apps y área de estado), en cualquier borde, alineación y tamaño configurables; vista previa en vivo de las ventanas, ordenarlas arrastrando, agrupar por app; apps web (YouTube, WhatsApp Web…) con su ícono; opción totalmente transparente con texto que se adapta al fondo |
+| Elementos de la barra   | ✅ cada barra lleva los elementos elegidos (Inicio, bandeja, red, Bluetooth, brillo, volumen, batería, reloj, multimedia, medidores) en el orden elegido: se arrastran en la barra misma o en el Hub, también de una barra a otra |
+| Rendimiento             | ✅ uso de CPU, GPU y RAM; temperaturas y contador de FPS (del monitor elegido) con lecturas avanzadas (permiso de administrador una sola vez; la temperatura de la CPU necesita PawnIO); liberar RAM |
 | Bandeja del sistema     | ✅ íconos visibles u ocultos; se ordenan arrastrando, también entre la barra y los ocultos |
-| Hub de configuración    | ✅ portada, barra, menú Inicio, bandeja y área de estado, notificaciones, apariencia, optimización, actualizaciones, general |
+| Hub de configuración    | ✅ portada; personalización: barra de tareas (qué lleva cada barra), bandeja, menú Inicio, notificaciones, apariencia, control multimedia, paneles; optimización, actualizaciones, general |
 | Optimización (debloat)  | ✅ rendimiento, apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
-| Temas                   | ✅ Sistema, Claro, Oscuro, Transparencia, Liquid Glass (claro/oscuro), Material |
+| Temas                   | ✅ Sistema, Claro, Oscuro, Transparencia, Liquid Glass (claro/oscuro), Material; acento de Windows, propio o sacado del fondo (también de Wallpaper Engine), que puede llevarse a Windows |
 | Panel de sonido         | ✅ salida y entrada con mosaicos de dispositivos, opciones (balance, mejoras de audio, modo exclusivo, llamadas) y volumen por aplicación |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
@@ -25,10 +34,10 @@ a la normalidad.
 | Avisos en pantalla (OSD) | ✅ volumen, silencio, brillo, Bloq Mayús, Bloq Num y Bloq Despl junto a la barra (sin el de Windows) |
 | Brillo                  | ✅ cada monitor por DDC/CI (y pantalla de portátil por WMI), todos a la vez, rueda del mouse |
 | Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas, secciones y huecos, tecla Windows; clic derecho: ejecutar como administrador, abrir ubicación, desinstalar |
-| Notificaciones          | ✅ centro propio junto al reloj (Win+N), avisos en el monitor y la esquina elegidos, No molestar, calendario; apaga los avisos de Windows mientras tanto |
-| Animaciones             | ✅ seis estilos y tres velocidades para paneles, menú Inicio, avisos y OSD |
+| Notificaciones          | ✅ centro propio junto al reloj (Win+N), avisos en el monitor y la esquina elegidos, No molestar, calendario; ícono y foto de cada aviso, también de apps web; apaga los avisos de Windows mientras tanto |
+| Animaciones             | ✅ seis estilos y tres velocidades para toda la app: paneles, menú Inicio, avisos, OSD, menús, tooltips y el Hub |
 | Actualizaciones         | ✅ búsqueda automática en GitHub Releases e instalación con un clic |
-| Instalador              | ✅ Inno Setup, por usuario y sin administrador (`scripts\build-installer.ps1`) |
+| Instalador              | ✅ asistente con elección de carpeta, para el usuario (sin administrador) o para todos; se publica en GitHub Releases (`scripts\build-installer.ps1`) |
 | Idiomas                 | ✅ español e inglés, según el idioma de Windows o elegido en el Hub |
 
 ## Requisitos

@@ -63,6 +63,8 @@ public partial class Taskbar : AppBarWindow
         }
         ApplyOrientation();
         Services.Themes.Motion.Attach(HiddenTrayPopup, () => Position);
+        WatchItemDrag();
+        WatchItemMenu();
         StartButton.ContextMenu = StartMenu.WinXMenu.Create(StartButton);
 
         VersionItem.Header = $"WINX v{App.Version}";
@@ -708,25 +710,37 @@ public partial class Taskbar : AppBarWindow
             await Sensors.StartAsync();
     }
 
+    /// <summary>
+    /// Libera la RAM y lo dice junto a la barra (aviso en pantalla, como el volumen): al empezar,
+    /// mientras Windows pide permiso, y al terminar con cuánto se liberó.
+    /// </summary>
     private async void FreeRam_Click(object sender, RoutedEventArgs e)
     {
+        string working = ((char)0xE895).ToString(); // Sync
+        string done = ((char)0xE73E).ToString();    // CheckMark
         FreeRamButton.IsEnabled = false;
+        FreeRamButton.Opacity = 0.5;
+        Notifications.OsdWindow.ShowMessage(working, Loc.T("Liberando RAM…"));
         try
         {
             ulong before = SystemMonitor.AvailableRam();
-            bool done = await Sensors.FreeRamAsync()
-                        || await Tweaks.Elevation.RunSelfAsync(Sensors.FreeRamArg) == 0;
-            if (!done)
+            bool ok = await Sensors.FreeRamAsync();
+            if (!ok)
+            {
+                Notifications.OsdWindow.ShowMessage(((char)0xE711).ToString(), Loc.T("No se liberó la RAM")); // Cancel
                 return;
+            }
             ulong after = SystemMonitor.AvailableRam();
             double freed = after > before ? (after - before) / 1073741824.0 : 0;
             Log.Info($"RAM liberada: {freed:0.00} GB");
-            Services.Notifications.NotificationService.ShowLocal(Loc.T("Liberar RAM"),
-                freed >= 0.01 ? Loc.F("Se liberaron {0:0.0} GB de memoria.", freed) : Loc.T("La memoria ya estaba libre."));
+            Notifications.OsdWindow.ShowMessage(done,
+                freed >= 0.05 ? Loc.F("RAM liberada: {0:0.0} GB", freed) : Loc.T("La memoria ya estaba libre"));
+            FreeRamButton.ToolTip = Loc.F("Última vez: {0:0.0} GB liberados", freed);
         }
         finally
         {
             FreeRamButton.IsEnabled = true;
+            FreeRamButton.Opacity = 1;
         }
     }
 

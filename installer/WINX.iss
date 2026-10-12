@@ -119,6 +119,13 @@ begin
   if CurUninstallStep = usUninstall then
   begin
     Sleep(500);
+    // Lecturas avanzadas (temperaturas, FPS): su tarea y la copia en Archivos de programa las creó
+    // WINX con permiso de administrador; quitarlas también lo pide (solo si existen).
+    if IsAdminInstallMode then
+      Exec(ExpandConstant('{app}\WINX.exe'), '--remove-sensors-task', '', SW_HIDE, ewWaitUntilTerminated, Code)
+    else if DirExists(ExpandConstant('{commonpf64}\WINX\Lecturas')) then
+      ShellExec('runas', ExpandConstant('{app}\WINX.exe'), '--remove-sensors-task', '', SW_HIDE,
+                ewWaitUntilTerminated, Code);
     // El inicio automático puede haberlo activado el Hub aunque no se eligiera al instalar.
     RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'WINX');
     // WINX pasa la clave Run a una tarea programada (Services\AutoStart.cs): se borra también.

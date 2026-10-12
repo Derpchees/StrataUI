@@ -73,14 +73,19 @@ public partial class App : Application
             return;
         }
         // Lecturas avanzadas (temperaturas, FPS) y liberar RAM: ver Services/Sensors.
-        if (e.Args.Length > 0 && e.Args[0] == Sensors.HelperArg)
+        if (e.Args.Length > 0 && e.Args[0] == SensorsTask.TaskArg)
         {
             Shutdown(Sensors.RunHelper(e.Args));
             return;
         }
-        if (e.Args.Length > 0 && e.Args[0] == Sensors.FreeRamArg)
+        if (e.Args.Length > 0 && e.Args[0] == SensorsTask.InstallArg)
         {
-            Shutdown(Sensors.RunFreeRam(e.Args));
+            Shutdown(SensorsTask.RunInstall(e.Args));
+            return;
+        }
+        if (e.Args.Length > 0 && e.Args[0] == SensorsTask.RemoveArg)
+        {
+            Shutdown(SensorsTask.RunRemove(e.Args));
             return;
         }
 

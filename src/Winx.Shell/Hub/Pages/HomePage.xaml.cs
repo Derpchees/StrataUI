@@ -21,7 +21,7 @@ public partial class HomePage : Page
         {
             new Tile(SymbolRegular.PanelBottom20, Loc.T("Barra de tareas"), Loc.T("Alineación, tamaño y monitores"), "Taskbar"),
             new Tile(SymbolRegular.Grid24, Loc.T("Menú Inicio"), Loc.T("Estilo, anclados y botones"), "Start"),
-            new Tile(SymbolRegular.Apps24, Loc.T("Elementos de la barra"), Loc.T("Qué lleva cada barra, rendimiento y bandeja"), "Tray"),
+            new Tile(SymbolRegular.Apps24, Loc.T("Bandeja del sistema"), Loc.T("Íconos visibles y ocultos"), "Tray"),
             new Tile(SymbolRegular.Alert24, Loc.T("Notificaciones"), Loc.T("Centro, avisos y su posición"), "Notifications"),
             new Tile(SymbolRegular.PaintBrush24, Loc.T("Apariencia"), Loc.T("Tema, color y fondo"), "Appearance"),
             new Tile(SymbolRegular.Flash24, Loc.T("Optimización"), Loc.T("Rendimiento, privacidad, IA y más"), "Performance"),

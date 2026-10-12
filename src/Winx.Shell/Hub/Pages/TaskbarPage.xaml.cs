@@ -24,8 +24,16 @@ public partial class TaskbarPage : Page
         Select(AppsModeBox, s.TaskbarAppsMode.ToString());
         BuildMainScreenBox();
         BuildMonitorList();
+        SecondsSwitch.IsChecked = s.ShowSeconds;
+        DateSwitch.IsChecked = s.ShowDate;
+        TemperaturesSwitch.IsChecked = s.ShowTemperatures;
+        SensorsStartupSwitch.IsChecked = s.SensorsAtStartup;
+        BuildFpsScreens();
+        UpdateSensors();
 
         _loading = false;
+        Loaded += (_, _) => Sensors.Changed += UpdateSensors;
+        Unloaded += (_, _) => Sensors.Changed -= UpdateSensors;
     }
 
     private static void Select(ComboBox box, string tag) =>
@@ -186,8 +194,68 @@ public partial class TaskbarPage : Page
             Settings.Update(s => s.TaskbarAppsMode = Enum.Parse<TaskbarAppsMode>(tag));
     }
 
-    private void BarItems_Click(object sender, RoutedEventArgs e) =>
-        (Window.GetWindow(this) as HubWindow)?.NavigateTo("Tray");
+    // ── Qué lleva cada barra, reloj y rendimiento ───────────────────────────
+
+    private void ResetLayout_Click(object sender, RoutedEventArgs e) => BarEditor.Reset();
+
+    private void Options_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading)
+            return;
+        Settings.Update(s =>
+        {
+            s.ShowSeconds = SecondsSwitch.IsChecked == true;
+            s.ShowDate = DateSwitch.IsChecked == true;
+            s.ShowTemperatures = TemperaturesSwitch.IsChecked == true;
+            s.SensorsAtStartup = SensorsStartupSwitch.IsChecked == true;
+        });
+    }
+
+    private void BuildFpsScreens()
+    {
+        var screens = Screens();
+        FpsScreenBox.Items.Add(new ComboBoxItem { Content = Loc.T("El principal de WINX"), Tag = null });
+        for (int i = 0; i < screens.Count; i++)
+            FpsScreenBox.Items.Add(new ComboBoxItem
+            {
+                Content = $"{NameOf(screens[i], i, screens.Count)} ({screens[i].Bounds.Width} × {screens[i].Bounds.Height})",
+                Tag = screens[i].DeviceName,
+            });
+        string? chosen = Settings.Current.FpsScreen;
+        FpsScreenBox.SelectedItem = FpsScreenBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string?)i.Tag == chosen)
+                                    ?? FpsScreenBox.Items[0];
+    }
+
+    private void FpsScreen_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loading && FpsScreenBox.SelectedItem is ComboBoxItem item)
+            Settings.Update(s => s.FpsScreen = (string?)item.Tag);
+    }
+
+    private void UpdateSensors()
+    {
+        SensorsState.Text = Sensors.Starting ? Loc.T("Iniciando… si Windows pide permiso, acéptalo.")
+            : Sensors.Running ? Loc.T("Activas: temperaturas y FPS hasta que se cierre WINX.")
+            : Loc.T("Detenidas. También se inician con un clic en el contador de FPS.");
+        SensorsButton.Content = Sensors.Running ? Loc.T("Detener") : Loc.T("Iniciar");
+        SensorsButton.IsEnabled = SensorsRemoveButton.IsEnabled = !Sensors.Starting;
+        PawnIoBar.IsOpen = !Sensors.PawnIoInstalled;
+    }
+
+    private async void Sensors_Click(object sender, RoutedEventArgs e)
+    {
+        if (Sensors.Running)
+            Sensors.Stop();
+        else
+            await Sensors.StartAsync();
+    }
+
+    private async void SensorsRemove_Click(object sender, RoutedEventArgs e)
+    {
+        Sensors.Stop();
+        await SensorsTask.RemoveAsync();
+        UpdateSensors();
+    }
 
     // ── Barra ───────────────────────────────────────────────────────────────
 

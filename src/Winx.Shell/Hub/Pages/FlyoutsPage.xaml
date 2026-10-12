@@ -1,0 +1,63 @@
+<Page x:Class="Winx.Shell.Hub.Pages.FlyoutsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
+      xmlns:hub="clr-namespace:Winx.Shell.Hub"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="{l:T 'Paneles'}"
+      ScrollViewer.CanContentScroll="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <hub:PageHeader Icon="PanelRight24" Title="{l:T 'Paneles'}"
+                            Subtitle="{l:T 'Sonido, brillo, red, Bluetooth y batería: sus paneles y avisos en pantalla.'}" />
+
+            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon Speaker224}" IsExpanded="True">
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Volumen y brillo'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Brillo de cada monitor (DDC/CI) o de la pantalla del portátil. La rueda del mouse sobre el botón lo ajusta.'}" />
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <Grid Style="{StaticResource HubSubOption}">
+                    <StackPanel Margin="0,0,60,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Avisos en pantalla'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Junto a la barra al cambiar el volumen o el brillo, al silenciar y al pulsar Bloq Mayús, Bloq Num o Bloq Despl.'}" />
+                    </StackPanel>
+                    <ui:ToggleSwitch x:Name="OsdSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
+                </Grid>
+            </ui:CardExpander>
+
+            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon Battery524}" IsExpanded="True">
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Batería'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Solo aparece en equipos con batería. Clic: nivel, tiempo restante y modo de energía.'}" />
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <Grid Style="{StaticResource HubSubOption}">
+                    <StackPanel Margin="0,0,60,0">
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Porcentaje de la batería'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'El número dentro del ícono, con un rayo mientras carga'}" />
+                    </StackPanel>
+                    <ui:ToggleSwitch x:Name="BatteryPercentSwitch" HorizontalAlignment="Right" Click="Options_Changed" />
+                </Grid>
+            </ui:CardExpander>
+
+            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Wifi124}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Red y Bluetooth'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Wi-Fi, conexión actual y dispositivos Bluetooth. Clic derecho en su botón de la barra: su configuración en Windows.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource CardDescription}" Margin="2,12,0,0" TextWrapping="Wrap"
+                       Text="{l:T 'Cómo se abren los paneles se elige en Apariencia › Animaciones; en qué barra va cada botón, en Barra de tareas.'}" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

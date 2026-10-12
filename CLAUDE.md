@@ -29,6 +29,16 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   `App.BarsFor` reparte qué lleva cada una (`BarRole`: apps, área de estado, bandeja). La bandeja,
   la tecla Windows y Win+N usan la barra del monitor principal que tenga eso (`IsMain` = la que
   lleva la bandeja; `App.AppsTaskbar` / `App.StatusTaskbar`).
+- **Elementos de cada barra** (`Services/BarLayout`, `Settings.BarItems`, clave `"\\.\DISPLAY1|1"`):
+  lista ordenada de `BarItem` por barra; sin entrada, `BarLayout.Defaults` (lo de antes). La bandeja
+  va en la primera barra que la lleve (`IsMain`; moverla recrea las barras). Se editan en el Hub
+  (`Hub/BarItemsEditor`) o arrastrando en la barra (`Taskbar.ItemDrag.cs`); al guardar se escriben
+  las listas de todas las barras. Un elemento nuevo: valor en `BarItem`, botón en `Taskbar.xaml`,
+  caso en `Taskbar.Element`, nombre/ícono en `BarLayout` y zona en `ContrastZones()`.
+- **Lecturas avanzadas** (`Services/Sensors`, `SensorsTask`): temperaturas (LibreHardwareMonitor +
+  PawnIO), FPS (ETW) y liberar RAM en un proceso elevado `--sensors-task` lanzado por una tarea
+  programada (UAC solo al crearla); la tarea ejecuta una copia en `%ProgramFiles%\WINX\Lecturas`,
+  nunca el WINX de la carpeta del usuario. El uso de CPU/GPU/RAM (`SystemMonitor`, PDH) no la necesita.
 - **Las barras se recrean, no se transforman**, cuando cambia la posición o la segunda barra de un
   monitor, los monitores sin barra o el principal (`App.BarLayoutKey`). Todo lo demás se aplica en vivo en
   `Taskbar.ApplySettings`, que corre con `Settings.Changed`.
