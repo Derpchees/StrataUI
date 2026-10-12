@@ -10,6 +10,10 @@
             </ContextMenu>
         </Button.ContextMenu>
         <Grid x:Name="Root" Width="44">
+            <!-- Varias ventanas agrupadas: el borde de otra "tarjeta" asoma detrás, como en Windows (ver UpdateGroup) -->
+            <Border x:Name="StackEdge" Visibility="Collapsed" Width="3" Margin="0,6"
+                    HorizontalAlignment="Right" CornerRadius="0,3,3,0"
+                    Background="{DynamicResource WinxActiveTaskBrush}" />
             <Border x:Name="ActiveBackground" CornerRadius="{DynamicResource WinxCornerRadius}" Background="{DynamicResource WinxActiveTaskBrush}">
                 <Border.Style>
                     <Style TargetType="Border">
@@ -24,20 +28,12 @@
             </Border>
 
             <!-- Ícono de la app, o del sitio si es una pestaña de YouTube, WhatsApp Web… (ver TaskGroups) -->
-            <Grid Width="24" Height="24">
+            <Grid x:Name="IconHost" Width="24" Height="24">
                 <Image x:Name="AppIcon" RenderOptions.BitmapScalingMode="HighQuality" />
                 <!-- El navegador en chiquito, en la esquina del ícono del sitio -->
                 <Image x:Name="BrowserBadge" Width="11" Height="11" Margin="0,0,-3,-3" Visibility="Collapsed"
                        HorizontalAlignment="Right" VerticalAlignment="Bottom" RenderOptions.BitmapScalingMode="HighQuality" />
             </Grid>
-
-            <!-- Cuántas ventanas hay en el botón (con las ventanas agrupadas por app) -->
-            <Border x:Name="CountBadge" Visibility="Collapsed" MinWidth="14" Height="14" CornerRadius="7" Padding="3,0"
-                    HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,3,0"
-                    Background="{DynamicResource WinxActiveTaskBrush}">
-                <TextBlock x:Name="CountText" FontSize="9" FontWeight="SemiBold" HorizontalAlignment="Center"
-                           VerticalAlignment="Center" Foreground="{DynamicResource WinxForegroundBrush}" />
-            </Border>
 
             <!-- Indicador junto al borde de la pantalla (abajo en la barra inferior): corto = abierta, largo con acento = activa, ámbar = pide atención -->
             <Border x:Name="Indicator" Height="3" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2"

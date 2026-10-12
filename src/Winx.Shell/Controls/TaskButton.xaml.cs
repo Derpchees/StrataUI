@@ -80,26 +80,34 @@ public partial class TaskButton : UserControl
         Window is not { } window ? [] : _bar?.GroupMembers(window) ?? [window];
 
     /// <summary>
-    /// Con varias ventanas en el botón: cuántas son y el indicador de la que esté activa (o pida
-    /// atención). Con una sola, el indicador sigue el estado de la ventana (estilo del XAML).
+    /// Con varias ventanas en el botón: se ve apilado como en Windows (la placa del botón con el borde
+    /// de otra asomando detrás, igual desde 2 ventanas) y el indicador sigue a la que esté activa (o
+    /// pida atención). Con una sola, el indicador sigue el estado de la ventana (estilo del XAML).
     /// </summary>
     private void UpdateGroup()
     {
         var members = Members();
         bool grouped = members.Count > 1;
-        CountBadge.Visibility = grouped ? Visibility.Visible : Visibility.Collapsed;
-        CountText.Text = members.Count.ToString();
+        StackEdge.Visibility = grouped ? Visibility.Visible : Visibility.Collapsed;
         CloseItem.Header = grouped ? Loc.T("Cerrar todas las ventanas") : Loc.T("Cerrar ventana");
         if (!grouped)
         {
             ActiveBackground.ClearValue(VisibilityProperty);
+            ActiveBackground.ClearValue(OpacityProperty);
+            ActiveBackground.ClearValue(MarginProperty);
+            IconHost.ClearValue(MarginProperty);
             Indicator.ClearValue(WidthProperty);
             Indicator.ClearValue(Border.BackgroundProperty);
             return;
         }
         bool active = members.Any(w => w.State == ApplicationWindow.WindowState.Active && !w.IsMinimized);
         bool flashing = members.Any(w => w.State == ApplicationWindow.WindowState.Flashing);
-        ActiveBackground.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+        // La placa siempre a la vista (más tenue si ninguna está activa), dejando sitio al borde de atrás.
+        ActiveBackground.Visibility = Visibility.Visible;
+        ActiveBackground.Opacity = active ? 1 : 0.5;
+        StackEdge.Opacity = active ? 0.7 : 0.4;
+        ActiveBackground.Margin = _vertical ? new Thickness(0, 0, 0, 4) : new Thickness(0, 0, 4, 0);
+        IconHost.Margin = ActiveBackground.Margin; // centrado sobre la placa
         Indicator.Width = active || flashing ? 16 : 6;
         if (flashing && !active)
             Indicator.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE8, 0xA3, 0x3D));
@@ -111,8 +119,21 @@ public partial class TaskButton : UserControl
     /// El indicador va junto al borde de la pantalla, como en Windows; en barras verticales se gira y el
     /// botón toma un alto fijo (en las horizontales lo da el alto de la barra).
     /// </summary>
+    private bool _vertical;
+
     private void FitTo(TaskbarPosition position)
     {
+        _vertical = position is TaskbarPosition.Left or TaskbarPosition.Right;
+        if (_vertical)
+        {
+            // En vertical las ventanas se apilan hacia abajo.
+            StackEdge.Width = double.NaN;
+            StackEdge.Height = 3;
+            StackEdge.Margin = new Thickness(6, 0, 6, 0);
+            StackEdge.HorizontalAlignment = HorizontalAlignment.Stretch;
+            StackEdge.VerticalAlignment = VerticalAlignment.Bottom;
+            StackEdge.CornerRadius = new CornerRadius(0, 0, 3, 3);
+        }
         switch (position)
         {
             case TaskbarPosition.Top:

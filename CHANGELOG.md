@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.16.2] - 2026-10-12
+
+### Cambiado
+- Las ventanas agrupadas de una app ya no muestran un número: el botón se ve apilado, como en
+  Windows (la placa con el borde de otra asomando detrás), igual a partir de 2 ventanas. La placa
+  queda tenue si ninguna está activa. En las barras verticales se apilan hacia abajo.
+
 ## [0.16.1] - 2026-10-12
 
 ### Corregido
