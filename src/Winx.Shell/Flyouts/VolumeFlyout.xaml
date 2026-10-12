@@ -108,6 +108,36 @@
                         </Grid>
                     </StackPanel>
 
+                    <!-- Escribirlas pide permiso de administrador (UAC); leerlas no -->
+                    <Grid Margin="0,12,0,0" Visibility="{Binding EnhancementsVisibility}">
+                        <StackPanel Margin="0,0,56,0">
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="Mejoras de audio" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="Efectos del fabricante o de Windows: ecualizador, sonido envolvente, supresión de ruido…" />
+                        </StackPanel>
+                        <ui:ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding Enhancements, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
+                    </Grid>
+
+                    <Grid Margin="0,12,0,0">
+                        <StackPanel Margin="0,0,56,0">
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="Control exclusivo" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="Permite que una app (juegos, reproductores de audio) use el dispositivo sola." />
+                        </StackPanel>
+                        <ui:ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding ExclusiveAllowed, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
+                    </Grid>
+
+                    <Grid Margin="0,12,0,0" Visibility="{Binding PriorityVisibility}">
+                        <StackPanel Margin="0,0,56,0">
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="Prioridad a esa app" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="La app con control exclusivo no cede el dispositivo a otras." />
+                        </StackPanel>
+                        <ui:ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding ExclusivePriority, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                        <ui:SymbolIcon Symbol="Shield24" FontSize="12" Margin="0,0,6,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Style="{StaticResource FlyoutHint}" Text="Estas tres opciones piden permiso de administrador." />
+                    </StackPanel>
+
                     <Button Style="{StaticResource FlyoutRow}" Margin="-10,10,0,0" Click="Communications_Click"
                             IsEnabled="{Binding CanSetCommunications}">
                         <StackPanel Orientation="Horizontal">

@@ -66,6 +66,11 @@ public partial class App : Application
             Shutdown(Tweaks.TweakEngine.RunElevatedCommand(e.Args));
             return;
         }
+        if (e.Args.Length > 0 && e.Args[0] == Services.Audio.AudioDeviceOptions.ElevatedArg)
+        {
+            Shutdown(Services.Audio.AudioDeviceOptions.RunElevated(e.Args));
+            return;
+        }
 
         // Pide a la instancia en ejecución que se cierre limpiamente (restaura la barra de Windows).
         if (e.Args.Contains(ExitArg, StringComparer.OrdinalIgnoreCase))

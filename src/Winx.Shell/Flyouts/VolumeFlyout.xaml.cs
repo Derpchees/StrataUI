@@ -48,6 +48,8 @@ public partial class VolumeFlyout : FlyoutWindow
         _refreshTimer.Start();
     }
 
+    protected override bool StayOpenWhenDeactivated => _options?.IsBusy == true;
+
     // ── Volumen general ─────────────────────────────────────────────────────
 
     private void UpdateVolumes()
@@ -168,6 +170,7 @@ public partial class VolumeFlyout : FlyoutWindow
             return; // el mismo botón abre y cierra
 
         _options = new DeviceOptionsModel(_audio, tile.Device);
+        _options.WriteFinished += () => Activate(); // el diálogo de UAC se llevó el foco
         var host = tile.Device.IsInput ? InputOptions : OutputOptions;
         host.Content = _options;
         host.Visibility = Visibility.Visible;
@@ -225,8 +228,8 @@ public partial class VolumeFlyout : FlyoutWindow
     }
 
     /// <summary>
-    /// Opciones de un dispositivo: nivel en vivo, balance y uso para llamadas. Cada cambio se
-    /// aplica al momento; si Windows lo rechaza, se registra.
+    /// Opciones de un dispositivo: nivel en vivo, balance, mejoras de audio, modo exclusivo y uso
+    /// para llamadas. Cada cambio se aplica al momento; si Windows lo rechaza, se registra.
     /// </summary>
     public sealed class DeviceOptionsModel : INotifyPropertyChanged, IDisposable
     {
@@ -291,6 +294,58 @@ public partial class VolumeFlyout : FlyoutWindow
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(BalanceText));
             }
+        }
+
+        // Mejoras de audio y modo exclusivo: se escriben elevando (UAC). Mientras tanto los
+        // interruptores quedan bloqueados; al terminar se relee el valor real (si se canceló o
+        // falló, el interruptor vuelve a donde estaba).
+        private bool _busy;
+        public bool NotBusy => !_busy;
+        public bool IsBusy => _busy;
+
+        /// <summary>Terminó una escritura elevada (para devolver el foco al panel).</summary>
+        public event Action? WriteFinished;
+
+        public Visibility EnhancementsVisibility =>
+            AudioDeviceOptions.GetEnhancements(Device) is null ? Visibility.Collapsed : Visibility.Visible;
+
+        public bool Enhancements
+        {
+            get => AudioDeviceOptions.GetEnhancements(Device) ?? false;
+            set => Write(AudioDeviceOptions.SetEnhancementsAsync(Device, value), nameof(Enhancements));
+        }
+
+        public bool ExclusiveAllowed
+        {
+            get => AudioDeviceOptions.GetExclusiveAllowed(Device);
+            set => Write(AudioDeviceOptions.SetExclusiveAllowedAsync(Device, value), nameof(ExclusiveAllowed), nameof(PriorityVisibility));
+        }
+
+        public Visibility PriorityVisibility => ExclusiveAllowed ? Visibility.Visible : Visibility.Collapsed;
+
+        public bool ExclusivePriority
+        {
+            get => AudioDeviceOptions.GetExclusivePriority(Device);
+            set => Write(AudioDeviceOptions.SetExclusivePriorityAsync(Device, value), nameof(ExclusivePriority));
+        }
+
+        private async void Write(Task<bool> write, params string[] properties)
+        {
+            _busy = true;
+            OnPropertyChanged(nameof(NotBusy));
+            try
+            {
+                await write;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"No se pudo cambiar una opción de {Device.Name}", ex);
+            }
+            _busy = false;
+            OnPropertyChanged(nameof(NotBusy));
+            foreach (var property in properties)
+                OnPropertyChanged(property);
+            WriteFinished?.Invoke();
         }
 
         // Llamadas

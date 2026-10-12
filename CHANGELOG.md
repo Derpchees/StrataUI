@@ -14,7 +14,9 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   - Salida y entrada, cada una con su volumen y sus dispositivos como mosaicos cuadrados con
     ícono según el tipo (bocinas, audífonos, diadema, monitor, digital, Bluetooth, micrófono).
   - Opciones de cada dispositivo: nivel en vivo (en micrófonos, para probarlo), balance
-    izquierda/derecha y usarlo como predeterminado para llamadas.
+    izquierda/derecha, mejoras de audio, control exclusivo y usarlo como predeterminado para
+    llamadas. Las mejoras y el control exclusivo piden permiso de administrador (UAC).
+  - Los dispositivos están plegados por defecto; la fila muestra el que está en uso.
 
 ### Corregido
 - El dispositivo de entrada predeterminado y su volumen no se mostraban en ninguna parte.

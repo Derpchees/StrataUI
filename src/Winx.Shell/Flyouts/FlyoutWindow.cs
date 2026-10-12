@@ -53,7 +53,11 @@ public abstract class FlyoutWindow : FluentWindow
         WindowCornerPreference = WindowCornerPreference.Round;
         Opacity = 0; // se muestra al terminar de posicionarse, sin parpadeo
 
-        Deactivated += (_, _) => CloseFlyout();
+        Deactivated += (_, _) =>
+        {
+            if (!StayOpenWhenDeactivated)
+                CloseFlyout();
+        };
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape && !HandleEscape())
@@ -150,6 +154,9 @@ public abstract class FlyoutWindow : FluentWindow
             layer.SetResourceReference(Border.BorderBrushProperty, border);
         return layer;
     }
+
+    /// <summary>True mientras el panel espera algo que le quita el foco (p. ej. el diálogo de UAC).</summary>
+    protected virtual bool StayOpenWhenDeactivated => false;
 
     /// <summary>Permite a un panel usar Esc para otra cosa (p. ej. borrar la búsqueda) antes de cerrarse.</summary>
     protected virtual bool HandleEscape() => false;

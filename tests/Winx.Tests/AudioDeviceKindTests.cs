@@ -17,6 +17,16 @@ public sealed class AudioDeviceKindTests
     public void Kind_follows_form_factor(int formFactor, string path, bool input, AudioDeviceKind expected) =>
         Assert.Equal(expected, AudioService.KindOf(formFactor, path, input));
 
+    [Fact]
+    public void Endpoint_guid_is_the_last_part_of_the_device_id() =>
+        Assert.Equal("{36ad2c8a-624c-468d-9e5f-841bd1548a4f}",
+                     AudioDeviceOptions.EndpointGuid("{0.0.0.00000000}.{36ad2c8a-624c-468d-9e5f-841bd1548a4f}"));
+
+    [Fact]
+    public void Elevated_command_rejects_other_properties() =>
+        Assert.Equal(2, AudioDeviceOptions.RunElevated(
+            ["--audio-property", "Render", "{36ad2c8a-624c-468d-9e5f-841bd1548a4f}", "Properties", "{a45c254e-df1c-4efd-8020-67d146a850e0},2", "1"]));
+
     [Theory]
     [InlineData("{1}.BTHENUM\\{0000110B-0000-1000-8000-00805F9B34FB}")]
     [InlineData("{1}.BTHHFENUM\\BTHHFPAUDIO")]
