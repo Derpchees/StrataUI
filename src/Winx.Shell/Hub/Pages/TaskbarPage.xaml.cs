@@ -6,6 +6,10 @@ using Forms = System.Windows.Forms;
 
 namespace Winx.Shell.Hub.Pages;
 
+/// <summary>
+/// Barra de tareas del monitor elegido arriba (<see cref="ScreenPicker"/>): qué lleva, su aspecto,
+/// posición, reloj y temperaturas. Abajo, lo que vale para todos los monitores.
+/// </summary>
 public partial class TaskbarPage : Page
 {
     private bool _loading = true;
@@ -13,33 +17,86 @@ public partial class TaskbarPage : Page
     public TaskbarPage()
     {
         InitializeComponent();
-
         var s = Settings.Current;
+        Select(AppsModeBox, s.TaskbarAppsMode.ToString());
+        BuildMainScreenBox();
+        SensorsStartupSwitch.IsChecked = s.SensorsAtStartup;
+        BuildFpsScreens();
+        UpdateSensors();
+        LoadScreen();
+        _loading = false;
+        Loaded += (_, _) =>
+        {
+            Sensors.Changed += UpdateSensors;
+            ScreenPicker.Changed += OnScreenChanged;
+        };
+        Unloaded += (_, _) =>
+        {
+            Sensors.Changed -= UpdateSensors;
+            ScreenPicker.Changed -= OnScreenChanged;
+        };
+    }
+
+    private static string Device => ScreenPicker.Device;
+
+    private void OnScreenChanged()
+    {
+        _loading = true;
+        LoadScreen();
+        _loading = false;
+    }
+
+    /// <summary>Los ajustes del monitor elegido.</summary>
+    private void LoadScreen()
+    {
+        var s = Settings.Current.For(Device);
         Select(AlignmentBox, s.TaskbarAlignment.ToString());
         CenterAppsSwitch.IsChecked = s.TaskbarCenterApps;
         PreviewsSwitch.IsChecked = s.ShowTaskPreviews;
         CombineSwitch.IsChecked = s.CombineTaskWindows;
         HeightBox.SelectedItem = HeightBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == s.TaskbarHeight.ToString()) ?? HeightBox.Items[1];
-        Select(AppsModeBox, s.TaskbarAppsMode.ToString());
-        BuildMainScreenBox();
-        BuildMonitorList();
         SecondsSwitch.IsChecked = s.ShowSeconds;
         DateSwitch.IsChecked = s.ShowDate;
         TemperaturesSwitch.IsChecked = s.ShowTemperatures;
-        SensorsStartupSwitch.IsChecked = s.SensorsAtStartup;
-        BuildFpsScreens();
-        UpdateSensors();
-
-        _loading = false;
-        Loaded += (_, _) => Sensors.Changed += UpdateSensors;
-        Unloaded += (_, _) => Sensors.Changed -= UpdateSensors;
+        BatteryPercentSwitch.IsChecked = s.ShowBatteryPercent;
+        BuildMonitorPanel();
     }
 
     private static void Select(ComboBox box, string tag) =>
         box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) ?? box.Items[0];
 
-    // ── Monitores ───────────────────────────────────────────────────────────
+    private void Options_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading)
+            return;
+        Settings.UpdateScreen(Device, s =>
+        {
+            s.TaskbarCenterApps = CenterAppsSwitch.IsChecked == true;
+            s.ShowTaskPreviews = PreviewsSwitch.IsChecked == true;
+            s.CombineTaskWindows = CombineSwitch.IsChecked == true;
+            s.ShowSeconds = SecondsSwitch.IsChecked == true;
+            s.ShowDate = DateSwitch.IsChecked == true;
+            s.ShowTemperatures = TemperaturesSwitch.IsChecked == true;
+            s.ShowBatteryPercent = BatteryPercentSwitch.IsChecked == true;
+        });
+    }
+
+    private void Alignment_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loading && AlignmentBox.SelectedItem is ComboBoxItem { Tag: string tag })
+            Settings.UpdateScreen(Device, s => s.TaskbarAlignment = Enum.Parse<TaskbarAlignment>(tag));
+    }
+
+    private void Height_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loading && HeightBox.SelectedItem is ComboBoxItem { Tag: string tag })
+            Settings.UpdateScreen(Device, s => s.TaskbarHeight = int.Parse(tag));
+    }
+
+    private void ResetLayout_Click(object sender, RoutedEventArgs e) => BarEditor.Reset();
+
+    // ── Posición (del monitor elegido) ──────────────────────────────────────
 
     private static readonly string[] PositionNames = [Loc.T("Abajo"), Loc.T("Arriba"), Loc.T("Izquierda"), Loc.T("Derecha")];
 
@@ -51,124 +108,104 @@ public partial class TaskbarPage : Page
         Loc.F("En el borde opuesto ({0}). Con \"Apps abiertas\" o \"Área de estado y reloj\" las dos barras se reparten el contenido; \"Completa\" repite todo.",
               PositionNames[(int)WinxSettings.Opposite(position)]);
 
-    /// <summary>Monitores de izquierda a derecha (así se numeran en toda la página).</summary>
-    private static List<Forms.Screen> Screens() =>
-        Forms.Screen.AllScreens.OrderBy(sc => sc.Bounds.X).ThenBy(sc => sc.Bounds.Y).ToList();
+    /// <summary>Borde de la barra, si tiene barra (el principal de WINX siempre) y la segunda barra.</summary>
+    private void BuildMonitorPanel()
+    {
+        MonitorPanel.Children.Clear();
+        string device = Device;
+        bool isMain = device == ThemeManager.MainDevice;
 
-    private static string NameOf(Forms.Screen screen, int index, int count) =>
-        count == 1 ? Loc.T("Monitor")
-        : screen.Primary ? Loc.F("Monitor {0} (principal de Windows)", index + 1)
-        : Loc.F("Monitor {0}", index + 1);
+        var position = new ComboBox { MinWidth = 140, ItemsSource = PositionNames, SelectedIndex = (int)Settings.Current.PositionOf(device) };
+        var secondText = new TextBlock { Style = (Style)FindResource("CardDescription"), Text = SecondBarDescription(Settings.Current.PositionOf(device)) };
+        var second = new ComboBox { MinWidth = 200, ItemsSource = SecondBarNames, SelectedIndex = (int)Settings.Current.SecondBarOf(device) };
+        position.SelectionChanged += (_, _) =>
+        {
+            if (_loading || position.SelectedIndex < 0)
+                return;
+            Settings.Update(s => s.TaskbarPositions[device] = (TaskbarPosition)position.SelectedIndex);
+            secondText.Text = SecondBarDescription((TaskbarPosition)position.SelectedIndex);
+        };
+        second.SelectionChanged += (_, _) =>
+        {
+            if (_loading || second.SelectedIndex < 0)
+                return;
+            var content = (SecondBarContent)second.SelectedIndex;
+            Settings.Update(s =>
+            {
+                if (content == SecondBarContent.None)
+                    s.SecondTaskbars.Remove(device);
+                else
+                    s.SecondTaskbars[device] = content;
+            });
+        };
 
-    private static string MainDevice(List<Forms.Screen> screens) =>
-        App.MainScreenDevice(screens.Select(sc => (sc.DeviceName, sc.Primary)));
+        var header = new StackPanel();
+        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Borde de la pantalla") });
+        header.Children.Add(new TextBlock
+        {
+            Style = (Style)FindResource("CardDescription"),
+            Text = isMain ? Loc.T("Es el principal de WINX: siempre tiene barra.") : Loc.T("El interruptor muestra u oculta la barra en este monitor."),
+        });
+        var controls = new StackPanel { Orientation = Orientation.Horizontal };
+        controls.Children.Add(position);
+        if (!isMain)
+        {
+            var visible = new Wpf.Ui.Controls.ToggleSwitch
+            {
+                Margin = new Thickness(16, 0, 0, 0),
+                IsChecked = !Settings.Current.TaskbarHiddenScreens.Contains(device),
+                ToolTip = Loc.T("Mostrar la barra en este monitor"),
+            };
+            visible.Click += (_, _) =>
+            {
+                bool show = visible.IsChecked == true;
+                position.IsEnabled = second.IsEnabled = show;
+                Settings.Update(s =>
+                {
+                    s.TaskbarHiddenScreens.Remove(device);
+                    if (!show)
+                        s.TaskbarHiddenScreens.Add(device);
+                });
+            };
+            position.IsEnabled = second.IsEnabled = visible.IsChecked == true;
+            controls.Children.Add(visible);
+        }
+        MonitorPanel.Children.Add(new Wpf.Ui.Controls.CardControl
+        {
+            Style = (Style)FindResource("HubCard"),
+            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Desktop24 },
+            Header = header,
+            Content = controls,
+        });
+
+        var secondHeader = new StackPanel();
+        secondHeader.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Segunda barra") });
+        secondHeader.Children.Add(secondText);
+        MonitorPanel.Children.Add(new Wpf.Ui.Controls.CardControl
+        {
+            Style = (Style)FindResource("HubCard"),
+            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowBidirectionalUpDown24 },
+            Header = secondHeader,
+            Content = second,
+        });
+    }
+
+    // ── Para todos los monitores ────────────────────────────────────────────
 
     private void BuildMainScreenBox()
     {
-        var screens = Screens();
+        var screens = ScreenPicker.Screens();
         MultiMonitorOptions.Visibility = screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         MainScreenBox.Items.Add(new ComboBoxItem { Content = Loc.T("Igual que Windows"), Tag = null });
         for (int i = 0; i < screens.Count; i++)
-            MainScreenBox.Items.Add(new ComboBoxItem { Content = NameOf(screens[i], i, screens.Count), Tag = screens[i].DeviceName });
+            MainScreenBox.Items.Add(new ComboBoxItem
+            {
+                Content = screens.Count == 1 ? Loc.T("Monitor") : Loc.F("Monitor {0}", i + 1),
+                Tag = screens[i].DeviceName,
+            });
         string? chosen = Settings.Current.TaskbarMainScreen;
         MainScreenBox.SelectedItem = MainScreenBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string?)i.Tag == chosen)
                                      ?? MainScreenBox.Items[0];
-    }
-
-    /// <summary>
-    /// Una tarjeta por monitor: borde de la barra y, salvo en el principal de WINX (que siempre la
-    /// lleva), si tiene barra.
-    /// </summary>
-    private void BuildMonitorList()
-    {
-        MonitorList.Children.Clear();
-        var screens = Screens();
-        string main = MainDevice(screens);
-        for (int i = 0; i < screens.Count; i++)
-        {
-            var screen = screens[i];
-            string device = screen.DeviceName;
-            bool isMain = device == main;
-            var header = new StackPanel();
-            header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = NameOf(screen, i, screens.Count) });
-            header.Children.Add(new TextBlock
-            {
-                Style = (Style)FindResource("CardDescription"),
-                Text = $"{screen.Bounds.Width} × {screen.Bounds.Height}"
-                       + (isMain && screens.Count > 1 ? " · " + Loc.T("lleva la bandeja del sistema") : ""),
-            });
-
-            // Segunda barra en el borde opuesto (se describe según la posición de la primera).
-            var secondText = new TextBlock { Style = (Style)FindResource("CardDescription"), Text = SecondBarDescription(Settings.Current.PositionOf(device)) };
-            var second = new ComboBox { MinWidth = 200, ItemsSource = SecondBarNames, SelectedIndex = (int)Settings.Current.SecondBarOf(device) };
-            second.SelectionChanged += (_, _) =>
-            {
-                if (_loading || second.SelectedIndex < 0)
-                    return;
-                var content = (SecondBarContent)second.SelectedIndex;
-                Settings.Update(s =>
-                {
-                    if (content == SecondBarContent.None)
-                        s.SecondTaskbars.Remove(device);
-                    else
-                        s.SecondTaskbars[device] = content;
-                });
-            };
-
-            var position = new ComboBox { MinWidth = 140, ItemsSource = PositionNames, SelectedIndex = (int)Settings.Current.PositionOf(device) };
-            position.SelectionChanged += (_, _) =>
-            {
-                if (_loading || position.SelectedIndex < 0)
-                    return;
-                Settings.Update(s => s.TaskbarPositions[device] = (TaskbarPosition)position.SelectedIndex);
-                secondText.Text = SecondBarDescription((TaskbarPosition)position.SelectedIndex);
-            };
-
-            var controls = new StackPanel { Orientation = Orientation.Horizontal };
-            controls.Children.Add(position);
-            if (!isMain)
-            {
-                var visible = new Wpf.Ui.Controls.ToggleSwitch
-                {
-                    Margin = new Thickness(16, 0, 0, 0),
-                    IsChecked = !Settings.Current.TaskbarHiddenScreens.Contains(device),
-                    ToolTip = Loc.T("Mostrar la barra en este monitor"),
-                };
-                visible.Click += (_, _) =>
-                {
-                    bool show = visible.IsChecked == true;
-                    position.IsEnabled = second.IsEnabled = show;
-                    Settings.Update(s =>
-                    {
-                        s.TaskbarHiddenScreens.Remove(device);
-                        if (!show)
-                            s.TaskbarHiddenScreens.Add(device);
-                    });
-                };
-                position.IsEnabled = second.IsEnabled = visible.IsChecked == true;
-                controls.Children.Add(visible);
-            }
-
-            MonitorList.Children.Add(new Wpf.Ui.Controls.CardControl
-            {
-                Style = (Style)FindResource("HubCard"),
-                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Desktop24 },
-                Header = header,
-                Content = controls,
-            });
-
-            var secondHeader = new StackPanel();
-            secondHeader.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Segunda barra") });
-            secondHeader.Children.Add(secondText);
-            MonitorList.Children.Add(new Wpf.Ui.Controls.CardControl
-            {
-                Style = (Style)FindResource("HubCard"),
-                Margin = new Thickness(40, 0, 0, 12),
-                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowBidirectionalUpDown24 },
-                Header = secondHeader,
-                Content = second,
-            });
-        }
     }
 
     private void MainScreen_Changed(object sender, SelectionChangedEventArgs e)
@@ -184,7 +221,7 @@ public partial class TaskbarPage : Page
                 s.TaskbarHiddenScreens.Remove(device);
         });
         _loading = true;
-        BuildMonitorList();
+        BuildMonitorPanel();
         _loading = false;
     }
 
@@ -194,33 +231,18 @@ public partial class TaskbarPage : Page
             Settings.Update(s => s.TaskbarAppsMode = Enum.Parse<TaskbarAppsMode>(tag));
     }
 
-    // ── Qué lleva cada barra, reloj y rendimiento ───────────────────────────
-
-    private void ResetLayout_Click(object sender, RoutedEventArgs e) => BarEditor.Reset();
-
-    private void Options_Changed(object sender, RoutedEventArgs e)
+    private void Global_Changed(object sender, RoutedEventArgs e)
     {
-        if (_loading)
-            return;
-        Settings.Update(s =>
-        {
-            s.ShowSeconds = SecondsSwitch.IsChecked == true;
-            s.ShowDate = DateSwitch.IsChecked == true;
-            s.ShowTemperatures = TemperaturesSwitch.IsChecked == true;
-            s.SensorsAtStartup = SensorsStartupSwitch.IsChecked == true;
-        });
+        if (!_loading)
+            Settings.Update(s => s.SensorsAtStartup = SensorsStartupSwitch.IsChecked == true);
     }
 
     private void BuildFpsScreens()
     {
-        var screens = Screens();
+        var screens = ScreenPicker.Screens();
         FpsScreenBox.Items.Add(new ComboBoxItem { Content = Loc.T("El principal de WINX"), Tag = null });
         for (int i = 0; i < screens.Count; i++)
-            FpsScreenBox.Items.Add(new ComboBoxItem
-            {
-                Content = $"{NameOf(screens[i], i, screens.Count)} ({screens[i].Bounds.Width} × {screens[i].Bounds.Height})",
-                Tag = screens[i].DeviceName,
-            });
+            FpsScreenBox.Items.Add(new ComboBoxItem { Content = ScreenPicker.NameOf(screens[i], i, screens.Count), Tag = screens[i].DeviceName });
         string? chosen = Settings.Current.FpsScreen;
         FpsScreenBox.SelectedItem = FpsScreenBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string?)i.Tag == chosen)
                                     ?? FpsScreenBox.Items[0];
@@ -255,29 +277,5 @@ public partial class TaskbarPage : Page
         Sensors.Stop();
         await SensorsTask.RemoveAsync();
         UpdateSensors();
-    }
-
-    // ── Barra ───────────────────────────────────────────────────────────────
-
-    private void Alignment_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_loading && AlignmentBox.SelectedItem is ComboBoxItem { Tag: string tag })
-            Settings.Update(s => s.TaskbarAlignment = Enum.Parse<TaskbarAlignment>(tag));
-    }
-
-    private void Combine_Click(object sender, RoutedEventArgs e) =>
-        Settings.Update(s => s.CombineTaskWindows = CombineSwitch.IsChecked == true);
-
-    private void Previews_Click(object sender, RoutedEventArgs e) =>
-        Settings.Update(s => s.ShowTaskPreviews = PreviewsSwitch.IsChecked == true);
-
-    private void CenterApps_Click(object sender, RoutedEventArgs e) =>
-        Settings.Update(s => s.TaskbarCenterApps = CenterAppsSwitch.IsChecked == true);
-
-    private void Height_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loading || HeightBox.SelectedItem is not ComboBoxItem { Tag: string tag })
-            return;
-        Settings.Update(s => s.TaskbarHeight = int.Parse(tag));
     }
 }

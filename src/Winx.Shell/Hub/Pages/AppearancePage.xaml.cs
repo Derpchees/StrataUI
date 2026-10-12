@@ -31,7 +31,7 @@ public partial class AppearancePage : Page
         var s = Settings.Current;
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
         LiveGlassSwitch.IsChecked = s.LiveGlass;
-        TransparentSwitch.IsChecked = s.TaskbarFullyTransparent;
+        TransparentSwitch.IsChecked = Settings.Current.For(ScreenPicker.Device).TaskbarFullyTransparent;
         Select(AnimationBox, s.PanelAnimation.ToString());
         Select(SpeedBox, s.AnimationSpeed.ToString());
         Select(AccentSourceBox, s.AccentFromWallpaper ? "Wallpaper" : s.AccentColor is null ? "Windows" : "Custom");
@@ -46,11 +46,22 @@ public partial class AppearancePage : Page
         UpdateWallpaperEngine();
         Services.Themes.WallpaperEngine.Changed += UpdateWallpaperEngine;
         ThemeManager.ThemeChanged += OnThemeChanged;
+        ScreenPicker.Changed += OnScreenChanged;
         Unloaded += (_, _) =>
         {
             Services.Themes.WallpaperEngine.Changed -= UpdateWallpaperEngine;
             ThemeManager.ThemeChanged -= OnThemeChanged;
+            ScreenPicker.Changed -= OnScreenChanged;
         };
+    }
+
+    /// <summary>Otro monitor elegido: su tema y su barra transparente.</summary>
+    private void OnScreenChanged()
+    {
+        _loading = true;
+        TransparentSwitch.IsChecked = Settings.Current.For(ScreenPicker.Device).TaskbarFullyTransparent;
+        UpdateGallerySelection(Settings.Current.For(ScreenPicker.Device).Theme);
+        _loading = false;
     }
 
     /// <summary>Las miniaturas de los temas llevan el acento: se rehacen al cambiarlo.</summary>
@@ -75,7 +86,7 @@ public partial class AppearancePage : Page
         ThemeGallery.Children.Clear();
         foreach (var theme in ThemeCatalog.All)
         {
-            bool selected = theme.Kind == Settings.Current.Theme;
+            bool selected = theme.Kind == Settings.Current.For(ScreenPicker.Device).Theme;
             var card = new Button
             {
                 Width = 168,
@@ -94,7 +105,7 @@ public partial class AppearancePage : Page
             {
                 // Primero se marca la selección (respuesta inmediata) y después se aplica el tema.
                 UpdateGallerySelection(theme.Kind);
-                Dispatcher.BeginInvoke(() => Settings.Update(s => s.Theme = theme.Kind),
+                Dispatcher.BeginInvoke(() => Settings.UpdateScreen(ScreenPicker.Device, s => s.Theme = theme.Kind),
                                        System.Windows.Threading.DispatcherPriority.Background);
             };
             ThemeGallery.Children.Add(card);
@@ -197,7 +208,7 @@ public partial class AppearancePage : Page
         Settings.Update(s => s.LiveGlass = LiveGlassSwitch.IsChecked == true);
 
     private void Transparent_Click(object sender, RoutedEventArgs e) =>
-        Settings.Update(s => s.TaskbarFullyTransparent = TransparentSwitch.IsChecked == true);
+        Settings.UpdateScreen(ScreenPicker.Device, s => s.TaskbarFullyTransparent = TransparentSwitch.IsChecked == true);
 
     private static void Select(ComboBox box, string tag) =>
         box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) ?? box.Items[0];

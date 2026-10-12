@@ -34,8 +34,15 @@
                         <ui:SymbolIcon Symbol="Home24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+                <!-- Igual en todos los monitores: fuera de Personalización -->
+                <ui:NavigationViewItem Content="{l:T 'Menú Inicio'}" TargetPageType="{x:Type pages:StartPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Grid24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
 
-                <ui:NavigationViewItemHeader Text="{l:T 'Personalización'}" Margin="0,12,0,0" />
+                <!-- Cada página de Personalización edita los ajustes del monitor elegido arriba (Hub/ScreenPicker) -->
+                <ui:NavigationViewItemHeader Text="{l:T 'Personalización por monitor'}" Margin="0,12,0,0" />
                 <ui:NavigationViewItem Content="{l:T 'Barra de tareas'}" TargetPageType="{x:Type pages:TaskbarPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PanelBottom20" />
@@ -44,11 +51,6 @@
                 <ui:NavigationViewItem Content="{l:T 'Bandeja del sistema'}" TargetPageType="{x:Type pages:TrayPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="ChevronUp24" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Menú Inicio'}" TargetPageType="{x:Type pages:StartPage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Grid24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{l:T 'Notificaciones'}" TargetPageType="{x:Type pages:NotificationsPage}">
@@ -72,13 +74,8 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <ui:NavigationViewItemHeader Text="{l:T 'Sistema'}" Margin="0,12,0,0" />
-                <!-- Desplegada desde el principio: así se ven todas las categorías de optimización -->
-                <ui:NavigationViewItem Content="{l:T 'Optimización'}" IsExpanded="True">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Wrench24" />
-                    </ui:NavigationViewItem.Icon>
-                    <ui:NavigationViewItem.MenuItems>
+                <!-- Optimización: un grupo fijo como Personalización (sin plegar ni desplegar) -->
+                <ui:NavigationViewItemHeader Text="{l:T 'Optimización'}" Margin="0,12,0,0" />
                         <ui:NavigationViewItem Content="{l:T 'Rendimiento'}" TargetPageType="{x:Type pages:PerformancePage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Flash24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
@@ -115,8 +112,6 @@
                         <ui:NavigationViewItem Content="{l:T 'Respaldo'}" TargetPageType="{x:Type pages:BackupPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="History24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                    </ui:NavigationViewItem.MenuItems>
-                </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem Content="{l:T 'Actualizaciones'}" TargetPageType="{x:Type pages:UpdatesPage}">

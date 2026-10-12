@@ -10,75 +10,26 @@
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="Alert24" Title="{l:T 'Notificaciones'}"
                             Subtitle="{l:T 'Centro de notificaciones junto al reloj (o Win+N) y avisos en el monitor y la esquina que elijas.'}" />
+            <hub:ScreenPicker />
 
             <!-- Sin permiso de Windows -->
             <ui:InfoBar x:Name="DeniedBar" IsOpen="False" IsClosable="False" Severity="Warning" Margin="0,0,0,12"
                         Title="{l:T 'Windows no permite a WINX leer las notificaciones.'}"
                         Message="{l:T 'Actívalo en Configuración › Privacidad y seguridad › Notificaciones.'}" />
 
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlertOn24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Centro de notificaciones de WINX'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Desactivado, el reloj y Win+N abren el de Windows.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="EnabledSwitch" Click="Enabled_Click" />
-            </ui:CardControl>
-
-            <StackPanel x:Name="Options">
-                <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Avisos'}" />
-
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="ChatBubblesQuestion24" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar avisos emergentes'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Un aviso breve cuando llega una notificación. No aparecen con una app a pantalla completa.'}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="BannersSwitch" Click="Banners_Click" />
-                </ui:CardControl>
-
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlertSnooze24" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'No molestar'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Las notificaciones llegan al centro, pero sin avisos.'}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="DndSwitch" Click="Dnd_Click" />
-                </ui:CardControl>
-
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Timer24" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Duración'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Cuánto tiempo se ve cada aviso. Con el mouse encima no se cierra.'}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ComboBox x:Name="DurationBox" MinWidth="160" SelectionChanged="Duration_Changed">
-                        <ComboBoxItem Content="{l:T '4 segundos'}" Tag="4" />
-                        <ComboBoxItem Content="{l:T '6 segundos'}" Tag="6" />
-                        <ComboBoxItem Content="{l:T '10 segundos'}" Tag="10" />
-                        <ComboBoxItem Content="{l:T '20 segundos'}" Tag="20" />
-                    </ComboBox>
-                </ui:CardControl>
-
-                <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Posición'}" />
+            <!-- ── En este monitor ───────────────────────────────────────────── -->
+            <StackPanel x:Name="ScreenOptions">
+                <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,8" Text="{l:T 'En este monitor'}" />
 
                 <ui:CardControl Style="{StaticResource HubCard}">
                     <ui:CardControl.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:CardControl.Icon>
                     <ui:CardControl.Header>
                         <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Numerados de izquierda a derecha, como en la página de la barra.'}" />
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar los avisos en este monitor'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Aparecen en un solo monitor: activarlo aquí los trae de donde estaban.'}" />
                         </StackPanel>
                     </ui:CardControl.Header>
-                    <ComboBox x:Name="ScreenBox" MinWidth="240" SelectionChanged="Screen_Changed" />
+                    <ui:ToggleSwitch x:Name="HereSwitch" Click="Here_Click" />
                 </ui:CardControl>
 
                 <!-- Esquina: un dibujo de la pantalla con una opción en cada esquina -->
@@ -119,6 +70,60 @@
                         </StackPanel>
                     </ui:CardControl.Header>
                     <ui:Button Content="{l:T 'Mostrar un aviso de prueba'}" Icon="{ui:SymbolIcon Alert24}" Click="Test_Click" />
+                </ui:CardControl>
+            </StackPanel>
+
+            <!-- ── Para todos los monitores ──────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Para todos los monitores'}" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlertOn24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Centro de notificaciones de WINX'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Desactivado, el reloj y Win+N abren el de Windows.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="EnabledSwitch" Click="Enabled_Click" />
+            </ui:CardControl>
+
+            <StackPanel x:Name="Options">
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="ChatBubblesQuestion24" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar avisos emergentes'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Un aviso breve cuando llega una notificación. No aparecen con una app a pantalla completa.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="BannersSwitch" Click="Banners_Click" />
+                </ui:CardControl>
+
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlertSnooze24" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'No molestar'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Las notificaciones llegan al centro, pero sin avisos.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="DndSwitch" Click="Dnd_Click" />
+                </ui:CardControl>
+
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Timer24" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Duración'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Cuánto tiempo se ve cada aviso. Con el mouse encima no se cierra.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox x:Name="DurationBox" MinWidth="160" SelectionChanged="Duration_Changed">
+                        <ComboBoxItem Content="{l:T '4 segundos'}" Tag="4" />
+                        <ComboBoxItem Content="{l:T '6 segundos'}" Tag="6" />
+                        <ComboBoxItem Content="{l:T '10 segundos'}" Tag="10" />
+                        <ComboBoxItem Content="{l:T '20 segundos'}" Tag="20" />
+                    </ComboBox>
                 </ui:CardControl>
             </StackPanel>
         </StackPanel>

@@ -46,7 +46,7 @@ public partial class Taskbar : AppBarWindow
     public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, BarRole role,
                    string barId, BarRole defaultsRole)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
-               screen, EdgeOf(position), AppBarMode.Normal, ReservedSize(IsVerticalPosition(position)))
+               screen, EdgeOf(position), AppBarMode.Normal, ReservedSize(IsVerticalPosition(position), screen.DeviceName))
     {
         _shell = shell;
         _multiMonitor = multiMonitor;
@@ -58,7 +58,7 @@ public partial class Taskbar : AppBarWindow
         InitializeComponent();
         if (IsVertical)
         {
-            DesiredWidth = ReservedSize(vertical: true);
+            DesiredWidth = ReservedSize(vertical: true, Device);
             Width = DesiredWidth;
         }
         ApplyOrientation();
@@ -69,7 +69,7 @@ public partial class Taskbar : AppBarWindow
 
         VersionItem.Header = $"WINX v{App.Version}";
         _appsMode = WindowsTaskbarPrefs.AppsMode(Settings.Current);
-        _combine = Settings.Current.CombineTaskWindows;
+        _combine = S.CombineTaskWindows;
         _taskView = CreateTaskView();
         WatchWindows();
         TaskList.ItemsSource = _taskView;
@@ -118,6 +118,15 @@ public partial class Taskbar : AppBarWindow
     /// <summary>Borde en el que está la barra (cambiarlo recrea la barra).</summary>
     public TaskbarPosition Position { get; }
 
+    /// <summary>Monitor de la barra ("\\.\DISPLAY1").</summary>
+    public string Device => Screen.DeviceName;
+
+    /// <summary>Ajustes de su monitor (Hub › Personalización por monitor).</summary>
+    private ScreenSettings S => Settings.Current.For(Device);
+
+    /// <summary>Tema de su monitor.</summary>
+    private ThemeInfo BarTheme => ThemeManager.ThemeFor(Device);
+
     public bool IsVertical => IsVerticalPosition(Position);
 
     private static bool IsVerticalPosition(TaskbarPosition position) =>
@@ -137,7 +146,9 @@ public partial class Taskbar : AppBarWindow
     /// </summary>
     public void Resize()
     {
-        double size = ReservedSize(IsVertical);
+        double size = ReservedSize(IsVertical, Device);
+        if ((IsVertical ? DesiredWidth : DesiredHeight) == size)
+            return;
         if (IsVertical)
         {
             DesiredWidth = size;
@@ -152,12 +163,12 @@ public partial class Taskbar : AppBarWindow
     }
 
     /// <summary>
-    /// Grosor reservado en pantalla: la barra más el margen si flota. Las verticales son algo más
-    /// anchas que el alto elegido, para que quepan el reloj y la fecha.
+    /// Grosor reservado en pantalla: la barra (tamaño elegido para su monitor) más el margen si
+    /// flota. Las verticales son algo más anchas, para que quepan el reloj y la fecha.
     /// </summary>
-    public static double ReservedSize(bool vertical) =>
-        Settings.Current.TaskbarHeight + (vertical ? VerticalExtra : 0)
-        + (ThemeManager.Theme.Floating ? ThemeCatalog.FloatingMargin : 0);
+    public static double ReservedSize(bool vertical, string? device) =>
+        Settings.Current.For(device).TaskbarHeight + (vertical ? VerticalExtra : 0)
+        + (ThemeManager.ThemeFor(device).Floating ? ThemeCatalog.FloatingMargin : 0);
 
     private const double VerticalExtra = 16;
 
@@ -250,7 +261,7 @@ public partial class Taskbar : AppBarWindow
     /// <summary>En temas flotantes, separación de los tres lados que no tocan el borde de la pantalla.</summary>
     private Thickness FloatingMargin()
     {
-        if (!ThemeManager.Theme.Floating)
+        if (!BarTheme.Floating)
             return new Thickness(0);
         double m = ThemeCatalog.FloatingMargin;
         return Position switch
@@ -272,7 +283,7 @@ public partial class Taskbar : AppBarWindow
     {
         if (ApplyTransparency())
             return;
-        var theme = ThemeManager.Theme;
+        var theme = BarTheme;
         // Con refracción en vivo el shader pinta el vidrio; el desenfoque de DWM queda debajo
         // solo para suavizar el borde antialiasado.
         WindowEffects.SetBlur(this, theme.Backdrop);
@@ -303,7 +314,7 @@ public partial class Taskbar : AppBarWindow
 
     private void UpdateGlassSurface()
     {
-        bool wanted = ThemeManager.UseLiveGlass && !_transparent;
+        bool wanted = ThemeManager.UseLiveGlassFor(Device) && !_transparent;
         if (wanted && _glass is null)
         {
             _glass = new LiquidGlassSurface { Refraction = 14, Frost = 3 };
@@ -317,14 +328,38 @@ public partial class Taskbar : AppBarWindow
         if (_glass != null)
         {
             _glass.CornerRadius = ((CornerRadius)Resources["WinxTaskbarCornerRadius"]).TopLeft;
-            _glass.SetLook(ThemeManager.IsLight);
+            _glass.SetLook(ThemeManager.IsLightFor(Device));
         }
     }
 
     // WPF-UI termina de aplicar su tema de forma asíncrona sobre la ventana principal (la barra)
     // y deshace el efecto: se reaplica cuando la app queda inactiva.
-    private void OnThemeChanged() =>
+    private void OnThemeChanged()
+    {
+        ApplyScreenPalette();
         Dispatcher.BeginInvoke(ApplyBackdrop, DispatcherPriority.ApplicationIdle);
+    }
+
+    private ResourceDictionary? _screenPalette;
+    private (WinxTheme, bool, int) _appliedLook;
+
+    /// <summary>
+    /// Si su monitor tiene otro tema (o tamaño) que el general, la barra usa sus propios colores;
+    /// si cambió el tema, también su material de fondo.
+    /// </summary>
+    private void ApplyScreenPalette()
+    {
+        var look = (BarTheme.Kind, ThemeManager.IsLightFor(Device), S.TaskbarHeight);
+        var palette = ThemeManager.PaletteFor(Device);
+        if (_screenPalette != null)
+            Resources.MergedDictionaries.Remove(_screenPalette);
+        _screenPalette = palette;
+        if (palette != null)
+            Resources.MergedDictionaries.Add(palette);
+        if (look != _appliedLook && _appliedLook != default)
+            Dispatcher.BeginInvoke(ApplyBackdrop, DispatcherPriority.ApplicationIdle);
+        _appliedLook = look;
+    }
 
     private void ApplySettings()
     {
@@ -334,16 +369,18 @@ public partial class Taskbar : AppBarWindow
             StartButton.Content = StartIcons.Create(s.StartIcon);
             StartButton.Tag = s.StartIcon;
         }
-        ApplyAlignment(WindowsTaskbarPrefs.Alignment(s) == TaskbarAlignment.Left, s.TaskbarCenterApps);
+        ApplyAlignment(WindowsTaskbarPrefs.Alignment(S) == TaskbarAlignment.Left, S.TaskbarCenterApps);
         var appsMode = WindowsTaskbarPrefs.AppsMode(s);
         if (appsMode != _appsMode)
         {
             _appsMode = appsMode;
             _taskView.Refresh();
         }
-        ApplyCombine(s.CombineTaskWindows);
+        ApplyCombine(S.CombineTaskWindows);
+        ApplyScreenPalette();
+        Resize();
         ApplyLayout();
-        DateText.Visibility = s.ShowDate ? Visibility.Visible : Visibility.Collapsed;
+        DateText.Visibility = S.ShowDate ? Visibility.Visible : Visibility.Collapsed;
         BrightnessButton.Visibility = Services.Brightness.BrightnessService.Available ? Visibility.Visible : Visibility.Collapsed;
         RescheduleClock();
         UpdateClock();
@@ -465,12 +502,16 @@ public partial class Taskbar : AppBarWindow
     private static void ScheduleNextTick()
     {
         var now = DateTime.Now;
-        var next = Settings.Current.ShowSeconds
+        var next = AnyShowsSeconds()
             ? now.AddTicks(TimeSpan.TicksPerSecond - now.Ticks % TimeSpan.TicksPerSecond)
             : now.AddTicks(TimeSpan.TicksPerMinute - now.Ticks % TimeSpan.TicksPerMinute);
         // Unos milisegundos de margen para no caer justo antes del cambio.
         _sharedClock!.Interval = next - now + TimeSpan.FromMilliseconds(30);
     }
+
+    /// <summary>El reloj compartido marca segundos si alguna barra los muestra.</summary>
+    private static bool AnyShowsSeconds() =>
+        App.Current.Taskbars.Any(bar => Settings.Current.For(bar.Device).ShowSeconds);
 
     /// <summary>Al mostrar u ocultar los segundos cambia el ritmo del reloj.</summary>
     private static void RescheduleClock()
@@ -485,7 +526,7 @@ public partial class Taskbar : AppBarWindow
     private void UpdateClock()
     {
         var now = DateTime.Now;
-        TimeText.Text = now.ToString(Settings.Current.ShowSeconds ? "T" : "t");
+        TimeText.Text = now.ToString(S.ShowSeconds ? "T" : "t");
         DateText.Text = IsVertical ? now.ToString(ShortDateWithoutYear()) : now.ToString("d");
     }
 
@@ -513,7 +554,7 @@ public partial class Taskbar : AppBarWindow
         {
             // Con porcentaje: el número dentro del contorno y un rayo si carga. Sin él: el ícono
             // de Windows con su nivel (y el rayo incluido si carga).
-            bool percent = Settings.Current.ShowBatteryPercent;
+            bool percent = S.ShowBatteryPercent;
             BatteryGlyph.Visibility = percent ? Visibility.Collapsed : Visibility.Visible;
             BatteryPercentIcon.Visibility = percent ? Visibility.Visible : Visibility.Collapsed;
             BatteryBolt.Visibility = percent && battery.Charging ? Visibility.Visible : Visibility.Collapsed;
@@ -660,7 +701,7 @@ public partial class Taskbar : AppBarWindow
     {
         if (!_metersOn)
             return;
-        bool temps = Settings.Current.ShowTemperatures;
+        bool temps = S.ShowTemperatures;
         string sensorsHint = Sensors.Running ? "" : "\n" + Loc.T("Clic en el contador de FPS para activar temperaturas y FPS.");
 
         // En vertical no cabe "RAM 87%" en una línea: nombre arriba y el número abajo.
@@ -720,21 +761,21 @@ public partial class Taskbar : AppBarWindow
         string done = ((char)0xE73E).ToString();    // CheckMark
         FreeRamButton.IsEnabled = false;
         FreeRamButton.Opacity = 0.5;
-        Notifications.OsdWindow.ShowMessage(working, Loc.T("Liberando RAM…"));
+        Notifications.OsdWindow.ShowMessage(working, Loc.T("Liberando RAM…"), Device);
         try
         {
             ulong before = SystemMonitor.AvailableRam();
             bool ok = await Sensors.FreeRamAsync();
             if (!ok)
             {
-                Notifications.OsdWindow.ShowMessage(((char)0xE711).ToString(), Loc.T("No se liberó la RAM")); // Cancel
+                Notifications.OsdWindow.ShowMessage(((char)0xE711).ToString(), Loc.T("No se liberó la RAM"), Device); // Cancel
                 return;
             }
             ulong after = SystemMonitor.AvailableRam();
             double freed = after > before ? (after - before) / 1073741824.0 : 0;
             Log.Info($"RAM liberada: {freed:0.00} GB");
             Notifications.OsdWindow.ShowMessage(done,
-                freed >= 0.05 ? Loc.F("RAM liberada: {0:0.0} GB", freed) : Loc.T("La memoria ya estaba libre"));
+                freed >= 0.05 ? Loc.F("RAM liberada: {0:0.0} GB", freed) : Loc.T("La memoria ya estaba libre"), Device);
             FreeRamButton.ToolTip = Loc.F("Última vez: {0:0.0} GB liberados", freed);
         }
         finally
@@ -799,7 +840,7 @@ public partial class Taskbar : AppBarWindow
         MediaArtist.Visibility = details.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         MediaButton.ToolTip = string.Join("\n", new[] { Media.Title, Media.Artist, Media.Album, Media.AppName }.Where(t => t.Length > 0));
         MediaButton.Opacity = Media.IsPlaying ? 1 : 0.6;
-        MediaControls.Visibility = s.ShowMediaControls ? Visibility.Visible : Visibility.Collapsed;
+        MediaControls.Visibility = S.ShowMediaControls ? Visibility.Visible : Visibility.Collapsed;
         MediaPlayGlyph.Text = Media.IsPlaying ? "" : ""; // pausa / reproducir
         MediaPlay.ToolTip = Media.IsPlaying ? Loc.T("Pausar") : Loc.T("Reproducir");
         MediaPrevious.IsEnabled = Media.CanPrevious;

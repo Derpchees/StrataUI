@@ -10,11 +10,12 @@
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="MusicNote224" Title="{l:T 'Control multimedia'}"
                             Subtitle="{l:T 'Lo que suena en cualquier app, en la barra.'}" />
+            <hub:ScreenPicker />
 
             <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon MusicNote224}">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Multimedia en la barra'}" />
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Multimedia en la barra de este monitor'}" />
                         <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
                                    Text="{l:T 'Carátula, canción, artista y álbum de lo que suena en cualquier app (Spotify, Reproductor multimedia, Deezer, YouTube en el navegador…). Clic: abre la app; clic central: pausa.'}" />
                     </StackPanel>

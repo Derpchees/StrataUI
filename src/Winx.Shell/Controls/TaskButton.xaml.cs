@@ -18,7 +18,7 @@ public partial class TaskButton : UserControl
         MouseEnter += (_, _) =>
         {
             // La vista previa ya muestra el título: el tooltip la taparía.
-            ToolTipService.SetIsEnabled(MainButton, !Settings.Current.ShowTaskPreviews);
+            ToolTipService.SetIsEnabled(MainButton, !TaskPreviewWindow.Enabled(this));
             if (Window != null && Mouse.LeftButton != MouseButtonState.Pressed)
                 TaskPreviewWindow.HoverStart(this, Members);
         };

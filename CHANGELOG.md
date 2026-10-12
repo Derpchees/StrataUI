@@ -11,10 +11,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 Primera versión estable, con instalador para descargar desde GitHub Releases.
 
 ### Añadido
-- **Qué lleva cada barra**: Hub › Barra de tareas muestra una fila por barra con sus elementos (menú Inicio, bandeja, red, Bluetooth, brillo,
-  batería, volumen, reloj y notificaciones, multimedia y los nuevos medidores). Se arrastran para
-  ordenarlos o pasarlos a otra barra, **también directamente en la barra** (un clic sigue abriendo
-  su panel); en el Hub, con + se agregan y con × se quitan. La bandeja va en una sola
+- **Qué lleva cada barra**: menú Inicio, bandeja, red, Bluetooth, brillo, batería, volumen, reloj y
+  notificaciones, multimedia y los nuevos medidores se activan con un interruptor en Hub › Barra de
+  tareas y se ordenan **arrastrándolos en la barra misma**, también a la barra de otro monitor (un
+  clic sigue abriendo su panel). La bandeja va en una sola
   barra, y esa recibe la tecla Windows. Quien no cambie nada conserva lo de siempre.
 - **Medidores de rendimiento**: uso de CPU, de GPU (el motor más ocupado, como el Administrador de
   tareas) y de RAM, sin permisos especiales. En las barras verticales van en tres líneas cortas.
@@ -45,14 +45,25 @@ Primera versión estable, con instalador para descargar desde GitHub Releases.
   los avisos.
 - El acento se ve igual en WINX y en los controles del Hub, y nunca queda invisible (un acento casi
   negro se aclara sobre el tema oscuro). WINX nota cuando cambia el acento de Windows.
-- **Hub reorganizado**: Personalización tiene Barra de tareas (qué lleva cada barra, reloj y
-  rendimiento), Bandeja del sistema, Menú Inicio, Notificaciones, Apariencia, Control multimedia y
-  Paneles (sonido, brillo, avisos en pantalla, batería); lo que depende de algo va como subopción
-  debajo. Optimización aparece desplegada.
+- **Personalización por monitor**: arriba de cada página se elige el monitor y se editan sus
+  ajustes: qué lleva su barra (un interruptor por elemento), alineación, tamaño, vista previa,
+  agrupar, posición, reloj, temperaturas y batería; su tema y barra transparente (también los
+  paneles y el menú Inicio que se abren desde ella); si los avisos salen ahí y en qué esquina;
+  multimedia; y sus avisos en pantalla. "Copiar a todos" lleva los ajustes a los demás monitores.
+  Lo que no depende del monitor (acento, fondo, animaciones, centro de notificaciones, lecturas
+  avanzadas) va en "Para todos los monitores". Quien no cambie nada conserva lo de antes.
+- **Avisos en pantalla por monitor y por tipo**: volumen, silencio, brillo, Bloq Mayús, Bloq Num y
+  Bloq Despl se activan uno por uno en Paneles, en cada monitor junto a su barra; el de brillo
+  sale en el monitor cuyo brillo cambió.
+- **Hub reorganizado**: Resumen y Menú Inicio (igual en todos los monitores); Personalización por
+  monitor con Barra de tareas, Bandeja del sistema, Notificaciones, Apariencia, Control multimedia
+  y Paneles; Optimización como grupo fijo, siempre a la vista. Las páginas abren desde arriba.
 - Instalador: asistente completo (bienvenida, carpeta de instalación, carpeta del menú Inicio,
   tareas y resumen) y opción de instalar para todos los usuarios.
 
 ### Corregido
+- **El menú Inicio no se animaba al deslizar**: se movían solo sus asas para redimensionar (una
+  capa invisible encima), no el menú.
 - **Íconos de las notificaciones**: las de apps web en una pestaña normal salen con el ícono y el
   nombre del sitio (WINX lee el aviso original de la base de datos de notificaciones de Windows). Las
   apps de escritorio que registran su ícono para avisos (Thunderbird, TeamViewer, avisos del

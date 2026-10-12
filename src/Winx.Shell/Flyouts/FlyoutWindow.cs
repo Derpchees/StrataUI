@@ -20,6 +20,13 @@ public abstract class FlyoutWindow : FluentWindow
 {
     private const int GapPx = 12;
     private bool _closing;
+    private readonly string _device;
+
+    /// <summary>
+    /// Monitor de la barra desde la que se va a abrir el próximo panel (lo pone FlyoutManager
+    /// antes de crearlo): el tema se decide al construirlo y es el de ese monitor.
+    /// </summary>
+    internal static string? NextDevice { get; set; }
 
     protected FlyoutWindow()
     {
@@ -32,7 +39,9 @@ public abstract class FlyoutWindow : FluentWindow
         ExtendsContentIntoTitleBar = true;
         // Paneles: Acrylic como los de Windows; sólido en Material; en Liquid Glass, desenfoque
         // limpio propio (sin el ruido ni la luminosidad del Acrylic) con esquinas grandes.
-        var theme = ThemeManager.Theme;
+        _device = NextDevice ?? ThemeManager.MainDevice;
+        NextDevice = null;
+        var theme = ThemeManager.ThemeFor(_device);
         // Se decide aquí: cambiar WindowBackdropType más tarde hace que WPF-UI deshaga el efecto.
         WindowBackdropType = theme.Backdrop == Backdrop.Acrylic ? WindowBackdropType.Acrylic : WindowBackdropType.None;
         if (theme.Backdrop == Backdrop.Blur)
@@ -86,16 +95,19 @@ public abstract class FlyoutWindow : FluentWindow
     private Grid BuildRoot(UIElement content)
     {
         _root = new Grid();
-        if (ThemeManager.UseLiveGlass && !FillWorkArea)
+        // Colores del monitor de la barra desde la que se abre, si no son los generales.
+        if (ThemeManager.PaletteFor(_device) is { } palette)
+            _root.Resources.MergedDictionaries.Add(palette);
+        if (ThemeManager.UseLiveGlassFor(_device) && !FillWorkArea)
         {
             // Vidrio líquido real: más esmerilado que la barra para que el texto se lea bien.
             var glass = new Controls.LiquidGlassSurface
             {
                 Refraction = 20,
                 Frost = 5,
-                CornerRadius = ThemeManager.Theme.PanelRadius,
+                CornerRadius = ThemeManager.ThemeFor(_device).PanelRadius,
             };
-            glass.SetLook(ThemeManager.IsLight);
+            glass.SetLook(ThemeManager.IsLightFor(_device));
             _root.Children.Add(glass);
         }
         _root.Children.Add(Layer("WinxFlyoutBackgroundBrush", null));
@@ -105,15 +117,22 @@ public abstract class FlyoutWindow : FluentWindow
         var edge = Layer(null, "WinxGlassEdgeBrush");
         edge.BorderThickness = new Thickness(1);
         _root.Children.Add(edge);
-        _root.Children.Add(!ScrollContent ? content : new ScrollViewer
+        _content = !ScrollContent ? (FrameworkElement)content : new ScrollViewer
         {
             Content = content,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             PanningMode = PanningMode.VerticalOnly,
-        });
+        };
+        _root.Children.Add(_content);
         return _root;
     }
+
+    /// <summary>
+    /// El contenido (lo que se desliza al abrir). No se toma "el último hijo": después pueden
+    /// agregarse capas encima (las asas para redimensionar del menú Inicio) y se movían ellas solas.
+    /// </summary>
+    private FrameworkElement? _content;
 
     /// <summary>
     /// False en paneles de alto fijo que desplazan solo una parte (el menú Inicio): así su
@@ -133,7 +152,7 @@ public abstract class FlyoutWindow : FluentWindow
     /// <summary>Recorta la ventana con esquinas redondeadas si el tema las pide más grandes que las de DWM.</summary>
     private void ApplyRegion()
     {
-        double radius = ThemeManager.Theme.PanelRadius;
+        double radius = ThemeManager.ThemeFor(_device).PanelRadius;
         if (FillWorkArea || radius <= 8)
             return; // a pantalla completa no lleva esquinas
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
@@ -206,7 +225,7 @@ public abstract class FlyoutWindow : FluentWindow
     private FrameworkElement Moving() =>
         Settings.Current.PanelAnimation is PanelAnimation.Zoom or PanelAnimation.Pop || _root is null
             ? (FrameworkElement?)_root ?? this
-            : _root.Children[^1] as FrameworkElement ?? _root;
+            : _content ?? _root;
 
     private void LimitHeightToScreen(FrameworkElement anchor)
     {
@@ -319,6 +338,7 @@ public static class FlyoutManager
         try
         {
             var watch = System.Diagnostics.Stopwatch.StartNew();
+            FlyoutWindow.NextDevice = (Window.GetWindow(anchor) as Taskbar)?.Device;
             var flyout = new T();
             long created = watch.ElapsedMilliseconds;
             flyout.ContentRendered += (_, _) =>

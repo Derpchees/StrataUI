@@ -76,13 +76,17 @@ public partial class TaskPreviewWindow : Window
 
     // ── Desde los botones de la barra ───────────────────────────────────────
 
+    /// <summary>La barra de ese botón muestra vistas previas (opción de su monitor).</summary>
+    public static bool Enabled(FrameworkElement anchor) =>
+        Settings.Current.For((Window.GetWindow(anchor) as Taskbar)?.Device).ShowTaskPreviews;
+
     /// <summary>
     /// El mouse entró en un botón: la vista previa aparece tras una pausa (o enseguida si ya se ve
     /// otra). Las ventanas se piden al mostrarla, por si cambiaron mientras tanto.
     /// </summary>
     public static void HoverStart(FrameworkElement anchor, Func<IReadOnlyList<ApplicationWindow>> windows)
     {
-        if (!Settings.Current.ShowTaskPreviews)
+        if (!Enabled(anchor))
             return;
         HideTimer.Stop();
         _pendingAnchor = anchor;

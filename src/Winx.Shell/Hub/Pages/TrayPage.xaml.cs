@@ -28,13 +28,53 @@ public partial class TrayPage : Page
     {
         InitializeComponent();
         _onIconsChanged = (_, _) => Dispatcher.BeginInvoke(Refresh);
+        LoadScreen();
         Loaded += (_, _) =>
         {
             App.Current.Shell.NotificationArea.TrayIcons.CollectionChanged += _onIconsChanged;
+            ScreenPicker.Changed += LoadScreen;
+            Settings.Changed += LoadScreen;
             Refresh();
         };
         Unloaded += (_, _) =>
+        {
             App.Current.Shell.NotificationArea.TrayIcons.CollectionChanged -= _onIconsChanged;
+            ScreenPicker.Changed -= LoadScreen;
+            Settings.Changed -= LoadScreen;
+        };
+    }
+
+    // ── En qué monitor va ───────────────────────────────────────────────────
+
+    private void LoadScreen()
+    {
+        var bars = App.Current.Taskbars.Where(t => t.Device == ScreenPicker.Device).ToList();
+        bool here = bars.Any(t => t.IsMain);
+        HereSwitch.IsChecked = here;
+        // Va en una sola barra: se mueve activándola en otro monitor.
+        HereSwitch.IsEnabled = !here && bars.Count > 0;
+        HereText.Text = here ? Loc.T("Aquí está. Para moverla, actívala en otro monitor.")
+            : bars.Count == 0 ? Loc.T("Este monitor no tiene barra.")
+            : Loc.T("Al activarla, la bandeja pasa a la barra de este monitor (con la tecla Windows y lo demás de la barra principal).");
+    }
+
+    private void Here_Click(object sender, RoutedEventArgs e)
+    {
+        var bars = App.Current.Taskbars.Where(t => t.Device == ScreenPicker.Device).ToList();
+        var target = bars.FirstOrDefault(t => t.Has(BarItem.Clock)) ?? bars.FirstOrDefault();
+        if (HereSwitch.IsChecked != true || target is null)
+            return;
+        var layout = App.Current.Taskbars.ToDictionary(t => t.BarId, t => t.Items.ToList());
+        foreach (var items in layout.Values)
+            items.Remove(BarItem.Tray);
+        var list = layout[target.BarId];
+        int clock = list.IndexOf(BarItem.Clock);
+        list.Insert(clock >= 0 ? clock : list.Count, BarItem.Tray);
+        Settings.Update(s =>
+        {
+            foreach (var (id, items) in layout)
+                s.BarItems[id] = items;
+        });
     }
 
     private void Refresh()

@@ -32,7 +32,6 @@ public partial class App : Application
     private readonly List<Taskbar> _taskbars = new();
     private Hub.HubWindow? _hub;
     private int _screenCount;
-    private double _barHeight;
     private bool _exiting;
 
     /// <summary>Servicios de ManagedShell (bandeja, ventanas); disponibles mientras el shell corre.</summary>
@@ -192,7 +191,6 @@ public partial class App : Application
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged += OnWindowsPreferenceChanged;
         Settings.Changed += OnSettingsChanged;
-        _barHeight = Taskbar.ReservedSize(vertical: false);
 
         int hubIndex = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
         if (hubIndex >= 0)
@@ -315,9 +313,16 @@ public partial class App : Application
                + "|" + s.TaskbarMainScreen
                // La barra transparente también se aplica recreándolas: cambiar en vivo de Acrylic a
                // transparente deja negra la parte transparente (DWM no suelta el material anterior).
-               + "|" + s.TaskbarFullyTransparent
+               + "|" + string.Join(";", ScreenDevices().Select(d => d + "=" + s.For(d).TaskbarFullyTransparent))
                + "|" + BarLayout.TrayKey(s);
     }
+
+    private static IEnumerable<string> ScreenDevices() =>
+        System.Windows.Forms.Screen.AllScreens.Select(sc => sc.DeviceName).Order();
+
+    /// <summary>Algún monitor muestra el aviso de volumen o silencio: el gancho de teclado atiende esas teclas.</summary>
+    private static bool AnyVolumeOsd() =>
+        ScreenDevices().Any(d => Settings.Current.For(d) is { OsdVolume: true } or { OsdMute: true });
 
     /// <summary>Barras abiertas (el Hub las muestra para elegir qué lleva cada una).</summary>
     public IReadOnlyList<Taskbar> Taskbars => _taskbars;
@@ -386,7 +391,7 @@ public partial class App : Application
     }
 
     private static void UpdateKeyHook() =>
-        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, Settings.Current.ShowOsd);
+        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, AnyVolumeOsd());
 
     /// <summary>Barra con el botón Inicio (tecla Windows, Win+X): la del monitor principal si lo lleva.</summary>
     private Taskbar? AppsTaskbar =>
@@ -419,14 +424,8 @@ public partial class App : Application
             Flyouts.FlyoutManager.CloseAll();
             CloseTaskbars();
             OpenTaskbars();
-            _barHeight = Taskbar.ReservedSize(vertical: false);
-            return;
         }
-        if (Taskbar.ReservedSize(vertical: false) == _barHeight)
-            return;
-        _barHeight = Taskbar.ReservedSize(vertical: false);
-        foreach (var taskbar in _taskbars)
-            taskbar.Resize();
+        // El tamaño de cada barra (por monitor) lo ajusta ella misma en ApplySettings.
     }
 
     /// <summary>

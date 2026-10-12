@@ -1,192 +1,158 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using Winx.Shell.Services;
 using Winx.Shell.Services.Localization;
-using Forms = System.Windows.Forms;
 
 namespace Winx.Shell.Hub;
 
 /// <summary>
-/// Editor de "Qué lleva cada barra": una fila por barra abierta con sus elementos como fichas que
-/// se arrastran (ver <see cref="ChipDrag"/>), + para agregar y × para quitar. Guarda las listas de
-/// todas las barras en <see cref="WinxSettings.BarItems"/> y se rehace cuando las barras cambian
-/// (también si se ordenaron arrastrando en la barra misma).
+/// "Qué lleva la barra" del monitor elegido (<see cref="ScreenPicker"/>): un interruptor por
+/// elemento en cada barra de ese monitor. El orden se cambia arrastrando en la barra misma. Al
+/// guardar se escriben las listas de todas las barras (<see cref="WinxSettings.BarItems"/>); la
+/// bandeja va en una sola barra, así que activarla aquí la quita de la otra.
 /// </summary>
 public sealed class BarItemsEditor : UserControl
 {
     private static readonly string[] PositionNames = [Loc.T("Abajo"), Loc.T("Arriba"), Loc.T("Izquierda"), Loc.T("Derecha")];
 
+    /// <summary>Orden en que se listan (el de la barra se elige arrastrando).</summary>
+    private static readonly BarItem[] ListOrder =
+    [
+        BarItem.Start, BarItem.Tray, BarItem.Media, BarItem.Network, BarItem.Bluetooth, BarItem.Volume, BarItem.Brightness,
+        BarItem.Battery, BarItem.Cpu, BarItem.Gpu, BarItem.Ram, BarItem.Fps, BarItem.FreeRam, BarItem.Clock,
+    ];
+
     private readonly StackPanel _list = new();
-    private readonly ChipDrag _drag;
-    private readonly List<(string Id, WrapPanel Panel)> _barPanels = new();
     private string _builtFor = "";
 
     public BarItemsEditor()
     {
         Content = _list;
-        _drag = new ChipDrag(this, () => _barPanels.Select(b => (Panel)b.Panel),
-            (chip, panel) => !panel.Children.OfType<FrameworkElement>().Any(c => Equals(c.Tag, chip.Tag)));
-        _drag.Committed += Save;
         Loaded += (_, _) =>
         {
-            Settings.Changed += OnSettingsChanged;
+            Settings.Changed += OnChanged;
+            ScreenPicker.Changed += Build;
             Build();
         };
-        Unloaded += (_, _) => Settings.Changed -= OnSettingsChanged;
+        Unloaded += (_, _) =>
+        {
+            Settings.Changed -= OnChanged;
+            ScreenPicker.Changed -= Build;
+        };
     }
 
-    /// <summary>Vuelve a lo de siempre en todas las barras.</summary>
+    /// <summary>Vuelve a lo de siempre en las barras de este monitor.</summary>
     public void Reset()
     {
-        Settings.Update(s => s.BarItems.Clear());
+        string device = ScreenPicker.Device;
+        Settings.Update(s =>
+        {
+            foreach (var key in s.BarItems.Keys.Where(k => BarLayout.DeviceOf(k) == device).ToList())
+                s.BarItems.Remove(key);
+        });
         Build();
     }
 
-    private void OnSettingsChanged()
+    /// <summary>Si las barras cambiaron (también al ordenarlas arrastrando en la barra), se rehace.</summary>
+    private void OnChanged()
     {
         if (BarsKey() != _builtFor)
             Build();
     }
 
     private static string BarsKey() =>
+        ScreenPicker.Device + "#" +
         string.Join(";", App.Current.Taskbars.Select(t => $"{t.BarId}:{t.Position}:{string.Join(",", t.Items)}"));
 
     private void Build()
     {
         _builtFor = BarsKey();
         _list.Children.Clear();
-        _barPanels.Clear();
-        var screens = Forms.Screen.AllScreens.OrderBy(sc => sc.Bounds.X).ThenBy(sc => sc.Bounds.Y).Select(sc => sc.DeviceName).ToList();
         var bars = App.Current.Taskbars
-            .OrderBy(t => screens.IndexOf(BarLayout.DeviceOf(t.BarId)))
-            .ThenBy(t => BarLayout.IsSecond(t.BarId))
+            .Where(t => t.Device == ScreenPicker.Device)
+            .OrderBy(t => BarLayout.IsSecond(t.BarId))
             .ToList();
-        foreach (var bar in bars)
+        if (bars.Count == 0)
         {
-            int monitor = screens.IndexOf(BarLayout.DeviceOf(bar.BarId));
-            string title = screens.Count > 1 ? Loc.F("Monitor {0}", monitor + 1) : Loc.T("Barra");
-            title += " · " + PositionNames[(int)bar.Position];
-            if (BarLayout.IsSecond(bar.BarId))
-                title += " · " + Loc.T("segunda barra");
-
-            var chips = new WrapPanel { MinHeight = 34 };
-            foreach (var item in bar.Items)
-                chips.Children.Add(Chip(item));
-            _barPanels.Add((bar.BarId, chips));
-
-            var add = new Wpf.Ui.Controls.Button
-            {
-                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Add24 },
-                Padding = new Thickness(8, 5, 8, 5),
-                VerticalAlignment = VerticalAlignment.Top,
-                ToolTip = Loc.T("Agregar a esta barra"),
-            };
-            add.Click += (_, _) => ShowAddMenu(add, chips);
-
-            var header = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
-            header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = title });
-            header.Children.Add(new TextBlock
+            _list.Children.Add(new TextBlock
             {
                 Style = (Style)FindResource("CardDescription"),
-                Text = bar.Role.ShowsApps ? Loc.T("Lleva las ventanas abiertas") : Loc.T("Sin ventanas abiertas"),
+                Text = Loc.T("Este monitor no tiene barra (se activa más abajo, en Posición)."),
             });
-
-            var row = new DockPanel();
-            DockPanel.SetDock(add, Dock.Right);
-            row.Children.Add(add);
-            row.Children.Add(chips);
-
-            var content = new StackPanel();
-            content.Children.Add(header);
-            content.Children.Add(row);
+            return;
+        }
+        foreach (var bar in bars)
+        {
+            var rows = new StackPanel();
+            if (bars.Count > 1)
+            {
+                rows.Children.Add(new TextBlock
+                {
+                    Style = (Style)FindResource("CardTitle"),
+                    FontWeight = FontWeights.SemiBold,
+                    Margin = new Thickness(0, 0, 0, 6),
+                    Text = (BarLayout.IsSecond(bar.BarId) ? Loc.T("Segunda barra") : Loc.T("Barra"))
+                           + " · " + PositionNames[(int)bar.Position],
+                });
+            }
+            foreach (var item in ListOrder)
+                rows.Children.Add(Row(bar, item));
             _list.Children.Add(new Border
             {
                 Margin = new Thickness(0, 0, 0, 6),
-                Padding = new Thickness(16, 12, 12, 8),
+                Padding = new Thickness(18, 10, 18, 10),
                 CornerRadius = new CornerRadius(8),
                 BorderThickness = new Thickness(1),
                 Background = (Brush)FindResource("CardBackgroundFillColorDefaultBrush"),
                 BorderBrush = (Brush)FindResource("CardStrokeColorDefaultBrush"),
-                Child = content,
+                Child = rows,
             });
         }
     }
 
-    /// <summary>Ficha de un elemento: ícono, nombre y × para quitarlo (la bandeja no se quita, solo se mueve).</summary>
-    private FrameworkElement Chip(BarItem item)
+    private FrameworkElement Row(Taskbar bar, BarItem item)
     {
-        var content = new StackPanel { Orientation = Orientation.Horizontal };
-        content.Children.Add(new Wpf.Ui.Controls.SymbolIcon { Symbol = BarLayout.Icon(item), FontSize = 16, Margin = new Thickness(0, 0, 8, 0) });
-        content.Children.Add(new TextBlock { Text = BarLayout.Name(item), VerticalAlignment = VerticalAlignment.Center, Style = (Style)FindResource("CardTitle") });
-        var chip = new Border { Style = (Style)FindResource("BarChip"), Tag = item, Child = content, ToolTip = Loc.T("Arrastra para moverlo") };
-        if (item != BarItem.Tray)
+        var toggle = new Wpf.Ui.Controls.ToggleSwitch { IsChecked = bar.Has(item), HorizontalAlignment = HorizontalAlignment.Right };
+        if (item == BarItem.Tray && bar.Has(item))
         {
-            var remove = new Wpf.Ui.Controls.Button
-            {
-                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Dismiss16, FontSize = 11 },
-                Padding = new Thickness(4),
-                Margin = new Thickness(6, 0, 0, 0),
-                Appearance = Wpf.Ui.Controls.ControlAppearance.Transparent,
-                BorderThickness = new Thickness(0),
-                ToolTip = Loc.T("Quitar de esta barra"),
-                Cursor = System.Windows.Input.Cursors.Hand,
-            };
-            remove.Click += (_, _) =>
-            {
-                if (chip.Parent is Panel panel)
-                    panel.Children.Remove(chip);
-                Save();
-            };
-            content.Children.Add(remove);
+            // La bandeja no se apaga: se mueve activándola en otra barra.
+            toggle.IsEnabled = false;
+            toggle.ToolTip = Loc.T("La bandeja va en una sola barra: actívala en otra para moverla");
         }
-        else
-        {
-            content.Children.Add(new Border { Width = 8 });
-        }
-        _drag.Attach(chip);
-        return chip;
+        toggle.Click += (_, _) => Set(bar, item, toggle.IsChecked == true);
+
+        var label = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        label.Children.Add(new Wpf.Ui.Controls.SymbolIcon { Symbol = BarLayout.Icon(item), FontSize = 18, Margin = new Thickness(0, 0, 14, 0) });
+        label.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = BarLayout.Name(item), VerticalAlignment = VerticalAlignment.Center });
+
+        var row = new Grid { MinHeight = 40 };
+        row.Children.Add(label);
+        row.Children.Add(toggle);
+        return row;
     }
 
-    /// <summary>Menú del + : los elementos que esa barra aún no lleva (la bandeja va en una sola barra: se arrastra).</summary>
-    private void ShowAddMenu(FrameworkElement anchor, WrapPanel chips)
+    /// <summary>
+    /// Agrega o quita el elemento de esa barra y guarda las listas de todas (así ninguna queda con
+    /// los de siempre y la bandeja repetida). Inicio va delante; lo demás, antes del reloj.
+    /// </summary>
+    private static void Set(Taskbar bar, BarItem item, bool on)
     {
-        var present = chips.Children.OfType<FrameworkElement>().Select(c => (BarItem)c.Tag).ToHashSet();
-        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        foreach (var item in Enum.GetValues<BarItem>().Where(i => i != BarItem.Tray && !present.Contains(i)))
+        var layout = App.Current.Taskbars.ToDictionary(t => t.BarId, t => t.Items.ToList());
+        var items = layout[bar.BarId];
+        items.Remove(item);
+        if (on)
         {
-            var entry = new MenuItem
-            {
-                Header = BarLayout.Name(item),
-                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = BarLayout.Icon(item) },
-            };
-            entry.Click += (_, _) =>
-            {
-                // Inicio va delante; lo demás, antes del reloj si lo hay (como en Windows).
-                int index = item == BarItem.Start ? 0
-                    : chips.Children.OfType<FrameworkElement>().ToList().FindIndex(c => (BarItem)c.Tag == BarItem.Clock) is int clock and >= 0 ? clock
-                    : chips.Children.Count;
-                chips.Children.Insert(index, Chip(item));
-                Save();
-            };
-            menu.Items.Add(entry);
+            int clock = items.IndexOf(BarItem.Clock);
+            items.Insert(item == BarItem.Start ? 0 : clock >= 0 ? clock : items.Count, item);
+            if (item == BarItem.Tray)
+                foreach (var (id, other) in layout.Where(p => p.Key != bar.BarId))
+                    other.Remove(BarItem.Tray);
         }
-        if (menu.Items.Count == 0)
-            menu.Items.Add(new MenuItem { Header = Loc.T("Ya lleva todos los elementos"), IsEnabled = false });
-        menu.IsOpen = true;
-    }
-
-    /// <summary>Guarda lo que muestra el editor para todas las barras (así ninguna queda con los de siempre y la bandeja repetida).</summary>
-    private void Save()
-    {
-        var layout = _barPanels.ToDictionary(
-            b => b.Id,
-            b => b.Panel.Children.OfType<FrameworkElement>().Select(c => (BarItem)c.Tag).ToList());
         Settings.Update(s =>
         {
-            foreach (var (id, items) in layout)
-                s.BarItems[id] = items;
+            foreach (var (id, list) in layout)
+                s.BarItems[id] = list;
         });
     }
 }

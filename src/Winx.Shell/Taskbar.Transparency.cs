@@ -41,7 +41,7 @@ public partial class Taskbar
     /// <summary>Aplica (o quita) el modo transparente. True si la barra quedó transparente.</summary>
     private bool ApplyTransparency()
     {
-        bool wanted = Settings.Current.TaskbarFullyTransparent && !_closed;
+        bool wanted = S.TaskbarFullyTransparent && !_closed;
         bool changed = wanted != _transparent;
         _transparent = wanted;
         UpdateContrastRefresh();
@@ -63,7 +63,7 @@ public partial class Taskbar
         GlassHighlight.Visibility = Visibility.Collapsed;
         BarBorder.Margin = FloatingMargin();
         UpdateGlassSurface();
-        WindowEffects.SetBlur(this, ThemeManager.Theme.Backdrop, clear: true);
+        WindowEffects.SetBlur(this, BarTheme.Backdrop, clear: true);
         WindowEffects.SetRoundedRegion(this, null, 0);
         // WPF y WPF-UI terminan de aplicar lo suyo sobre la ventana después: se repite cuando quedan
         // inactivos, o la parte transparente puede quedar negra.
@@ -71,7 +71,7 @@ public partial class Taskbar
             Dispatcher.BeginInvoke(() =>
             {
                 if (_transparent)
-                    WindowEffects.SetBlur(this, ThemeManager.Theme.Backdrop, clear: true);
+                    WindowEffects.SetBlur(this, BarTheme.Backdrop, clear: true);
             }, DispatcherPriority.ApplicationIdle);
         HookContrast();
         ScheduleContrast();

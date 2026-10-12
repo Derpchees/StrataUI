@@ -23,13 +23,44 @@ public static class ThemeManager
     /// <summary>Se dispara después de aplicar un tema (las ventanas actualizan su fondo).</summary>
     public static event Action? ThemeChanged;
 
-    public static ThemeInfo Theme => ThemeCatalog.Get(Settings.Current.Theme);
+    /// <summary>
+    /// Tema general (Hub, menús, recursos de toda la app): el del monitor principal de WINX. Cada
+    /// barra y los paneles que se abren desde ella usan el de su monitor (<see cref="ThemeFor"/>).
+    /// </summary>
+    public static ThemeInfo Theme => ThemeFor(MainDevice);
 
-    public static bool IsLight => Theme.Light ?? WindowsUsesLightTheme();
+    public static bool IsLight => IsLightFor(MainDevice);
 
     /// <summary>Tema de vidrio con refracción real activa (y soportada por el equipo).</summary>
-    public static bool UseLiveGlass =>
-        Theme.Glass && Settings.Current.LiveGlass && Services.Themes.Glass.LiquidGlassEffect.IsSupported;
+    public static bool UseLiveGlass => UseLiveGlassFor(MainDevice);
+
+    /// <summary>Monitor principal de WINX (el de la bandeja), aunque las barras aún no existan.</summary>
+    public static string MainDevice =>
+        App.MainScreenDevice(System.Windows.Forms.Screen.AllScreens.Select(sc => (sc.DeviceName, sc.Primary)));
+
+    public static ThemeInfo ThemeFor(string? device) => ThemeCatalog.Get(Settings.Current.For(device).Theme);
+
+    public static bool IsLightFor(string? device) => ThemeFor(device).Light ?? WindowsUsesLightTheme();
+
+    public static bool UseLiveGlassFor(string? device) =>
+        ThemeFor(device).Glass && Settings.Current.LiveGlass && Services.Themes.Glass.LiquidGlassEffect.IsSupported;
+
+    /// <summary>
+    /// Colores de un monitor cuando no coinciden con los generales (otro tema, claro/oscuro u otro
+    /// tamaño de barra); null si son los mismos. La barra y sus paneles los agregan a sus recursos.
+    /// </summary>
+    public static ResourceDictionary? PaletteFor(string? device)
+    {
+        var theme = ThemeFor(device);
+        bool light = IsLightFor(device);
+        int height = Settings.Current.For(device).TaskbarHeight;
+        if ((theme.Kind, light, height) == (Theme.Kind, IsLight, Settings.Current.For(MainDevice).TaskbarHeight))
+            return null;
+        var accent = Readable(Accent, light);
+        return Palette.Build(theme, light, accent, height, UseLiveGlassFor(device), light == IsLight ? _shownAccent : null);
+    }
+
+    private static Color? _shownAccent;
 
     /// <summary>
     /// Acento elegido: el del fondo de pantalla, uno propio o el de Windows. El del fondo queda en
@@ -87,10 +118,17 @@ public static class ThemeManager
     /// <summary>Solo se reaplica si cambió algo que afecta al tema (no, p. ej., los segundos del reloj).</summary>
     private static void OnSettingsChanged()
     {
-        var s = Settings.Current;
         WallpaperAccent.Update();
-        if ((s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper) != _appliedKey)
+        if (AppliedKey() != _appliedKey)
             Apply();
+    }
+
+    /// <summary>Lo que cambia los recursos generales: el tema y la barra del monitor principal, el acento y el vidrio.</summary>
+    private static (WinxTheme, string?, int, bool, bool) AppliedKey()
+    {
+        var s = Settings.Current;
+        var main = s.For(MainDevice);
+        return (main.Theme, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper);
     }
 
     /// <summary>Reaplica si cambió lo que se ve (claro/oscuro o el acento efectivo).</summary>
@@ -181,8 +219,7 @@ public static class ThemeManager
     private static void Apply()
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        var s = Settings.Current;
-        _appliedKey = (s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper);
+        _appliedKey = AppliedKey();
         var theme = Theme;
         bool light = IsLight;
         var chosen = Accent;
@@ -210,7 +247,8 @@ public static class ThemeManager
         // El acento que se ve en WINX es el mismo que usan los controles de WPF-UI (interruptores,
         // botones principales, selección), no un cálculo aparte con otro tono.
         Color? shown = (resources["AccentFillColorDefaultBrush"] as SolidColorBrush)?.Color;
-        var next = Palette.Build(theme, light, accent, Settings.Current.TaskbarHeight, UseLiveGlass, shown);
+        _shownAccent = shown;
+        var next = Palette.Build(theme, light, accent, Settings.Current.For(MainDevice).TaskbarHeight, UseLiveGlass, shown);
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);
         resources.MergedDictionaries.Add(next);

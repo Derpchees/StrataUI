@@ -12,10 +12,13 @@ using Forms = System.Windows.Forms;
 
 namespace Winx.Shell.Notifications;
 
+/// <summary>Qué aviso en pantalla es (cada monitor elige cuáles muestra en Hub › Paneles).</summary>
+public enum OsdKind { Volume, Mute, Brightness, CapsLock, NumLock, ScrollLock }
+
 /// <summary>
 /// Aviso en pantalla (OSD) al cambiar el volumen, silenciar, cambiar el brillo o pulsar Bloq Mayús,
-/// Bloq Num y Bloq Despl. Aparece junto a la barra principal de WINX, sin foco ni clics (no
-/// interrumpe lo que se hace) y se va solo al poco tiempo.
+/// Bloq Num y Bloq Despl. Cada monitor con barra tiene el suyo, junto a su barra, y muestra solo los
+/// avisos que tenga activados; sin foco ni clics (no interrumpe lo que se hace) y se va solo.
 /// </summary>
 public partial class OsdWindow : Window
 {
@@ -23,11 +26,13 @@ public partial class OsdWindow : Window
     private static readonly TimeSpan Visible = TimeSpan.FromMilliseconds(1600);
 
     private readonly DispatcherTimer _hideTimer;
+    private readonly string _device;
     private TaskbarPosition _edge = TaskbarPosition.Bottom;
     private bool _hiding;
 
-    private OsdWindow()
+    private OsdWindow(string device)
     {
+        _device = device;
         InitializeComponent();
         SourceInitialized += (_, _) =>
         {
@@ -40,43 +45,80 @@ public partial class OsdWindow : Window
         _hideTimer.Tick += (_, _) => HideAnimated();
     }
 
-    private static OsdWindow? _instance;
+    private static readonly Dictionary<string, OsdWindow> Instances = new();
 
-    /// <summary>Muestra un nivel (0–100) con su ícono: volumen, brillo.</summary>
-    public static void ShowLevel(string glyph, int percent, bool dimmed = false)
+    /// <summary>
+    /// Muestra un nivel (0–100) con su ícono (volumen, brillo) en los monitores que tienen activado
+    /// ese aviso; <paramref name="device"/> lo limita a un monitor (el brillo de ese monitor).
+    /// </summary>
+    public static void ShowLevel(OsdKind kind, string glyph, int percent, bool dimmed = false, string? device = null)
     {
-        var osd = Prepare();
-        osd.Glyph.Text = glyph;
-        osd.LevelPanel.Visibility = Visibility.Visible;
-        osd.Percent.Visibility = Visibility.Visible;
-        osd.Message.Visibility = Visibility.Collapsed;
-        percent = Math.Clamp(percent, 0, 100);
-        osd.Percent.Text = percent.ToString();
-        osd.LevelPanel.Opacity = dimmed ? 0.4 : 1;
-        osd.Dispatcher.BeginInvoke(() => osd.LevelFill.Width = osd.LevelPanel.ActualWidth * percent / 100,
-                                   DispatcherPriority.Loaded);
-        osd.Present();
+        foreach (var osd in Targets(kind, device))
+        {
+            osd.Glyph.Text = glyph;
+            osd.LevelPanel.Visibility = Visibility.Visible;
+            osd.Percent.Visibility = Visibility.Visible;
+            osd.Message.Visibility = Visibility.Collapsed;
+            percent = Math.Clamp(percent, 0, 100);
+            osd.Percent.Text = percent.ToString();
+            osd.LevelPanel.Opacity = dimmed ? 0.4 : 1;
+            var target = osd;
+            osd.Dispatcher.BeginInvoke(() => target.LevelFill.Width = target.LevelPanel.ActualWidth * percent / 100,
+                                       DispatcherPriority.Loaded);
+            osd.Present();
+        }
     }
 
-    /// <summary>Muestra un mensaje con su ícono: Bloq Mayús activado…</summary>
-    public static void ShowMessage(string glyph, string text)
+    /// <summary>Muestra un mensaje con su ícono (Bloq Mayús activado…) en los monitores que tienen activado ese aviso.</summary>
+    public static void ShowMessage(OsdKind kind, string glyph, string text)
     {
-        var osd = Prepare();
-        osd.Glyph.Text = glyph;
-        osd.LevelPanel.Visibility = Visibility.Collapsed;
-        osd.Percent.Visibility = Visibility.Collapsed;
-        osd.Message.Visibility = Visibility.Visible;
-        osd.Message.Text = text;
-        osd.Present();
+        foreach (var osd in Targets(kind, null))
+            osd.ShowText(glyph, text);
+    }
+
+    /// <summary>Mensaje en el monitor dado, sin importar los avisos elegidos (respuesta a algo que pidió el usuario).</summary>
+    public static void ShowMessage(string glyph, string text, string device) => Prepare(device).ShowText(glyph, text);
+
+    private void ShowText(string glyph, string text)
+    {
+        Glyph.Text = glyph;
+        LevelPanel.Visibility = Visibility.Collapsed;
+        Percent.Visibility = Visibility.Collapsed;
+        Message.Visibility = Visibility.Visible;
+        Message.Text = text;
+        Present();
     }
 
     public static void CloseAll()
     {
-        _instance?.Close();
-        _instance = null;
+        foreach (var osd in Instances.Values.ToList())
+            osd.Close();
+        Instances.Clear();
     }
 
-    private static OsdWindow Prepare() => _instance ??= new OsdWindow();
+    /// <summary>Un aviso por monitor con barra que tenga activado ese tipo.</summary>
+    private static IEnumerable<OsdWindow> Targets(OsdKind kind, string? device) =>
+        App.Current.Taskbars.Select(t => t.Device).Distinct()
+            .Where(d => (device is null || d == device) && Wants(Settings.Current.For(d), kind))
+            .Select(Prepare)
+            .ToList();
+
+    internal static bool Wants(ScreenSettings s, OsdKind kind) => kind switch
+    {
+        OsdKind.Volume => s.OsdVolume,
+        OsdKind.Mute => s.OsdMute,
+        OsdKind.Brightness => s.OsdBrightness,
+        OsdKind.CapsLock => s.OsdCapsLock,
+        OsdKind.NumLock => s.OsdNumLock,
+        _ => s.OsdScrollLock,
+    };
+
+    private static OsdWindow Prepare(string device)
+    {
+        if (!Instances.TryGetValue(device, out var osd))
+            Instances[device] = osd = new OsdWindow(device);
+        return osd;
+    }
 
     private void Present()
     {
@@ -111,11 +153,18 @@ public partial class OsdWindow : Window
         });
     }
 
-    // ── Posición: junto a la barra principal de WINX, centrado en su borde ─────────
+    // ── Posición: junto a la barra de su monitor, centrado en su borde ──────────────
+
+    /// <summary>La barra de este monitor junto a la que va: la del reloj, la principal o la primera.</summary>
+    private Taskbar? Bar()
+    {
+        var bars = App.Current.Taskbars.Where(t => t.Device == _device).ToList();
+        return bars.FirstOrDefault(t => t.Has(BarItem.Clock)) ?? bars.FirstOrDefault(t => t.IsMain) ?? bars.FirstOrDefault();
+    }
 
     private (Forms.Screen Screen, TaskbarPosition Edge) Target()
     {
-        if (App.Current.OsdTaskbar is { } bar)
+        if (Bar() is { } bar)
         {
             var center = bar.PointToScreen(new Point(bar.ActualWidth / 2, bar.ActualHeight / 2));
             return (Forms.Screen.FromPoint(new System.Drawing.Point((int)center.X, (int)center.Y)), bar.Position);
@@ -209,7 +258,9 @@ public static class Osd
         OsdWindow.CloseAll();
     }
 
-    private static bool Enabled => Settings.Current.ShowOsd && DateTime.UtcNow > _quietUntil;
+    /// <summary>Fuera de los primeros segundos (al arrancar se leen los valores, no son cambios). Qué
+    /// monitores lo muestran lo decide cada uno (<see cref="OsdWindow.Wants"/>).</summary>
+    private static bool Enabled => DateTime.UtcNow > _quietUntil;
 
     private static void OnAudioChanged() => OnAudioChanged(force: false);
 
@@ -220,6 +271,7 @@ public static class Osd
         bool mute = audio.Mute;
         string? device = audio.Output.DeviceId;
         bool changed = force || device == _device && (volume != _volume || mute != _mute);
+        var kind = mute != _mute ? OsdKind.Mute : OsdKind.Volume;
         _volume = volume;
         _mute = mute;
         _device = device; // cambiar de dispositivo no es cambiar el volumen
@@ -230,7 +282,7 @@ public static class Osd
             : volume < 33 ? "\uE993"
             : volume < 66 ? "\uE994"
             : "\uE995";
-        OsdWindow.ShowLevel(glyph, volume, dimmed: mute);
+        OsdWindow.ShowLevel(kind, glyph, volume, dimmed: mute);
     }
 
     /// <summary>Teclas de volumen: lo mismo que hace Windows (pasos de 2, subir quita el silencio).</summary>
@@ -273,7 +325,8 @@ public static class Osd
         if (e.PropertyName != nameof(BrightnessMonitor.Percent) || sender is not BrightnessMonitor monitor
             || !Enabled || Flyouts.FlyoutManager.IsOpen<Flyouts.BrightnessFlyout>())
             return;
-        OsdWindow.ShowLevel("\uE706", monitor.Percent);
+        // Solo en el monitor cuyo brillo cambi\u00F3 (si tiene barra y el aviso activado).
+        OsdWindow.ShowLevel(OsdKind.Brightness, "\uE706", monitor.Percent, device: monitor.Device);
     }
 
     // ── Teclas de bloqueo ───────────────────────────────────────────────────
@@ -288,13 +341,13 @@ public static class Osd
         switch (vk)
         {
             case 0x14:
-                OsdWindow.ShowMessage("\uE84A", on ? Loc.T("Bloq Mayús activado") : Loc.T("Bloq Mayús desactivado"));
+                OsdWindow.ShowMessage(OsdKind.CapsLock, "\uE84A", on ? Loc.T("Bloq Mayús activado") : Loc.T("Bloq Mayús desactivado"));
                 break;
             case 0x90:
-                OsdWindow.ShowMessage("\uE765", on ? Loc.T("Bloq Num activado") : Loc.T("Bloq Num desactivado"));
+                OsdWindow.ShowMessage(OsdKind.NumLock, "\uE765", on ? Loc.T("Bloq Num activado") : Loc.T("Bloq Num desactivado"));
                 break;
             case 0x91:
-                OsdWindow.ShowMessage("\uE765", on ? Loc.T("Bloq Despl activado") : Loc.T("Bloq Despl desactivado"));
+                OsdWindow.ShowMessage(OsdKind.ScrollLock, "\uE765", on ? Loc.T("Bloq Despl activado") : Loc.T("Bloq Despl desactivado"));
                 break;
         }
     }

@@ -64,8 +64,11 @@ public partial class NotificationBannerWindow : Window
             MoveToScreen();
     }
 
-    private bool IsTop => Settings.Current.NotificationCorner is NotificationCorner.TopLeft or NotificationCorner.TopRight;
-    private bool IsLeft => Settings.Current.NotificationCorner is NotificationCorner.TopLeft or NotificationCorner.BottomLeft;
+    private bool IsTop => Corner is NotificationCorner.TopLeft or NotificationCorner.TopRight;
+    private bool IsLeft => Corner is NotificationCorner.TopLeft or NotificationCorner.BottomLeft;
+
+    /// <summary>Esquina elegida para el monitor de los avisos.</summary>
+    private static NotificationCorner Corner => Settings.Current.For(TargetScreen().DeviceName).NotificationCorner;
 
     private void Add(WinxNotification item)
     {

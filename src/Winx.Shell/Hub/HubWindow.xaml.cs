@@ -26,7 +26,13 @@ public partial class HubWindow : FluentWindow
         Nav.Navigated += (_, e) =>
         {
             if (e.Page is FrameworkElement page)
+            {
                 Motion.In(page, page, TaskbarPosition.Bottom, 0.6);
+                // Las partes que se arman al cargar (o el foco de un control) la dejaban desplazada:
+                // cada página abre desde arriba.
+                Dispatcher.BeginInvoke(() => FindScroll(page)?.ScrollToTop(),
+                                       System.Windows.Threading.DispatcherPriority.ContextIdle);
+            }
         };
         Loaded += (_, _) =>
         {
@@ -36,6 +42,19 @@ public partial class HubWindow : FluentWindow
     }
 
     private void ApplyBackdrop() => WindowBackdropType = ThemeManager.WindowBackdrop;
+
+    private static System.Windows.Controls.ScrollViewer? FindScroll(DependencyObject root)
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is System.Windows.Controls.ScrollViewer scroll)
+                return scroll;
+            if (FindScroll(child) is { } found)
+                return found;
+        }
+        return null;
+    }
 
     /// <summary>Navega a una página por nombre: "Privacy", "PrivacyPage", "Apps"…</summary>
     public void NavigateTo(string page)

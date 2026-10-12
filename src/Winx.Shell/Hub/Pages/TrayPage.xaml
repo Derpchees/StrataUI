@@ -10,8 +10,20 @@
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="ChevronUp24" Title="{l:T 'Bandeja del sistema'}"
                             Subtitle="{l:T 'Qué íconos de apps se ven siempre en la barra y cuáles van a los ocultos.'}" />
+            <hub:ScreenPicker />
 
-            <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
+            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon ChevronUp24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'La bandeja va en este monitor'}" />
+                        <TextBlock x:Name="HereText" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="HereSwitch" Click="Here_Click" />
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Íconos de la bandeja'}" />
+            <TextBlock Style="{StaticResource CardDescription}" Margin="2,-4,0,10" TextWrapping="Wrap"
                        Text="{l:T 'Elige qué íconos se muestran siempre en la barra. Los demás quedan en el menú de íconos ocultos (^). Solo aparecen las apps que están abiertas ahora. En la barra también puedes arrastrarlos para ordenarlos o moverlos entre la barra y los ocultos.'}" />
 
             <ItemsControl x:Name="IconList">

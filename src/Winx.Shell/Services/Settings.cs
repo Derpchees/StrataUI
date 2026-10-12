@@ -214,6 +214,83 @@ public sealed class WinxSettings
     public List<string> KnownTrayIcons { get; set; } = new();
     /// <summary>Orden de los íconos ocultos (identificadores); los que no están van al final.</summary>
     public List<string> HiddenTrayOrder { get; set; } = new();
+
+    // Por monitor
+    /// <summary>
+    /// Ajustes de cada monitor (clave: nombre del dispositivo). Un monitor sin entrada usa los
+    /// generales de arriba (<see cref="DefaultScreen"/>), que también son la plantilla de los nuevos.
+    /// </summary>
+    public Dictionary<string, ScreenSettings> Screens { get; set; } = new();
+
+    /// <summary>Ajustes efectivos de un monitor (no los guarda: para cambiarlos, <see cref="Settings.UpdateScreen"/>).</summary>
+    public ScreenSettings For(string? device) =>
+        device != null && Screens.TryGetValue(device, out var screen) ? screen : DefaultScreen();
+
+    /// <summary>Los ajustes generales como ajustes de un monitor (lo que tenía WINX antes de poder elegir por monitor).</summary>
+    public ScreenSettings DefaultScreen() => new()
+    {
+        TaskbarAlignment = TaskbarAlignment,
+        TaskbarCenterApps = TaskbarCenterApps,
+        ShowTaskPreviews = ShowTaskPreviews,
+        CombineTaskWindows = CombineTaskWindows,
+        TaskbarHeight = TaskbarHeight,
+        TaskbarFullyTransparent = TaskbarFullyTransparent,
+        Theme = Theme,
+        ShowSeconds = ShowSeconds,
+        ShowDate = ShowDate,
+        ShowTemperatures = ShowTemperatures,
+        ShowBatteryPercent = ShowBatteryPercent,
+        ShowMediaControls = ShowMediaControls,
+        OsdVolume = ShowOsd,
+        OsdMute = ShowOsd,
+        OsdBrightness = ShowOsd,
+        OsdCapsLock = ShowOsd,
+        OsdNumLock = ShowOsd,
+        OsdScrollLock = ShowOsd,
+        NotificationCorner = NotificationCorner,
+    };
+}
+
+/// <summary>
+/// Lo que se elige por monitor en Hub › Personalización por monitor: su barra, su apariencia, sus
+/// avisos, multimedia y avisos en pantalla. El menú Inicio, el acento, el fondo y las animaciones
+/// son de todos los monitores.
+/// </summary>
+public sealed class ScreenSettings
+{
+    // Barra
+    public TaskbarAlignment TaskbarAlignment { get; set; } = TaskbarAlignment.Windows;
+    public bool TaskbarCenterApps { get; set; }
+    public bool ShowTaskPreviews { get; set; } = true;
+    public bool CombineTaskWindows { get; set; }
+    public int TaskbarHeight { get; set; } = 48;
+    public bool TaskbarFullyTransparent { get; set; }
+    public bool ShowSeconds { get; set; }
+    public bool ShowDate { get; set; } = true;
+    public bool ShowTemperatures { get; set; } = true;
+    public bool ShowBatteryPercent { get; set; }
+
+    // Apariencia de la barra y de los paneles que se abren desde ella
+    public WinxTheme Theme { get; set; } = WinxTheme.System;
+
+    // Multimedia
+    public bool ShowMediaControls { get; set; } = true;
+
+    // Avisos en pantalla (OSD) junto a la barra de este monitor
+    public bool OsdVolume { get; set; } = true;
+    public bool OsdMute { get; set; } = true;
+    public bool OsdBrightness { get; set; } = true;
+    public bool OsdCapsLock { get; set; } = true;
+    public bool OsdNumLock { get; set; } = true;
+    public bool OsdScrollLock { get; set; } = true;
+
+    /// <summary>Algún aviso en pantalla activo (el gancho de teclado se queda con las teclas de volumen).</summary>
+    public bool AnyOsd => OsdVolume || OsdMute || OsdBrightness || OsdCapsLock || OsdNumLock || OsdScrollLock;
+
+    // Notificaciones
+    public NotificationCorner NotificationCorner { get; set; } = NotificationCorner.BottomRight;
+
+    public ScreenSettings Clone() => (ScreenSettings)MemberwiseClone();
 }
 
 public static class Settings
@@ -238,6 +315,14 @@ public static class Settings
         Save();
         Changed?.Invoke();
     }
+
+    /// <summary>Cambia los ajustes de un monitor (los crea a partir de los generales la primera vez).</summary>
+    public static void UpdateScreen(string device, Action<ScreenSettings> change) => Update(s =>
+    {
+        if (!s.Screens.TryGetValue(device, out var screen))
+            s.Screens[device] = screen = s.DefaultScreen();
+        change(screen);
+    });
 
     /// <summary>Solo pruebas: evita escribir el settings.json real del usuario.</summary>
     internal static bool SuppressSave { get; set; }

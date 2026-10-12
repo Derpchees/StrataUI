@@ -9,21 +9,13 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="PaintBrush24" Title="{l:T 'Apariencia'}" Subtitle="{l:T 'Tema, color de acento y fondo de pantalla de WINX.'}" />
+            <hub:ScreenPicker />
 
-            <TextBlock Style="{StaticResource HubSectionTitle}" Margin="0,0,0,8" Text="{l:T 'Tema'}" />
+            <!-- ── De este monitor ───────────────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,4" Text="{l:T 'Tema'}" />
+            <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
+                       Text="{l:T 'De la barra de este monitor y de los paneles y el menú Inicio que se abren desde ella. El del principal de WINX también lo usa el Hub.'}" />
             <WrapPanel x:Name="ThemeGallery" Margin="0,0,0,8" />
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Drop24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Refracción en vivo (Liquid Glass)'}" />
-                        <TextBlock Style="{StaticResource CardDescription}"
-                                   Text="{l:T 'Vidrio real: el fondo se curva en los bordes con colores vivos. Mientras esté activo, la barra y los paneles no aparecen en capturas de pantalla ni grabaciones.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="LiveGlassSwitch" Click="LiveGlass_Click" />
-            </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Eye24" /></ui:CardControl.Icon>
@@ -35,6 +27,21 @@
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="TransparentSwitch" Click="Transparent_Click" />
+            </ui:CardControl>
+
+            <!-- ── Para todos los monitores ──────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Para todos los monitores'}" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Drop24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Refracción en vivo (Liquid Glass)'}" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="{l:T 'Vidrio real: el fondo se curva en los bordes con colores vivos. Mientras esté activo, la barra y los paneles no aparecen en capturas de pantalla ni grabaciones.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="LiveGlassSwitch" Click="LiveGlass_Click" />
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">

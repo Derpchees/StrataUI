@@ -11,8 +11,13 @@ public static class WindowsTaskbarPrefs
     private const string Advanced = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
 
     /// <summary>Alineación efectiva: la elegida en WINX o, con "Windows", la de Windows.</summary>
-    public static TaskbarAlignment Alignment(WinxSettings s) =>
-        s.TaskbarAlignment == TaskbarAlignment.Windows ? AlignmentFrom(Read("TaskbarAl")) : s.TaskbarAlignment;
+    public static TaskbarAlignment Alignment(WinxSettings s) => Alignment(s.TaskbarAlignment);
+
+    /// <summary>Alineación efectiva de la barra de un monitor.</summary>
+    public static TaskbarAlignment Alignment(ScreenSettings s) => Alignment(s.TaskbarAlignment);
+
+    private static TaskbarAlignment Alignment(TaskbarAlignment chosen) =>
+        chosen == TaskbarAlignment.Windows ? AlignmentFrom(Read("TaskbarAl")) : chosen;
 
     /// <summary>Modo efectivo de las apps por monitor.</summary>
     public static TaskbarAppsMode AppsMode(WinxSettings s) =>
