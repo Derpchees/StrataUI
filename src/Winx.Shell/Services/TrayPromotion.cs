@@ -67,7 +67,8 @@ public static class TrayPromotion
     /// <summary>Posición en el orden guardado; los nuevos van al final, en el orden en que llegaron.</summary>
     private static int HiddenIndex(NotifyIcon icon)
     {
-        int index = Settings.Current.HiddenTrayOrder.IndexOf(icon.Identifier ?? "");
+        string key = Key(icon);
+        int index = key.Length > 0 ? Settings.Current.HiddenTrayOrder.FindIndex(id => Matches(id, key)) : -1;
         return index >= 0 ? index : 10_000 + (_tray?.TrayIcons.IndexOf(icon) ?? 0);
     }
 
@@ -85,7 +86,7 @@ public static class TrayPromotion
             icon.Unpin();
         var order = HiddenIcons().Where(i => !ReferenceEquals(i, icon)).ToList();
         order.Insert(Math.Clamp(index, 0, order.Count), icon);
-        Settings.Current.HiddenTrayOrder = order.Select(i => i.Identifier ?? "").Where(id => id.Length > 0).ToList();
+        Settings.Current.HiddenTrayOrder = order.Select(Key).Where(id => id.Length > 0).ToList();
         foreach (var view in HiddenViews)
             view.Refresh();
         if (save)
@@ -106,14 +107,30 @@ public static class TrayPromotion
     private static void OnIconSeen(NotifyIcon icon, HashSet<string> promoted)
     {
         var known = Settings.Current.KnownTrayIcons;
-        if (string.IsNullOrEmpty(icon.Identifier) || known.Contains(icon.Identifier))
+        string key = Key(icon);
+        if (key.Length == 0 || known.Any(id => Matches(id, key)))
             return;
 
-        known.Add(icon.Identifier);
+        known.Add(key);
         if (!icon.IsPinned && !string.IsNullOrEmpty(icon.Path) && promoted.Contains(icon.Path))
             icon.Pin();
         SavePinned();
     }
+
+    /// <summary>
+    /// Clave que no cambia mientras el ícono exista. <see cref="NotifyIcon.Identifier"/> no sirve:
+    /// sin GUID termina con el texto emergente ("Thunderbird · 1 mensaje no leído"), y al cambiar
+    /// ese texto el ícono parecía nuevo (perdía su lugar y volvía a anclarse si Windows lo promovía).
+    /// </summary>
+    internal static string Key(NotifyIcon icon) =>
+        icon.GUID != default ? icon.GUID.ToString()
+        : string.IsNullOrEmpty(icon.Path) ? ""
+        : icon.Path + ":" + icon.UID;
+
+    /// <summary>Si una clave guardada es de ese ícono (las viejas llevan además ":texto").</summary>
+    internal static bool Matches(string stored, string key) =>
+        stored.Equals(key, StringComparison.OrdinalIgnoreCase)
+        || stored.StartsWith(key + ":", StringComparison.OrdinalIgnoreCase);
 
     private static void SavePinned()
     {

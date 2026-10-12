@@ -195,6 +195,10 @@ tecla Windows, Win+N).
   26300 la del Explorador puede quedar en una capa del sistema que WINX no puede pasar (no sale en
   `EnumWindows` ni se mueve con `SetWindowPos`) y entonces la bandeja de WINX queda vacía. La
   barra clásica `ToolbarWindow32` del Explorador ya no existe, así que no hay de dónde importarlos.
+  `Services/TrayOwnership` vigila cuál es la primera y, cuando pasa a ser la de WINX, difunde
+  "TaskbarCreated" para que las apps vuelvan a registrar sus íconos.
+- **Claves de íconos de la bandeja**: `NotifyIcon.Identifier` lleva el texto emergente si el
+  ícono no tiene GUID (cambia con el tiempo); para guardar usar `TrayPromotion.Key`/`Matches`.
 - **Barras verticales**: cualquier cosa nueva en la barra debe funcionar en los cuatro bordes
   (orientación en `Taskbar.ApplyOrientation`, indicador en `TaskButton.FitTo`, posición de
   ventanas emergentes según `Position`).

@@ -142,6 +142,7 @@ public partial class App : Application
         _shell = new ShellManager(config);
 
         TrayPromotion.Attach(_shell.NotificationArea);
+        TrayOwnership.Start();
         SystemStatus.Initialize();
         Services.StartMenu.StartMenuService.Initialize();
         Services.StartMenu.WinKeyHook.WinPressed += OnWinKey;
@@ -469,6 +470,7 @@ public partial class App : Application
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
+        TrayOwnership.Stop();
         Services.StartMenu.WinKeyHook.Update(false, false);
         Services.Notifications.NotificationService.Shutdown();
         Services.Notifications.WindowsBanners.Restore();

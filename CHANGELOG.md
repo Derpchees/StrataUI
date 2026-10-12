@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.16.1] - 2026-10-12
+
+### Corregido
+- **Íconos de la bandeja**: si al iniciar WINX las apps mandaban sus íconos a la barra del
+  Explorador, la bandeja de WINX se quedaba vacía o incompleta (y el botón de ocultos aparecía y
+  desaparecía). Ahora WINX vigila a dónde van y, en cuanto le llegan a él, les pide a las apps que
+  los vuelvan a registrar.
+- Un ícono cuyo texto cambia (Thunderbird con "1 mensaje no leído", Steam sincronizando…) ya no
+  cuenta como ícono nuevo: conserva su lugar entre los ocultos y no se vuelve a anclar solo.
+
 ## [0.16.0] - 2026-10-12
 
 ### Añadido
