@@ -6,6 +6,8 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.8.0] - 2026-10-11
+
 ### Añadido
 - Ícono de WINX en el ejecutable y en la ventana del Hub.
 - Opción para mostrar u ocultar los nombres de las apps ancladas en el menú Inicio (sin ellos, el

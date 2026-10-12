@@ -17,10 +17,10 @@ a la normalidad.
 | Hub de configuración    | ✅ barra, bandeja, apariencia, optimización, general           |
 | Optimización (debloat)  | ✅ apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
 | Temas                   | ✅ Sistema, Claro, Oscuro, Transparencia, Liquid Glass (claro/oscuro), Material |
-| Panel de volumen        | ✅ dispositivo de salida y volumen por aplicación              |
+| Panel de sonido         | ✅ salida y entrada con mosaicos de dispositivos, opciones (balance, mejoras de audio, modo exclusivo, llamadas) y volumen por aplicación |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
-| Menú Inicio             | ✅ estilos Windows 11, Lista y Pantalla completa; tecla Windows |
+| Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas y secciones, tecla Windows |
 | Notificaciones          | ⏳ abre el centro de Windows                                   |
 
 ## Requisitos
@@ -47,6 +47,9 @@ Clic derecho en un espacio vacío de la barra → **Configuración de WINX** abr
 | `--exit`             | Cierra limpiamente la instancia en ejecución.                          |
 | `--restore-taskbar`  | Emergencia: vuelve a mostrar la barra de Windows si WINX se cerró mal. |
 
+(`--apply-tweak`, `--restore-tweaks`, `--restore-point` y `--audio-property` son de uso interno:
+los lanza WINX elevado con UAC para lo que necesita permisos de administrador.)
+
 ## Datos
 
 Todo vive en `%LOCALAPPDATA%\WINX\`:
@@ -60,7 +63,8 @@ Todo vive en `%LOCALAPPDATA%\WINX\`:
 ## Versionado
 
 - La versión vive en un solo lugar: [Directory.Build.props](Directory.Build.props).
-- Cada versión se documenta en [CHANGELOG.md](CHANGELOG.md) y se marca con un tag `vX.Y.Z`.
+- Cada versión se documenta en [CHANGELOG.md](CHANGELOG.md) y se marca con un tag anotado `vX.Y.Z`
+  (el procedimiento completo está en [CLAUDE.md](CLAUDE.md)).
 - Se sigue [versionado semántico](https://semver.org/lang/es/); mientras sea `0.x`, cada
   componente nuevo sube la versión menor.
 
@@ -71,14 +75,14 @@ src/Winx.Shell/
   App.xaml(.cs)        Arranque, instancia única, ciclo de vida del shell
   Taskbar.xaml(.cs)    Barra de tareas (una por monitor)
   Controls/            Botón de tarea e ícono de bandeja
-  Flyouts/             Paneles flotantes: volumen, red, Bluetooth
-  StartMenu/           Menú Inicio: modelo común y los tres estilos
+  Flyouts/             Paneles flotantes: sonido, red, Bluetooth
+  StartMenu/           Menú Inicio: modelo común, estilos, anclados con carpetas y secciones
   Hub/                 Ventana de configuración y sus páginas
   Tweaks/              Motor de optimizaciones, catálogo, respaldo, apps Appx, elevación
   Services/            Configuración, audio, red, Bluetooth, estado del sistema, registro
   Services/Themes/     Catálogo de temas, paleta generada, efectos de DWM, tema en Windows
   Themes/              Estilos compartidos de la barra
-tests/Winx.Tests/      Pruebas del motor de optimizaciones y del catálogo
+tests/Winx.Tests/      Pruebas: optimizaciones, catálogo, anclados, tipos de dispositivo de audio
 ```
 
 ## Créditos
