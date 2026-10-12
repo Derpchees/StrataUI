@@ -6,7 +6,7 @@
                      Title="Inicio" Width="640" Height="660" SizeToContent="Manual">
     <Grid Margin="14,14,14,12">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="270" />
+            <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -16,7 +16,8 @@
         </Grid.RowDefinitions>
 
         <!-- Izquierda: lista alfabética de todas las apps, o resultados al buscar -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Width="270" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding ShowAllAppsButton, Converter={StaticResource BoolToVis}}">
             <StackPanel>
                 <ItemsControl ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppRow}"
                               Visibility="{Binding HomeVisible, Converter={StaticResource BoolToVis}}">
@@ -35,9 +36,14 @@
         <!-- Derecha: anclados y accesos a carpetas -->
         <ScrollViewer Grid.Column="1" Margin="12,0,0,0" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,4,0,6" Text="Anclado" />
-                <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTile}"
-                              ItemsPanel="{StaticResource WrapItems}" />
+                <!-- Al buscar con la lista de apps oculta, los resultados aparecen aquí -->
+                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}"
+                              Visibility="{Binding SearchInSidePanel, Converter={StaticResource BoolToVis}}" />
+                <StackPanel Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,4,0,6" Text="Anclado" />
+                    <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTile}"
+                                  ItemsPanel="{StaticResource WrapItems}" />
+                </StackPanel>
 
                 <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,16,0,6" Text="Carpetas" />
                 <UniformGrid Columns="2">

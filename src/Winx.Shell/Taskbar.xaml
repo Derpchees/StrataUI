@@ -54,20 +54,10 @@
                 <!-- Inicio + ventanas abiertas; alineación configurable desde el Hub -->
                 <!-- DockPanel (no StackPanel) para que la lista reciba un ancho limitado y pueda desplazarse -->
                 <DockPanel x:Name="TaskArea" Grid.Column="0" HorizontalAlignment="Center" LastChildFill="True">
+                    <!-- El ícono se elige en Hub › Menú Inicio (ver Controls/StartIcons) -->
                     <Button x:Name="StartButton" DockPanel.Dock="Left" Style="{StaticResource TaskbarButton}" Width="44"
-                            Padding="0" ToolTip="Inicio" Click="StartButton_Click">
-                        <Grid Width="16" Height="16" RenderTransformOrigin="0.5,0.5">
-                            <Grid.RenderTransform>
-                                <RotateTransform Angle="45" />
-                            </Grid.RenderTransform>
-                            <UniformGrid Rows="2" Columns="2">
-                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" />
-                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.75" />
-                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.75" />
-                                <Rectangle Margin="0.8" RadiusX="1.5" RadiusY="1.5" Fill="{DynamicResource WinxAccentBrush}" Opacity="0.5" />
-                            </UniformGrid>
-                        </Grid>
-                    </Button>
+                            Padding="0" ToolTip="Inicio" Click="StartButton_Click" />
+
     
                     <!-- Si no caben todas las ventanas, la rueda del mouse desplaza la lista -->
                     <ScrollViewer x:Name="TaskScroller" HorizontalScrollBarVisibility="Hidden"

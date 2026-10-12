@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using Winx.Shell.Flyouts;
+using Winx.Shell.Services.StartMenu;
 
 namespace Winx.Shell.StartMenu;
 
@@ -7,13 +9,19 @@ public partial class StartFooter : UserControl
 {
     public StartFooter() => InitializeComponent();
 
-    // El menú de energía se abre con clic normal, no solo con clic derecho.
-    private void PowerButton_Click(object sender, RoutedEventArgs e)
+    private void FooterButton_Click(object sender, RoutedEventArgs e)
     {
-        if (PowerButton.ContextMenu is { } menu)
+        if (sender is not Button { DataContext: StartFooterButton button } source)
+            return;
+
+        if (button.IsPowerMenu)
         {
-            menu.PlacementTarget = PowerButton;
+            var menu = (ContextMenu)FindResource("PowerMenu");
+            menu.PlacementTarget = source;
             menu.IsOpen = true;
+            return;
         }
+        FlyoutManager.CloseAll();
+        button.Run?.Invoke();
     }
 }

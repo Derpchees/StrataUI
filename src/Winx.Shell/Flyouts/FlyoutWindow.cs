@@ -198,6 +198,15 @@ public abstract class FlyoutWindow : FluentWindow
             return;
         }
 
+        if (Placement == FlyoutPlacement.ScreenCenter)
+        {
+            // Tipo Spotlight: centrado en el monitor con la parte superior fija (crece hacia abajo).
+            int cx = work.Left + (work.Width - width) / 2;
+            int cy = work.Top + work.Height / 5;
+            SetWindowPos(hwnd, IntPtr.Zero, cx, cy, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+            return;
+        }
+
         var anchorLeft = anchor.PointToScreen(new Point(0, 0));
         int preferred = Placement switch
         {
@@ -232,7 +241,7 @@ public abstract class FlyoutWindow : FluentWindow
     private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
 }
 
-public enum FlyoutPlacement { Right, Center, Left }
+public enum FlyoutPlacement { Right, Center, Left, ScreenCenter }
 
 /// <summary>Garantiza un solo panel abierto y que el botón funcione como interruptor.</summary>
 public static class FlyoutManager
@@ -243,6 +252,10 @@ public static class FlyoutManager
 
     public static void Toggle<T>(FrameworkElement anchor) where T : FlyoutWindow, new()
     {
+        // Un panel que no llegó a mostrarse (falló al abrir) no cuenta como abierto.
+        if (_open is { IsVisible: false })
+            _open = null;
+
         if (_open is T current)
         {
             current.CloseFlyout();
@@ -254,16 +267,32 @@ public static class FlyoutManager
             return;
 
         _open?.CloseFlyout();
-        var flyout = new T();
-        flyout.Closed += (_, _) =>
+        try
         {
-            _lastClosedType = typeof(T);
-            _lastClosedAt = DateTime.UtcNow;
-            if (ReferenceEquals(_open, flyout))
-                _open = null;
-        };
-        _open = flyout;
-        flyout.ShowAt(anchor);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            var flyout = new T();
+            long created = watch.ElapsedMilliseconds;
+            flyout.ContentRendered += (_, _) =>
+            {
+                // Solo se registran las aperturas lentas, para detectar regresiones sin llenar el log.
+                if (watch.ElapsedMilliseconds > 300)
+                    Log.Info($"Panel {typeof(T).Name} lento: creado en {created} ms, visible en {watch.ElapsedMilliseconds} ms");
+            };
+            flyout.Closed += (_, _) =>
+            {
+                _lastClosedType = typeof(T);
+                _lastClosedAt = DateTime.UtcNow;
+                if (ReferenceEquals(_open, flyout))
+                    _open = null;
+            };
+            _open = flyout;
+            flyout.ShowAt(anchor);
+        }
+        catch (Exception ex)
+        {
+            _open = null;
+            Log.Error($"No se pudo abrir el panel {typeof(T).Name}", ex);
+        }
     }
 
     public static void CloseAll() => _open?.CloseFlyout();

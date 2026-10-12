@@ -6,6 +6,24 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.6.0] - 2026-10-11
+
+### Añadido
+- Configuración del menú Inicio en el Hub:
+  - Tres estilos minimalistas nuevos: **Compacto**, **Solo búsqueda** (barra centrada tipo
+    Spotlight) e **Íconos** (cuadrícula sin texto).
+  - Ícono del botón Inicio a elegir: WINX, Windows, Monocromo, Círculo, Punto, Cuadrícula, Lupa.
+  - Mostrar u ocultar apps ancladas, todas las apps, archivos recientes y el usuario, con o sin
+    la foto de la cuenta de Windows.
+  - Botones del pie a elegir: energía (menú), bloquear, suspender, reiniciar, apagar, cerrar
+    sesión, Explorador, carpetas, Configuración de Windows, Panel de control, Administrador de
+    tareas, Terminal y Configuración de WINX.
+
+### Corregido
+- El color de acento de WINX se veía azul en vez del elegido: una clave fija en `App.xaml` tapaba
+  la paleta del tema.
+- Un panel que fallaba al abrirse quedaba "abierto" para siempre y no se podía volver a abrir.
+
 ## [0.5.0] - 2026-10-11
 
 ### Añadido

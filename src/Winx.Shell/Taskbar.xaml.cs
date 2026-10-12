@@ -138,6 +138,11 @@ public partial class Taskbar : AppBarWindow
     private void ApplySettings()
     {
         var s = Settings.Current;
+        if (StartButton.Tag is not StartIconKind current || current != s.StartIcon)
+        {
+            StartButton.Content = StartIcons.Create(s.StartIcon);
+            StartButton.Tag = s.StartIcon;
+        }
         TaskArea.HorizontalAlignment = s.TaskbarAlignment == TaskbarAlignment.Left
             ? HorizontalAlignment.Left
             : HorizontalAlignment.Center;

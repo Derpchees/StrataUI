@@ -16,11 +16,44 @@
                         <TextBlock x:Name="StyleDescription" Style="{StaticResource CardDescription}" />
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ComboBox x:Name="StyleBox" MinWidth="200" SelectionChanged="Style_Changed">
+                <ComboBox x:Name="StyleBox" MinWidth="210" SelectionChanged="Style_Changed">
                     <ComboBoxItem Content="Windows 11" />
                     <ComboBoxItem Content="Lista (Windows 10/7)" />
                     <ComboBoxItem Content="Pantalla completa" />
+                    <ComboBoxItem Content="Compacto" />
+                    <ComboBoxItem Content="Solo búsqueda" />
+                    <ComboBoxItem Content="Íconos" />
                 </ComboBox>
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Ícono del botón Inicio" />
+            <WrapPanel x:Name="IconGallery" Margin="0,0,0,4" />
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Contenido" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Pin24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Mostrar apps ancladas" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Clic derecho sobre una app en el menú para anclarla o desanclarla" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button Content="Restablecer" Margin="0,0,12,0" Click="ResetPinned_Click" />
+                    <ui:ToggleSwitch x:Name="PinnedSwitch" Click="Options_Changed" />
+                </StackPanel>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="AppsList24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Mostrar todas las apps" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="La lista completa o el botón &quot;Todas las apps&quot;. La búsqueda sigue funcionando." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="AllAppsSwitch" Click="Options_Changed" />
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
@@ -35,6 +68,43 @@
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Person24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="Mostrar usuario" VerticalAlignment="Center" />
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="UserSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ImageCircle24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Usar la foto de la cuenta" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Si no hay foto, se muestran tus iniciales" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="PictureSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Botones de la parte inferior" />
+            <TextBlock Style="{StaticResource CardDescription}" Margin="0,-4,0,8"
+                       Text="Aparecen a la derecha del pie del menú, en este orden." />
+            <ItemsControl x:Name="FooterList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:CardControl Style="{StaticResource HubCard}" Padding="14,8">
+                            <ui:CardControl.Icon><ui:SymbolIcon Symbol="{Binding Icon}" /></ui:CardControl.Icon>
+                            <ui:CardControl.Header>
+                                <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Label}" VerticalAlignment="Center" />
+                            </ui:CardControl.Header>
+                            <ui:ToggleSwitch Tag="{Binding Id}" Loaded="FooterSwitch_Loaded" Click="FooterSwitch_Click" />
+                        </ui:CardControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Teclado" />
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Keyboard24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
@@ -44,18 +114,6 @@
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="WinKeySwitch" Click="Options_Changed" />
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Pin24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="Apps ancladas" />
-                        <TextBlock Style="{StaticResource CardDescription}"
-                                   Text="Clic derecho sobre una app en el menú para anclarla o desanclarla. Aquí puedes volver a la selección inicial." />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:Button Content="Restablecer" Click="ResetPinned_Click" />
             </ui:CardControl>
         </StackPanel>
     </ScrollViewer>

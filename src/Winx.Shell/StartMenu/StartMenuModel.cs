@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using Winx.Shell.Flyouts;
 using Winx.Shell.Services;
 using Winx.Shell.Services.StartMenu;
@@ -29,8 +30,17 @@ public sealed class StartMenuModel : INotifyPropertyChanged
     public ICollectionView AllApps { get; }
     public IReadOnlyList<RecentItem> Recent { get; }
     public bool HasRecent => Recent.Count > 0;
+
+    // Opciones del Hub (se leen al abrir el menú)
+    public bool ShowPinned => Settings.Current.StartShowPinned;
+    public bool ShowAllAppsButton => Settings.Current.StartShowAllApps;
+    public bool ShowUser => Settings.Current.StartShowUser;
+    public IReadOnlyList<StartFooterButton> FooterButtons { get; } = StartFooterCatalog.Selected;
+
     public string UserName => StartMenuService.UserName;
     public string UserInitials => StartMenuService.UserInitials;
+    public ImageSource? UserPicture => Settings.Current.StartShowUserPicture ? StartMenuService.UserPicture : null;
+    public bool HasUserPicture => UserPicture != null;
 
     public string Query
     {
@@ -42,11 +52,15 @@ public sealed class StartMenuModel : INotifyPropertyChanged
             Notify();
             Notify(nameof(IsSearching));
             Notify(nameof(NoResults));
+            Notify(nameof(SearchInSidePanel));
             NotifyViews();
         }
     }
 
     public bool IsSearching => _query.Trim().Length > 0;
+
+    /// <summary>Estilo Lista con la lista de apps oculta: los resultados van en el panel derecho.</summary>
+    public bool SearchInSidePanel => IsSearching && !ShowAllAppsButton;
 
     public IReadOnlyList<StartApp> Results
     {
@@ -157,6 +171,9 @@ public static class StartMenuLauncher
         {
             case StartMenuStyle.List: FlyoutManager.Toggle<StartMenuList>(anchor); break;
             case StartMenuStyle.Fullscreen: FlyoutManager.Toggle<StartMenuFullscreen>(anchor); break;
+            case StartMenuStyle.Compact: FlyoutManager.Toggle<StartMenuCompact>(anchor); break;
+            case StartMenuStyle.Spotlight: FlyoutManager.Toggle<StartMenuSpotlight>(anchor); break;
+            case StartMenuStyle.Icons: FlyoutManager.Toggle<StartMenuIcons>(anchor); break;
             default: FlyoutManager.Toggle<StartMenuWin11>(anchor); break;
         }
     }

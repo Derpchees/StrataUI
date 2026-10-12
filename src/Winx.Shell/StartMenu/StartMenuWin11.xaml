@@ -24,12 +24,15 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding HomeVisible, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
                     <Grid Margin="8,0,0,6">
-                        <TextBlock Style="{StaticResource StartSectionTitle}" Text="Anclado" />
+                        <TextBlock Style="{StaticResource StartSectionTitle}" Text="Anclado"
+                                   Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}" />
                         <ui:Button HorizontalAlignment="Right" Padding="10,4" Click="ShowAll_Click"
-                                   Content="Todas las apps  ›" />
+                                   Content="Todas las apps  ›"
+                                   Visibility="{Binding ShowAllAppsButton, Converter={StaticResource BoolToVis}}" />
                     </Grid>
                     <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTile}"
-                                  ItemsPanel="{StaticResource WrapItems}" />
+                                  ItemsPanel="{StaticResource WrapItems}"
+                                  Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}" />
 
                     <StackPanel Visibility="{Binding HasRecent, Converter={StaticResource BoolToVis}}">
                         <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,18,0,6" Text="Recientes" />

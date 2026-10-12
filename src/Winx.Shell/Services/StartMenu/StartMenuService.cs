@@ -96,6 +96,40 @@ public static class StartMenuService
     public static ObservableCollection<StartApp> Pinned { get; } = new();
 
     public static string UserName { get; } = GetUserDisplayName();
+
+    private static readonly Lazy<ImageSource?> Picture = new(LoadUserPicture);
+
+    /// <summary>Foto de la cuenta de Windows (null si no tiene).</summary>
+    public static ImageSource? UserPicture => Picture.Value;
+
+    /// <summary>Windows guarda la ruta de la foto, en varios tamaños, por SID del usuario.</summary>
+    private static ImageSource? LoadUserPicture()
+    {
+        try
+        {
+            var sid = System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value;
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                $@"SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users\{sid}");
+            var path = new[] { "Image192", "Image240", "Image96", "Image448" }
+                .Select(name => key?.GetValue(name) as string)
+                .FirstOrDefault(p => p != null && File.Exists(p));
+            if (path is null)
+                return null;
+            var image = new System.Windows.Media.Imaging.BitmapImage();
+            image.BeginInit();
+            image.UriSource = new Uri(path);
+            image.DecodePixelWidth = 96;
+            image.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo cargar la foto de la cuenta", ex);
+            return null;
+        }
+    }
     public static string UserInitials => string.Concat(UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                                                               .Take(2).Select(w => char.ToUpperInvariant(w[0])));
 
@@ -123,6 +157,15 @@ public static class StartMenuService
     public static void Shutdown() => _appsFolder?.Dispose();
 
     private static void Rebuild()
+    {
+        if (_appsFolder is null)
+            return;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        RebuildCore();
+        Log.Info($"Catálogo de apps: {Apps.Count} apps en {watch.ElapsedMilliseconds} ms");
+    }
+
+    private static void RebuildCore()
     {
         if (_appsFolder is null)
             return;

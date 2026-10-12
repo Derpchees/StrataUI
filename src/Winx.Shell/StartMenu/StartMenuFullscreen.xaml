@@ -24,12 +24,16 @@
             <ScrollViewer Grid.Row="1" Margin="0,32,0,0" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <StackPanel Visibility="{Binding HomeVisible, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Style="{StaticResource StartSectionTitle}" FontSize="16" Margin="8,0,0,8" Text="Anclado" />
-                        <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTileLarge}"
-                                      ItemsPanel="{StaticResource WrapItems}" />
-                        <TextBlock Style="{StaticResource StartSectionTitle}" FontSize="16" Margin="8,24,0,8" Text="Todas las apps" />
-                        <ItemsControl ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppTileLarge}"
-                                      ItemsPanel="{StaticResource WrapItems}" />
+                        <StackPanel Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Style="{StaticResource StartSectionTitle}" FontSize="16" Margin="8,0,0,8" Text="Anclado" />
+                            <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTileLarge}"
+                                          ItemsPanel="{StaticResource WrapItems}" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding ShowAllAppsButton, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Style="{StaticResource StartSectionTitle}" FontSize="16" Margin="8,24,0,8" Text="Todas las apps" />
+                            <ItemsControl ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppTileLarge}"
+                                          ItemsPanel="{StaticResource WrapItems}" />
+                        </StackPanel>
                     </StackPanel>
                     <StackPanel Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
                         <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppTileLarge}"

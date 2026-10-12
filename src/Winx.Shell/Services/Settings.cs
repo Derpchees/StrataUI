@@ -8,7 +8,9 @@ public enum TaskbarAlignment { Center, Left }
 
 public enum WinxTheme { System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material }
 
-public enum StartMenuStyle { Windows11, List, Fullscreen }
+public enum StartMenuStyle { Windows11, List, Fullscreen, Compact, Spotlight, Icons }
+
+public enum StartIconKind { Winx, Windows, WindowsMono, Circle, Dot, Grid, Search }
 
 /// <summary>Preferencias de WINX, guardadas en %LOCALAPPDATA%\WINX\settings.json.</summary>
 public sealed class WinxSettings
@@ -22,6 +24,13 @@ public sealed class WinxSettings
     // Menú Inicio
     public StartMenuStyle StartStyle { get; set; } = StartMenuStyle.Windows11;
     public bool StartShowRecent { get; set; } = true;
+    public bool StartShowPinned { get; set; } = true;
+    public bool StartShowAllApps { get; set; } = true;
+    public bool StartShowUser { get; set; } = true;
+    public bool StartShowUserPicture { get; set; } = true;
+    public StartIconKind StartIcon { get; set; } = StartIconKind.Winx;
+    /// <summary>Botones del pie del menú, en orden (IDs de StartFooterCatalog).</summary>
+    public List<string> StartFooterButtons { get; set; } = ["Explorer", "WinxSettings", "Power"];
     public bool StartUseWinKey { get; set; } = true;
     /// <summary>IDs de apps ancladas (AppUserModelID / nombre de análisis); null = primera vez.</summary>
     public List<string>? PinnedStartApps { get; set; }

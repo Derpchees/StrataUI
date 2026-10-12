@@ -15,7 +15,8 @@
                 <ResourceDictionary Source="Flyouts/FlyoutStyles.xaml" />
                 <ResourceDictionary Source="StartMenu/StartMenuStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <SolidColorBrush x:Key="WinxAccentBrush" Color="#FF0078D4" />
+            <!-- No definir aquí colores del tema: las claves de la raíz tienen prioridad sobre los
+                 diccionarios combinados y taparían la paleta que genera ThemeManager. -->
         </ResourceDictionary>
     </Application.Resources>
 </Application>
