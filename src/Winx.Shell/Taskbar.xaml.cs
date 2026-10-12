@@ -29,15 +29,16 @@ public partial class Taskbar : AppBarWindow
     private readonly DispatcherTimer _statusTimer;
 
     private readonly ICollectionView _taskView;
-    private bool _windowsPerMonitor;
+    private TaskbarAppsMode _appsMode;
 
-    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position)
+    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, bool isMain)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
                screen, EdgeOf(position), AppBarMode.Normal, ReservedSize(IsVerticalPosition(position)))
     {
         _shell = shell;
         _multiMonitor = multiMonitor;
         Position = position;
+        IsMain = isMain;
         InitializeComponent();
         if (IsVertical)
         {
@@ -45,13 +46,14 @@ public partial class Taskbar : AppBarWindow
             Width = DesiredWidth;
         }
         ApplyOrientation();
+        StartButton.ContextMenu = StartMenu.WinXMenu.Create(StartButton);
 
         VersionItem.Header = $"WINX v{App.Version}";
-        _windowsPerMonitor = Settings.Current.TaskbarWindowsPerMonitor;
+        _appsMode = WindowsTaskbarPrefs.AppsMode(Settings.Current);
         _taskView = CreateTaskView();
         TaskList.ItemsSource = _taskView;
 
-        if (screen.Primary)
+        if (isMain)
         {
             var tray = shell.NotificationArea;
             PinnedTray.ItemsSource = tray.PinnedIcons;
@@ -277,33 +279,51 @@ public partial class Taskbar : AppBarWindow
             StartButton.Content = StartIcons.Create(s.StartIcon);
             StartButton.Tag = s.StartIcon;
         }
-        // "Izquierda" en una barra vertical es arriba.
-        if (IsVertical)
-            TaskArea.VerticalAlignment = s.TaskbarAlignment == TaskbarAlignment.Left ? VerticalAlignment.Top : VerticalAlignment.Center;
-        else
-            TaskArea.HorizontalAlignment = s.TaskbarAlignment == TaskbarAlignment.Left
-                ? HorizontalAlignment.Left
-                : HorizontalAlignment.Center;
-        if (s.TaskbarWindowsPerMonitor != _windowsPerMonitor)
+        ApplyAlignment(WindowsTaskbarPrefs.Alignment(s) == TaskbarAlignment.Left, s.TaskbarCenterApps);
+        var appsMode = WindowsTaskbarPrefs.AppsMode(s);
+        if (appsMode != _appsMode)
         {
-            _windowsPerMonitor = s.TaskbarWindowsPerMonitor;
+            _appsMode = appsMode;
             _taskView.Refresh();
         }
+        // Red, Bluetooth, sonido y reloj: en todas las barras o solo en la principal.
+        bool status = IsMain || s.StatusOnAllTaskbars;
         DateText.Visibility = s.ShowDate ? Visibility.Visible : Visibility.Collapsed;
-        NetworkButton.Visibility = s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
-        BluetoothButton.Visibility = s.ShowBluetoothModule ? Visibility.Visible : Visibility.Collapsed;
-        VolumeButton.Visibility = s.ShowVolumeModule ? Visibility.Visible : Visibility.Collapsed;
+        NetworkButton.Visibility = status && s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
+        BluetoothButton.Visibility = status && s.ShowBluetoothModule ? Visibility.Visible : Visibility.Collapsed;
+        VolumeButton.Visibility = status && s.ShowVolumeModule ? Visibility.Visible : Visibility.Collapsed;
+        ClockButton.Visibility = status ? Visibility.Visible : Visibility.Collapsed;
         UpdateClock();
         UpdateStatus();
     }
 
+    /// <summary>
+    /// "Izquierda" pone Inicio y las apps juntos al principio de la barra (arriba si es vertical);
+    /// "Centro", juntos al centro. Con "centrar apps", Inicio queda al principio y las apps al
+    /// centro del espacio que sobra.
+    /// </summary>
+    private void ApplyAlignment(bool left, bool centerApps)
+    {
+        bool split = left && centerApps;
+        if (IsVertical)
+        {
+            TaskArea.VerticalAlignment = split ? VerticalAlignment.Stretch : left ? VerticalAlignment.Top : VerticalAlignment.Center;
+            TaskList.VerticalAlignment = split ? VerticalAlignment.Center : VerticalAlignment.Top;
+        }
+        else
+        {
+            TaskArea.HorizontalAlignment = split ? HorizontalAlignment.Stretch : left ? HorizontalAlignment.Left : HorizontalAlignment.Center;
+            TaskList.HorizontalAlignment = split ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+        }
+    }
+
+    /// <summary>Re-lee las preferencias de Windows que se siguen (alineación, apps por monitor).</summary>
+    public void RefreshFromWindows() => ApplySettings();
+
     private ICollectionView CreateTaskView()
     {
         var view = _shell.Tasks.CreateGroupedWindowsCollection();
-        view.Filter = item => item is ApplicationWindow window
-                              && window.ShowInTaskbar
-                              && (!_multiMonitor || !_windowsPerMonitor || window.HMonitor == Screen.HMonitor
-                                  || (Screen.Primary && !App.Current.HasTaskbarOn(window.HMonitor)));
+        view.Filter = item => item is ApplicationWindow window && window.ShowInTaskbar && Shows(window);
 
         if (view is ICollectionViewLiveShaping live && live.CanChangeLiveFiltering)
         {
@@ -315,6 +335,17 @@ public partial class Taskbar : AppBarWindow
     }
 
     public void RefreshTasks() => _taskView.Refresh();
+
+    /// <summary>
+    /// Si esta barra muestra la ventana, según el modo (como en Windows): en todas, en la principal y
+    /// en la de su monitor, o solo en la de su monitor. Las ventanas de un monitor sin barra van a la principal.
+    /// </summary>
+    private bool Shows(ApplicationWindow window)
+    {
+        if (!_multiMonitor || _appsMode == TaskbarAppsMode.AllTaskbars || window.HMonitor == Screen.HMonitor)
+            return true;
+        return IsMain && (_appsMode == TaskbarAppsMode.MainAndOwn || !App.Current.HasTaskbarOn(window.HMonitor));
+    }
 
     private void UpdateChevron() =>
         ChevronButton.Visibility = _shell.NotificationArea.UnpinnedIcons
@@ -371,7 +402,8 @@ public partial class Taskbar : AppBarWindow
         NetworkGlyph.Opacity = network.Connected ? 1 : 0.4;
         NetworkButton.ToolTip = network.Description;
 
-        var battery = Settings.Current.ShowBatteryModule ? SystemStatus.GetBattery() : null;
+        bool status = IsMain || Settings.Current.StatusOnAllTaskbars;
+        var battery = status && Settings.Current.ShowBatteryModule ? SystemStatus.GetBattery() : null;
         BatteryButton.Visibility = battery is null ? Visibility.Collapsed : Visibility.Visible;
         if (battery != null)
         {
@@ -398,7 +430,15 @@ public partial class Taskbar : AppBarWindow
     /// <summary>Botón Inicio (lo usa también la tecla Windows para anclar el menú).</summary>
     public FrameworkElement StartAnchor => StartButton;
 
-    public bool IsPrimary => Screen.Primary;
+    /// <summary>Menú del clic derecho en Inicio, abierto con el teclado (Win+X).</summary>
+    public void ShowWinXMenu()
+    {
+        if (StartButton.ContextMenu is { } menu)
+            StartMenu.WinXMenu.ShowAt(menu, StartButton, Position);
+    }
+
+    /// <summary>Barra principal de WINX (bandeja del sistema, tecla Windows); elegible en el Hub.</summary>
+    public bool IsMain { get; }
 
     private void StartButton_Click(object sender, RoutedEventArgs e) =>
         StartMenu.StartMenuLauncher.Toggle(StartButton);

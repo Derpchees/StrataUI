@@ -17,10 +17,22 @@
                         <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Posición del botón Inicio y de las apps abiertas (en barras verticales, Izquierda es arriba)'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ComboBox x:Name="AlignmentBox" MinWidth="160" SelectionChanged="Alignment_Changed">
-                    <ComboBoxItem Content="{l:T 'Centro'}" />
-                    <ComboBoxItem Content="{l:T 'Izquierda'}" />
+                <ComboBox x:Name="AlignmentBox" MinWidth="200" SelectionChanged="Alignment_Changed">
+                    <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="Windows" />
+                    <ComboBoxItem Content="{l:T 'Centro'}" Tag="Center" />
+                    <ComboBoxItem Content="{l:T 'Izquierda'}" Tag="Left" />
                 </ComboBox>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CenterHorizontal24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Centrar las apps abiertas'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Con Inicio a la izquierda, las apps quedan igual al centro de la barra.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="CenterAppsSwitch" Click="CenterApps_Click" />
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
@@ -43,16 +55,46 @@
                        Text="{l:T 'Cada monitor tiene su propia barra; elige en qué borde va. Numerados de izquierda a derecha.'}" />
             <StackPanel x:Name="MonitorList" />
 
-            <ui:CardControl x:Name="PerMonitorCard" Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple16" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Cada barra muestra solo las ventanas de su monitor'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Desactivado, todas las barras muestran todas las ventanas.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="PerMonitorSwitch" Click="PerMonitor_Click" />
-            </ui:CardControl>
+            <!-- Opciones de varios monitores (ocultas con uno solo) -->
+            <StackPanel x:Name="MultiMonitorOptions">
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Star24" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor principal de WINX'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Lleva la bandeja del sistema y abre el menú con la tecla Windows. No cambia el monitor principal de Windows.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox x:Name="MainScreenBox" MinWidth="200" SelectionChanged="MainScreen_Changed" />
+                </ui:CardControl>
+
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple16" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar las apps abiertas en'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'En qué barras aparece cada ventana.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox x:Name="AppsModeBox" MinWidth="260" SelectionChanged="AppsMode_Changed">
+                        <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="Windows" />
+                        <ComboBoxItem Content="{l:T 'Todas las barras'}" Tag="AllTaskbars" />
+                        <ComboBoxItem Content="{l:T 'La principal y la del monitor de la ventana'}" Tag="MainAndOwn" />
+                        <ComboBoxItem Content="{l:T 'Solo la del monitor de la ventana'}" Tag="OwnOnly" />
+                    </ComboBox>
+                </ui:CardControl>
+
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Speaker224" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Red, Bluetooth, sonido y reloj en todas las barras'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Desactivado, solo aparecen en la barra principal, junto a la bandeja.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="StatusAllSwitch" Click="StatusAll_Click" />
+                </ui:CardControl>
+            </StackPanel>
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Reloj'}" />
 

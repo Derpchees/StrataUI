@@ -13,6 +13,8 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   texto español es la clave; ver `Services/Localization/Loc.cs`):
   - XAML: `Text="{l:T 'Mostrar fecha'}"` (con `xmlns:l="clr-namespace:Winx.Shell.Services.Localization"`).
   - C#: `Loc.T("Sin conexión")`; con datos, `Loc.F("Volumen: {0}%", percent)` (nada de `$"..."`).
+    Siempre con el texto literal dentro de la llamada: la prueba solo ve `Loc.T("...")`, no
+    `Loc.T(variable)` (un ayudante que recibe el texto debe recibirlo ya traducido).
   - Agregar la traducción en `src/Winx.Shell/Localization/en.json`. La prueba
     `LocalizationTests` falla si falta alguna o si no coinciden los huecos `{0}`.
   - Un idioma nuevo es otro `xx.json` más su código en `Loc.Translated`.

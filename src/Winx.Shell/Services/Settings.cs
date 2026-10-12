@@ -5,7 +5,11 @@ using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services;
 
-public enum TaskbarAlignment { Center, Left }
+/// <summary>Alineación de Inicio y las apps; "Windows" sigue la de la barra de Windows.</summary>
+public enum TaskbarAlignment { Center, Left, Windows }
+
+/// <summary>En qué barras aparece cada ventana abierta (las mismas opciones que Windows).</summary>
+public enum TaskbarAppsMode { Windows, AllTaskbars, MainAndOwn, OwnOnly }
 
 /// <summary>Borde de la pantalla donde va la barra.</summary>
 public enum TaskbarPosition { Bottom, Top, Left, Right }
@@ -42,13 +46,18 @@ public enum StartIconKind { Winx, Windows, WindowsMono, Circle, Dot, Grid, Searc
 public sealed class WinxSettings
 {
     // Barra de tareas
-    public TaskbarAlignment TaskbarAlignment { get; set; } = TaskbarAlignment.Center;
+    public TaskbarAlignment TaskbarAlignment { get; set; } = TaskbarAlignment.Windows;
+    /// <summary>Las apps abiertas quedan al centro de la barra aunque Inicio esté a la izquierda.</summary>
+    public bool TaskbarCenterApps { get; set; }
+    /// <summary>Monitor principal de WINX (bandeja, tecla Windows); null = el principal de Windows.</summary>
+    public string? TaskbarMainScreen { get; set; }
+    /// <summary>Red, Bluetooth, sonido, batería y reloj en todas las barras (false: solo en la principal).</summary>
+    public bool StatusOnAllTaskbars { get; set; } = true;
+    public TaskbarAppsMode TaskbarAppsMode { get; set; } = TaskbarAppsMode.Windows;
     /// <summary>Posición de la barra en cada monitor (clave: nombre del dispositivo, "\\.\DISPLAY1"); abajo si no está.</summary>
     public Dictionary<string, TaskbarPosition> TaskbarPositions { get; set; } = new();
     /// <summary>Monitores sin barra de WINX (nunca el principal: ahí va la bandeja).</summary>
     public List<string> TaskbarHiddenScreens { get; set; } = new();
-    /// <summary>En cada barra, solo las ventanas de su monitor (false: todas en todas).</summary>
-    public bool TaskbarWindowsPerMonitor { get; set; } = true;
 
     public TaskbarPosition PositionOf(string screen) =>
         TaskbarPositions.TryGetValue(screen, out var position) ? position : TaskbarPosition.Bottom;

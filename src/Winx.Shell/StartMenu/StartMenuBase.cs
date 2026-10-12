@@ -53,7 +53,7 @@ public abstract class StartMenuBase : FlyoutWindow
     protected override bool ScrollContent => false;
 
     protected override FlyoutPlacement Placement =>
-        Settings.Current.TaskbarAlignment == TaskbarAlignment.Left ? FlyoutPlacement.Left : FlyoutPlacement.Center;
+        WindowsTaskbarPrefs.Alignment(Settings.Current) == TaskbarAlignment.Left ? FlyoutPlacement.Left : FlyoutPlacement.Center;
 
     protected override bool HandleEscape()
     {

@@ -136,10 +136,13 @@ public partial class App : Application
         TrayPromotion.Attach(_shell.NotificationArea);
         Services.StartMenu.StartMenuService.Initialize();
         Services.StartMenu.WinKeyHook.WinPressed += OnWinKey;
+        Services.StartMenu.WinKeyHook.WinXPressed += () =>
+            (_taskbars.FirstOrDefault(t => t.IsMain) ?? _taskbars.FirstOrDefault())?.ShowWinXMenu();
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey);
         OpenTaskbars();
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
+        SystemEvents.UserPreferenceChanged += OnWindowsPreferenceChanged;
         Settings.Changed += OnSettingsChanged;
         _barHeight = Taskbar.ReservedSize(vertical: false);
 
@@ -185,13 +188,15 @@ public partial class App : Application
         bool multiMonitor = screens.Count > 1;
         var s = Settings.Current;
 
-        // La barra principal primero, para que reciba la bandeja del sistema. El monitor principal
-        // siempre tiene barra; los demás pueden ocultarla.
-        foreach (var screen in screens.OrderByDescending(s => s.Primary))
+        // La barra principal (de WINX, no necesariamente la de Windows) primero, para que reciba
+        // la bandeja del sistema. Esa siempre existe; las demás pueden ocultarse.
+        string main = MainScreenDevice(screens.Select(sc => (sc.DeviceName, sc.Primary)));
+        foreach (var screen in screens.OrderByDescending(sc => sc.DeviceName == main))
         {
-            if (!screen.Primary && s.TaskbarHiddenScreens.Contains(screen.DeviceName))
+            bool isMain = screen.DeviceName == main;
+            if (!isMain && s.TaskbarHiddenScreens.Contains(screen.DeviceName))
                 continue;
-            var taskbar = new Taskbar(_shell!, screen, multiMonitor, s.PositionOf(screen.DeviceName));
+            var taskbar = new Taskbar(_shell!, screen, multiMonitor, s.PositionOf(screen.DeviceName), isMain);
             taskbar.Show();
             _taskbars.Add(taskbar);
         }
@@ -203,12 +208,25 @@ public partial class App : Application
     /// <summary>Hay una barra de WINX en ese monitor.</summary>
     public bool HasTaskbarOn(IntPtr hMonitor) => _taskbars.Any(t => t.Screen.HMonitor == hMonitor);
 
-    /// <summary>Lo que obliga a recrear las barras: posición por monitor y monitores sin barra.</summary>
+    /// <summary>
+    /// Monitor principal de WINX: el elegido en el Hub si sigue conectado; si no, el de Windows.
+    /// </summary>
+    internal static string MainScreenDevice(IEnumerable<(string Device, bool Primary)> screens)
+    {
+        var list = screens.ToList();
+        string? chosen = Settings.Current.TaskbarMainScreen;
+        if (chosen != null && list.Any(sc => sc.Device == chosen))
+            return chosen;
+        return list.FirstOrDefault(sc => sc.Primary).Device ?? list.FirstOrDefault().Device ?? "";
+    }
+
+    /// <summary>Lo que obliga a recrear las barras: posición por monitor, monitores sin barra y principal.</summary>
     private static string BarLayoutKey()
     {
         var s = Settings.Current;
         return string.Join(";", s.TaskbarPositions.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
-               + "|" + string.Join(";", s.TaskbarHiddenScreens.Order());
+               + "|" + string.Join(";", s.TaskbarHiddenScreens.Order())
+               + "|" + s.TaskbarMainScreen;
     }
 
     private string _barLayout = "";
@@ -237,10 +255,23 @@ public partial class App : Application
         });
     }
 
+    /// <summary>
+    /// Windows avisa cuando cambian sus preferencias (p. ej. la alineación de su barra): las barras
+    /// que las siguen las vuelven a leer.
+    /// </summary>
+    private void OnWindowsPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e) =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (_exiting)
+                return;
+            foreach (var taskbar in _taskbars)
+                taskbar.RefreshFromWindows();
+        });
+
     /// <summary>Tecla Windows: abre el menú Inicio de la barra principal.</summary>
     private void OnWinKey()
     {
-        var taskbar = _taskbars.FirstOrDefault(t => t.IsPrimary) ?? _taskbars.FirstOrDefault();
+        var taskbar = _taskbars.FirstOrDefault(t => t.IsMain) ?? _taskbars.FirstOrDefault();
         if (taskbar != null)
             StartMenu.StartMenuLauncher.Toggle(taskbar.StartAnchor);
     }
@@ -340,6 +371,7 @@ public partial class App : Application
         Log.Info(restart ? "Reiniciando WINX" : "Cerrando WINX");
 
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
+        SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
         Services.StartMenu.WinKeyHook.Update(false);
         Services.StartMenu.StartMenuService.Shutdown();

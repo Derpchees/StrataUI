@@ -6,6 +6,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.11.0] - 2026-10-11
+
+### Añadido
+- **Monitor principal de WINX**, independiente del de Windows: lleva la bandeja del sistema y abre
+  el menú con la tecla Windows.
+- Opción para mostrar red, Bluetooth, sonido y reloj en todas las barras o solo en la principal.
+- **Alineación "Igual que Windows"** (nueva opción por defecto): sigue la de la barra de Windows,
+  también si se cambia mientras WINX está abierto.
+- **Mostrar las apps abiertas en**: igual que Windows, todas las barras, la principal y la del
+  monitor de la ventana, o solo la de su monitor (reemplaza el interruptor anterior).
+- **Centrar las apps abiertas** aunque Inicio esté a la izquierda.
+- **Clic derecho en Inicio y Win+X**: el menú de Windows con sus opciones (aplicaciones instaladas,
+  energía, visor de eventos, administrador de dispositivos, discos, Terminal y Terminal como
+  administrador, Ejecutar, apagar o cerrar sesión, escritorio…), junto al botón en cualquier borde.
+
 ## [0.10.0] - 2026-10-11
 
 ### Añadido
