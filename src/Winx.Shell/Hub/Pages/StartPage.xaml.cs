@@ -31,6 +31,7 @@ public partial class StartPage : Page
         StyleDescription.Text = Descriptions[(int)s.StartStyle];
         IconSizeBox.SelectedIndex = (int)s.StartIconSize;
         PinnedSwitch.IsChecked = s.StartShowPinned;
+        PinnedLabelsSwitch.IsChecked = s.StartShowPinnedLabels;
         AllAppsSwitch.IsChecked = s.StartShowAllApps;
         RecentSwitch.IsChecked = s.StartShowRecent;
         UserSwitch.IsChecked = s.StartShowUser;
@@ -58,6 +59,7 @@ public partial class StartPage : Page
     private void Options_Changed(object sender, RoutedEventArgs e) => Settings.Update(s =>
     {
         s.StartShowPinned = PinnedSwitch.IsChecked == true;
+        s.StartShowPinnedLabels = PinnedLabelsSwitch.IsChecked == true;
         s.StartShowAllApps = AllAppsSwitch.IsChecked == true;
         s.StartShowRecent = RecentSwitch.IsChecked == true;
         s.StartShowUser = UserSwitch.IsChecked == true;

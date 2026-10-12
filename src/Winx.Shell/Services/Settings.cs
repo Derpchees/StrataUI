@@ -59,6 +59,8 @@ public sealed class WinxSettings
     /// <summary>Anclados organizados en secciones y carpetas; null = primera vez.</summary>
     public List<PinSection>? StartLayout { get; set; }
     public StartIconSize StartIconSize { get; set; } = StartIconSize.Medium;
+    /// <summary>Nombres debajo de las apps ancladas (sin ellos, el nombre queda en el tooltip).</summary>
+    public bool StartShowPinnedLabels { get; set; } = true;
     /// <summary>Tamaño elegido por el usuario para cada estilo de menú: [ancho, alto] en DIP.</summary>
     public Dictionary<string, double[]> StartMenuSizes { get; set; } = new();
 

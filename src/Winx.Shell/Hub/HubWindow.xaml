@@ -4,6 +4,7 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:pages="clr-namespace:Winx.Shell.Hub.Pages"
                  Title="WINX"
+                 Icon="pack://application:,,,/Assets/winx.ico"
                  Width="1040" Height="720" MinWidth="780" MinHeight="520"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
@@ -15,7 +16,11 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <ui:TitleBar x:Name="HubTitleBar" Grid.Row="0" Title="WINX" />
+        <ui:TitleBar x:Name="HubTitleBar" Grid.Row="0" Title="WINX">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Assets/winx.ico" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
 
         <ui:NavigationView x:Name="Nav" Grid.Row="1"
                            PaneDisplayMode="Left"

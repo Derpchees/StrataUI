@@ -42,6 +42,17 @@
                 </ComboBox>
             </ui:CardControl>
 
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="TextCaseTitle24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Nombres de las apps ancladas" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Sin ellos el menú queda más limpio; el nombre aparece al pasar el mouse." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="PinnedLabelsSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="Ícono del botón Inicio" />
             <WrapPanel x:Name="IconGallery" Margin="0,0,0,4" />
 

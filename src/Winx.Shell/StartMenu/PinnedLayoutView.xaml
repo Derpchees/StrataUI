@@ -20,8 +20,8 @@
                 </Button.ContextMenu>
                 <StackPanel>
                     <Image Source="{Binding Icon}" Width="{DynamicResource StartTileIconSize}" Height="{DynamicResource StartTileIconSize}"
-                           Margin="0,0,0,6" RenderOptions.BitmapScalingMode="HighQuality" />
-                    <TextBlock Text="{Binding Name}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap"
+                           Margin="{DynamicResource StartTileIconMargin}" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <TextBlock Text="{Binding Name}" FontSize="12" Visibility="{DynamicResource StartTileLabelVisibility}" TextAlignment="Center" TextWrapping="Wrap"
                                TextTrimming="CharacterEllipsis" MaxHeight="32" HorizontalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                 </StackPanel>
@@ -42,7 +42,7 @@
                     </ContextMenu>
                 </Button.ContextMenu>
                 <StackPanel>
-                    <Border Width="{DynamicResource StartTileIconSize}" Height="{DynamicResource StartTileIconSize}" Margin="0,0,0,6"
+                    <Border Width="{DynamicResource StartTileIconSize}" Height="{DynamicResource StartTileIconSize}" Margin="{DynamicResource StartTileIconMargin}"
                             CornerRadius="{DynamicResource WinxCornerRadius}" Background="{DynamicResource WinxSurfaceBrush}" Padding="3">
                         <ItemsControl ItemsSource="{Binding Preview}">
                             <ItemsControl.ItemsPanel>
@@ -57,7 +57,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </Border>
-                    <TextBlock Text="{Binding Name}" FontSize="12" TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                    <TextBlock Text="{Binding Name}" FontSize="12" Visibility="{DynamicResource StartTileLabelVisibility}" TextAlignment="Center" TextTrimming="CharacterEllipsis"
                                HorizontalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                 </StackPanel>
             </Button>

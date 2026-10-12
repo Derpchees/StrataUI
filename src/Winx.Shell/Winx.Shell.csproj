@@ -11,6 +11,7 @@
     <AssemblyName>WINX</AssemblyName>
     <RootNamespace>Winx.Shell</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\winx.ico</ApplicationIcon>
     <!-- El DPI lo declara el manifiesto (correcto para WPF); el aviso es solo para apps WinForms. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
@@ -23,6 +24,10 @@
     <!-- WinForms solo se usa para Screen/SystemInformation; evitamos choques de nombres con WPF. -->
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\winx.ico" />
   </ItemGroup>
 
   <ItemGroup>

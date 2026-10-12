@@ -170,9 +170,13 @@ public static class StartMenuService
             StartIconSize.Large => (44.0, 30.0, 50.0, 64.0),
             _ => (32.0, 24.0, 38.0, 48.0),
         };
+        bool labels = Settings.Current.StartShowPinnedLabels;
         var resources = Application.Current.Resources;
         resources["StartTileIconSize"] = tile;
-        resources["StartTileWidth"] = tile * 3;
+        // Sin nombres, el mosaico solo necesita el ícono y su margen.
+        resources["StartTileWidth"] = labels ? tile * 3 : tile + 32;
+        resources["StartTileLabelVisibility"] = labels ? Visibility.Visible : Visibility.Collapsed;
+        resources["StartTileIconMargin"] = new Thickness(0, 0, 0, labels ? 6 : 0);
         resources["StartRowIconSize"] = row;
         resources["StartGridIconSize"] = grid;
         resources["StartGridButtonSize"] = grid + 26;
