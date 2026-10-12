@@ -14,6 +14,7 @@ public partial class TaskButton : UserControl
     public TaskButton()
     {
         InitializeComponent();
+        Root.SizeChanged += (_, _) => UpdateStackShape();
         MouseEnter += (_, _) =>
         {
             // La vista previa ya muestra el título: el tooltip la taparía.
@@ -105,9 +106,10 @@ public partial class TaskButton : UserControl
         // La placa siempre a la vista (más tenue si ninguna está activa), dejando sitio al borde de atrás.
         ActiveBackground.Visibility = Visibility.Visible;
         ActiveBackground.Opacity = active ? 1 : 0.5;
-        StackEdge.Opacity = active ? 0.7 : 0.4;
-        ActiveBackground.Margin = _vertical ? new Thickness(0, 0, 0, 4) : new Thickness(0, 0, 4, 0);
+        StackEdge.Opacity = ActiveBackground.Opacity * 0.6;
+        ActiveBackground.Margin = _vertical ? new Thickness(0, 0, 0, StackOffset) : new Thickness(0, 0, StackOffset, 0);
         IconHost.Margin = ActiveBackground.Margin; // centrado sobre la placa
+        UpdateStackShape();
         Indicator.Width = active || flashing ? 16 : 6;
         if (flashing && !active)
             Indicator.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE8, 0xA3, 0x3D));
@@ -115,25 +117,35 @@ public partial class TaskButton : UserControl
             Indicator.SetResourceReference(Border.BackgroundProperty, active ? "WinxAccentBrush" : "WinxInactiveIndicatorBrush");
     }
 
+    private const double StackOffset = 4;
+    private bool _vertical;
+
+    /// <summary>
+    /// La tarjeta de atrás: del mismo tamaño que la placa, corrida hacia el lado (abajo en vertical) y
+    /// un poco más baja; solo se dibuja lo que asoma, pegado a la placa, para que se lea como una pila.
+    /// </summary>
+    private void UpdateStackShape()
+    {
+        double w = Root.ActualWidth, h = Root.ActualHeight;
+        if (StackEdge.Visibility != Visibility.Visible || w <= 0 || h <= 0)
+            return;
+        double r = ActiveBackground.CornerRadius.TopLeft;
+        const double inset = 5;
+        var front = _vertical ? new Rect(0, 0, w, h - StackOffset) : new Rect(0, 0, w - StackOffset, h);
+        var back = _vertical
+            ? new Rect(inset, StackOffset, w - 2 * inset, h - StackOffset)
+            : new Rect(StackOffset, inset, w - StackOffset, h - 2 * inset);
+        StackEdge.Data = new System.Windows.Media.CombinedGeometry(System.Windows.Media.GeometryCombineMode.Exclude,
+            new System.Windows.Media.RectangleGeometry(back, r, r), new System.Windows.Media.RectangleGeometry(front, r, r));
+    }
+
     /// <summary>
     /// El indicador va junto al borde de la pantalla, como en Windows; en barras verticales se gira y el
     /// botón toma un alto fijo (en las horizontales lo da el alto de la barra).
     /// </summary>
-    private bool _vertical;
-
     private void FitTo(TaskbarPosition position)
     {
         _vertical = position is TaskbarPosition.Left or TaskbarPosition.Right;
-        if (_vertical)
-        {
-            // En vertical las ventanas se apilan hacia abajo.
-            StackEdge.Width = double.NaN;
-            StackEdge.Height = 3;
-            StackEdge.Margin = new Thickness(6, 0, 6, 0);
-            StackEdge.HorizontalAlignment = HorizontalAlignment.Stretch;
-            StackEdge.VerticalAlignment = VerticalAlignment.Bottom;
-            StackEdge.CornerRadius = new CornerRadius(0, 0, 3, 3);
-        }
         switch (position)
         {
             case TaskbarPosition.Top:

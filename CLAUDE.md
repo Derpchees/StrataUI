@@ -196,7 +196,12 @@ tecla Windows, Win+N).
   `EnumWindows` ni se mueve con `SetWindowPos`) y entonces la bandeja de WINX queda vacía. La
   barra clásica `ToolbarWindow32` del Explorador ya no existe, así que no hay de dónde importarlos.
   `Services/TrayOwnership` vigila cuál es la primera y, cuando pasa a ser la de WINX, difunde
-  "TaskbarCreated" para que las apps vuelvan a registrar sus íconos.
+  "TaskbarCreated" para que las apps vuelvan a registrar sus íconos. Muchas apps no lo atienden
+  (Spotify, ControlCenter4): `Services/TrayMemory` guarda los íconos en `tray-icons.json` y al
+  iniciar se los manda a sí mismo (WM_COPYDATA con las estructuras de ManagedShell) si la ventana de
+  la app sigue viva. Lo que una app así registró en el Explorador no se puede traer (ni la barra
+  clásica ni `ITrayNotify` responden en 26300): solo vuelve si la app se reinicia.
+  Diagnóstico: con la variable `WINX_SHELL_LOG=ruta`, ManagedShell escribe su registro detallado.
 - **Claves de íconos de la bandeja**: `NotifyIcon.Identifier` lleva el texto emergente si el
   ícono no tiene GUID (cambia con el tiempo); para guardar usar `TrayPromotion.Key`/`Matches`.
 - **Barras verticales**: cualquier cosa nueva en la barra debe funcionar en los cuatro bordes

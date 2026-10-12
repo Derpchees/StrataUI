@@ -134,6 +134,15 @@ public partial class App : Application
         ThemeManager.Initialize();
         Services.Themes.WindowsTheming.Initialize();
 
+        // Diagnóstico: con WINX_SHELL_LOG=ruta, ManagedShell escribe su registro detallado (bandeja, tareas).
+        if (Environment.GetEnvironmentVariable("WINX_SHELL_LOG") is { Length: > 0 } shellLog)
+        {
+            var file = new ManagedShell.Common.Logging.Observers.FileLog(shellLog);
+            file.Open();
+            ManagedShell.Common.Logging.ShellLogger.Severity = ManagedShell.Common.Logging.LogSeverity.Debug;
+            ManagedShell.Common.Logging.ShellLogger.Attach(file, false);
+        }
+
         var config = ShellManager.DefaultShellConfig;
         config.TaskIconSize = IconSize.Large;
         config.MultiMonAwareTasksService = true;
@@ -142,6 +151,7 @@ public partial class App : Application
         _shell = new ShellManager(config);
 
         TrayPromotion.Attach(_shell.NotificationArea);
+        TrayMemory.Attach(_shell.NotificationArea, TrayOwnership.OwnTrayWindow());
         TrayOwnership.Start();
         SystemStatus.Initialize();
         Services.StartMenu.StartMenuService.Initialize();
@@ -471,6 +481,7 @@ public partial class App : Application
         SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
         TrayOwnership.Stop();
+        TrayMemory.Flush();
         Services.StartMenu.WinKeyHook.Update(false, false);
         Services.Notifications.NotificationService.Shutdown();
         Services.Notifications.WindowsBanners.Restore();

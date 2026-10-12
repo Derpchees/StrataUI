@@ -41,6 +41,7 @@ public static class TrayOwnership
             {
                 Log.Info("La bandeja de WINX vuelve a recibir los íconos: se piden de nuevo a las apps");
                 SendNotifyMessage(HwndBroadcast, TaskbarCreated, IntPtr.Zero, IntPtr.Zero);
+                Task.Delay(5000).ContinueWith(_ => System.Windows.Application.Current?.Dispatcher.BeginInvoke(LogIcons));
             }
             else
             {
@@ -54,6 +55,15 @@ public static class TrayOwnership
         }
     }
 
+    /// <summary>Qué íconos tiene la bandeja (para comparar con los de Windows al revisar el registro).</summary>
+    private static void LogIcons()
+    {
+        var icons = App.Current.Shell.NotificationArea.TrayIcons.ToList();
+        Log.Info($"Bandeja: {icons.Count} íconos: " + string.Join(" | ", icons.Select(i =>
+            $"{System.IO.Path.GetFileName(i.Path)} \"{i.Title?.Split('\n')[0]}\""
+            + (i.IsPinned ? " [anclado]" : "") + (i.IsHidden ? " [escondido por la app]" : ""))));
+    }
+
     private static bool IsOurs(IntPtr hwnd)
     {
         if (hwnd == IntPtr.Zero)
@@ -62,18 +72,24 @@ public static class TrayOwnership
         return pid == OwnPid;
     }
 
-    /// <summary>Intenta poner la ventana de WINX delante de la del Explorador (no siempre se puede).</summary>
-    private static void RaiseOwn()
+    /// <summary>La ventana Shell_TrayWnd que creó ManagedShell para WINX.</summary>
+    public static IntPtr OwnTrayWindow()
     {
         var hwnd = IntPtr.Zero;
         while ((hwnd = FindWindowEx(IntPtr.Zero, hwnd, "Shell_TrayWnd", null)) != IntPtr.Zero)
         {
             if (IsOurs(hwnd))
-            {
-                SetWindowPos(hwnd, HwndTopmost, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
-                return;
-            }
+                return hwnd;
         }
+        return IntPtr.Zero;
+    }
+
+    /// <summary>Intenta poner la ventana de WINX delante de la del Explorador (no siempre se puede).</summary>
+    private static void RaiseOwn()
+    {
+        var hwnd = OwnTrayWindow();
+        if (hwnd != IntPtr.Zero)
+            SetWindowPos(hwnd, HwndTopmost, 0, 0, 0, 0, SwpNoMove | SwpNoSize | SwpNoActivate);
     }
 
     private static readonly IntPtr HwndBroadcast = new(0xffff);

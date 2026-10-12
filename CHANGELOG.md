@@ -6,6 +6,15 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.16.3] - 2026-10-12
+
+### Corregido
+- **Íconos de la bandeja que se perdían al reiniciar WINX** (Spotify, ControlCenter4 de Brother y
+  cualquier app que registra su ícono una sola vez): WINX recuerda los íconos que tiene y, al volver
+  a abrir, los devuelve mientras la app siga abierta; los clics le llegan como siempre.
+- El apilado de las ventanas agrupadas ya no parece una raya suelta: la tarjeta de atrás va pegada a
+  la placa.
+
 ## [0.16.2] - 2026-10-12
 
 ### Cambiado

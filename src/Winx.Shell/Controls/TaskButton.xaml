@@ -11,9 +11,7 @@
         </Button.ContextMenu>
         <Grid x:Name="Root" Width="44">
             <!-- Varias ventanas agrupadas: el borde de otra "tarjeta" asoma detrás, como en Windows (ver UpdateGroup) -->
-            <Border x:Name="StackEdge" Visibility="Collapsed" Width="3" Margin="0,6"
-                    HorizontalAlignment="Right" CornerRadius="0,3,3,0"
-                    Background="{DynamicResource WinxActiveTaskBrush}" />
+            <Path x:Name="StackEdge" Visibility="Collapsed" Fill="{DynamicResource WinxActiveTaskBrush}" />
             <Border x:Name="ActiveBackground" CornerRadius="{DynamicResource WinxCornerRadius}" Background="{DynamicResource WinxActiveTaskBrush}">
                 <Border.Style>
                     <Style TargetType="Border">
