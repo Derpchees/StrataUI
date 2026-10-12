@@ -1,21 +1,31 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Winx.Shell.Services.Audio;
 
 /// <summary>
 /// Cambia el dispositivo de audio predeterminado. Windows no ofrece API pública para esto;
 /// IPolicyConfig es la interfaz COM (no documentada) que usa la propia configuración de sonido.
+/// (Su SetPropertyValue no guarda nada sin permisos de administrador: las propiedades del
+/// dispositivo, como las mejoras de audio, solo las escriben el servicio de audio o un administrador.)
 /// </summary>
 internal static class PolicyConfig
 {
-    public static void SetDefaultEndpoint(string deviceId)
+    public enum Roles { All, Communications }
+
+    public static void SetDefaultEndpoint(string deviceId, Roles roles = Roles.All) => Use(policy =>
+    {
+        // eConsole = 0, eMultimedia = 1, eCommunications = 2
+        int first = roles == Roles.Communications ? 2 : 0;
+        for (int role = first; role <= 2; role++)
+            Marshal.ThrowExceptionForHR(policy.SetDefaultEndpoint(deviceId, role));
+    });
+
+    private static void Use(Action<IPolicyConfig> action)
     {
         var policy = (IPolicyConfig)new PolicyConfigClient();
         try
         {
-            // eConsole, eMultimedia, eCommunications
-            for (int role = 0; role <= 2; role++)
-                Marshal.ThrowExceptionForHR(policy.SetDefaultEndpoint(deviceId, role));
+            action(policy);
         }
         finally
         {

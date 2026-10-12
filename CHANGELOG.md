@@ -10,6 +10,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Ícono de WINX en el ejecutable y en la ventana del Hub.
 - Opción para mostrar u ocultar los nombres de las apps ancladas en el menú Inicio (sin ellos, el
   nombre aparece al pasar el mouse).
+- Panel de sonido rediseñado:
+  - Salida y entrada, cada una con su volumen y sus dispositivos como mosaicos cuadrados con
+    ícono según el tipo (bocinas, audífonos, diadema, monitor, digital, Bluetooth, micrófono).
+  - Opciones de cada dispositivo: nivel en vivo (en micrófonos, para probarlo), balance
+    izquierda/derecha y usarlo como predeterminado para llamadas.
+
+### Corregido
+- El dispositivo de entrada predeterminado y su volumen no se mostraban en ninguna parte.
 
 ## [0.7.0] - 2026-10-11
 
