@@ -82,7 +82,9 @@
                 <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
                 <StackPanel x:Name="StatusPanel" Grid.Column="1" Orientation="Horizontal">
                     <!-- Lo que suena ahora (cualquier app que se anuncie a Windows); clic central: pausa -->
-                    <Button x:Name="MediaButton" Style="{StaticResource TaskbarButton}" Padding="6,0" Visibility="Collapsed"
+                    <!-- Multimedia: carátula y texto (clic: panel; clic central: pausa) y controles en la barra -->
+                    <StackPanel x:Name="MediaModule" Orientation="Horizontal" Visibility="Collapsed">
+                    <Button x:Name="MediaButton" Style="{StaticResource TaskbarButton}" Padding="6,0"
                             Click="MediaButton_Click" MouseUp="MediaButton_MouseUp">
                         <StackPanel x:Name="MediaContent" Orientation="Horizontal">
                             <Border Width="28" Height="28" CornerRadius="5" VerticalAlignment="Center"
@@ -102,6 +104,20 @@
                             </StackPanel>
                         </StackPanel>
                     </Button>
+                    <StackPanel x:Name="MediaControls" Orientation="Horizontal" Margin="0,0,4,0">
+                        <Button x:Name="MediaPrevious" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"
+                                ToolTip="{l:T 'Anterior'}" Click="MediaPrevious_Click">
+                            <TextBlock Style="{StaticResource IconText}" FontSize="12" Text="&#xE892;" />
+                        </Button>
+                        <Button x:Name="MediaPlay" Style="{StaticResource TaskbarButton}" Width="28" Padding="0" Click="MediaPlay_Click">
+                            <TextBlock x:Name="MediaPlayGlyph" Style="{StaticResource IconText}" FontSize="14" Text="&#xE768;" />
+                        </Button>
+                        <Button x:Name="MediaNext" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"
+                                ToolTip="{l:T 'Siguiente'}" Click="MediaNext_Click">
+                            <TextBlock Style="{StaticResource IconText}" FontSize="12" Text="&#xE893;" />
+                        </Button>
+                    </StackPanel>
+                    </StackPanel>
                     <StackPanel x:Name="TrayArea" Orientation="Horizontal">
                         <ToggleButton x:Name="ChevronButton" Style="{StaticResource TaskbarButton}" Width="28"
                                       Padding="0" ToolTip="{l:T 'Mostrar iconos ocultos'}"

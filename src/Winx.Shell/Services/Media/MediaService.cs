@@ -25,6 +25,7 @@ public static class MediaService
     private static Session? _session;
     private static string? _chosenId;
     private static string _coverKey = "";
+    private static string? _coverPendingKey;
 
     public static bool HasSession => _session != null;
     public static string Title { get; private set; } = "";
@@ -100,6 +101,7 @@ public static class MediaService
             Title = Artist = AppName = "";
             Cover = null;
             _coverKey = "";
+            _coverPendingKey = null;
             IsPlaying = false;
             Changed?.Invoke();
             return;
@@ -148,12 +150,28 @@ public static class MediaService
                 return;
             Title = props.Title ?? "";
             Artist = string.IsNullOrWhiteSpace(props.Artist) ? props.AlbumArtist ?? "" : props.Artist;
-            // La carátula solo se vuelve a leer si cambió la canción (leerla cuesta).
+            // La carátula solo se vuelve a leer si cambió la canción (leerla cuesta). Spotify y otros
+            // avisan primero del título y la imagen llega después: solo se da por leída cuando se
+            // cargó, y si aún no está se reintenta en un momento.
             string key = session.SourceAppUserModelId + "|" + Title + "|" + Artist;
             if (key != _coverKey)
             {
-                _coverKey = key;
-                Cover = props.Thumbnail is { } thumb ? await LoadCoverAsync(thumb) : null;
+                if (_coverPendingKey != key)
+                    Cover = null; // otra canción: no dejar la carátula anterior
+                var cover = props.Thumbnail is { } thumb ? await LoadCoverAsync(thumb) : null;
+                if (!ReferenceEquals(session, _session))
+                    return;
+                if (cover != null)
+                {
+                    Cover = cover;
+                    _coverKey = key;
+                    _coverPendingKey = null;
+                }
+                else if (_coverPendingKey != key)
+                {
+                    _coverPendingKey = key;
+                    _ = RetryCoverAsync(key);
+                }
             }
             Changed?.Invoke();
         }
@@ -161,6 +179,18 @@ public static class MediaService
         {
             // Algunas apps cierran la sesión justo mientras se lee.
             Log.Info($"No se pudo leer lo que suena en {AppName}: {ex.Message}");
+        }
+    }
+
+    /// <summary>Vuelve a pedir la carátula unas veces mientras siga la misma canción.</summary>
+    private static async Task RetryCoverAsync(string key)
+    {
+        foreach (var delay in new[] { 700, 1500, 3000 })
+        {
+            await Task.Delay(delay);
+            if (_coverPendingKey != key || _coverKey == key)
+                return;
+            await UpdateMediaAsync();
         }
     }
 
@@ -181,8 +211,9 @@ public static class MediaService
             bitmap.Freeze();
             return bitmap;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Log.Info($"No se pudo leer la carátula: {ex.Message}");
             return null;
         }
     }

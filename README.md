@@ -20,7 +20,7 @@ a la normalidad.
 | Panel de sonido         | ✅ salida y entrada con mosaicos de dispositivos, opciones (balance, mejoras de audio, modo exclusivo, llamadas) y volumen por aplicación |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
-| Multimedia              | ✅ carátula, canción y artista de cualquier app (Spotify, Reproductor multimedia, navegador…), controles y avance |
+| Multimedia              | ✅ carátula, canción, artista y controles en la barra para cualquier app (Spotify, Reproductor multimedia, navegador…); panel con avance |
 | Brillo                  | ✅ cada monitor por DDC/CI (y pantalla de portátil por WMI), todos a la vez, rueda del mouse |
 | Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas, secciones y huecos, tecla Windows; clic derecho: ejecutar como administrador, abrir ubicación, desinstalar |
 | Notificaciones          | ✅ centro propio junto al reloj (Win+N), avisos en el monitor y la esquina elegidos, No molestar, calendario |

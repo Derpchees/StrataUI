@@ -6,6 +6,17 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.14.0] - 2026-10-12
+
+### Añadido
+- **Controles multimedia en la barra**: anterior, reproducir/pausa y siguiente junto a la
+  carátula (en fila en barras horizontales, en columna en las verticales). El panel sigue
+  abriéndose con un clic en la carátula.
+
+### Corregido
+- La carátula no aparecía con Spotify y otras apps que envían la imagen después del título:
+  ahora se reintenta hasta que llega.
+
 ## [0.13.0] - 2026-10-12
 
 ### Añadido

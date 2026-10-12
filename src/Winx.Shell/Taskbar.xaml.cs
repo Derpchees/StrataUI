@@ -188,9 +188,15 @@ public partial class Taskbar : AppBarWindow
         TrayArea.Orientation = Orientation.Vertical;
         PinnedTray.ItemsPanel = Panel(typeof(WrapPanel));
         PinnedTray.HorizontalAlignment = HorizontalAlignment.Center;
-        // Multimedia en vertical: solo la carátula.
+        // Multimedia en vertical: la carátula y debajo los controles, en columna.
         MediaText.Visibility = Visibility.Collapsed;
         MediaButton.Padding = new Thickness(0, 4, 0, 4);
+        MediaModule.Orientation = Orientation.Vertical;
+        MediaControls.Orientation = Orientation.Vertical;
+        MediaControls.Margin = new Thickness(0, 0, 0, 4);
+        MediaControls.HorizontalAlignment = HorizontalAlignment.Center;
+        foreach (var control in new FrameworkElement[] { MediaPrevious, MediaPlay, MediaNext })
+            control.Height = 28;
         foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton, MediaButton })
         {
             button.HorizontalAlignment = HorizontalAlignment.Center;
@@ -568,7 +574,7 @@ public partial class Taskbar : AppBarWindow
     {
         var s = Settings.Current;
         bool show = ShowsStatusModules && s.ShowMediaModule && Media.HasSession;
-        MediaButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        MediaModule.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (!show)
             return;
         MediaCover.ImageSource = Media.Cover;
@@ -577,7 +583,17 @@ public partial class Taskbar : AppBarWindow
         MediaArtist.Visibility = Media.Artist.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         MediaButton.ToolTip = Media.Artist.Length > 0 ? $"{Media.Title} · {Media.Artist}" : Media.Title;
         MediaButton.Opacity = Media.IsPlaying ? 1 : 0.6;
+        MediaPlayGlyph.Text = Media.IsPlaying ? "" : ""; // pausa / reproducir
+        MediaPlay.ToolTip = Media.IsPlaying ? Loc.T("Pausar") : Loc.T("Reproducir");
+        MediaPrevious.IsEnabled = Media.CanPrevious;
+        MediaNext.IsEnabled = Media.CanNext;
     }
+
+    private void MediaPrevious_Click(object sender, RoutedEventArgs e) => Media.Previous();
+
+    private void MediaPlay_Click(object sender, RoutedEventArgs e) => Media.PlayPause();
+
+    private void MediaNext_Click(object sender, RoutedEventArgs e) => Media.Next();
 
     private void MediaButton_Click(object sender, RoutedEventArgs e) =>
         Flyouts.FlyoutManager.Toggle<Flyouts.MediaFlyout>(MediaButton);
