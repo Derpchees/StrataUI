@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.15.2] - 2026-10-12
+
+### Cambiado
+- La batería con porcentaje sigue el estilo de los demás íconos del área de estado: línea fina,
+  un solo color y el mismo alto, con el relleno del nivel tenue y el rayo junto al número al cargar
+  (sin verde ni rojo).
+
 ## [0.15.1] - 2026-10-12
 
 ### Cambiado

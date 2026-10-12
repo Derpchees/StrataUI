@@ -698,39 +698,11 @@ public partial class Taskbar : AppBarWindow
             : Loc.F("Volumen: {0}%", percent);
     }
 
-    private static readonly System.Windows.Media.Brush ChargingFill = FrozenBrush(0x34, 0xC7, 0x59);
-    private static readonly System.Windows.Media.Brush LowFill = FrozenBrush(0xFF, 0x45, 0x3A);
-
-    private static System.Windows.Media.Brush FrozenBrush(byte r, byte g, byte b)
-    {
-        var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(r, g, b));
-        brush.Freeze();
-        return brush;
-    }
-
-    /// <summary>
-    /// Relleno del nivel: verde si carga (con el rayo junto al número), rojo con 20 % o menos y,
-    /// si no, el color del texto tenue.
-    /// </summary>
+    /// <summary>Relleno tenue del nivel, del color del texto como el resto de los íconos.</summary>
     private void PaintBatteryLevel(SystemStatus.BatteryInfo battery)
     {
-        const double inner = 30 - 4; // ancho del cuerpo menos el margen del relleno
-        BatteryLevelFill.Width = Math.Max(2, inner * Math.Clamp(battery.Percent, 0, 100) / 100.0);
-        if (battery.Charging)
-        {
-            BatteryLevelFill.Background = ChargingFill;
-            BatteryLevelFill.Opacity = 0.9;
-        }
-        else if (battery.Percent <= 20)
-        {
-            BatteryLevelFill.Background = LowFill;
-            BatteryLevelFill.Opacity = 0.9;
-        }
-        else
-        {
-            BatteryLevelFill.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "WinxForegroundBrush");
-            BatteryLevelFill.Opacity = 0.3;
-        }
+        const double inner = 25 - 4; // ancho del cuerpo menos el margen del relleno
+        BatteryLevelFill.Width = Math.Max(1, inner * Math.Clamp(battery.Percent, 0, 100) / 100.0);
     }
 
     private void BatteryButton_Click(object sender, RoutedEventArgs e) =>
