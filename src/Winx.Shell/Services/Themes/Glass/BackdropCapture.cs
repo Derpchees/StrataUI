@@ -55,7 +55,8 @@ public sealed class BackdropCapture : IDisposable
         }
     }
 
-    private static bool Grab(Int32Rect rect, int w, int h, byte[] buffer)
+    /// <summary>Copia un rectángulo de la pantalla (píxeles físicos) reducido a w×h en BGRA.</summary>
+    internal static bool Grab(Int32Rect rect, int w, int h, byte[] buffer)
     {
         IntPtr screen = GetDC(IntPtr.Zero);
         IntPtr memory = CreateCompatibleDC(screen);
@@ -90,6 +91,10 @@ public sealed class BackdropCapture : IDisposable
     public static void ExcludeFromCapture(IntPtr hwnd, bool exclude) =>
         SetWindowDisplayAffinity(hwnd, exclude ? WdaExcludeFromCapture : WdaNone);
 
+    /// <summary>La ventana ya está excluida de capturas (p. ej. por el vidrio líquido).</summary>
+    public static bool IsExcludedFromCapture(IntPtr hwnd) =>
+        GetWindowDisplayAffinity(hwnd, out uint affinity) && affinity == WdaExcludeFromCapture;
+
     public void Dispose()
     {
         _running = false;
@@ -109,6 +114,7 @@ public sealed class BackdropCapture : IDisposable
     }
 
     [DllImport("user32.dll")] private static extern bool SetWindowDisplayAffinity(IntPtr hwnd, uint affinity);
+    [DllImport("user32.dll")] private static extern bool GetWindowDisplayAffinity(IntPtr hwnd, out uint affinity);
     [DllImport("user32.dll")] private static extern IntPtr GetDC(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern int ReleaseDC(IntPtr hwnd, IntPtr dc);
     [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);

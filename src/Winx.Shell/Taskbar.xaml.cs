@@ -100,6 +100,8 @@ public partial class Taskbar : AppBarWindow
         UpdateVolume();
         Services.Brightness.BrightnessService.Changed += ApplySettings;
         Media.Changed += UpdateMedia;
+        TaskButton.DragStarted += OnTaskDragStarted;
+        TaskOrder.Changed += OnTaskOrderChanged;
 
         SourceInitialized += (_, _) => ApplyBackdrop();
         SizeChanged += (_, _) => ApplyBackdrop();
@@ -197,10 +199,17 @@ public partial class Taskbar : AppBarWindow
         MediaControls.HorizontalAlignment = HorizontalAlignment.Center;
         foreach (var control in new FrameworkElement[] { MediaPrevious, MediaPlay, MediaNext })
             control.Height = 28;
-        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton, MediaButton })
+        MediaButton.HorizontalAlignment = HorizontalAlignment.Center;
+        MediaButton.Height = 36;
+        // Los módulos de estado van juntos también en vertical: más anchos que altos y sin separación.
+        BatteryContent.Orientation = Orientation.Vertical;
+        BatteryBolt.HorizontalAlignment = HorizontalAlignment.Center;
+        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton })
         {
             button.HorizontalAlignment = HorizontalAlignment.Center;
-            button.Height = 36;
+            button.Width = 36;
+            button.Height = 30;
+            button.Margin = new Thickness(4, 0, 4, 0);
         }
         ClockButton.Padding = new Thickness(2, 6, 2, 6);
         ClockContent.Orientation = Orientation.Vertical;
@@ -248,6 +257,8 @@ public partial class Taskbar : AppBarWindow
 
     private void ApplyBackdrop()
     {
+        if (ApplyTransparency())
+            return;
         var theme = ThemeManager.Theme;
         // Con refracción en vivo el shader pinta el vidrio; el desenfoque de DWM queda debajo
         // solo para suavizar el borde antialiasado.
@@ -279,7 +290,7 @@ public partial class Taskbar : AppBarWindow
 
     private void UpdateGlassSurface()
     {
-        bool wanted = ThemeManager.UseLiveGlass;
+        bool wanted = ThemeManager.UseLiveGlass && !_transparent;
         if (wanted && _glass is null)
         {
             _glass = new LiquidGlassSurface { Refraction = 14, Frost = 3 };
@@ -330,6 +341,8 @@ public partial class Taskbar : AppBarWindow
         UpdateStatus();
         UpdateNotificationBadge();
         UpdateMedia();
+        if (s.TaskbarFullyTransparent != _transparent)
+            ApplyBackdrop();
     }
 
     /// <summary>
@@ -353,11 +366,21 @@ public partial class Taskbar : AppBarWindow
     }
 
     /// <summary>Re-lee las preferencias de Windows que se siguen (alineación, apps por monitor).</summary>
-    public void RefreshFromWindows() => ApplySettings();
+    public void RefreshFromWindows()
+    {
+        ApplySettings();
+        ScheduleContrast(); // puede haber cambiado el fondo de pantalla
+    }
 
     private ICollectionView CreateTaskView()
     {
         var view = _shell.Tasks.CreateGroupedWindowsCollection();
+        // Orden elegido arrastrando: las que ya estaban conservan el orden en que llegaron.
+        if (view is ListCollectionView list)
+        {
+            TaskOrder.Instance.Seed(_shell.Tasks.GroupedWindows.OfType<ApplicationWindow>());
+            list.CustomSort = TaskOrder.Instance;
+        }
         view.Filter = item => item is ApplicationWindow window && window.ShowInTaskbar && Shows(window);
 
         if (view is ICollectionViewLiveShaping live && live.CanChangeLiveFiltering)
@@ -482,13 +505,21 @@ public partial class Taskbar : AppBarWindow
         BatteryButton.Visibility = battery is null ? Visibility.Collapsed : Visibility.Visible;
         if (battery != null)
         {
+            // Con porcentaje: el número dentro del contorno y un rayo si carga. Sin él: el ícono
+            // de Windows con su nivel (y el rayo incluido si carga).
+            bool percent = Settings.Current.ShowBatteryPercent;
+            BatteryGlyph.Visibility = percent ? Visibility.Collapsed : Visibility.Visible;
+            BatteryPercentIcon.Visibility = percent ? Visibility.Visible : Visibility.Collapsed;
+            BatteryBolt.Visibility = percent && battery.Charging ? Visibility.Visible : Visibility.Collapsed;
             BatteryGlyph.Text = battery.Glyph.ToString();
-            BatteryButton.ToolTip = (battery.Charging ? Loc.F("Batería: {0}% (cargando)", battery.Percent) : Loc.F("Batería: {0}%", battery.Percent));
+            BatteryPercentText.Text = battery.Percent.ToString();
+            BatteryButton.ToolTip = BatteryText(battery);
         }
     }
 
     protected override void CustomClosing()
     {
+        StopContrast();
         Settings.Changed -= ApplySettings;
         App.Current.Audio.Changed -= UpdateVolume;
         Services.Brightness.BrightnessService.Changed -= ApplySettings;
@@ -496,6 +527,8 @@ public partial class Taskbar : AppBarWindow
         Services.Notifications.NotificationService.Changed -= UpdateNotificationBadge;
         ThemeManager.ThemeChanged -= OnThemeChanged;
         TrayIcon.DragStarted -= OnTrayDragStarted;
+        TaskButton.DragStarted -= OnTaskDragStarted;
+        TaskOrder.Changed -= OnTaskOrderChanged;
         if (_hiddenTrayView != null)
             TrayPromotion.ReleaseHiddenView(_hiddenTrayView);
         ClockTick -= UpdateClock;
@@ -579,10 +612,13 @@ public partial class Taskbar : AppBarWindow
             return;
         MediaCover.ImageSource = Media.Cover;
         MediaTitle.Text = Media.Title;
-        MediaArtist.Text = Media.Artist;
-        MediaArtist.Visibility = Media.Artist.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        MediaButton.ToolTip = Media.Artist.Length > 0 ? $"{Media.Title} · {Media.Artist}" : Media.Title;
+        // Segunda línea: artista y álbum (lo que haya).
+        string details = string.Join(" · ", new[] { Media.Artist, Media.Album }.Where(t => t.Length > 0).Distinct());
+        MediaArtist.Text = details;
+        MediaArtist.Visibility = details.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MediaButton.ToolTip = string.Join("\n", new[] { Media.Title, Media.Artist, Media.Album, Media.AppName }.Where(t => t.Length > 0));
         MediaButton.Opacity = Media.IsPlaying ? 1 : 0.6;
+        MediaControls.Visibility = s.ShowMediaControls ? Visibility.Visible : Visibility.Collapsed;
         MediaPlayGlyph.Text = Media.IsPlaying ? "" : ""; // pausa / reproducir
         MediaPlay.ToolTip = Media.IsPlaying ? Loc.T("Pausar") : Loc.T("Reproducir");
         MediaPrevious.IsEnabled = Media.CanPrevious;
@@ -595,8 +631,7 @@ public partial class Taskbar : AppBarWindow
 
     private void MediaNext_Click(object sender, RoutedEventArgs e) => Media.Next();
 
-    private void MediaButton_Click(object sender, RoutedEventArgs e) =>
-        Flyouts.FlyoutManager.Toggle<Flyouts.MediaFlyout>(MediaButton);
+    private void MediaButton_Click(object sender, RoutedEventArgs e) => Media.ShowSourceApp();
 
     private void MediaButton_MouseUp(object sender, MouseButtonEventArgs e)
     {
@@ -662,7 +697,18 @@ public partial class Taskbar : AppBarWindow
             : Loc.F("Volumen: {0}%", percent);
     }
 
-    private void BatteryButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:batterysaver");
+    private void BatteryButton_Click(object sender, RoutedEventArgs e) =>
+        Flyouts.FlyoutManager.Toggle<Flyouts.BatteryFlyout>(BatteryButton);
+
+    /// <summary>"Batería: 80 % (cargando)", "Batería: 45 %, quedan 2 h 10 min"…</summary>
+    internal static string BatteryText(SystemStatus.BatteryInfo battery) =>
+        battery.Charging ? Loc.F("Batería: {0}% (cargando)", battery.Percent)
+        : battery.PluggedIn ? Loc.F("Batería: {0}% (conectada)", battery.Percent)
+        : battery.Remaining is { } left ? Loc.F("Batería: {0}%, quedan {1}", battery.Percent, Duration(left))
+        : Loc.F("Batería: {0}%", battery.Percent);
+
+    internal static string Duration(TimeSpan time) =>
+        time.TotalHours >= 1 ? Loc.F("{0} h {1} min", (int)time.TotalHours, time.Minutes) : Loc.F("{0} min", Math.Max(1, time.Minutes));
 
     private void ShowDesktop_Click(object sender, MouseButtonEventArgs e)
     {

@@ -13,12 +13,14 @@ public static class WindowEffects
     /// Acrylic = el de Windows (con ruido y luminosidad); Clear = desenfoque limpio, base del
     /// vidrio estilo iOS. WPF debe dibujar con fondo transparente para que se vea.
     /// </summary>
-    public static void SetBlur(Window window, Backdrop backdrop)
+    /// <remarks>Con <paramref name="clear"/> no hay desenfoque ni fondo: lo transparente de WPF deja
+    /// ver tal cual lo que hay detrás (barra totalmente transparente).</remarks>
+    public static void SetBlur(Window window, Backdrop backdrop, bool clear = false)
     {
         var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd == IntPtr.Zero)
             return;
-        bool enabled = backdrop is Backdrop.Acrylic or Backdrop.Blur;
+        bool enabled = clear || backdrop is Backdrop.Acrylic or Backdrop.Blur;
 
         if (HwndSource.FromHwnd(hwnd) is { CompositionTarget: { } target })
             target.BackgroundColor = enabled ? Colors.Transparent : SystemColors.WindowColor;
@@ -30,14 +32,15 @@ public static class WindowEffects
 
         var accent = new AccentPolicy
         {
-            AccentState = backdrop switch
+            // Transparente: sin acento (el "gradiente transparente" de DWM pinta un color propio).
+            AccentState = clear ? AccentDisabled : backdrop switch
             {
                 Backdrop.Acrylic => AccentEnableAcrylicBlurBehind,
                 Backdrop.Blur => AccentEnableBlurBehind,
                 _ => AccentDisabled,
             },
             // Tinte casi nulo: el tinte real lo pinta WPF con la paleta del tema.
-            GradientColor = enabled ? 0x01000000u : 0u,
+            GradientColor = enabled && !clear ? 0x01000000u : 0u,
         };
         int size = Marshal.SizeOf(accent);
         var ptr = Marshal.AllocHGlobal(size);

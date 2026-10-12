@@ -55,6 +55,12 @@ public enum StartIconKind { Winx, Windows, WindowsMono, Circle, Dot, Grid, Searc
 /// <summary>Esquina de la pantalla donde aparecen los avisos.</summary>
 public enum NotificationCorner { BottomRight, BottomLeft, TopRight, TopLeft }
 
+/// <summary>Cómo aparecen y se cierran los paneles, el menú Inicio y los avisos.</summary>
+public enum PanelAnimation { Slide, Fade, Zoom, Pop, Rise, None }
+
+/// <summary>Duración de las animaciones.</summary>
+public enum AnimationSpeed { Fast, Normal, Slow }
+
 /// <summary>Preferencias de WINX, guardadas en %LOCALAPPDATA%\WINX\settings.json.</summary>
 public sealed class WinxSettings
 {
@@ -90,6 +96,8 @@ public sealed class WinxSettings
         _ => TaskbarPosition.Top,
     };
     public int TaskbarHeight { get; set; } = 48;
+    /// <summary>Vista previa en vivo de la ventana al pasar el mouse por su botón.</summary>
+    public bool ShowTaskPreviews { get; set; } = true;
     public bool ShowSeconds { get; set; }
     public bool ShowDate { get; set; } = true;
 
@@ -123,6 +131,12 @@ public sealed class WinxSettings
     public bool ShowBrightnessModule { get; set; } = true;
     /// <summary>Lo que suena ahora (carátula, título y artista); solo aparece si hay algo reproduciéndose.</summary>
     public bool ShowMediaModule { get; set; } = true;
+    /// <summary>Aviso en pantalla al cambiar volumen o brillo y al pulsar Bloq Mayús, Bloq Num o Bloq Despl.</summary>
+    public bool ShowOsd { get; set; } = true;
+    /// <summary>Porcentaje dentro del ícono de la batería.</summary>
+    public bool ShowBatteryPercent { get; set; }
+    /// <summary>Botones anterior, reproducir/pausar y siguiente junto a la canción.</summary>
+    public bool ShowMediaControls { get; set; } = true;
 
     // Notificaciones
     /// <summary>Centro de notificaciones de WINX (desactivado: el reloj abre el de Windows).</summary>
@@ -136,6 +150,11 @@ public sealed class WinxSettings
     public int NotificationSeconds { get; set; } = 6;
     /// <summary>No molestar: las notificaciones llegan al centro, pero sin avisos.</summary>
     public bool NotificationDoNotDisturb { get; set; }
+    /// <summary>
+    /// Valor original de "ShowBanner" de cada app en Windows (null: no existía) antes de que WINX
+    /// apagara sus avisos emergentes; se devuelve al salir o al desactivar el centro de WINX.
+    /// </summary>
+    public Dictionary<string, int?> WindowsBannerBackup { get; set; } = new();
 
     // Actualizaciones
     public bool AutoCheckUpdates { get; set; } = true;
@@ -153,6 +172,10 @@ public sealed class WinxSettings
     public bool LiveGlass { get; set; } = true;
     /// <summary>Llevar el tema a Windows: modo claro/oscuro y fondo de las ventanas del Explorador.</summary>
     public bool ApplyThemeToWindows { get; set; }
+    /// <summary>Barra sin fondo, borde ni desenfoque: solo se ven los íconos y el texto.</summary>
+    public bool TaskbarFullyTransparent { get; set; }
+    public PanelAnimation PanelAnimation { get; set; } = PanelAnimation.Slide;
+    public AnimationSpeed AnimationSpeed { get; set; } = AnimationSpeed.Normal;
     /// <summary>Fondo que había antes de que WINX lo cambiara por primera vez.</summary>
     public string? OriginalWallpaper { get; set; }
 

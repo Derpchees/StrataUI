@@ -51,6 +51,20 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   esquina del Hub); el centro es `Flyouts/NotificationFlyout`. Los avisos propios de WINX (prueba,
   actualización) llevan `IsLocal` y opcionalmente `OnClick`. En la PC del usuario Windows no
   muestra sus propios avisos emergentes, así que no hay duplicados.
+- **Avisos de Windows**: con el centro de WINX activo, `WindowsBanners` pone `ShowBanner=0` en
+  cada app de `HKCU\...\Notifications\Settings` (respaldo en `Settings.WindowsBannerBackup`) y lo
+  devuelve al salir, al desactivar el centro, con `--restore-taskbar` o si WINX muere.
+- **OSD** (`Notifications/OsdWindow`, clase `Osd`): volumen, brillo y teclas de bloqueo. El OSD
+  nativo de volumen lo dibuja `ShellHost.exe` (no se puede ocultar): por eso, con el OSD activo, el
+  gancho de teclado se queda con las teclas de volumen y WINX cambia el volumen.
+- **Animaciones**: `Services/Themes/Motion` (`In`/`Out`) según `PanelAnimation` y `AnimationSpeed`;
+  usarlo en cualquier ventana emergente nueva.
+- **Barra transparente** (`Taskbar.Transparency.cs`): sin acento de DWM (el "gradiente
+  transparente" pinta un color propio) y cada zona toma `WinxForegroundBrush` claro u oscuro según
+  lo que hay detrás, leído con la barra excluida de la captura un momento. Una zona nueva de la
+  barra va en `ContrastZones()` y su texto debe usar `WinxForegroundBrush`.
+- **Ventanas de la barra**: el orden es `TaskOrder` (vista con `CustomSort`); la vista previa es
+  `Controls/TaskPreviewWindow` (miniatura de DWM: ventana sin `AllowsTransparency`).
 - **Multimedia**: `Services/Media/MediaService` (System Media Transport Controls: lo mismo que
   usa Windows, sirve para cualquier app que se anuncie). Para probar sin molestar al usuario, un
   reproductor de prueba con `MediaPlayer` y volumen 0 (los datos van en `MediaPlaybackItem`, no en
@@ -122,6 +136,13 @@ tecla Windows, Win+N).
   2560×1440: el principal de Windows es `\\.\DISPLAY1` (X = 0, 100 %) y el otro está a su
   izquierda (X negativa, 125 %). Usa las barras en vertical: la principal de WINX (con la bandeja)
   está en el borde derecho del monitor izquierdo. Sus monitores aceptan brillo por DDC/CI.
+  Es una laptop con batería: a veces está sin los monitores externos (solo la pantalla de
+  1920×1080, 100 %, con la barra arriba). El fondo es de Wallpaper Engine (animado; se detiene con
+  una ventana maximizada). Puede tener abierto un WINX compilado desde otra copia
+  (`Downloads\WINX-main`): antes de relanzar, comprobar la ruta con `Get-Process WINX` y cerrarlo
+  con su propio `--exit`.
+- Usa la PC mientras pruebo: antes de cada clic simulado, capturar la pantalla y comprobar qué
+  hay en ese punto; preferir pasar el puntero o las teclas a hacer clic.
 - En el monitor de 125 % las coordenadas de una captura pueden no coincidir con las de WINX: para
   ubicar un control, usar el `BoundingRectangle` de UIA o registrar `PointToScreen` desde WINX.
 - UIA: buscar por nombre devuelve también la tarjeta y el texto; quedarse con el elemento que
@@ -151,9 +172,13 @@ tecla Windows, Win+N).
 - **Traducciones**: la clave es el texto en español, así que una palabra con dos sentidos comparte
   traducción ("Inicio" del menú y la página "Inicio" del Explorador). Si el sentido cambia, usar
   textos distintos ("Inicio del Explorador").
+- **Íconos de WPF-UI** (`SymbolRegular`): no todos los nombres de Fluent existen (`Leaf24` no,
+  `LeafOne24` sí) y un nombre inválido rompe el panel al abrirlo (solo se ve en el registro).
+  Comprobar con `[Enum]::GetNames` cargando `lib\net472\Wpf.Ui.dll` en PowerShell.
 - **Glifos de Segoe Fluent** en C#: escribirlos con la secuencia de escape (barra invertida, u y el código: E701), no el
   carácter; al reescribir un archivo copiando el texto, los caracteres de uso privado se pierden y
-  queda `''`. Algunas herramientas de edición convierten la secuencia en el carácter: revisarlo.
+  queda `''`. La herramienta Write convierte la secuencia en el carácter: después de crear un
+  archivo con glifos, buscar caracteres U+E000–U+F8FF y volver a escribirlos como secuencia.
 - **Directivas en HKCU**: `HKCU\Software\Policies` solo la escriben administradores (los ajustes
   ahí piden UAC: `RegSetting.NeedsAdminFor`).
 - **DDC/CI**: el identificador de un monitor físico puede valer 0; no usarlo como "no hay".

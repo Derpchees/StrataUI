@@ -30,6 +30,7 @@ public static class MediaService
     public static bool HasSession => _session != null;
     public static string Title { get; private set; } = "";
     public static string Artist { get; private set; } = "";
+    public static string Album { get; private set; } = "";
     public static string AppName { get; private set; } = "";
     public static ImageSource? Cover { get; private set; }
     public static bool IsPlaying { get; private set; }
@@ -98,7 +99,7 @@ public static class MediaService
         }
         if (_session is null)
         {
-            Title = Artist = AppName = "";
+            Title = Artist = Album = AppName = "";
             Cover = null;
             _coverKey = "";
             _coverPendingKey = null;
@@ -150,6 +151,7 @@ public static class MediaService
                 return;
             Title = props.Title ?? "";
             Artist = string.IsNullOrWhiteSpace(props.Artist) ? props.AlbumArtist ?? "" : props.Artist;
+            Album = props.AlbumTitle ?? "";
             // La carátula solo se vuelve a leer si cambió la canción (leerla cuesta). Spotify y otros
             // avisan primero del título y la imagen llega después: solo se da por leída cuando se
             // cargó, y si aún no está se reintenta en un momento.
@@ -264,6 +266,33 @@ public static class MediaService
     {
         if (_session != null && CanSeek)
             await _session.TryChangePlaybackPositionAsync(position.Ticks);
+    }
+
+    /// <summary>
+    /// Trae al frente la app que suena: su ventana si está en la barra (Spotify.exe, navegadores) o,
+    /// si no, la abre por su AppUserModelID (apps de la Tienda).
+    /// </summary>
+    public static void ShowSourceApp()
+    {
+        string id = CurrentSourceId;
+        if (id.Length == 0)
+            return;
+        try
+        {
+            var window = App.Current.Shell.Tasks.GroupedWindows.OfType<ManagedShell.WindowsTasks.ApplicationWindow>()
+                .FirstOrDefault(w => string.Equals(w.AppUserModelID, id, StringComparison.OrdinalIgnoreCase)
+                                     || string.Equals(Path.GetFileName(w.WinFileName), id, StringComparison.OrdinalIgnoreCase));
+            if (window != null)
+            {
+                window.BringToFront();
+                return;
+            }
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{id}") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo abrir {AppName}", ex);
+        }
     }
 
     /// <summary>Controlar otra app (cuando hay varias con sesión).</summary>

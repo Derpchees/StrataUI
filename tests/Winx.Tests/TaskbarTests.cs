@@ -89,4 +89,27 @@ public sealed class TaskbarTests
     [InlineData("Deezer.62021768415AF_q7m17pa7q8kj0!Deezer.Music", "Deezer")]
     public void Media_app_names_are_readable(string id, string expected) =>
         Assert.Equal(expected, Winx.Shell.Services.Media.MediaService.CleanName(id));
+
+    [Theory]
+    [InlineData(255, 255, 255, 1.0)]
+    [InlineData(0, 0, 0, 0.0)]
+    [InlineData(128, 128, 128, 0.5)]    // gris medio sRGB ≈ mitad en escala perceptual
+    public void Background_luminance_is_perceptual(byte r, byte g, byte b, double expected)
+    {
+        // 2×2 píxeles BGRA del mismo color.
+        var pixels = Enumerable.Repeat(new[] { b, g, r, (byte)255 }, 4).SelectMany(p => p).ToArray();
+        Assert.Equal(expected, Taskbar.AverageLuminance(pixels, 2, 0, 2, 0, 2), 2);
+    }
+
+    [Fact]
+    public void Luminance_only_counts_the_requested_area()
+    {
+        // Mitad izquierda negra, mitad derecha blanca: cada mitad se lee por separado.
+        var pixels = new byte[4 * 2 * 4];
+        for (int y = 0; y < 2; y++)
+            for (int x = 2; x < 4; x++)
+                Array.Fill(pixels, (byte)255, (y * 4 + x) * 4, 4);
+        Assert.Equal(0.0, Taskbar.AverageLuminance(pixels, 4, 0, 2, 0, 2), 2);
+        Assert.Equal(1.0, Taskbar.AverageLuminance(pixels, 4, 2, 4, 0, 2), 2);
+    }
 }

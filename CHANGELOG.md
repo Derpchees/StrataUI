@@ -6,6 +6,37 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.15.0] - 2026-10-12
+
+### Añadido
+- **Vista previa de las ventanas**: al pasar el mouse por una app abierta se ve su ventana en vivo
+  (miniatura de Windows), con su título y un botón para cerrarla; clic: la trae al frente. Se
+  desactiva en Hub › Barra de tareas.
+- **Ordenar las ventanas de la barra** arrastrándolas, como en Windows (vale para todas las barras
+  durante la sesión).
+- **Panel de batería**: nivel, si carga o cuánto queda (o cuánto falta para cargarse), modo de
+  energía de Windows (Eficiencia, Equilibrado, Rendimiento), ahorro de batería y salud de la batería.
+- **Porcentaje de la batería** dentro del ícono (opción en Hub › Bandeja y área de estado) y rayo
+  mientras carga; el ícono normal también indica la carga.
+- **Avisos en pantalla (OSD)** junto a la barra al cambiar el volumen o el brillo, al silenciar y al
+  pulsar Bloq Mayús, Bloq Num o Bloq Despl. Las teclas de volumen las atiende WINX (pasos de 2, como
+  Windows) para que Windows no muestre también el suyo.
+- **Barra totalmente transparente** (Hub › Apariencia): sin fondo, borde ni desenfoque. Cada parte de
+  la barra pone su texto y sus íconos claros u oscuros según el fondo que tiene detrás, también con
+  fondos animados (Wallpaper Engine).
+- **Animaciones a elegir** para paneles, menú Inicio, avisos y OSD: Deslizar, Desvanecer, Acercar,
+  Rebote, Subir desde lejos o ninguna, y su velocidad. Los paneles ahora también se animan al cerrarse.
+- **Controles multimedia opcionales**: un interruptor en el Hub muestra u oculta anterior,
+  reproducir/pausa y siguiente.
+
+### Cambiado
+- Con el centro de notificaciones de WINX activo se apagan los avisos emergentes de Windows (las
+  notificaciones siguen llegando a su centro, que es de donde las lee WINX). Al salir de WINX o al
+  desactivar su centro se devuelve lo que cada app tenía.
+- Multimedia: la barra muestra la canción con su carátula, artista y álbum. El clic abre la app que
+  suena (ya no hay panel multimedia); el clic central sigue pausando.
+- Red, Bluetooth, brillo, volumen y batería van más juntos en la barra (también en vertical).
+
 ## [0.14.0] - 2026-10-12
 
 ### Añadido

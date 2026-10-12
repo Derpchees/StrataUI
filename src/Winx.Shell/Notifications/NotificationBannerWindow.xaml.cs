@@ -103,17 +103,12 @@ public partial class NotificationBannerWindow : Window
 
     private void AnimateIn(WinxNotification item)
     {
-        BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(120)));
+        BeginAnimation(OpacityProperty, null);
+        Opacity = 1;
         if (BannerList.ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement banner)
             return;
-        // Entra desde el borde de la pantalla más cercano.
-        var slide = new TranslateTransform(IsLeft ? -40 : 40, 0);
-        banner.RenderTransform = slide;
-        banner.Opacity = 0;
-        var duration = TimeSpan.FromMilliseconds(220);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, duration) { EasingFunction = ease });
-        banner.BeginAnimation(OpacityProperty, new DoubleAnimation(1, duration));
+        // Entra desde el borde de la pantalla más cercano, con la animación elegida en el Hub.
+        Services.Themes.Motion.In(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right);
     }
 
     // ── Posición ────────────────────────────────────────────────────────────

@@ -26,6 +26,18 @@
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Eye24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Barra totalmente transparente'}" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="{l:T 'Sin fondo, borde ni desenfoque: solo se ven los íconos y el texto. Cada parte de la barra se pone clara u oscura según el fondo que tenga detrás.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="TransparentSwitch" Click="Transparent_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowSettings20" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
@@ -35,6 +47,38 @@
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="WindowsThemeSwitch" Click="WindowsTheme_Click" />
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Animaciones'}" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Sparkle24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Estilo'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Cómo se abren y se cierran los paneles, el menú Inicio y los avisos.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="AnimationBox" MinWidth="180" SelectionChanged="Animation_Changed">
+                    <ComboBoxItem Content="{l:T 'Deslizar'}" Tag="Slide" />
+                    <ComboBoxItem Content="{l:T 'Desvanecer'}" Tag="Fade" />
+                    <ComboBoxItem Content="{l:T 'Acercar'}" Tag="Zoom" />
+                    <ComboBoxItem Content="{l:T 'Rebote'}" Tag="Pop" />
+                    <ComboBoxItem Content="{l:T 'Subir desde lejos'}" Tag="Rise" />
+                    <ComboBoxItem Content="{l:T 'Sin animación'}" Tag="None" />
+                </ComboBox>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Timer24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Velocidad'}" VerticalAlignment="Center" />
+                </ui:CardControl.Header>
+                <ComboBox x:Name="SpeedBox" MinWidth="180" SelectionChanged="Animation_Changed">
+                    <ComboBoxItem Content="{l:T 'Rápida'}" Tag="Fast" />
+                    <ComboBoxItem Content="{l:T 'Normal'}" Tag="Normal" />
+                    <ComboBoxItem Content="{l:T 'Lenta'}" Tag="Slow" />
+                </ComboBox>
             </ui:CardControl>
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Color de acento'}" />

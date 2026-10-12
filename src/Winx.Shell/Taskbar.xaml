@@ -42,7 +42,7 @@
         <!-- En Liquid Glass con refracción en vivo, aquí se inserta la superficie de vidrio (por código) -->
         <Grid x:Name="GlassHost">
             <!-- Brillo interior sutil del vidrio -->
-            <Border IsHitTestVisible="False" Background="{DynamicResource WinxGlassHighlightBrush}"
+            <Border x:Name="GlassHighlight" IsHitTestVisible="False" Background="{DynamicResource WinxGlassHighlightBrush}"
                     CornerRadius="{DynamicResource WinxTaskbarCornerRadius}"
                     Visibility="{DynamicResource WinxGlassVisibility}" />
             <!-- En barras verticales (izquierda/derecha) las columnas pasan a filas: ver ApplyOrientation -->
@@ -81,8 +81,8 @@
     
                 <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
                 <StackPanel x:Name="StatusPanel" Grid.Column="1" Orientation="Horizontal">
-                    <!-- Lo que suena ahora (cualquier app que se anuncie a Windows); clic central: pausa -->
-                    <!-- Multimedia: carátula y texto (clic: panel; clic central: pausa) y controles en la barra -->
+                    <!-- Multimedia: carátula, canción, artista y álbum (clic: abre la app; clic central: pausa)
+                         y, si se eligió en el Hub, los controles en la barra -->
                     <StackPanel x:Name="MediaModule" Orientation="Horizontal" Visibility="Collapsed">
                     <Button x:Name="MediaButton" Style="{StaticResource TaskbarButton}" Padding="6,0"
                             Click="MediaButton_Click" MouseUp="MediaButton_MouseUp">
@@ -98,9 +98,11 @@
                                     </Border>
                                 </Grid>
                             </Border>
-                            <StackPanel x:Name="MediaText" Margin="8,0,2,0" MaxWidth="150" VerticalAlignment="Center">
-                                <TextBlock x:Name="MediaTitle" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="MediaArtist" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                            <StackPanel x:Name="MediaText" Margin="8,0,2,0" MaxWidth="170" VerticalAlignment="Center">
+                                <TextBlock x:Name="MediaTitle" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource WinxForegroundBrush}" />
+                                <TextBlock x:Name="MediaArtist" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource WinxForegroundBrush}" />
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -161,33 +163,44 @@
                     </StackPanel>
     
                     <!-- Módulos de estado: cada uno abre su propio panel y se activa desde el Hub -->
-                    <Button x:Name="NetworkButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                    <Button x:Name="NetworkButton" Style="{StaticResource StatusButton}"
                             Click="NetworkButton_Click">
                         <TextBlock x:Name="NetworkGlyph" Style="{StaticResource IconText}" Text="&#xE701;" />
                     </Button>
-                    <Button x:Name="BluetoothButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                    <Button x:Name="BluetoothButton" Style="{StaticResource StatusButton}"
                             ToolTip="{l:T 'Bluetooth'}" Click="BluetoothButton_Click">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE702;" />
                     </Button>
-                    <Button x:Name="BrightnessButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                    <Button x:Name="BrightnessButton" Style="{StaticResource StatusButton}"
                             ToolTip="{l:T 'Brillo'}" Visibility="Collapsed" Click="BrightnessButton_Click" MouseWheel="BrightnessButton_MouseWheel">
                         <TextBlock Style="{StaticResource IconText}" Text="&#xE706;" />
                     </Button>
-                    <Button x:Name="VolumeButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                    <Button x:Name="VolumeButton" Style="{StaticResource StatusButton}"
                             ToolTip="{l:T 'Volumen'}" Click="VolumeButton_Click" MouseWheel="VolumeButton_MouseWheel">
                         <TextBlock x:Name="VolumeGlyph" Style="{StaticResource IconText}" Text="&#xE767;" />
                     </Button>
-                    <Button x:Name="BatteryButton" Style="{StaticResource TaskbarButton}" Width="36" Padding="0"
+                    <Button x:Name="BatteryButton" Style="{StaticResource StatusButton}" MinWidth="30" Width="NaN" Padding="2,0"
                             Visibility="Collapsed" Click="BatteryButton_Click">
-                        <TextBlock x:Name="BatteryGlyph" Style="{StaticResource IconText}" />
+                        <StackPanel x:Name="BatteryContent" Orientation="Horizontal">
+                            <TextBlock x:Name="BatteryGlyph" Style="{StaticResource IconText}" />
+                            <!-- Porcentaje dentro del contorno de la batería (opción del Hub) -->
+                            <Grid x:Name="BatteryPercentIcon" Visibility="Collapsed">
+                                <TextBlock Style="{StaticResource IconText}" FontSize="24" Text="&#xEBA0;" />
+                                <TextBlock x:Name="BatteryPercentText" FontSize="9" FontWeight="Bold" Margin="0,0,3,0"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource WinxForegroundBrush}" />
+                            </Grid>
+                            <TextBlock x:Name="BatteryBolt" Style="{StaticResource IconText}" FontSize="11" Margin="1,0,0,0"
+                                       Text="&#xE945;" Visibility="Collapsed" />
+                        </StackPanel>
                     </Button>
     
                     <Button x:Name="ClockButton" Style="{StaticResource TaskbarButton}" Padding="10,0"
                             Click="ClockButton_Click">
                         <StackPanel x:Name="ClockContent" Orientation="Horizontal">
                             <StackPanel x:Name="ClockPanel" VerticalAlignment="Center">
-                                <TextBlock x:Name="TimeText" HorizontalAlignment="Right" FontSize="12" />
-                                <TextBlock x:Name="DateText" HorizontalAlignment="Right" FontSize="12" />
+                                <TextBlock x:Name="TimeText" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource WinxForegroundBrush}" />
+                                <TextBlock x:Name="DateText" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource WinxForegroundBrush}" />
                             </StackPanel>
                             <!-- Notificaciones pendientes en el centro de WINX -->
                             <Border x:Name="NotificationBadge" Visibility="Collapsed" Margin="8,0,0,0" MinWidth="18" Height="18"

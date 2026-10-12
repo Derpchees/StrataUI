@@ -22,6 +22,8 @@ public partial class AppearancePage : Page
         "#7A7574", "#5D5A58", "#68768A", "#515C6B", "#567C73", "#486860", "#498205", "#107C10",
     ];
 
+    private bool _loading = true;
+
     public AppearancePage()
     {
         InitializeComponent();
@@ -29,6 +31,10 @@ public partial class AppearancePage : Page
         var s = Settings.Current;
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
         LiveGlassSwitch.IsChecked = s.LiveGlass;
+        TransparentSwitch.IsChecked = s.TaskbarFullyTransparent;
+        Select(AnimationBox, s.PanelAnimation.ToString());
+        Select(SpeedBox, s.AnimationSpeed.ToString());
+        _loading = false;
         WindowsAccentSwitch.IsChecked = s.AccentColor is null;
         BuildThemeGallery();
         BuildSwatches();
@@ -163,6 +169,26 @@ public partial class AppearancePage : Page
 
     private void LiveGlass_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.LiveGlass = LiveGlassSwitch.IsChecked == true);
+
+    private void Transparent_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.TaskbarFullyTransparent = TransparentSwitch.IsChecked == true);
+
+    private static void Select(ComboBox box, string tag) =>
+        box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) ?? box.Items[0];
+
+    private void Animation_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || AnimationBox.SelectedItem is not ComboBoxItem { Tag: string style }
+            || SpeedBox.SelectedItem is not ComboBoxItem { Tag: string speed })
+            return;
+        Settings.Update(s =>
+        {
+            s.PanelAnimation = Enum.Parse<PanelAnimation>(style);
+            s.AnimationSpeed = Enum.Parse<AnimationSpeed>(speed);
+        });
+        // Vista previa: un aviso de prueba con la animación elegida.
+        Services.Notifications.NotificationService.ShowTest();
+    }
 
     private void WindowsTheme_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.ApplyThemeToWindows = WindowsThemeSwitch.IsChecked == true);

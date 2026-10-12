@@ -37,6 +37,17 @@
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple20" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Vista previa de las ventanas'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Al pasar el mouse por una app abierta se ve su ventana en vivo. Arrastra los botones para ordenarlos.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="PreviewsSwitch" Click="Previews_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowAutofitHeight24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>

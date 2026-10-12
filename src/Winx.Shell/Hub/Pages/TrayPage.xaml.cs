@@ -35,6 +35,11 @@ public partial class TrayPage : Page
         BatterySwitch.IsChecked = s.ShowBatteryModule;
         BrightnessSwitch.IsChecked = s.ShowBrightnessModule;
         MediaSwitch.IsChecked = s.ShowMediaModule;
+        MediaControlsSwitch.IsChecked = s.ShowMediaControls;
+        MediaControlsCard.IsEnabled = s.ShowMediaModule;
+        BatteryPercentSwitch.IsChecked = s.ShowBatteryPercent;
+        BatteryPercentCard.IsEnabled = s.ShowBatteryModule;
+        OsdSwitch.IsChecked = s.ShowOsd;
         _onIconsChanged = (_, _) => Dispatcher.BeginInvoke(Refresh);
         Loaded += (_, _) =>
         {
@@ -95,13 +100,21 @@ public partial class TrayPage : Page
         s.ShowDate = DateSwitch.IsChecked == true;
     });
 
-    private void Modules_Changed(object sender, RoutedEventArgs e) => Settings.Update(s =>
+    private void Modules_Changed(object sender, RoutedEventArgs e)
     {
-        s.ShowNetworkModule = NetworkSwitch.IsChecked == true;
-        s.ShowBluetoothModule = BluetoothSwitch.IsChecked == true;
-        s.ShowVolumeModule = VolumeSwitch.IsChecked == true;
-        s.ShowBatteryModule = BatterySwitch.IsChecked == true;
-        s.ShowBrightnessModule = BrightnessSwitch.IsChecked == true;
-        s.ShowMediaModule = MediaSwitch.IsChecked == true;
-    });
+        MediaControlsCard.IsEnabled = MediaSwitch.IsChecked == true;
+        BatteryPercentCard.IsEnabled = BatterySwitch.IsChecked == true;
+        Settings.Update(s =>
+        {
+            s.ShowNetworkModule = NetworkSwitch.IsChecked == true;
+            s.ShowBluetoothModule = BluetoothSwitch.IsChecked == true;
+            s.ShowVolumeModule = VolumeSwitch.IsChecked == true;
+            s.ShowBatteryModule = BatterySwitch.IsChecked == true;
+            s.ShowBrightnessModule = BrightnessSwitch.IsChecked == true;
+            s.ShowMediaModule = MediaSwitch.IsChecked == true;
+            s.ShowMediaControls = MediaControlsSwitch.IsChecked == true;
+            s.ShowBatteryPercent = BatteryPercentSwitch.IsChecked == true;
+            s.ShowOsd = OsdSwitch.IsChecked == true;
+        });
+    }
 }

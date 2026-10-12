@@ -14,12 +14,16 @@ public static class SystemStatus
 {
     private const char WifiGlyph = '';
     private const char EthernetGlyph = '';
-    private const int BatteryZeroGlyph = 0xE850; // Battery0..Battery9 son consecutivos
-    private const char BatteryFullGlyph = '';
+    // Batería de Fluent: Battery0..Battery10 y BatteryCharging0..10 son consecutivos.
+    private const int BatteryZeroGlyph = 0xEBA0;
+    private const int BatteryChargingZeroGlyph = 0xEBAB;
 
     public record NetworkInfo(char Glyph, bool Connected, string Description);
 
-    public record BatteryInfo(char Glyph, int Percent, bool Charging);
+    /// <param name="Charging">La batería está cargando.</param>
+    /// <param name="PluggedIn">Conectado a la corriente (puede estar llena y sin cargar).</param>
+    /// <param name="Remaining">Tiempo que queda con batería, si Windows lo sabe.</param>
+    public record BatteryInfo(char Glyph, int Percent, bool Charging, bool PluggedIn, TimeSpan? Remaining);
 
     private static NetworkInfo? _network;
     private static BatteryInfo? _battery;
@@ -98,8 +102,11 @@ public static class SystemStatus
             return null;
 
         int percent = (int)Math.Round(power.BatteryLifePercent * 100);
-        int step = Math.Clamp(percent / 10, 0, 10);
-        char glyph = step == 10 ? BatteryFullGlyph : (char)(BatteryZeroGlyph + step);
-        return new BatteryInfo(glyph, percent, power.PowerLineStatus == Forms.PowerLineStatus.Online);
+        int step = Math.Clamp((int)Math.Round(percent / 10.0), 0, 10);
+        bool pluggedIn = power.PowerLineStatus == Forms.PowerLineStatus.Online;
+        bool charging = power.BatteryChargeStatus.HasFlag(Forms.BatteryChargeStatus.Charging) || (pluggedIn && percent < 100);
+        char glyph = (char)((charging ? BatteryChargingZeroGlyph : BatteryZeroGlyph) + step);
+        TimeSpan? remaining = !pluggedIn && power.BatteryLifeRemaining > 0 ? TimeSpan.FromSeconds(power.BatteryLifeRemaining) : null;
+        return new BatteryInfo(glyph, percent, charging, pluggedIn, remaining);
     }
 }

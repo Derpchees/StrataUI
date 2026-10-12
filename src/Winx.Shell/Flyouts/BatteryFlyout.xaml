@@ -1,0 +1,60 @@
+<flyouts:FlyoutWindow x:Class="Winx.Shell.Flyouts.BatteryFlyout"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
+                      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                      xmlns:flyouts="clr-namespace:Winx.Shell.Flyouts"
+                      Title="{l:T 'Batería'}" Width="360">
+    <StackPanel Margin="14,16,14,14">
+        <TextBlock Style="{StaticResource FlyoutTitle}" Margin="4,0,0,10" Text="{l:T 'Batería'}" />
+
+        <!-- Nivel, estado y tiempo -->
+        <Grid Margin="4,0,8,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="BigGlyph" Style="{StaticResource IconText}" FontSize="40" Margin="0,0,14,0" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock x:Name="PercentText" FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource WinxForegroundBrush}" />
+                <TextBlock x:Name="StateText" Style="{StaticResource FlyoutText}" />
+                <TextBlock x:Name="TimeText" Style="{StaticResource FlyoutHint}" />
+            </StackPanel>
+        </Grid>
+        <ProgressBar x:Name="Level" Margin="4,12,8,4" Height="4" Minimum="0" Maximum="100" />
+
+        <!-- Modo de energía de Windows (el mismo de Configuración › Sistema › Energía) -->
+        <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,14,0,6" Text="{l:T 'Modo de energía'}" />
+        <UniformGrid x:Name="ModeGrid" Columns="3" Margin="0,0,4,0">
+            <ToggleButton x:Name="EfficiencyMode" Margin="4" Padding="6,8" Click="Mode_Click" Tag="961cc777-2547-4f9d-8174-7d86181b8a7a">
+                <StackPanel>
+                    <ui:SymbolIcon Symbol="LeafOne24" FontSize="18" />
+                    <TextBlock FontSize="11" Margin="0,4,0,0" TextAlignment="Center" TextWrapping="Wrap" Text="{l:T 'Eficiencia'}" />
+                </StackPanel>
+            </ToggleButton>
+            <ToggleButton x:Name="BalancedMode" Margin="4" Padding="6,8" Click="Mode_Click" Tag="00000000-0000-0000-0000-000000000000">
+                <StackPanel>
+                    <ui:SymbolIcon Symbol="Scales24" FontSize="18" />
+                    <TextBlock FontSize="11" Margin="0,4,0,0" TextAlignment="Center" TextWrapping="Wrap" Text="{l:T 'Equilibrado'}" />
+                </StackPanel>
+            </ToggleButton>
+            <ToggleButton x:Name="PerformanceMode" Margin="4" Padding="6,8" Click="Mode_Click" Tag="ded574b5-45a0-4f42-8737-46345c09c238">
+                <StackPanel>
+                    <ui:SymbolIcon Symbol="Flash24" FontSize="18" />
+                    <TextBlock FontSize="11" Margin="0,4,0,0" TextAlignment="Center" TextWrapping="Wrap" Text="{l:T 'Rendimiento'}" />
+                </StackPanel>
+            </ToggleButton>
+        </UniformGrid>
+
+        <!-- Detalles: ahorro de batería y salud -->
+        <TextBlock x:Name="SaverText" Style="{StaticResource FlyoutHint}" Margin="4,10,8,0" TextWrapping="Wrap" />
+        <TextBlock x:Name="HealthText" Style="{StaticResource FlyoutHint}" Margin="4,2,8,0" TextWrapping="Wrap" />
+
+        <Button Style="{StaticResource FlyoutRow}" Margin="0,10,0,0" Click="Settings_Click">
+            <StackPanel Orientation="Horizontal">
+                <ui:SymbolIcon Symbol="Settings24" FontSize="16" Margin="0,0,10,0" />
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Configuración de energía y batería'}" />
+            </StackPanel>
+        </Button>
+    </StackPanel>
+</flyouts:FlyoutWindow>

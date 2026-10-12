@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using ManagedShell.WindowsTasks;
 using Winx.Shell.Services;
 
@@ -10,6 +11,14 @@ public partial class TaskButton : UserControl
     public TaskButton()
     {
         InitializeComponent();
+        MouseEnter += (_, _) =>
+        {
+            // La vista previa ya muestra el título: el tooltip la taparía.
+            ToolTipService.SetIsEnabled(MainButton, !Settings.Current.ShowTaskPreviews);
+            if (Window is { } window && Mouse.LeftButton != MouseButtonState.Pressed)
+                TaskPreviewWindow.HoverStart(this, window);
+        };
+        MouseLeave += (_, _) => TaskPreviewWindow.HoverEnd();
         Loaded += (_, _) =>
         {
             if (System.Windows.Window.GetWindow(this) is Taskbar bar)
@@ -42,8 +51,38 @@ public partial class TaskButton : UserControl
 
     private ApplicationWindow? Window => DataContext as ApplicationWindow;
 
+    /// <summary>Se empezó a arrastrar el botón (para ordenar las ventanas).</summary>
+    public static event Action<TaskButton>? DragStarted;
+
+    private Point? _pressedAt;
+
+    protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+    {
+        base.OnPreviewMouseLeftButtonDown(e);
+        _pressedAt = e.GetPosition(this);
+    }
+
+    protected override void OnPreviewMouseMove(MouseEventArgs e)
+    {
+        base.OnPreviewMouseMove(e);
+        if (_pressedAt is not { } start || e.LeftButton != MouseButtonState.Pressed)
+        {
+            _pressedAt = null;
+            return;
+        }
+        var delta = e.GetPosition(this) - start;
+        if (Math.Abs(delta.X) > SystemParameters.MinimumHorizontalDragDistance
+            || Math.Abs(delta.Y) > SystemParameters.MinimumVerticalDragDistance)
+        {
+            _pressedAt = null;
+            TaskPreviewWindow.Dismiss();
+            DragStarted?.Invoke(this);
+        }
+    }
+
     private void Button_Click(object sender, RoutedEventArgs e)
     {
+        TaskPreviewWindow.Dismiss();
         if (Window is not { } window)
             return;
 

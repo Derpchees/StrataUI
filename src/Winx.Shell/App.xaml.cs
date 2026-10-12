@@ -56,6 +56,7 @@ public partial class App : Application
         if (e.Args.Contains(RestoreArg, StringComparer.OrdinalIgnoreCase))
         {
             NativeTaskbar.Restore();
+            Services.Notifications.WindowsBanners.Restore();
             Shutdown();
             return;
         }
@@ -153,6 +154,8 @@ public partial class App : Application
         Services.Media.MediaService.Initialize();
         Services.Notifications.NotificationService.Arrived += OnNotificationArrived;
         Services.Notifications.NotificationService.Update();
+        Services.Notifications.WindowsBanners.Update();
+        Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged += OnWindowsPreferenceChanged;
@@ -320,6 +323,8 @@ public partial class App : Application
     /// </summary>
     private void OnNotificationArrived(Services.Notifications.WinxNotification item)
     {
+        if (!item.IsLocal)
+            Services.Notifications.WindowsBanners.OnNotification(item.AppId);
         var s = Settings.Current;
         bool quiet = !s.NotificationBanners || s.NotificationDoNotDisturb
                      || _shell?.FullScreenHelper.FullScreenApps.Count > 0;
@@ -336,11 +341,14 @@ public partial class App : Application
     }
 
     private static void UpdateKeyHook() =>
-        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled);
+        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, Settings.Current.ShowOsd);
 
     /// <summary>Barra del monitor principal con el botón Inicio (tecla Windows, Win+X).</summary>
     private Taskbar? AppsTaskbar =>
         _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Role.ShowsApps) ?? _taskbars.FirstOrDefault(t => t.Role.ShowsApps);
+
+    /// <summary>Barra junto a la que aparecen los avisos en pantalla (volumen, brillo, Bloq Mayús…).</summary>
+    public Taskbar? OsdTaskbar => StatusTaskbar ?? AppsTaskbar;
 
     /// <summary>Barra del monitor principal con el reloj (Win+N).</summary>
     private Taskbar? StatusTaskbar =>
@@ -350,6 +358,8 @@ public partial class App : Application
     {
         UpdateKeyHook();
         Services.Notifications.NotificationService.Update();
+        if (!_exiting)
+            Services.Notifications.WindowsBanners.Update();
         Services.Updates.UpdateService.UpdateSchedule();
         if (_exiting)
             return;
@@ -458,7 +468,10 @@ public partial class App : Application
         Settings.Changed -= OnSettingsChanged;
         Services.StartMenu.WinKeyHook.Update(false, false);
         Services.Notifications.NotificationService.Shutdown();
+        Services.Notifications.WindowsBanners.Restore();
         Notifications.NotificationBannerWindow.CloseAll();
+        Notifications.Osd.Shutdown();
+        Controls.TaskPreviewWindow.CloseAll();
         Services.StartMenu.StartMenuService.Shutdown();
         Flyouts.FlyoutManager.CloseAll();
         _hub?.Close();
@@ -510,5 +523,6 @@ public partial class App : Application
             // Si ManagedShell ya no responde, recurrimos a la restauración directa.
         }
         NativeTaskbar.Restore();
+        Services.Notifications.WindowsBanners.Restore();
     }
 }

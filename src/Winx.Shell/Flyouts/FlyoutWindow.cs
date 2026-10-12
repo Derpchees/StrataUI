@@ -191,8 +191,22 @@ public abstract class FlyoutWindow : FluentWindow
         if (_closing)
             return;
         _closing = true;
-        Dispatcher.BeginInvoke(Close);
+        if (!IsVisible)
+        {
+            Dispatcher.BeginInvoke(Close);
+            return;
+        }
+        Services.Themes.Motion.Out(this, Moving(), BarPosition, () => Dispatcher.BeginInvoke(Close));
     }
+
+    /// <summary>
+    /// Lo que se mueve al abrir y cerrar: al deslizar, solo el contenido (las capas de fondo quedan
+    /// fijas sobre el Acrylic); al acercar o rebotar, el panel entero.
+    /// </summary>
+    private FrameworkElement Moving() =>
+        Settings.Current.PanelAnimation is PanelAnimation.Zoom or PanelAnimation.Pop || _root is null
+            ? (FrameworkElement?)_root ?? this
+            : _root.Children[^1] as FrameworkElement ?? _root;
 
     private void LimitHeightToScreen(FrameworkElement anchor)
     {
@@ -265,27 +279,8 @@ public abstract class FlyoutWindow : FluentWindow
         SetWindowPos(hwnd, IntPtr.Zero, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
-    private void AnimateIn()
-    {
-        var duration = TimeSpan.FromMilliseconds(160);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
-        BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
-        // Se desliza solo el contenido; las capas de fondo quedan fijas sobre el Acrylic.
-        if (_root?.Children[^1] is FrameworkElement content)
-        {
-            // Entra desde la barra: desde abajo si está abajo, desde la izquierda si está a la izquierda…
-            var (property, from) = BarPosition switch
-            {
-                TaskbarPosition.Top => (TranslateTransform.YProperty, -16.0),
-                TaskbarPosition.Left => (TranslateTransform.XProperty, -16.0),
-                TaskbarPosition.Right => (TranslateTransform.XProperty, 16.0),
-                _ => (TranslateTransform.YProperty, 16.0),
-            };
-            var slide = new TranslateTransform();
-            content.RenderTransform = slide;
-            slide.BeginAnimation(property, new DoubleAnimation(from, 0, duration) { EasingFunction = ease });
-        }
-    }
+    /// <summary>Entra desde la barra: desde abajo si está abajo, desde la izquierda si está a la izquierda…</summary>
+    private void AnimateIn() => Services.Themes.Motion.In(this, Moving(), BarPosition);
 
     private const uint SWP_NOSIZE = 0x0001;
     private const uint SWP_NOZORDER = 0x0004;
@@ -351,4 +346,7 @@ public static class FlyoutManager
     }
 
     public static void CloseAll() => _open?.CloseFlyout();
+
+    /// <summary>Hay un panel de ese tipo abierto (p. ej. para no mostrar el OSD encima del de volumen).</summary>
+    public static bool IsOpen<T>() where T : FlyoutWindow => _open is T { IsVisible: true };
 }

@@ -50,10 +50,21 @@
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Multimedia'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Carátula, canción y artista de lo que suena en cualquier app (Spotify, Reproductor multimedia, Deezer, YouTube en el navegador…). Clic central: pausa.'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Carátula, canción, artista y álbum de lo que suena en cualquier app (Spotify, Reproductor multimedia, Deezer, YouTube en el navegador…). Clic: abre la app; clic central: pausa.'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="MediaSwitch" Click="Modules_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl x:Name="MediaControlsCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Play24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Controles multimedia'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Anterior, reproducir o pausar y siguiente junto a la canción'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="MediaControlsSwitch" Click="Modules_Changed" />
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
@@ -72,10 +83,32 @@
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Batería'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Solo aparece en equipos con batería'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Solo aparece en equipos con batería. Clic: nivel, tiempo restante y modo de energía.'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="BatterySwitch" Click="Modules_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl x:Name="BatteryPercentCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="BatteryCharge24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Porcentaje de la batería'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'El número dentro del ícono, con un rayo mientras carga'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="BatteryPercentSwitch" Click="Modules_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="SlideText24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Avisos en pantalla'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Junto a la barra al cambiar el volumen o el brillo, al silenciar y al pulsar Bloq Mayús, Bloq Num o Bloq Despl.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="OsdSwitch" Click="Modules_Changed" />
             </ui:CardControl>
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Reloj'}" />

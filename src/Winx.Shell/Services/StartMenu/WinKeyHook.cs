@@ -19,6 +19,8 @@ public static class WinKeyHook
     private const int WhKeyboardLl = 13;
     private const int WmKeyDown = 0x0100, WmKeyUp = 0x0101, WmSysKeyDown = 0x0104, WmSysKeyUp = 0x0105;
     private const int VkLWin = 0x5B, VkRWin = 0x5C, VkMask = 0xFF, VkX = 0x58, VkN = 0x4E;
+    private const int VkCapital = 0x14, VkNumLock = 0x90, VkScroll = 0x91;
+    private const int VkVolumeMute = 0xAD, VkVolumeDown = 0xAE, VkVolumeUp = 0xAF;
     private const uint LlkhfInjected = 0x10;
     private const uint KeyEventFKeyUp = 0x0002;
 
@@ -33,6 +35,7 @@ public static class WinKeyHook
     private static bool _maskOnRelease;
     private static volatile bool _handleWin;
     private static volatile bool _handleWinN;
+    private static volatile bool _watchLocks;
 
     /// <summary>Win se pulsó y soltó sola (se invoca en el hilo de la UI).</summary>
     public static event Action? WinPressed;
@@ -43,6 +46,16 @@ public static class WinKeyHook
     /// <summary>Win+N: el centro de notificaciones (se invoca en el hilo de la UI).</summary>
     public static event Action? WinNPressed;
 
+    /// <summary>Se soltó Bloq Mayús, Bloq Num o Bloq Despl (código de tecla; en el hilo de la UI).</summary>
+    public static event Action<int>? LockKeyPressed;
+
+    /// <summary>
+    /// Tecla de subir, bajar o silenciar el volumen (código de tecla; en el hilo de la UI). Con el
+    /// OSD de WINX activo no llegan a Windows, que si no mostraría también el suyo: WINX cambia el
+    /// volumen. Se atienden también las simuladas (teclados de macros, mandos).
+    /// </summary>
+    public static event Action<int>? VolumeKeyPressed;
+
     /// <summary>
     /// El hook vive en un hilo propio con su bucle de mensajes: si la UI se bloquea un momento,
     /// el teclado del sistema no se retrasa (Windows espera al hook en cada tecla) ni Windows
@@ -50,11 +63,13 @@ public static class WinKeyHook
     /// </summary>
     /// <param name="winKey">Tecla Windows sola y Win+X (menú Inicio de WINX).</param>
     /// <param name="winN">Win+N (centro de notificaciones de WINX).</param>
-    public static void Update(bool winKey, bool winN)
+    /// <param name="lockKeys">OSD: avisar de las teclas de bloqueo (sin interceptarlas) y atender las de volumen.</param>
+    public static void Update(bool winKey, bool winN, bool lockKeys = false)
     {
         _handleWin = winKey;
         _handleWinN = winN;
-        bool enabled = winKey || winN;
+        _watchLocks = lockKeys;
+        bool enabled = winKey || winN || lockKeys;
         if (enabled && _thread == null)
         {
             var ready = new ManualResetEventSlim();
@@ -97,12 +112,27 @@ public static class WinKeyHook
         if (code >= 0)
         {
             var info = Marshal.PtrToStructure<KbdLlHookStruct>(lParam);
+            if (_watchLocks && info.VkCode is VkVolumeMute or VkVolumeDown or VkVolumeUp)
+            {
+                if ((int)wParam is WmKeyDown or WmSysKeyDown)
+                {
+                    int vk = info.VkCode;
+                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => VolumeKeyPressed?.Invoke(vk));
+                }
+                return (IntPtr)1;
+            }
             if ((info.Flags & LlkhfInjected) == 0)
             {
                 int message = (int)wParam;
                 bool isWin = info.VkCode is VkLWin or VkRWin;
                 bool down = message is WmKeyDown or WmSysKeyDown;
                 bool up = message is WmKeyUp or WmSysKeyUp;
+
+                if (up && _watchLocks && info.VkCode is VkCapital or VkNumLock or VkScroll)
+                {
+                    int vk = info.VkCode;
+                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => LockKeyPressed?.Invoke(vk));
+                }
 
                 if (isWin && down)
                 {

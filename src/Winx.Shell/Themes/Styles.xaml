@@ -33,6 +33,13 @@
         </Setter>
     </Style>
 
+    <!-- Módulos del área de estado (red, Bluetooth, brillo, volumen, batería): juntos, sin separación. -->
+    <Style x:Key="StatusButton" TargetType="ButtonBase" BasedOn="{StaticResource TaskbarButton}">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0,4" />
+    </Style>
+
     <Style x:Key="IconText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
         <Setter Property="FontSize" Value="15" />
