@@ -14,6 +14,12 @@ public enum TaskbarAppsMode { Windows, AllTaskbars, MainAndOwn, OwnOnly }
 /// <summary>Borde de la pantalla donde va la barra.</summary>
 public enum TaskbarPosition { Bottom, Top, Left, Right }
 
+/// <summary>
+/// Segunda barra de un monitor, en el borde opuesto, y qué lleva. Con "Apps" o "Status" las dos
+/// barras se reparten el contenido; con "Full" las dos llevan todo.
+/// </summary>
+public enum SecondBarContent { None, Apps, Status, Full }
+
 public enum WinxTheme { System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material }
 
 public enum StartMenuStyle { Windows11, List, Fullscreen, Compact, Spotlight, Icons, Profile }
@@ -68,6 +74,21 @@ public sealed class WinxSettings
 
     public TaskbarPosition PositionOf(string screen) =>
         TaskbarPositions.TryGetValue(screen, out var position) ? position : TaskbarPosition.Bottom;
+
+    /// <summary>Segunda barra de cada monitor (clave: nombre del dispositivo); ninguna si no está.</summary>
+    public Dictionary<string, SecondBarContent> SecondTaskbars { get; set; } = new();
+
+    public SecondBarContent SecondBarOf(string screen) =>
+        SecondTaskbars.TryGetValue(screen, out var content) ? content : SecondBarContent.None;
+
+    /// <summary>Borde opuesto (donde va la segunda barra).</summary>
+    public static TaskbarPosition Opposite(TaskbarPosition position) => position switch
+    {
+        TaskbarPosition.Top => TaskbarPosition.Bottom,
+        TaskbarPosition.Left => TaskbarPosition.Right,
+        TaskbarPosition.Right => TaskbarPosition.Left,
+        _ => TaskbarPosition.Top,
+    };
     public int TaskbarHeight { get; set; } = 48;
     public bool ShowSeconds { get; set; }
     public bool ShowDate { get; set; } = true;
@@ -100,6 +121,8 @@ public sealed class WinxSettings
     public bool ShowBatteryModule { get; set; } = true;
     /// <summary>Solo aparece si algún monitor permite cambiar el brillo (DDC/CI o pantalla integrada).</summary>
     public bool ShowBrightnessModule { get; set; } = true;
+    /// <summary>Lo que suena ahora (carátula, título y artista); solo aparece si hay algo reproduciéndose.</summary>
+    public bool ShowMediaModule { get; set; } = true;
 
     // Notificaciones
     /// <summary>Centro de notificaciones de WINX (desactivado: el reloj abre el de Windows).</summary>

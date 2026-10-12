@@ -12,14 +12,15 @@ a la normalidad.
 
 | Componente              | Estado                                                        |
 |-------------------------|---------------------------------------------------------------|
-| Barra de tareas         | ✅ una por monitor, en cualquier borde (abajo, arriba, izquierda, derecha), alineación y tamaño configurables |
+| Barra de tareas         | ✅ una o dos por monitor (bordes opuestos, repartiendo apps y área de estado), en cualquier borde, alineación y tamaño configurables |
 | Bandeja del sistema     | ✅ íconos visibles u ocultos; se ordenan arrastrando, también entre la barra y los ocultos |
 | Hub de configuración    | ✅ portada, barra, menú Inicio, bandeja y área de estado, notificaciones, apariencia, optimización, actualizaciones, general |
-| Optimización (debloat)  | ✅ apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
+| Optimización (debloat)  | ✅ rendimiento, apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
 | Temas                   | ✅ Sistema, Claro, Oscuro, Transparencia, Liquid Glass (claro/oscuro), Material |
 | Panel de sonido         | ✅ salida y entrada con mosaicos de dispositivos, opciones (balance, mejoras de audio, modo exclusivo, llamadas) y volumen por aplicación |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
+| Multimedia              | ✅ carátula, canción y artista de cualquier app (Spotify, Reproductor multimedia, navegador…), controles y avance |
 | Brillo                  | ✅ cada monitor por DDC/CI (y pantalla de portátil por WMI), todos a la vez, rueda del mouse |
 | Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas, secciones y huecos, tecla Windows; clic derecho: ejecutar como administrador, abrir ubicación, desinstalar |
 | Notificaciones          | ✅ centro propio junto al reloj (Win+N), avisos en el monitor y la esquina elegidos, No molestar, calendario |

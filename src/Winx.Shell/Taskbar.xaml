@@ -81,6 +81,27 @@
     
                 <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
                 <StackPanel x:Name="StatusPanel" Grid.Column="1" Orientation="Horizontal">
+                    <!-- Lo que suena ahora (cualquier app que se anuncie a Windows); clic central: pausa -->
+                    <Button x:Name="MediaButton" Style="{StaticResource TaskbarButton}" Padding="6,0" Visibility="Collapsed"
+                            Click="MediaButton_Click" MouseUp="MediaButton_MouseUp">
+                        <StackPanel x:Name="MediaContent" Orientation="Horizontal">
+                            <Border Width="28" Height="28" CornerRadius="5" VerticalAlignment="Center"
+                                    Background="{DynamicResource WinxSurfaceBrush}">
+                                <Grid>
+                                    <TextBlock Style="{StaticResource IconText}" FontSize="13" Text="&#xEC4F;" />
+                                    <Border CornerRadius="5">
+                                        <Border.Background>
+                                            <ImageBrush x:Name="MediaCover" Stretch="UniformToFill" />
+                                        </Border.Background>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                            <StackPanel x:Name="MediaText" Margin="8,0,2,0" MaxWidth="150" VerticalAlignment="Center">
+                                <TextBlock x:Name="MediaTitle" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="MediaArtist" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
                     <StackPanel x:Name="TrayArea" Orientation="Horizontal">
                         <ToggleButton x:Name="ChevronButton" Style="{StaticResource TaskbarButton}" Width="28"
                                       Padding="0" ToolTip="{l:T 'Mostrar iconos ocultos'}"

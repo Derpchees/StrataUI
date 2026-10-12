@@ -144,12 +144,13 @@ public partial class App : Application
         SystemStatus.Initialize();
         Services.StartMenu.StartMenuService.Initialize();
         Services.StartMenu.WinKeyHook.WinPressed += OnWinKey;
-        Services.StartMenu.WinKeyHook.WinXPressed += () => MainTaskbar?.ShowWinXMenu();
-        Services.StartMenu.WinKeyHook.WinNPressed += () => MainTaskbar?.ToggleNotificationCenter();
+        Services.StartMenu.WinKeyHook.WinXPressed += () => AppsTaskbar?.ShowWinXMenu();
+        Services.StartMenu.WinKeyHook.WinNPressed += () => StatusTaskbar?.ToggleNotificationCenter();
         UpdateKeyHook();
         OpenTaskbars();
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
         _ = Services.Brightness.BrightnessService.RefreshAsync();
+        Services.Media.MediaService.Initialize();
         Services.Notifications.NotificationService.Arrived += OnNotificationArrived;
         Services.Notifications.NotificationService.Update();
         Services.Updates.UpdateService.UpdateSchedule();
@@ -211,13 +212,41 @@ public partial class App : Application
             bool isMain = screen.DeviceName == main;
             if (!isMain && s.TaskbarHiddenScreens.Contains(screen.DeviceName))
                 continue;
-            var taskbar = new Taskbar(_shell!, screen, multiMonitor, s.PositionOf(screen.DeviceName), isMain);
-            taskbar.Show();
-            _taskbars.Add(taskbar);
+            var bars = BarsFor(s.PositionOf(screen.DeviceName), s.SecondBarOf(screen.DeviceName), isMain);
+            foreach (var (edge, role) in bars)
+            {
+                var taskbar = new Taskbar(_shell!, screen, multiMonitor, edge, role);
+                taskbar.Show();
+                _taskbars.Add(taskbar);
+            }
         }
         // Ya se sabe qué monitores quedaron sin barra: la principal muestra también sus ventanas.
         foreach (var taskbar in _taskbars)
             taskbar.RefreshTasks();
+    }
+
+    /// <summary>
+    /// Barras de un monitor. Con dos se reparten: la segunda (borde opuesto) lleva lo elegido y la
+    /// primera el resto ("Completa": las dos todo). La bandeja va con el área de estado del monitor
+    /// principal (en la primera si las dos la tienen), y esa barra se crea primero.
+    /// </summary>
+    internal static List<(TaskbarPosition Edge, BarRole Role)> BarsFor(TaskbarPosition position, SecondBarContent second, bool isMain)
+    {
+        var primary = new BarRole(
+            HasTray: isMain && second != SecondBarContent.Status,
+            IsMainScreen: isMain,
+            ShowsApps: second != SecondBarContent.Apps,
+            ShowsStatus: second != SecondBarContent.Status);
+        var bars = new List<(TaskbarPosition, BarRole)> { (position, primary) };
+        if (second == SecondBarContent.None)
+            return bars;
+        var secondRole = new BarRole(
+            HasTray: isMain && second == SecondBarContent.Status,
+            IsMainScreen: isMain,
+            ShowsApps: second is SecondBarContent.Apps or SecondBarContent.Full,
+            ShowsStatus: second is SecondBarContent.Status or SecondBarContent.Full);
+        bars.Insert(secondRole.HasTray ? 0 : 1, (WinxSettings.Opposite(position), secondRole));
+        return bars;
     }
 
     /// <summary>Hay una barra de WINX en ese monitor.</summary>
@@ -235,11 +264,12 @@ public partial class App : Application
         return list.FirstOrDefault(sc => sc.Primary).Device ?? list.FirstOrDefault().Device ?? "";
     }
 
-    /// <summary>Lo que obliga a recrear las barras: posición por monitor, monitores sin barra y principal.</summary>
+    /// <summary>Lo que obliga a recrear las barras: posición y segunda barra por monitor, monitores sin barra y principal.</summary>
     private static string BarLayoutKey()
     {
         var s = Settings.Current;
         return string.Join(";", s.TaskbarPositions.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
+               + "|" + string.Join(";", s.SecondTaskbars.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
                + "|" + string.Join(";", s.TaskbarHiddenScreens.Order())
                + "|" + s.TaskbarMainScreen;
     }
@@ -300,7 +330,7 @@ public partial class App : Application
     /// <summary>Tecla Windows: abre el menú Inicio de la barra principal.</summary>
     private void OnWinKey()
     {
-        var taskbar = MainTaskbar;
+        var taskbar = AppsTaskbar;
         if (taskbar != null)
             StartMenu.StartMenuLauncher.Toggle(taskbar.StartAnchor);
     }
@@ -308,8 +338,13 @@ public partial class App : Application
     private static void UpdateKeyHook() =>
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled);
 
-    /// <summary>Barra principal de WINX (bandeja, tecla Windows, Win+X, Win+N).</summary>
-    private Taskbar? MainTaskbar => _taskbars.FirstOrDefault(t => t.IsMain) ?? _taskbars.FirstOrDefault();
+    /// <summary>Barra del monitor principal con el botón Inicio (tecla Windows, Win+X).</summary>
+    private Taskbar? AppsTaskbar =>
+        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Role.ShowsApps) ?? _taskbars.FirstOrDefault(t => t.Role.ShowsApps);
+
+    /// <summary>Barra del monitor principal con el reloj (Win+N).</summary>
+    private Taskbar? StatusTaskbar =>
+        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Role.ShowsStatus) ?? _taskbars.FirstOrDefault(t => t.Role.ShowsStatus);
 
     private void OnSettingsChanged()
     {

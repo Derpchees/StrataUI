@@ -24,7 +24,7 @@ public partial class HomePage : Page
             new Tile(SymbolRegular.Apps24, Loc.T("Bandeja y área de estado"), Loc.T("Íconos, brillo, sonido y reloj"), "Tray"),
             new Tile(SymbolRegular.Alert24, Loc.T("Notificaciones"), Loc.T("Centro, avisos y su posición"), "Notifications"),
             new Tile(SymbolRegular.PaintBrush24, Loc.T("Apariencia"), Loc.T("Tema, color y fondo"), "Appearance"),
-            new Tile(SymbolRegular.ShieldLock24, Loc.T("Optimización"), Loc.T("Privacidad, IA, apps y más"), "Privacy"),
+            new Tile(SymbolRegular.Flash24, Loc.T("Optimización"), Loc.T("Rendimiento, privacidad, IA y más"), "Performance"),
         };
         DndSwitch.IsChecked = Settings.Current.NotificationDoNotDisturb;
         AutoStartSwitch.IsChecked = AutoStart.IsEnabled;

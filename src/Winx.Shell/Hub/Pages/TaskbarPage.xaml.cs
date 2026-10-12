@@ -34,6 +34,14 @@ public partial class TaskbarPage : Page
 
     private static readonly string[] PositionNames = [Loc.T("Abajo"), Loc.T("Arriba"), Loc.T("Izquierda"), Loc.T("Derecha")];
 
+    // En el orden de SecondBarContent.
+    private static readonly string[] SecondBarNames =
+        [Loc.T("Ninguna"), Loc.T("Apps abiertas"), Loc.T("Área de estado y reloj"), Loc.T("Completa")];
+
+    private static string SecondBarDescription(TaskbarPosition position) =>
+        Loc.F("En el borde opuesto ({0}). Con \"Apps abiertas\" o \"Área de estado y reloj\" las dos barras se reparten el contenido; \"Completa\" repite todo.",
+              PositionNames[(int)WinxSettings.Opposite(position)]);
+
     /// <summary>Monitores de izquierda a derecha (así se numeran en toda la página).</summary>
     private static List<Forms.Screen> Screens() =>
         Forms.Screen.AllScreens.OrderBy(sc => sc.Bounds.X).ThenBy(sc => sc.Bounds.Y).ToList();
@@ -81,11 +89,30 @@ public partial class TaskbarPage : Page
                        + (isMain && screens.Count > 1 ? " · " + Loc.T("lleva la bandeja del sistema") : ""),
             });
 
+            // Segunda barra en el borde opuesto (se describe según la posición de la primera).
+            var secondText = new TextBlock { Style = (Style)FindResource("CardDescription"), Text = SecondBarDescription(Settings.Current.PositionOf(device)) };
+            var second = new ComboBox { MinWidth = 200, ItemsSource = SecondBarNames, SelectedIndex = (int)Settings.Current.SecondBarOf(device) };
+            second.SelectionChanged += (_, _) =>
+            {
+                if (_loading || second.SelectedIndex < 0)
+                    return;
+                var content = (SecondBarContent)second.SelectedIndex;
+                Settings.Update(s =>
+                {
+                    if (content == SecondBarContent.None)
+                        s.SecondTaskbars.Remove(device);
+                    else
+                        s.SecondTaskbars[device] = content;
+                });
+            };
+
             var position = new ComboBox { MinWidth = 140, ItemsSource = PositionNames, SelectedIndex = (int)Settings.Current.PositionOf(device) };
             position.SelectionChanged += (_, _) =>
             {
-                if (!_loading && position.SelectedIndex >= 0)
-                    Settings.Update(s => s.TaskbarPositions[device] = (TaskbarPosition)position.SelectedIndex);
+                if (_loading || position.SelectedIndex < 0)
+                    return;
+                Settings.Update(s => s.TaskbarPositions[device] = (TaskbarPosition)position.SelectedIndex);
+                secondText.Text = SecondBarDescription((TaskbarPosition)position.SelectedIndex);
             };
 
             var controls = new StackPanel { Orientation = Orientation.Horizontal };
@@ -101,7 +128,7 @@ public partial class TaskbarPage : Page
                 visible.Click += (_, _) =>
                 {
                     bool show = visible.IsChecked == true;
-                    position.IsEnabled = show;
+                    position.IsEnabled = second.IsEnabled = show;
                     Settings.Update(s =>
                     {
                         s.TaskbarHiddenScreens.Remove(device);
@@ -109,7 +136,7 @@ public partial class TaskbarPage : Page
                             s.TaskbarHiddenScreens.Add(device);
                     });
                 };
-                position.IsEnabled = visible.IsChecked == true;
+                position.IsEnabled = second.IsEnabled = visible.IsChecked == true;
                 controls.Children.Add(visible);
             }
 
@@ -119,6 +146,18 @@ public partial class TaskbarPage : Page
                 Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Desktop24 },
                 Header = header,
                 Content = controls,
+            });
+
+            var secondHeader = new StackPanel();
+            secondHeader.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Segunda barra") });
+            secondHeader.Children.Add(secondText);
+            MonitorList.Children.Add(new Wpf.Ui.Controls.CardControl
+            {
+                Style = (Style)FindResource("HubCard"),
+                Margin = new Thickness(40, 0, 0, 12),
+                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowBidirectionalUpDown24 },
+                Header = secondHeader,
+                Content = second,
             });
         }
     }

@@ -19,6 +19,10 @@ public static class TweakCatalog
     public const string Multitasking = "multitasking";
     public const string Gaming = "gaming";
     public const string Browsers = "browsers";
+    public const string Performance = "performance";
+
+    private const string Desktop = @"Control Panel\Desktop";
+    private const string SystemProfile = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
 
     private const string Advanced = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
     private const string ContentDelivery = @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager";
@@ -244,6 +248,46 @@ public static class TweakCatalog
         new("game-bar-button", Gaming, Loc.T("No abrir Game Bar con el botón Xbox"),
             Loc.T("El botón Xbox del control ya no abre Xbox Game Bar."),
             [CU(@"Software\Microsoft\GameBar", "UseNexusForGameBarEnabled", 1, 0)]),
+
+        // ── Rendimiento ────────────────────────────────────────────────────────
+        // Ajustes de respuesta y prioridad: ninguno quita funciones; los que pesan en algo lo dicen.
+        new("menu-delay", Performance, Loc.T("Menús instantáneos"),
+            Loc.T("Los submenús se abren sin la espera de 0,4 s de Windows."),
+            [CU(Desktop, "MenuShowDelay", "400", "0", kind: RegistryValueKind.String)]),
+        new("hover-time", Performance, Loc.T("Respuesta más rápida al pasar el mouse"),
+            Loc.T("Las vistas previas y los tooltips aparecen antes (150 ms en lugar de 400)."),
+            [CU(@"Control Panel\Mouse", "MouseHoverTime", "400", "150", kind: RegistryValueKind.String)]),
+        new("min-animate", Performance, Loc.T("Sin animación al minimizar y maximizar"),
+            Loc.T("Las ventanas cambian de tamaño al instante. Se aplica al volver a iniciar sesión."),
+            [CU(Desktop + @"\WindowMetrics", "MinAnimate", "1", "0", kind: RegistryValueKind.String)]),
+        new("startup-delay", Performance, Loc.T("Sin espera para las apps de inicio"),
+            Loc.T("Windows abre las apps de inicio en cuanto inicias sesión, sin retrasarlas unos segundos."),
+            [CU(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize", "StartupDelayInMSec", null, 0)]),
+        new("hung-apps", Performance, Loc.T("Cerrar antes las apps que no responden"),
+            Loc.T("Windows da por colgada una app a los 2 s (en lugar de 5) y apagar espera 5 s por cada una (en lugar de 20)."),
+            [CU(Desktop, "HungAppTimeout", "5000", "2000", kind: RegistryValueKind.String),
+             CU(Desktop, "WaitToKillAppTimeout", "20000", "5000", kind: RegistryValueKind.String)]),
+        new("power-throttling", Performance, Loc.T("Desactivar la limitación de energía"),
+            Loc.T("Windows deja de frenar las apps en segundo plano para ahorrar energía. En portátiles gasta más batería."),
+            [LM(@"SYSTEM\CurrentControlSet\Control\Power\PowerThrottling", "PowerThrottlingOff", null, 1)]),
+        new("hags", Performance, Loc.T("Programación de GPU acelerada por hardware"),
+            Loc.T("La tarjeta gráfica administra su propia memoria: menos latencia en juegos y video. Se aplica al reiniciar."),
+            [LM(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 1, 2, missing: 1)]),
+        new("games-priority", Performance, Loc.T("Más prioridad para juegos"),
+            Loc.T("Los juegos reciben más tiempo de procesador y prioridad de disco que las tareas de fondo."),
+            [LM(SystemProfile + @"\Tasks\Games", "Priority", 2, 6),
+             LM(SystemProfile + @"\Tasks\Games", "Scheduling Category", "Medium", "High", kind: RegistryValueKind.String),
+             LM(SystemProfile + @"\Tasks\Games", "SFIO Priority", "Normal", "High", kind: RegistryValueKind.String)]),
+        new("system-responsiveness", Performance, Loc.T("Menos reserva para tareas multimedia de fondo"),
+            Loc.T("Windows reserva el 10 % del procesador (en lugar del 20 %) y no limita la red mientras suena audio o video."),
+            [LM(SystemProfile, "SystemResponsiveness", 20, 10),
+             LM(SystemProfile, "NetworkThrottlingIndex", 10, unchecked((int)0xFFFFFFFF))]),
+        new("background-apps", Performance, Loc.T("Impedir que las apps de la Tienda corran en segundo plano"),
+            Loc.T("Ahorra memoria y procesador. Ojo: esas apps (WhatsApp de la Tienda, por ejemplo) dejan de avisar cuando están cerradas."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Windows\AppPrivacy", "LetAppsRunInBackground", 2)]),
+        new("search-indexing", Performance, Loc.T("Desactivar la indexación de búsqueda"),
+            Loc.T("Menos uso de disco en segundo plano. La búsqueda del Explorador se vuelve más lenta (la de Inicio de WINX no cambia). Se aplica al reiniciar."),
+            [LM(@"SYSTEM\CurrentControlSet\Services\WSearch", "Start", 2, 4)]),
 
         // ── Navegadores ────────────────────────────────────────────────────────
         new("brave-bloat", Browsers, Loc.T("Brave: quitar Rewards, Wallet, VPN y Leo"),

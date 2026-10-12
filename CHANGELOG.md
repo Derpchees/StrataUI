@@ -6,6 +6,23 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.13.0] - 2026-10-12
+
+### Añadido
+- **Dos barras por monitor**: una segunda barra en el borde opuesto (arriba y abajo, o izquierda y
+  derecha) que lleva las apps abiertas, el área de estado y el reloj (con la bandeja si es el
+  monitor principal), o todo. Con las dos primeras opciones las barras se reparten el contenido.
+- **Control multimedia**: carátula, canción y artista de lo que suena en cualquier app que se
+  anuncie a Windows (Spotify, Reproductor multimedia, Deezer, YouTube y otros sitios en el
+  navegador…). En la barra, la carátula (y en horizontal el título y el artista); al hacer clic,
+  un panel con avance, anterior/pausa/siguiente y, si hay varias apps, cuál controlar. Clic
+  central: pausa.
+- **Optimización › Rendimiento**: menús instantáneos, respuesta más rápida al pasar el mouse, sin
+  animación al minimizar, sin espera para las apps de inicio, cerrar antes las apps colgadas, sin
+  limitación de energía, programación de GPU por hardware, más prioridad para juegos, menos reserva
+  para multimedia de fondo, impedir apps de la Tienda en segundo plano y desactivar la indexación.
+  Todas reversibles desde Respaldo.
+
 ## [0.12.0] - 2026-10-12
 
 ### Añadido

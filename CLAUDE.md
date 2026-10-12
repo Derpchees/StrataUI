@@ -25,8 +25,12 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   (`Settings.TaskbarMainScreen`, resuelto por `App.MainScreenDevice`). La bandeja, la tecla
   Windows, Win+X y las ventanas de monitores sin barra van a la barra con `Taskbar.IsMain`;
   no usar `Screen.Primary` para eso.
-- **Las barras se recrean, no se transforman**, cuando cambia la posición por monitor, los
-  monitores sin barra o el principal (`App.BarLayoutKey`). Todo lo demás se aplica en vivo en
+- **Dos barras por monitor**: la segunda va en el borde opuesto (`Settings.SecondTaskbars`) y
+  `App.BarsFor` reparte qué lleva cada una (`BarRole`: apps, área de estado, bandeja). La bandeja,
+  la tecla Windows y Win+N usan la barra del monitor principal que tenga eso (`IsMain` = la que
+  lleva la bandeja; `App.AppsTaskbar` / `App.StatusTaskbar`).
+- **Las barras se recrean, no se transforman**, cuando cambia la posición o la segunda barra de un
+  monitor, los monitores sin barra o el principal (`App.BarLayoutKey`). Todo lo demás se aplica en vivo en
   `Taskbar.ApplySettings`, que corre con `Settings.Changed`.
 - **Opciones "Igual que Windows"** (alineación, apps por monitor): leer siempre el valor efectivo
   con `WindowsTaskbarPrefs.Alignment(s)` / `WindowsTaskbarPrefs.AppsMode(s)`, nunca el ajuste crudo.
@@ -47,6 +51,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   esquina del Hub); el centro es `Flyouts/NotificationFlyout`. Los avisos propios de WINX (prueba,
   actualización) llevan `IsLocal` y opcionalmente `OnClick`. En la PC del usuario Windows no
   muestra sus propios avisos emergentes, así que no hay duplicados.
+- **Multimedia**: `Services/Media/MediaService` (System Media Transport Controls: lo mismo que
+  usa Windows, sirve para cualquier app que se anuncie). Para probar sin molestar al usuario, un
+  reproductor de prueba con `MediaPlayer` y volumen 0 (los datos van en `MediaPlaybackItem`, no en
+  `DisplayUpdater`).
 - **Página nueva del Hub**: `Hub/Pages/XxxPage.xaml` con `<hub:PageHeader Icon=… Title=… Subtitle=…/>`
   al principio, entrada en `HubWindow.xaml` (grupo Personalización o Sistema) y, si conviene, un
   mosaico en `HomePage`. `--hub Xxx` la abre.

@@ -46,6 +46,17 @@
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="MusicNote224" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Multimedia'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Carátula, canción y artista de lo que suena en cualquier app (Spotify, Reproductor multimedia, Deezer, YouTube en el navegador…). Clic central: pausa.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="MediaSwitch" Click="Modules_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="BrightnessHigh24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>

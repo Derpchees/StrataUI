@@ -194,3 +194,6 @@ public sealed class GamingPage() : TweaksPage(TweakCatalog.Gaming, Loc.T("Juegos
 
 public sealed class BrowsersPage() : TweaksPage(TweakCatalog.Browsers, Loc.T("Navegadores"),
     Loc.T("Funciones extra de los navegadores instalados."), SymbolRegular.Globe24);
+
+public sealed class PerformancePage() : TweaksPage(TweakCatalog.Performance, Loc.T("Rendimiento"),
+    Loc.T("Respuesta más rápida de menús y ventanas, y más prioridad para lo que estás usando."), SymbolRegular.Flash24);

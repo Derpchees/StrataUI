@@ -34,6 +34,7 @@ public partial class TrayPage : Page
         VolumeSwitch.IsChecked = s.ShowVolumeModule;
         BatterySwitch.IsChecked = s.ShowBatteryModule;
         BrightnessSwitch.IsChecked = s.ShowBrightnessModule;
+        MediaSwitch.IsChecked = s.ShowMediaModule;
         _onIconsChanged = (_, _) => Dispatcher.BeginInvoke(Refresh);
         Loaded += (_, _) =>
         {
@@ -101,5 +102,6 @@ public partial class TrayPage : Page
         s.ShowVolumeModule = VolumeSwitch.IsChecked == true;
         s.ShowBatteryModule = BatterySwitch.IsChecked == true;
         s.ShowBrightnessModule = BrightnessSwitch.IsChecked == true;
+        s.ShowMediaModule = MediaSwitch.IsChecked == true;
     });
 }

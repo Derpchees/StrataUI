@@ -18,8 +18,18 @@ using Winx.Shell.Services;
 using Winx.Shell.Services.Themes;
 using ShellNotifyIcon = ManagedShell.WindowsTray.NotifyIcon;
 using Winx.Shell.Services.Localization;
+using Media = Winx.Shell.Services.Media.MediaService;
 
 namespace Winx.Shell;
+
+/// <summary>
+/// Qué lleva una barra. Un monitor puede tener dos (bordes opuestos) que se reparten el contenido.
+/// </summary>
+/// <param name="HasTray">Lleva la bandeja del sistema (una sola barra: la del área de estado del monitor principal de WINX).</param>
+/// <param name="IsMainScreen">Está en el monitor principal de WINX.</param>
+/// <param name="ShowsApps">Inicio y ventanas abiertas.</param>
+/// <param name="ShowsStatus">Área de estado y reloj.</param>
+public sealed record BarRole(bool HasTray, bool IsMainScreen, bool ShowsApps = true, bool ShowsStatus = true);
 
 public partial class Taskbar : AppBarWindow
 {
@@ -30,15 +40,20 @@ public partial class Taskbar : AppBarWindow
     private readonly ICollectionView? _hiddenTrayView;
     private TaskbarAppsMode _appsMode;
 
-    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, bool isMain)
+    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, BarRole role)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
                screen, EdgeOf(position), AppBarMode.Normal, ReservedSize(IsVerticalPosition(position)))
     {
         _shell = shell;
         _multiMonitor = multiMonitor;
         Position = position;
-        IsMain = isMain;
+        Role = role;
+        IsMain = role.HasTray;
         InitializeComponent();
+        if (!role.ShowsApps)
+            TaskArea.Visibility = Visibility.Collapsed;
+        if (!role.ShowsStatus)
+            StatusPanel.Visibility = Visibility.Collapsed;
         if (IsVertical)
         {
             DesiredWidth = ReservedSize(vertical: true);
@@ -57,7 +72,7 @@ public partial class Taskbar : AppBarWindow
         ClockButton.ToolTipOpening += (_, _) => ClockButton.ToolTip = ClockToolTip();
         Services.Notifications.NotificationService.Changed += UpdateNotificationBadge;
 
-        if (isMain)
+        if (IsMain)
         {
             var tray = shell.NotificationArea;
             PinnedTray.ItemsSource = tray.PinnedIcons;
@@ -84,6 +99,7 @@ public partial class Taskbar : AppBarWindow
         App.Current.Audio.Changed += UpdateVolume;
         UpdateVolume();
         Services.Brightness.BrightnessService.Changed += ApplySettings;
+        Media.Changed += UpdateMedia;
 
         SourceInitialized += (_, _) => ApplyBackdrop();
         SizeChanged += (_, _) => ApplyBackdrop();
@@ -172,7 +188,10 @@ public partial class Taskbar : AppBarWindow
         TrayArea.Orientation = Orientation.Vertical;
         PinnedTray.ItemsPanel = Panel(typeof(WrapPanel));
         PinnedTray.HorizontalAlignment = HorizontalAlignment.Center;
-        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton })
+        // Multimedia en vertical: solo la carátula.
+        MediaText.Visibility = Visibility.Collapsed;
+        MediaButton.Padding = new Thickness(0, 4, 0, 4);
+        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton, MediaButton })
         {
             button.HorizontalAlignment = HorizontalAlignment.Center;
             button.Height = 36;
@@ -292,8 +311,7 @@ public partial class Taskbar : AppBarWindow
             _appsMode = appsMode;
             _taskView.Refresh();
         }
-        // Red, Bluetooth, sonido y reloj: en todas las barras o solo en la principal.
-        bool status = IsMain || s.StatusOnAllTaskbars;
+        bool status = ShowsStatusModules;
         DateText.Visibility = s.ShowDate ? Visibility.Visible : Visibility.Collapsed;
         NetworkButton.Visibility = status && s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
         BluetoothButton.Visibility = status && s.ShowBluetoothModule ? Visibility.Visible : Visibility.Collapsed;
@@ -305,6 +323,7 @@ public partial class Taskbar : AppBarWindow
         UpdateClock();
         UpdateStatus();
         UpdateNotificationBadge();
+        UpdateMedia();
     }
 
     /// <summary>
@@ -354,7 +373,7 @@ public partial class Taskbar : AppBarWindow
     {
         if (!_multiMonitor || _appsMode == TaskbarAppsMode.AllTaskbars || window.HMonitor == Screen.HMonitor)
             return true;
-        return IsMain && (_appsMode == TaskbarAppsMode.MainAndOwn || !App.Current.HasTaskbarOn(window.HMonitor));
+        return Role.IsMainScreen && (_appsMode == TaskbarAppsMode.MainAndOwn || !App.Current.HasTaskbarOn(window.HMonitor));
     }
 
     private void UpdateChevron() =>
@@ -452,7 +471,7 @@ public partial class Taskbar : AppBarWindow
         NetworkGlyph.Opacity = network.Connected ? 1 : 0.4;
         NetworkButton.ToolTip = network.Description;
 
-        bool status = IsMain || Settings.Current.StatusOnAllTaskbars;
+        bool status = ShowsStatusModules;
         var battery = status && Settings.Current.ShowBatteryModule ? SystemStatus.GetBattery() : null;
         BatteryButton.Visibility = battery is null ? Visibility.Collapsed : Visibility.Visible;
         if (battery != null)
@@ -467,6 +486,7 @@ public partial class Taskbar : AppBarWindow
         Settings.Changed -= ApplySettings;
         App.Current.Audio.Changed -= UpdateVolume;
         Services.Brightness.BrightnessService.Changed -= ApplySettings;
+        Media.Changed -= UpdateMedia;
         Services.Notifications.NotificationService.Changed -= UpdateNotificationBadge;
         ThemeManager.ThemeChanged -= OnThemeChanged;
         TrayIcon.DragStarted -= OnTrayDragStarted;
@@ -492,8 +512,18 @@ public partial class Taskbar : AppBarWindow
             StartMenu.WinXMenu.ShowAt(menu, StartButton, Position);
     }
 
-    /// <summary>Barra principal de WINX (bandeja del sistema, tecla Windows); elegible en el Hub.</summary>
+    /// <summary>Lleva la bandeja del sistema (la del área de estado del monitor principal de WINX).</summary>
     public bool IsMain { get; }
+
+    public BarRole Role { get; }
+
+    /// <summary>
+    /// Red, Bluetooth, sonido, reloj…: en las barras con área de estado del monitor principal, o en
+    /// todas si así se eligió en el Hub. Una barra dedicada al área de estado (segunda barra) siempre
+    /// los muestra: es lo único que lleva.
+    /// </summary>
+    private bool ShowsStatusModules =>
+        Role.ShowsStatus && (Role.IsMainScreen || !Role.ShowsApps || Settings.Current.StatusOnAllTaskbars);
 
     private void StartButton_Click(object sender, RoutedEventArgs e) =>
         StartMenu.StartMenuLauncher.Toggle(StartButton);
@@ -531,6 +561,35 @@ public partial class Taskbar : AppBarWindow
 
     private void VolumeButton_Click(object sender, RoutedEventArgs e) =>
         Flyouts.FlyoutManager.Toggle<Flyouts.VolumeFlyout>(VolumeButton);
+
+    // ── Multimedia ──────────────────────────────────────────────────────────
+
+    private void UpdateMedia()
+    {
+        var s = Settings.Current;
+        bool show = ShowsStatusModules && s.ShowMediaModule && Media.HasSession;
+        MediaButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (!show)
+            return;
+        MediaCover.ImageSource = Media.Cover;
+        MediaTitle.Text = Media.Title;
+        MediaArtist.Text = Media.Artist;
+        MediaArtist.Visibility = Media.Artist.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MediaButton.ToolTip = Media.Artist.Length > 0 ? $"{Media.Title} · {Media.Artist}" : Media.Title;
+        MediaButton.Opacity = Media.IsPlaying ? 1 : 0.6;
+    }
+
+    private void MediaButton_Click(object sender, RoutedEventArgs e) =>
+        Flyouts.FlyoutManager.Toggle<Flyouts.MediaFlyout>(MediaButton);
+
+    private void MediaButton_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Middle)
+        {
+            Media.PlayPause();
+            e.Handled = true;
+        }
+    }
 
     private void BrightnessButton_Click(object sender, RoutedEventArgs e) =>
         Flyouts.FlyoutManager.Toggle<Flyouts.BrightnessFlyout>(BrightnessButton);
