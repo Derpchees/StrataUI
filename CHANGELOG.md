@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.15.1] - 2026-10-12
+
+### Cambiado
+- Porcentaje de la batería rediseñado: una batería dibujada (cuerpo redondeado y relleno según el
+  nivel) con el número centrado dentro; mientras carga, el relleno es verde y lleva un rayo junto
+  al número; con 20 % o menos, rojo.
+
 ## [0.15.0] - 2026-10-12
 
 ### Añadido

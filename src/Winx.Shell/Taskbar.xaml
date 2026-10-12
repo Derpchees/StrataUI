@@ -183,15 +183,26 @@
                             Visibility="Collapsed" Click="BatteryButton_Click">
                         <StackPanel x:Name="BatteryContent" Orientation="Horizontal">
                             <TextBlock x:Name="BatteryGlyph" Style="{StaticResource IconText}" />
-                            <!-- Porcentaje dentro del contorno de la batería (opción del Hub) -->
-                            <Grid x:Name="BatteryPercentIcon" Visibility="Collapsed">
-                                <TextBlock Style="{StaticResource IconText}" FontSize="24" Text="&#xEBA0;" />
-                                <TextBlock x:Name="BatteryPercentText" FontSize="9" FontWeight="Bold" Margin="0,0,3,0"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource WinxForegroundBrush}" />
-                            </Grid>
-                            <TextBlock x:Name="BatteryBolt" Style="{StaticResource IconText}" FontSize="11" Margin="1,0,0,0"
-                                       Text="&#xE945;" Visibility="Collapsed" />
+                            <!-- Porcentaje dentro de la batería (opción del Hub): cuerpo redondeado con el
+                                 relleno del nivel y el número centrado, como en el iPhone -->
+                            <StackPanel x:Name="BatteryPercentIcon" Orientation="Horizontal" VerticalAlignment="Center"
+                                        Visibility="Collapsed">
+                                <Grid Width="30" Height="14">
+                                    <Border CornerRadius="4" BorderThickness="1.2" Opacity="0.5"
+                                            BorderBrush="{DynamicResource WinxForegroundBrush}" />
+                                    <Border x:Name="BatteryLevelFill" Margin="2" CornerRadius="2" HorizontalAlignment="Left" />
+                                    <!-- Rayo junto al número mientras carga -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Path x:Name="BatteryBolt" Margin="0,0,1,0" VerticalAlignment="Center" Visibility="Collapsed"
+                                              Stretch="Uniform" Height="10" Fill="{DynamicResource WinxForegroundBrush}"
+                                              Data="M5.5,0 L0,7 H3.6 L2.6,12 L8,4.6 H4.4 Z" />
+                                        <TextBlock x:Name="BatteryPercentText" FontSize="9.5" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource WinxForegroundBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                                <Border Width="2" Height="5" Margin="1,0,0,0" CornerRadius="0,1,1,0" Opacity="0.5"
+                                        VerticalAlignment="Center" Background="{DynamicResource WinxForegroundBrush}" />
+                            </StackPanel>
                         </StackPanel>
                     </Button>
     
