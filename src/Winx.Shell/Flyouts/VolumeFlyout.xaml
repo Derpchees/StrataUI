@@ -1,9 +1,10 @@
 ﻿<flyouts:FlyoutWindow x:Class="Winx.Shell.Flyouts.VolumeFlyout"
                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                       xmlns:flyouts="clr-namespace:Winx.Shell.Flyouts"
-                      Title="Volumen" Width="372">
+                      Title="{l:T 'Volumen'}" Width="372">
     <flyouts:FlyoutWindow.Resources>
         <!-- Dispositivo como mosaico cuadrado: clic para usarlo; "…" para sus opciones -->
         <DataTemplate x:Key="DeviceTile">
@@ -60,7 +61,7 @@
                 </Button>
                 <Button Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Margin="0,6,6,0"
                         HorizontalAlignment="Right" VerticalAlignment="Top" Click="DeviceOptions_Click"
-                        ToolTip="Opciones del dispositivo" AutomationProperties.Name="Opciones del dispositivo">
+                        ToolTip="{l:T 'Opciones del dispositivo'}" AutomationProperties.Name="Opciones del dispositivo">
                     <ui:SymbolIcon Symbol="MoreHorizontal24" FontSize="14" />
                 </Button>
             </Grid>
@@ -81,7 +82,7 @@
                             <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Adapter}" />
                         </StackPanel>
                         <Button Style="{StaticResource FlyoutIconButton}" Width="28" Height="28" HorizontalAlignment="Right"
-                                VerticalAlignment="Top" Click="CloseOptions_Click" ToolTip="Cerrar">
+                                VerticalAlignment="Top" Click="CloseOptions_Click" ToolTip="{l:T 'Cerrar'}">
                             <ui:SymbolIcon Symbol="Dismiss24" FontSize="12" />
                         </Button>
                     </Grid>
@@ -92,7 +93,7 @@
 
                     <StackPanel Visibility="{Binding BalanceVisibility}" Margin="0,12,0,0">
                         <Grid>
-                            <TextBlock Style="{StaticResource FlyoutHint}" Text="Balance" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="{l:T 'Balance'}" />
                             <TextBlock Style="{StaticResource FlyoutHint}" HorizontalAlignment="Right" Text="{Binding BalanceText}" />
                         </Grid>
                         <Grid Margin="0,2,0,0">
@@ -101,41 +102,41 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Style="{StaticResource FlyoutHint}" Text="I" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="{l:T 'I'}" />
                             <Slider Grid.Column="1" Margin="8,0" Minimum="-100" Maximum="100" TickFrequency="100" IsSnapToTickEnabled="False"
                                     TickPlacement="BottomRight" IsMoveToPointEnabled="True" Value="{Binding Balance, Mode=TwoWay}" />
-                            <TextBlock Grid.Column="2" Style="{StaticResource FlyoutHint}" Text="D" />
+                            <TextBlock Grid.Column="2" Style="{StaticResource FlyoutHint}" Text="{l:T 'D'}" />
                         </Grid>
                     </StackPanel>
 
                     <!-- Escribirlas pide permiso de administrador (UAC); leerlas no -->
                     <Grid Margin="0,12,0,0" Visibility="{Binding EnhancementsVisibility}">
                         <StackPanel Margin="0,0,56,0">
-                            <TextBlock Style="{StaticResource FlyoutText}" Text="Mejoras de audio" />
-                            <TextBlock Style="{StaticResource FlyoutHint}" Text="Efectos del fabricante o de Windows: ecualizador, sonido envolvente, supresión de ruido…" />
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Mejoras de audio'}" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="{l:T 'Efectos del fabricante o de Windows: ecualizador, sonido envolvente, supresión de ruido…'}" />
                         </StackPanel>
                         <ui:ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding Enhancements, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
                     </Grid>
 
                     <Grid Margin="0,12,0,0">
                         <StackPanel Margin="0,0,56,0">
-                            <TextBlock Style="{StaticResource FlyoutText}" Text="Control exclusivo" />
-                            <TextBlock Style="{StaticResource FlyoutHint}" Text="Permite que una app (juegos, reproductores de audio) use el dispositivo sola." />
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Control exclusivo'}" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="{l:T 'Permite que una app (juegos, reproductores de audio) use el dispositivo sola.'}" />
                         </StackPanel>
                         <ui:ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding ExclusiveAllowed, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
                     </Grid>
 
                     <Grid Margin="0,12,0,0" Visibility="{Binding PriorityVisibility}">
                         <StackPanel Margin="0,0,56,0">
-                            <TextBlock Style="{StaticResource FlyoutText}" Text="Prioridad a esa app" />
-                            <TextBlock Style="{StaticResource FlyoutHint}" Text="La app con control exclusivo no cede el dispositivo a otras." />
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Prioridad a esa app'}" />
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="{l:T 'La app con control exclusivo no cede el dispositivo a otras.'}" />
                         </StackPanel>
                         <ui:ToggleSwitch HorizontalAlignment="Right" IsChecked="{Binding ExclusivePriority, Mode=TwoWay}" IsEnabled="{Binding NotBusy}" />
                     </Grid>
 
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <ui:SymbolIcon Symbol="Shield24" FontSize="12" Margin="0,0,6,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Style="{StaticResource FlyoutHint}" Text="Estas tres opciones piden permiso de administrador." />
+                        <TextBlock Style="{StaticResource FlyoutHint}" Text="{l:T 'Estas tres opciones piden permiso de administrador.'}" />
                     </StackPanel>
 
                     <Button Style="{StaticResource FlyoutRow}" Margin="-10,10,0,0" Click="Communications_Click"
@@ -152,14 +153,14 @@
 
     <StackPanel Margin="14,8,6,10">
         <!-- ── Salida ── -->
-        <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,6,0,6" Text="Salida" />
+        <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,6,0,6" Text="{l:T 'Salida'}" />
         <Grid Margin="0,0,8,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Button x:Name="MasterMuteButton" Style="{StaticResource FlyoutIconButton}" Click="MasterMute_Click" ToolTip="Silenciar">
+            <Button x:Name="MasterMuteButton" Style="{StaticResource FlyoutIconButton}" Click="MasterMute_Click" ToolTip="{l:T 'Silenciar'}">
                 <ui:SymbolIcon x:Name="MasterMuteIcon" Symbol="Speaker224" FontSize="18" />
             </Button>
             <Slider x:Name="MasterSlider" Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
@@ -177,7 +178,7 @@
                 </Grid.ColumnDefinitions>
                 <ui:SymbolIcon x:Name="OutputDeviceIcon" Symbol="Speaker224" FontSize="16" Margin="0,0,12,0" />
                 <StackPanel Grid.Column="1">
-                    <TextBlock Style="{StaticResource FlyoutText}" Text="Dispositivo de salida" />
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Dispositivo de salida'}" />
                     <TextBlock x:Name="OutputDeviceText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <ui:SymbolIcon x:Name="OutputChevron" Grid.Column="2" Symbol="ChevronDown24" FontSize="14" RenderTransformOrigin="0.5,0.5">
@@ -193,14 +194,14 @@
         </StackPanel>
 
         <!-- ── Entrada ── -->
-        <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,10,0,6" Text="Entrada" />
+        <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,10,0,6" Text="{l:T 'Entrada'}" />
         <Grid Margin="0,0,8,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Button x:Name="InputMuteButton" Style="{StaticResource FlyoutIconButton}" Click="InputMute_Click" ToolTip="Silenciar micrófono">
+            <Button x:Name="InputMuteButton" Style="{StaticResource FlyoutIconButton}" Click="InputMute_Click" ToolTip="{l:T 'Silenciar micrófono'}">
                 <ui:SymbolIcon x:Name="InputMuteIcon" Symbol="Mic24" FontSize="18" />
             </Button>
             <Slider x:Name="InputSlider" Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
@@ -218,7 +219,7 @@
                 </Grid.ColumnDefinitions>
                 <ui:SymbolIcon x:Name="InputDeviceIcon" Symbol="Mic24" FontSize="16" Margin="0,0,12,0" />
                 <StackPanel Grid.Column="1">
-                    <TextBlock Style="{StaticResource FlyoutText}" Text="Dispositivo de entrada" />
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Dispositivo de entrada'}" />
                     <TextBlock x:Name="InputDeviceText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <ui:SymbolIcon x:Name="InputChevron" Grid.Column="2" Symbol="ChevronDown24" FontSize="14" RenderTransformOrigin="0.5,0.5">
@@ -231,7 +232,7 @@
         <StackPanel x:Name="InputDevices" Margin="0,6,0,0" Visibility="Collapsed">
             <ItemsControl x:Name="InputList" ItemTemplate="{StaticResource DeviceTile}" ItemsPanel="{StaticResource TilePanel}" />
             <TextBlock x:Name="NoInputText" Style="{StaticResource FlyoutHint}" Margin="4,0,0,8" Visibility="Collapsed"
-                       Text="No hay micrófonos conectados." />
+                       Text="{l:T 'No hay micrófonos conectados.'}" />
             <ContentControl x:Name="InputOptions" ContentTemplate="{StaticResource DeviceOptions}" Visibility="Collapsed" />
         </StackPanel>
 
@@ -247,7 +248,7 @@
                 </Grid.ColumnDefinitions>
                 <ui:SymbolIcon Symbol="Apps24" FontSize="16" Margin="0,0,12,0" />
                 <StackPanel Grid.Column="1">
-                    <TextBlock Style="{StaticResource FlyoutText}" Text="Aplicaciones" />
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Aplicaciones'}" />
                     <TextBlock x:Name="AppsSummaryText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap" />
                 </StackPanel>
                 <ui:SymbolIcon x:Name="AppsChevron" Grid.Column="2" Symbol="ChevronDown24" FontSize="14"
@@ -293,7 +294,7 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock x:Name="NoAppsText" Style="{StaticResource FlyoutHint}" Margin="4,0,0,4"
-                       Text="Ninguna aplicación está usando el audio ahora." Visibility="Collapsed" />
+                       Text="{l:T 'Ninguna aplicación está usando el audio ahora.'}" Visibility="Collapsed" />
         </StackPanel>
     </StackPanel>
 </flyouts:FlyoutWindow>

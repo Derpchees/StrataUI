@@ -1,11 +1,12 @@
-<flyouts:FlyoutWindow x:Class="Winx.Shell.Flyouts.NetworkFlyout"
+﻿<flyouts:FlyoutWindow x:Class="Winx.Shell.Flyouts.NetworkFlyout"
                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                       xmlns:flyouts="clr-namespace:Winx.Shell.Flyouts"
-                      Title="Red" Width="380">
+                      Title="{l:T 'Red'}" Width="380">
     <StackPanel Margin="14,16,14,14">
-        <TextBlock Style="{StaticResource FlyoutTitle}" Margin="4,0,0,0" Text="Red" />
+        <TextBlock Style="{StaticResource FlyoutTitle}" Margin="4,0,0,0" Text="{l:T 'Red'}" />
 
         <!-- Conexión actual -->
         <Border Margin="0,12,0,0" Padding="12" CornerRadius="{DynamicResource WinxLargeCornerRadius}"
@@ -32,7 +33,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,0,0,0" VerticalAlignment="Center" Text="WI-FI" />
-            <Button x:Name="ScanButton" Grid.Column="1" Style="{StaticResource FlyoutIconButton}" ToolTip="Buscar redes"
+            <Button x:Name="ScanButton" Grid.Column="1" Style="{StaticResource FlyoutIconButton}" ToolTip="{l:T 'Buscar redes'}"
                     Click="Scan_Click">
                 <ui:SymbolIcon Symbol="ArrowClockwise24" FontSize="16" />
             </Button>

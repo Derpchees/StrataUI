@@ -1,11 +1,12 @@
 ﻿<UserControl x:Class="Winx.Shell.Controls.TaskButton"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Winx.Shell.Services.Localization">
     <Button Style="{StaticResource TaskbarButton}" Padding="0" ToolTip="{Binding Title}"
             Click="Button_Click">
         <Button.ContextMenu>
             <ContextMenu>
-                <MenuItem Header="Cerrar ventana" Click="CloseWindow_Click" />
+                <MenuItem Header="{l:T 'Cerrar ventana'}" Click="CloseWindow_Click" />
             </ContextMenu>
         </Button.ContextMenu>
         <Grid x:Name="Root" Width="44">

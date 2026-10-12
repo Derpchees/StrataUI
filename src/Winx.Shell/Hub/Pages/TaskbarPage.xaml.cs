@@ -1,6 +1,7 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using Winx.Shell.Services;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Hub.Pages;
 
@@ -30,7 +31,7 @@ public partial class TaskbarPage : Page
 
     // ── Monitores ───────────────────────────────────────────────────────────
 
-    private static readonly string[] PositionNames = ["Abajo", "Arriba", "Izquierda", "Derecha"];
+    private static readonly string[] PositionNames = [Loc.T("Abajo"), Loc.T("Arriba"), Loc.T("Izquierda"), Loc.T("Derecha")];
 
     /// <summary>Una tarjeta por monitor: borde de la barra y, en los secundarios, si lleva barra.</summary>
     private void BuildMonitorList()
@@ -45,13 +46,13 @@ public partial class TaskbarPage : Page
             header.Children.Add(new TextBlock
             {
                 Style = (Style)FindResource("CardTitle"),
-                Text = screens.Count > 1 ? $"Monitor {i + 1}{(screen.Primary ? " (principal)" : "")}" : "Monitor",
+                Text = screens.Count > 1 ? (screen.Primary ? Loc.F("Monitor {0} (principal)", i + 1) : Loc.F("Monitor {0}", i + 1)) : Loc.T("Monitor"),
             });
             header.Children.Add(new TextBlock
             {
                 Style = (Style)FindResource("CardDescription"),
                 Text = $"{screen.Bounds.Width} × {screen.Bounds.Height}"
-                       + (screen.Primary ? " · lleva la bandeja del sistema" : ""),
+                       + (screen.Primary ? " · " + Loc.T("lleva la bandeja del sistema") : ""),
             });
 
             var position = new ComboBox { MinWidth = 140, ItemsSource = PositionNames, SelectedIndex = (int)Settings.Current.PositionOf(device) };
@@ -70,7 +71,7 @@ public partial class TaskbarPage : Page
                 {
                     Margin = new Thickness(16, 0, 0, 0),
                     IsChecked = !Settings.Current.TaskbarHiddenScreens.Contains(device),
-                    ToolTip = "Mostrar la barra en este monitor",
+                    ToolTip = Loc.T("Mostrar la barra en este monitor"),
                 };
                 visible.Click += (_, _) =>
                 {

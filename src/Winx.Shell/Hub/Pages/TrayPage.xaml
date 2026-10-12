@@ -1,14 +1,15 @@
-<Page x:Class="Winx.Shell.Hub.Pages.TrayPage"
+﻿<Page x:Class="Winx.Shell.Hub.Pages.TrayPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      Title="Bandeja del sistema"
+      Title="{l:T 'Bandeja del sistema'}"
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <TextBlock Style="{StaticResource HubPageTitle}" Text="Bandeja del sistema" />
+            <TextBlock Style="{StaticResource HubPageTitle}" Text="{l:T 'Bandeja del sistema'}" />
             <TextBlock Style="{StaticResource CardDescription}" Margin="0,-12,0,16"
-                       Text="Elige qué íconos se muestran siempre en la barra. Los demás quedan en el menú de íconos ocultos (^). Solo aparecen las apps que están abiertas ahora." />
+                       Text="{l:T 'Elige qué íconos se muestran siempre en la barra. Los demás quedan en el menú de íconos ocultos (^). Solo aparecen las apps que están abiertas ahora.'}" />
 
             <ItemsControl x:Name="IconList">
                 <ItemsControl.ItemTemplate>
@@ -26,7 +27,7 @@
                             </ui:CardControl.Header>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource CardDescription}" VerticalAlignment="Center"
-                                           Margin="0,0,12,0" Text="Mostrar siempre" />
+                                           Margin="0,0,12,0" Text="{l:T 'Mostrar siempre'}" />
                                 <ui:ToggleSwitch IsChecked="{Binding IsPinned, Mode=OneWay}" Click="Pin_Click" />
                             </StackPanel>
                         </ui:CardControl>
@@ -35,7 +36,7 @@
             </ItemsControl>
 
             <TextBlock x:Name="EmptyText" Style="{StaticResource CardDescription}" Visibility="Collapsed"
-                       Text="No hay íconos en la bandeja en este momento." />
+                       Text="{l:T 'No hay íconos en la bandeja en este momento.'}" />
         </StackPanel>
     </ScrollViewer>
 </Page>

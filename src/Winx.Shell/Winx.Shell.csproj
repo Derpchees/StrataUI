@@ -28,6 +28,8 @@
 
   <ItemGroup>
     <Resource Include="Assets\winx.ico" />
+    <!-- Traducciones de la interfaz (ver Services/Localization/Loc.cs) -->
+    <EmbeddedResource Include="Localization\*.json" LogicalName="Winx.Shell.Localization.%(Filename).json" />
   </ItemGroup>
 
   <ItemGroup>

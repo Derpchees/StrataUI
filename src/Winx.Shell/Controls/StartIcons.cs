@@ -1,9 +1,10 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Winx.Shell.Services;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Controls;
 
@@ -14,11 +15,11 @@ public static class StartIcons
     [
         (StartIconKind.Winx, "WINX"),
         (StartIconKind.Windows, "Windows"),
-        (StartIconKind.WindowsMono, "Monocromo"),
-        (StartIconKind.Circle, "Círculo"),
-        (StartIconKind.Dot, "Punto"),
-        (StartIconKind.Grid, "Cuadrícula"),
-        (StartIconKind.Search, "Lupa"),
+        (StartIconKind.WindowsMono, Loc.T("Monocromo")),
+        (StartIconKind.Circle, Loc.T("Círculo")),
+        (StartIconKind.Dot, Loc.T("Punto")),
+        (StartIconKind.Grid, Loc.T("Cuadrícula")),
+        (StartIconKind.Search, Loc.T("Lupa")),
     ];
 
     public static FrameworkElement Create(StartIconKind kind, double size = 16) => kind switch

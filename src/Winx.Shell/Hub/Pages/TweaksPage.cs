@@ -1,10 +1,11 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using Winx.Shell.Tweaks;
 using Wpf.Ui.Controls;
 using TextBlock = System.Windows.Controls.TextBlock;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Hub.Pages;
 
@@ -30,7 +31,7 @@ public abstract class TweaksPage : Page
         {
             Style = (Style)FindResource("CardDescription"),
             Margin = new Thickness(0, -12, 0, 16),
-            Text = description + " Cada cambio se puede deshacer en Optimización › Respaldo.",
+            Text = description + " " + Loc.T("Cada cambio se puede deshacer en Optimización › Respaldo."),
         });
 
         _explorerBanner = BuildExplorerBanner();
@@ -78,7 +79,7 @@ public abstract class TweaksPage : Page
             var admin = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 4, 0, 0) };
             admin.Children.Add(new SymbolIcon { Symbol = SymbolRegular.Shield16, FontSize = 12, Margin = new Thickness(0, 0, 4, 0),
                                                 Foreground = (Brush)FindResource("TextFillColorTertiaryBrush") });
-            admin.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), Text = "Requiere administrador",
+            admin.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), Text = Loc.T("Requiere administrador"),
                                                Foreground = (Brush)FindResource("TextFillColorTertiaryBrush") });
             header.Children.Add(admin);
         }
@@ -130,14 +131,14 @@ public abstract class TweaksPage : Page
         var result = await TweakEngine.ApplyAsync(tweak, state);
         if (result == ApplyResult.Failed)
         {
-            _status.Text = $"No se pudo aplicar \"{tweak.Title}\". Revisa el registro de WINX para más detalles.";
+            _status.Text = Loc.F("No se pudo aplicar \"{0}\". Revisa el registro de WINX para más detalles.", tweak.Title);
             _status.Visibility = Visibility.Visible;
         }
     }
 
     private Border BuildExplorerBanner()
     {
-        var button = new Wpf.Ui.Controls.Button { Content = "Reiniciar ahora", Appearance = ControlAppearance.Primary };
+        var button = new Wpf.Ui.Controls.Button { Content = Loc.T("Reiniciar ahora"), Appearance = ControlAppearance.Primary };
         button.Click += (_, _) => App.Current.RestartExplorer();
 
         var grid = new Grid();
@@ -148,7 +149,7 @@ public abstract class TweaksPage : Page
             Style = (Style)FindResource("CardTitle"),
             VerticalAlignment = VerticalAlignment.Center,
             TextWrapping = TextWrapping.Wrap,
-            Text = "Algunos cambios se verán después de reiniciar el Explorador de Windows.",
+            Text = Loc.T("Algunos cambios se verán después de reiniciar el Explorador de Windows."),
         });
         Grid.SetColumn(button, 1);
         grid.Children.Add(button);
@@ -167,29 +168,29 @@ public abstract class TweaksPage : Page
     private void ShowExplorerBanner() => _explorerBanner.Visibility = Visibility.Visible;
 }
 
-public sealed class PrivacyPage() : TweaksPage(TweakCatalog.Privacy, "Privacidad",
-    "Telemetría, anuncios, sugerencias y rastreo.");
+public sealed class PrivacyPage() : TweaksPage(TweakCatalog.Privacy, Loc.T("Privacidad"),
+    Loc.T("Telemetría, anuncios, sugerencias y rastreo."));
 
-public sealed class AIPage() : TweaksPage(TweakCatalog.AI, "Inteligencia artificial",
-    "Copilot, Recall y las funciones de IA integradas en las apps de Windows.");
+public sealed class AIPage() : TweaksPage(TweakCatalog.AI, Loc.T("Inteligencia artificial"),
+    Loc.T("Copilot, Recall y las funciones de IA integradas en las apps de Windows."));
 
-public sealed class SystemTweaksPage() : TweaksPage(TweakCatalog.System, "Sistema",
-    "Comportamiento general de Windows.");
+public sealed class SystemTweaksPage() : TweaksPage(TweakCatalog.System, Loc.T("Sistema"),
+    Loc.T("Comportamiento general de Windows."));
 
 public sealed class UpdatePage() : TweaksPage(TweakCatalog.Update, "Windows Update",
-    "Cómo y cuándo se instalan las actualizaciones.");
+    Loc.T("Cómo y cuándo se instalan las actualizaciones."));
 
-public sealed class WindowsAppearancePage() : TweaksPage(TweakCatalog.Appearance, "Apariencia de Windows",
-    "Tema y efectos visuales del sistema (no de WINX).");
+public sealed class WindowsAppearancePage() : TweaksPage(TweakCatalog.Appearance, Loc.T("Apariencia de Windows"),
+    Loc.T("Tema y efectos visuales del sistema (no de WINX)."));
 
-public sealed class ExplorerPage() : TweaksPage(TweakCatalog.Explorer, "Explorador de archivos",
-    "Qué muestra el Explorador y cómo.");
+public sealed class ExplorerPage() : TweaksPage(TweakCatalog.Explorer, Loc.T("Explorador de archivos"),
+    Loc.T("Qué muestra el Explorador y cómo."));
 
-public sealed class MultitaskingPage() : TweaksPage(TweakCatalog.Multitasking, "Multitarea",
-    "Ajuste de ventanas y Alt+Tab.");
+public sealed class MultitaskingPage() : TweaksPage(TweakCatalog.Multitasking, Loc.T("Multitarea"),
+    Loc.T("Ajuste de ventanas y Alt+Tab."));
 
-public sealed class GamingPage() : TweaksPage(TweakCatalog.Gaming, "Juegos",
-    "Xbox Game Bar y grabación en segundo plano.");
+public sealed class GamingPage() : TweaksPage(TweakCatalog.Gaming, Loc.T("Juegos"),
+    Loc.T("Xbox Game Bar y grabación en segundo plano."));
 
-public sealed class BrowsersPage() : TweaksPage(TweakCatalog.Browsers, "Navegadores",
-    "Funciones extra de los navegadores instalados.");
+public sealed class BrowsersPage() : TweaksPage(TweakCatalog.Browsers, Loc.T("Navegadores"),
+    Loc.T("Funciones extra de los navegadores instalados."));

@@ -1,41 +1,42 @@
-<Page x:Class="Winx.Shell.Hub.Pages.BackupPage"
+﻿<Page x:Class="Winx.Shell.Hub.Pages.BackupPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      Title="Respaldo"
+      Title="{l:T 'Respaldo'}"
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <TextBlock Style="{StaticResource HubPageTitle}" Text="Respaldo" />
+            <TextBlock Style="{StaticResource HubPageTitle}" Text="{l:T 'Respaldo'}" />
             <TextBlock Style="{StaticResource CardDescription}" Margin="0,-12,0,16"
-                       Text="Antes de cambiar cualquier valor, WINX guarda el original. Desde aquí puedes deshacer todas las optimizaciones de una vez." />
+                       Text="{l:T 'Antes de cambiar cualquier valor, WINX guarda el original. Desde aquí puedes deshacer todas las optimizaciones de una vez.'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowUndo24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="Restaurar todo" />
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Restaurar todo'}" />
                         <TextBlock x:Name="BackupSummary" Style="{StaticResource CardDescription}" />
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ui:Button x:Name="RestoreButton" Content="Restaurar" Click="Restore_Click" />
+                <ui:Button x:Name="RestoreButton" Content="{l:T 'Restaurar'}" Click="Restore_Click" />
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="History24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="Crear punto de restauración" />
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Crear punto de restauración'}" />
                         <TextBlock Style="{StaticResource CardDescription}"
-                                   Text="Instantánea del sistema por si algo sale mal. Requiere administrador y que la Protección del sistema esté activa." />
+                                   Text="{l:T 'Instantánea del sistema por si algo sale mal. Requiere administrador y que la Protección del sistema esté activa.'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ui:Button x:Name="RestorePointButton" Content="Crear" Click="RestorePoint_Click" />
+                <ui:Button x:Name="RestorePointButton" Content="{l:T 'Crear'}" Click="RestorePoint_Click" />
             </ui:CardControl>
 
             <TextBlock x:Name="StatusText" Style="{StaticResource CardDescription}" Margin="0,8,0,0" />
 
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Apps quitadas" />
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Apps quitadas'}" />
             <TextBlock x:Name="RemovedApps" Style="{StaticResource CardDescription}" />
         </StackPanel>
     </ScrollViewer>

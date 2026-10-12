@@ -1,9 +1,10 @@
-using System.Net.NetworkInformation;
+﻿using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Windows.Devices.Radios;
 using Windows.Devices.WiFi;
 using Windows.Networking.Connectivity;
 using Windows.Security.Credentials;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services.Network;
 
@@ -24,15 +25,15 @@ public sealed class NetworkService
     {
         var profile = NetworkInformation.GetInternetConnectionProfile();
         if (profile is null)
-            return new ConnectionInfo(false, false, "Sin conexión", "No hay ninguna red conectada", null);
+            return new ConnectionInfo(false, false, Loc.T("Sin conexión"), Loc.T("No hay ninguna red conectada"), null);
 
         var level = profile.GetNetworkConnectivityLevel();
         string status = level switch
         {
-            NetworkConnectivityLevel.InternetAccess => "Conectado, con acceso a Internet",
-            NetworkConnectivityLevel.ConstrainedInternetAccess => "Conectado, acceso limitado",
-            NetworkConnectivityLevel.LocalAccess => "Conectado, sin Internet",
-            _ => "Sin conexión",
+            NetworkConnectivityLevel.InternetAccess => Loc.T("Conectado, con acceso a Internet"),
+            NetworkConnectivityLevel.ConstrainedInternetAccess => Loc.T("Conectado, acceso limitado"),
+            NetworkConnectivityLevel.LocalAccess => Loc.T("Conectado, sin Internet"),
+            _ => Loc.T("Sin conexión"),
         };
         bool wifi = profile.IsWlanConnectionProfile;
         string name = wifi

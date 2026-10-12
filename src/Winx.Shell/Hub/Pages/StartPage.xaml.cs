@@ -1,10 +1,11 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using Winx.Shell.Controls;
 using Winx.Shell.Services;
 using Winx.Shell.Services.StartMenu;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Hub.Pages;
 
@@ -12,13 +13,13 @@ public partial class StartPage : Page
 {
     private static readonly string[] Descriptions =
     [
-        "Buscador, apps ancladas, recientes y \"Todas las apps\".",
-        "Lista alfabética a la izquierda; anclados y carpetas a la derecha.",
-        "Todas las apps en una cuadrícula grande que ocupa la pantalla.",
-        "Una columna angosta con las apps ancladas en lista.",
-        "Solo una barra de búsqueda centrada en la pantalla, estilo Spotlight.",
-        "Cuadrícula de íconos sin texto; el nombre aparece al pasar el mouse.",
-        "Como Windows 11, con tu foto grande arriba sobresaliendo del menú, tu nombre y un saludo.",
+        Loc.T("Buscador, apps ancladas, recientes y \"Todas las apps\"."),
+        Loc.T("Lista alfabética a la izquierda; anclados y carpetas a la derecha."),
+        Loc.T("Todas las apps en una cuadrícula grande que ocupa la pantalla."),
+        Loc.T("Una columna angosta con las apps ancladas en lista."),
+        Loc.T("Solo una barra de búsqueda centrada en la pantalla, estilo Spotlight."),
+        Loc.T("Cuadrícula de íconos sin texto; el nombre aparece al pasar el mouse."),
+        Loc.T("Como Windows 11, con tu foto grande arriba sobresaliendo del menú, tu nombre y un saludo."),
     ];
 
     private readonly bool _loading = true;
@@ -116,7 +117,7 @@ public partial class StartPage : Page
                 Content = content,
                 ToolTip = name,
             };
-            System.Windows.Automation.AutomationProperties.SetName(card, $"Ícono {name}");
+            System.Windows.Automation.AutomationProperties.SetName(card, Loc.F("Ícono {0}", name));
             card.Click += (_, _) =>
             {
                 Settings.Update(s => s.StartIcon = kind);

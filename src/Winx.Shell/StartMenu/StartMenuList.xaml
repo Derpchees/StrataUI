@@ -1,9 +1,10 @@
-<start:StartMenuBase x:Class="Winx.Shell.StartMenu.StartMenuList"
+﻿<start:StartMenuBase x:Class="Winx.Shell.StartMenu.StartMenuList"
                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
                      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                      xmlns:start="clr-namespace:Winx.Shell.StartMenu"
-                     Title="Inicio" Width="640" Height="660" SizeToContent="Manual">
+                     Title="{l:T 'Inicio'}" Width="640" Height="660" SizeToContent="Manual">
     <Grid Margin="14,14,14,12">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -29,7 +30,7 @@
                               Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}" />
                 <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
                            Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
-                           Text="Sin resultados. Enter lo ejecuta como comando." />
+                           Text="{l:T 'Sin resultados. Enter lo ejecuta como comando.'}" />
             </StackPanel>
         </ScrollViewer>
 
@@ -40,34 +41,34 @@
                 <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}"
                               Visibility="{Binding SearchInSidePanel, Converter={StaticResource BoolToVis}}" />
                 <StackPanel Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}">
-                    <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,4,0,6" Text="Anclado" />
+                    <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,4,0,6" Text="{l:T 'Anclado'}" />
                     <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTile}"
                                   ItemsPanel="{StaticResource WrapItems}" />
                 </StackPanel>
 
-                <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,16,0,6" Text="Carpetas" />
+                <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,16,0,6" Text="{l:T 'Carpetas'}" />
                 <UniformGrid Columns="2">
                     <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Documents">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Document24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Documentos" /></StackPanel>
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Document24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Documentos'}" /></StackPanel>
                     </Button>
                     <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Downloads">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Descargas" /></StackPanel>
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Descargas'}" /></StackPanel>
                     </Button>
                     <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Pictures">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Image24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Imágenes" /></StackPanel>
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Image24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Imágenes'}" /></StackPanel>
                     </Button>
                     <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Music">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="MusicNote224" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Música" /></StackPanel>
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="MusicNote224" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Música'}" /></StackPanel>
                     </Button>
                     <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="Videos">
-                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Video24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="Videos" /></StackPanel>
+                        <StackPanel Orientation="Horizontal"><ui:SymbolIcon Symbol="Video24" Margin="0,0,10,0" /><TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Videos'}" /></StackPanel>
                     </Button>
                 </UniformGrid>
             </StackPanel>
         </ScrollViewer>
 
         <ui:TextBox x:Name="SearchBox" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0"
-                    PlaceholderText="Buscar apps" Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                    PlaceholderText="{l:T 'Buscar apps'}" Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
                     KeyDown="Search_KeyDown">
             <ui:TextBox.Icon>
                 <ui:SymbolIcon Symbol="Search24" />

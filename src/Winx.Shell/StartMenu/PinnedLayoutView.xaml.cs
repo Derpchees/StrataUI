@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Winx.Shell.Services.StartMenu;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.StartMenu;
 
@@ -357,7 +358,7 @@ public partial class PinnedLayoutView : UserControl
     private void SectionAdd_Click(object sender, RoutedEventArgs e)
     {
         if (MenuTarget(sender)?.DataContext is PinSectionView section)
-            PinLayout.AddSection("Nueva sección", section.Id);
+            PinLayout.AddSection(Loc.T("Nueva sección"), section.Id);
     }
 
     private void SectionDelete_Click(object sender, RoutedEventArgs e)
@@ -366,7 +367,7 @@ public partial class PinnedLayoutView : UserControl
             PinLayout.DeleteSection(section.Id);
     }
 
-    private void NewSection_Click(object sender, RoutedEventArgs e) => PinLayout.AddSection("Nueva sección");
+    private void NewSection_Click(object sender, RoutedEventArgs e) => PinLayout.AddSection(Loc.T("Nueva sección"));
 
     /// <summary>Elemento sobre el que se abrió el menú contextual de un MenuItem.</summary>
     private static FrameworkElement? MenuTarget(object sender) =>

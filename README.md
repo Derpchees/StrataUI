@@ -22,6 +22,7 @@ a la normalidad.
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
 | Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas y secciones, tecla Windows |
 | Notificaciones          | ⏳ abre el centro de Windows                                   |
+| Idiomas                 | ✅ español e inglés, según el idioma de Windows o elegido en el Hub |
 
 ## Requisitos
 
@@ -82,7 +83,8 @@ src/Winx.Shell/
   Services/            Configuración, audio, red, Bluetooth, estado del sistema, registro
   Services/Themes/     Catálogo de temas, paleta generada, efectos de DWM, tema en Windows
   Themes/              Estilos compartidos de la barra
-tests/Winx.Tests/      Pruebas: optimizaciones, catálogo, anclados, tipos de dispositivo de audio
+  Localization/        Traducciones de la interfaz (en.json; el español está en el código)
+tests/Winx.Tests/      Pruebas: optimizaciones, catálogo, anclados, audio, barra, traducciones
 ```
 
 ## Créditos

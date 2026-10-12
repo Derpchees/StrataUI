@@ -16,6 +16,21 @@ public partial class GeneralPage : Page
         AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
         VersionText.Text = $"WINX v{App.Version}";
         DataPathText.Text = DataFolder;
+        LanguageBox.SelectedItem = LanguageBox.Items.OfType<ComboBoxItem>()
+            .FirstOrDefault(i => (string)i.Tag == Settings.Current.Language) ?? LanguageBox.Items[0];
+        _loading = false;
+    }
+
+    private bool _loading = true;
+
+    private void Language_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || LanguageBox.SelectedItem is not ComboBoxItem { Tag: string language })
+            return;
+        Settings.Update(s => s.Language = language);
+        // Los textos se resuelven al crear cada ventana: el cambio se ve al reiniciar.
+        LanguageRestart.Visibility = Services.Localization.Loc.Resolve(language, System.Globalization.CultureInfo.CurrentUICulture)
+                                     != Services.Localization.Loc.Language ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void AutoStart_Click(object sender, RoutedEventArgs e)

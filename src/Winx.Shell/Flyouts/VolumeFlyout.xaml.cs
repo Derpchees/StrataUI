@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using Winx.Shell.Services;
 using Winx.Shell.Services.Audio;
 using Wpf.Ui.Controls;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Flyouts;
 
@@ -113,7 +114,7 @@ public partial class VolumeFlyout : FlyoutWindow
     private static void ShowCurrent(List<DeviceTile> tiles, System.Windows.Controls.TextBlock text, SymbolIcon icon)
     {
         var current = tiles.FirstOrDefault(t => t.IsDefault);
-        text.Text = current?.Name ?? "Sin dispositivo";
+        text.Text = current?.Name ?? Loc.T("Sin dispositivo");
         if (current != null)
             icon.Symbol = current.Symbol;
     }
@@ -266,7 +267,7 @@ public partial class VolumeFlyout : FlyoutWindow
         }
 
         // Nivel
-        public string LevelLabel => Device.IsInput ? "Nivel del micrófono (habla para probarlo)" : "Nivel de salida";
+        public string LevelLabel => Device.IsInput ? Loc.T("Nivel del micrófono (habla para probarlo)") : Loc.T("Nivel de salida");
         public double Level => _level;
 
         public void UpdateLevel()
@@ -280,8 +281,8 @@ public partial class VolumeFlyout : FlyoutWindow
         // Balance
         public Visibility BalanceVisibility => double.IsNaN(_balance) ? Visibility.Collapsed : Visibility.Visible;
         // Los pasos de volumen del hardware dejan diferencias pequeñas entre canales: menos de 3 % es centrado.
-        public string BalanceText => Math.Abs(_balance) < 3 ? "Centrado"
-                                   : _balance < 0 ? $"Izquierda {-_balance:0} %" : $"Derecha {_balance:0} %";
+        public string BalanceText => Math.Abs(_balance) < 3 ? Loc.T("Centrado")
+                                   : _balance < 0 ? Loc.F("Izquierda {0:0} %", -_balance) : Loc.F("Derecha {0:0} %", _balance);
 
         public double Balance
         {
@@ -351,8 +352,8 @@ public partial class VolumeFlyout : FlyoutWindow
         // Llamadas
         public bool CanSetCommunications => !Device.IsDefaultCommunications;
         public string CommunicationsText => Device.IsDefaultCommunications
-            ? "Es el predeterminado para llamadas"
-            : "Usar para llamadas (Discord, Teams…)";
+            ? Loc.T("Es el predeterminado para llamadas")
+            : Loc.T("Usar para llamadas (Discord, Teams…)");
 
         private void Try(Action write, string what)
         {
@@ -382,9 +383,9 @@ public partial class VolumeFlyout : FlyoutWindow
         var apps = _audio.GetApps();
         AppsSummaryText.Text = apps.Count switch
         {
-            0 => "Ninguna usando el audio",
-            1 => "1 aplicación",
-            _ => $"{apps.Count} aplicaciones",
+            0 => Loc.T("Ninguna usando el audio"),
+            1 => Loc.T("1 aplicación"),
+            _ => Loc.F("{0} aplicaciones", apps.Count),
         };
         bool sameApps = apps.Select(a => a.Key).SequenceEqual(_rows.Select(r => r.App.Key));
         if (AppsPanel.Visibility != Visibility.Visible || sameApps)

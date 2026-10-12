@@ -8,7 +8,14 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 ## Idioma
 
 - Responder al usuario **en español**.
-- Textos de la interfaz, comentarios del código, CHANGELOG y mensajes de commit: en español.
+- Comentarios del código, registros (`Log`), CHANGELOG y mensajes de commit: en español.
+- **Textos de la interfaz**: se escriben en español y se marcan para traducir (estilo gettext, el
+  texto español es la clave; ver `Services/Localization/Loc.cs`):
+  - XAML: `Text="{l:T 'Mostrar fecha'}"` (con `xmlns:l="clr-namespace:Winx.Shell.Services.Localization"`).
+  - C#: `Loc.T("Sin conexión")`; con datos, `Loc.F("Volumen: {0}%", percent)` (nada de `$"..."`).
+  - Agregar la traducción en `src/Winx.Shell/Localization/en.json`. La prueba
+    `LocalizationTests` falla si falta alguna o si no coinciden los huecos `{0}`.
+  - Un idioma nuevo es otro `xx.json` más su código en `Loc.Translated`.
 
 ## Compilar, ejecutar y probar
 

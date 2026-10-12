@@ -1,6 +1,7 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.StartMenu;
 
@@ -34,12 +35,14 @@ public partial class StartMenuProfile : StartMenuBase
     {
         string part = now.Hour switch
         {
-            < 6 => "Buenas noches",
-            < 12 => "Buenos días",
-            < 20 => "Buenas tardes",
-            _ => "Buenas noches",
+            < 6 => Loc.T("Buenas noches"),
+            < 12 => Loc.T("Buenos días"),
+            < 20 => Loc.T("Buenas tardes"),
+            _ => Loc.T("Buenas noches"),
         };
-        return $"{part} · " + now.ToString("dddd d 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("es-ES"));
+        // Fecha en el idioma de la interfaz (el formato también se traduce: "dddd, MMMM d" en inglés).
+        var culture = System.Globalization.CultureInfo.GetCultureInfo(Loc.Language);
+        return $"{part} · " + now.ToString(Loc.T("dddd d 'de' MMMM"), culture);
     }
 
     private void Search_KeyDown(object sender, KeyEventArgs e) => OnSearchKeyDown(sender, e);

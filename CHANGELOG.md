@@ -6,6 +6,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.10.0] - 2026-10-11
+
+### Añadido
+- **Varios idiomas**: WINX usa el idioma de la interfaz de Windows. Por ahora español e inglés;
+  en cualquier otro idioma se muestra en inglés. Se puede fijar en Hub › General › Idioma.
+- Toda la interfaz está traducida: barra, paneles, menú Inicio, Hub y el catálogo de
+  optimizaciones (los registros técnicos siguen en español).
+
 ## [0.9.0] - 2026-10-11
 
 ### Añadido

@@ -1,6 +1,7 @@
-using Windows.Devices.Bluetooth;
+﻿using Windows.Devices.Bluetooth;
 using Windows.Devices.Enumeration;
 using Windows.Devices.Radios;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services.Bluetooth;
 
@@ -62,7 +63,7 @@ public static class BluetoothService
     }
 
     private static string Name(string primary, string fallback) =>
-        string.IsNullOrWhiteSpace(primary) ? (string.IsNullOrWhiteSpace(fallback) ? "Dispositivo" : fallback) : primary;
+        string.IsNullOrWhiteSpace(primary) ? (string.IsNullOrWhiteSpace(fallback) ? Loc.T("Dispositivo") : fallback) : primary;
 
     /// <summary>Conecta o desconecta un dispositivo de audio. Devuelve false si no se pudo.</summary>
     public static Task<bool> SetAudioConnectedAsync(BtDevice device, bool connect) =>

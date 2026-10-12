@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +8,7 @@ using Winx.Shell.Services;
 using Winx.Shell.Services.Network;
 using Wpf.Ui.Controls;
 using PasswordBox = System.Windows.Controls.PasswordBox;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Flyouts;
 
@@ -44,13 +45,13 @@ public partial class NetworkFlyout : FlyoutWindow
             var access = await _network.InitializeWifiAsync();
             if (access == WifiAccess.NoAdapter || _wifiRadio is null)
             {
-                ShowWifiHint("Este equipo no tiene adaptador Wi-Fi.");
+                ShowWifiHint(Loc.T("Este equipo no tiene adaptador Wi-Fi."));
                 WifiSwitch.IsEnabled = ScanButton.IsEnabled = false;
                 return;
             }
             if (access == WifiAccess.Denied)
             {
-                ShowWifiHint("Windows no permite a WINX buscar redes. Activa Ubicación en Privacidad › Ubicación (Windows lo exige para escanear Wi-Fi).");
+                ShowWifiHint(Loc.T("Windows no permite a WINX buscar redes. Activa Ubicación en Privacidad › Ubicación (Windows lo exige para escanear Wi-Fi)."));
                 return;
             }
 
@@ -58,12 +59,12 @@ public partial class NetworkFlyout : FlyoutWindow
             if (_wifiRadio.State == RadioState.On)
                 await ScanAsync();
             else
-                ShowWifiHint("Wi-Fi desactivado.");
+                ShowWifiHint(Loc.T("Wi-Fi desactivado."));
         }
         catch (Exception ex)
         {
             Log.Error("No se pudo inicializar el Wi-Fi", ex);
-            ShowWifiHint("No se pudo acceder al Wi-Fi.");
+            ShowWifiHint(Loc.T("No se pudo acceder al Wi-Fi."));
         }
     }
 
@@ -84,7 +85,7 @@ public partial class NetworkFlyout : FlyoutWindow
             _rows = (await _network.ScanAsync()).Select(n => new WifiRow(n)).ToList();
             NetworkList.ItemsSource = _rows;
             if (_rows.Count == 0)
-                ShowWifiHint("No se encontraron redes.");
+                ShowWifiHint(Loc.T("No se encontraron redes."));
         }
         catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == unchecked((int)0x80004004))
         {
@@ -93,7 +94,7 @@ public partial class NetworkFlyout : FlyoutWindow
         catch (Exception ex)
         {
             Log.Error("Falló la búsqueda de redes", ex);
-            ShowWifiHint("No se pudo buscar redes.");
+            ShowWifiHint(Loc.T("No se pudo buscar redes."));
         }
         finally
         {
@@ -124,7 +125,7 @@ public partial class NetworkFlyout : FlyoutWindow
         }
         else
         {
-            ShowWifiHint("Wi-Fi desactivado.");
+            ShowWifiHint(Loc.T("Wi-Fi desactivado."));
         }
         UpdateConnection();
     }
@@ -169,7 +170,7 @@ public partial class NetworkFlyout : FlyoutWindow
 
     private async Task ConnectAsync(WifiRow row)
     {
-        row.Message = "Conectando…";
+        row.Message = Loc.T("Conectando…");
         var result = await _network.ConnectAsync(row.Network, row.PasswordBox?.Password);
         switch (result)
         {
@@ -179,14 +180,14 @@ public partial class NetworkFlyout : FlyoutWindow
                 break;
             case WifiConnectResult.NeedsPassword:
                 row.NeedsPassword = true;
-                row.Message = "Escribe la contraseña de la red.";
+                row.Message = Loc.T("Escribe la contraseña de la red.");
                 row.PasswordBox?.Focus();
                 break;
             case WifiConnectResult.WrongPassword:
-                row.Message = "Contraseña incorrecta.";
+                row.Message = Loc.T("Contraseña incorrecta.");
                 break;
             default:
-                row.Message = "No se pudo conectar.";
+                row.Message = Loc.T("No se pudo conectar.");
                 break;
         }
     }
@@ -202,9 +203,9 @@ public partial class NetworkFlyout : FlyoutWindow
         public PasswordBox? PasswordBox { get; set; }
 
         public string Ssid => Network.Ssid;
-        public string Detail => Network.Connected ? "Conectada" : Network.Secured ? "Segura" : "Abierta";
+        public string Detail => Network.Connected ? Loc.T("Conectada") : Network.Secured ? Loc.T("Segura") : Loc.T("Abierta");
         public Visibility LockVisibility => Network.Secured ? Visibility.Visible : Visibility.Collapsed;
-        public string ActionText => Network.Connected ? "Desconectar" : "Conectar";
+        public string ActionText => Network.Connected ? Loc.T("Desconectar") : Loc.T("Conectar");
 
         public SymbolRegular SignalSymbol => Network.Bars switch
         {

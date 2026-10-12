@@ -17,6 +17,7 @@ using Winx.Shell.Controls;
 using Winx.Shell.Services;
 using Winx.Shell.Services.Themes;
 using ShellNotifyIcon = ManagedShell.WindowsTray.NotifyIcon;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell;
 
@@ -375,7 +376,7 @@ public partial class Taskbar : AppBarWindow
         if (battery != null)
         {
             BatteryGlyph.Text = battery.Glyph.ToString();
-            BatteryButton.ToolTip = $"Batería: {battery.Percent}%{(battery.Charging ? " (cargando)" : "")}";
+            BatteryButton.ToolTip = (battery.Charging ? Loc.F("Batería: {0}% (cargando)", battery.Percent) : Loc.F("Batería: {0}%", battery.Percent));
         }
     }
 
@@ -448,9 +449,9 @@ public partial class Taskbar : AppBarWindow
             : percent < 33 ? ""
             : percent < 66 ? ""
             : "";
-        VolumeButton.ToolTip = !audio.HasDevice ? "Sin dispositivo de audio"
-            : audio.Mute ? $"Volumen: silenciado ({percent}%)"
-            : $"Volumen: {percent}%";
+        VolumeButton.ToolTip = !audio.HasDevice ? Loc.T("Sin dispositivo de audio")
+            : audio.Mute ? Loc.F("Volumen: silenciado ({0}%)", percent)
+            : Loc.F("Volumen: {0}%", percent);
     }
 
     private void BatteryButton_Click(object sender, RoutedEventArgs e) => OpenUri("ms-settings:batterysaver");

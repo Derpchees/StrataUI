@@ -1,6 +1,7 @@
-<ui:FluentWindow x:Class="Winx.Shell.Hub.HubWindow"
+﻿<ui:FluentWindow x:Class="Winx.Shell.Hub.HubWindow"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:pages="clr-namespace:Winx.Shell.Hub.Pages"
                  Title="WINX"
@@ -28,69 +29,69 @@
                            IsPaneToggleVisible="False"
                            OpenPaneLength="250">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="Barra de tareas" TargetPageType="{x:Type pages:TaskbarPage}">
+                <ui:NavigationViewItem Content="{l:T 'Barra de tareas'}" TargetPageType="{x:Type pages:TaskbarPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PanelBottom20" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="Menú Inicio" TargetPageType="{x:Type pages:StartPage}">
+                <ui:NavigationViewItem Content="{l:T 'Menú Inicio'}" TargetPageType="{x:Type pages:StartPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Grid24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="Bandeja del sistema" TargetPageType="{x:Type pages:TrayPage}">
+                <ui:NavigationViewItem Content="{l:T 'Bandeja del sistema'}" TargetPageType="{x:Type pages:TrayPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Apps24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="Apariencia" TargetPageType="{x:Type pages:AppearancePage}">
+                <ui:NavigationViewItem Content="{l:T 'Apariencia'}" TargetPageType="{x:Type pages:AppearancePage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PaintBrush24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="Optimización">
+                <ui:NavigationViewItem Content="{l:T 'Optimización'}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Wrench24" />
                     </ui:NavigationViewItem.Icon>
                     <ui:NavigationViewItem.MenuItems>
-                        <ui:NavigationViewItem Content="Apps preinstaladas" TargetPageType="{x:Type pages:AppsPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Apps preinstaladas'}" TargetPageType="{x:Type pages:AppsPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Delete24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Privacidad" TargetPageType="{x:Type pages:PrivacyPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Privacidad'}" TargetPageType="{x:Type pages:PrivacyPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="ShieldLock24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Inteligencia artificial" TargetPageType="{x:Type pages:AIPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Inteligencia artificial'}" TargetPageType="{x:Type pages:AIPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="BrainCircuit24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Sistema" TargetPageType="{x:Type pages:SystemTweaksPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Sistema'}" TargetPageType="{x:Type pages:SystemTweaksPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Windows Update" TargetPageType="{x:Type pages:UpdatePage}">
+                        <ui:NavigationViewItem Content="{l:T 'Windows Update'}" TargetPageType="{x:Type pages:UpdatePage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="ArrowSync24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Apariencia de Windows" TargetPageType="{x:Type pages:WindowsAppearancePage}">
+                        <ui:NavigationViewItem Content="{l:T 'Apariencia de Windows'}" TargetPageType="{x:Type pages:WindowsAppearancePage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="DarkTheme24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Explorador" TargetPageType="{x:Type pages:ExplorerPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Explorador'}" TargetPageType="{x:Type pages:ExplorerPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Folder24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Multitarea" TargetPageType="{x:Type pages:MultitaskingPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Multitarea'}" TargetPageType="{x:Type pages:MultitaskingPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="SquareMultiple24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Juegos" TargetPageType="{x:Type pages:GamingPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Juegos'}" TargetPageType="{x:Type pages:GamingPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Games24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Navegadores" TargetPageType="{x:Type pages:BrowsersPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Navegadores'}" TargetPageType="{x:Type pages:BrowsersPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Globe24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="Respaldo" TargetPageType="{x:Type pages:BackupPage}">
+                        <ui:NavigationViewItem Content="{l:T 'Respaldo'}" TargetPageType="{x:Type pages:BackupPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="History24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
                     </ui:NavigationViewItem.MenuItems>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="General" TargetPageType="{x:Type pages:GeneralPage}">
+                <ui:NavigationViewItem Content="{l:T 'General'}" TargetPageType="{x:Type pages:GeneralPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />
                     </ui:NavigationViewItem.Icon>

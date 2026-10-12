@@ -1,6 +1,7 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Media;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services.StartMenu;
 
@@ -9,7 +10,7 @@ public sealed class PinFolderView(PinEntry entry, IReadOnlyList<StartApp> apps)
 {
     public PinEntry Entry { get; } = entry;
     public string Id => Entry.Id;
-    public string Name => Entry.FolderName ?? "Carpeta";
+    public string Name => Entry.FolderName ?? Loc.T("Carpeta");
     public IReadOnlyList<StartApp> Apps { get; } = apps;
     /// <summary>Hasta cuatro íconos para la miniatura 2×2 de la carpeta.</summary>
     public IReadOnlyList<ImageSource?> Preview => Apps.Take(4).Select(a => a.Icon).ToList();
@@ -56,7 +57,7 @@ public static class PinLayout
         var ids = Settings.Current.PinnedStartApps ?? defaultPins();
         Settings.Current.StartLayout =
         [
-            new PinSection { Name = "Anclado", Items = ids.Select(id => new PinEntry { AppId = id }).ToList() },
+            new PinSection { Name = Loc.T("Anclado"), Items = ids.Select(id => new PinEntry { AppId = id }).ToList() },
         ];
         Settings.Current.PinnedStartApps = null;
         Settings.Save();
@@ -158,7 +159,7 @@ public static class PinLayout
             int index = section.Items.IndexOf(target);
             section.Items[index] = new PinEntry
             {
-                FolderName = "Carpeta",
+                FolderName = Loc.T("Carpeta"),
                 FolderApps = [target.AppId!, dragged.AppId!],
             };
         }
@@ -203,7 +204,7 @@ public static class PinLayout
     public static void AddSection(string name, string? afterSectionId = null)
     {
         int index = afterSectionId is null ? Editable.Count : Editable.FindIndex(s => s.Id == afterSectionId) + 1;
-        Editable.Insert(Math.Clamp(index, 0, Editable.Count), new PinSection { Name = string.IsNullOrWhiteSpace(name) ? "Sección" : name.Trim() });
+        Editable.Insert(Math.Clamp(index, 0, Editable.Count), new PinSection { Name = string.IsNullOrWhiteSpace(name) ? Loc.T("Sección") : name.Trim() });
         Commit();
     }
 

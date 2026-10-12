@@ -1,13 +1,14 @@
-<start:StartMenuBase x:Class="Winx.Shell.StartMenu.StartMenuSpotlight"
+﻿<start:StartMenuBase x:Class="Winx.Shell.StartMenu.StartMenuSpotlight"
                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
                      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                      xmlns:start="clr-namespace:Winx.Shell.StartMenu"
-                     Title="Buscar" Width="680">
+                     Title="{l:T 'Buscar'}" Width="680">
     <!-- Solo búsqueda (tipo Spotlight): una barra centrada; los anclados como íconos y los
          resultados aparecen debajo al escribir. -->
     <StackPanel Margin="14,14,14,12">
-        <ui:TextBox x:Name="SearchBox" FontSize="18" PlaceholderText="Buscar apps o escribir un comando"
+        <ui:TextBox x:Name="SearchBox" FontSize="18" PlaceholderText="{l:T 'Buscar apps o escribir un comando'}"
                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
             <ui:TextBox.Icon>
                 <ui:SymbolIcon Symbol="Search24" FontSize="20" />
@@ -47,7 +48,7 @@
                 <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}" />
                 <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
                            Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
-                           Text="Sin resultados. Pulsa Enter para ejecutarlo como comando." />
+                           Text="{l:T 'Sin resultados. Pulsa Enter para ejecutarlo como comando.'}" />
             </StackPanel>
         </ScrollViewer>
     </StackPanel>

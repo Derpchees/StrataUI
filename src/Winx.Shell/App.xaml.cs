@@ -113,7 +113,8 @@ public partial class App : Application
         _openHubWait = ThreadPool.RegisterWaitForSingleObject(_openHubEvent,
             (_, _) => Dispatcher.BeginInvoke(OpenHub), null, Timeout.Infinite, false);
 
-        Log.Info($"WINX {Version} iniciando");
+        Services.Localization.Loc.Initialize(Settings.Current.Language);
+        Log.Info($"WINX {Version} iniciando (idioma: {Services.Localization.Loc.Language})");
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnFatalException;
 

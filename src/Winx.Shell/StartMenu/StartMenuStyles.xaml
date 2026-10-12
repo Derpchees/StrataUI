@@ -1,5 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
                     xmlns:start="clr-namespace:Winx.Shell.StartMenu">
 
     <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -13,7 +14,7 @@
 
     <!-- Menú contextual común a cualquier app: anclar / desanclar -->
     <ContextMenu x:Key="AppContextMenu" x:Shared="False">
-        <MenuItem Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" Header="Abrir" />
+        <MenuItem Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" Header="{l:T 'Abrir'}" />
         <MenuItem Command="{x:Static start:StartCommands.TogglePin}" CommandParameter="{Binding}">
             <MenuItem.Style>
                 <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">

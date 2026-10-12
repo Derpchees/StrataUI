@@ -1,6 +1,7 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services;
 
@@ -19,7 +20,7 @@ public enum StartIconSize { Small, Medium, Large }
 public sealed class PinSection
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
-    public string Name { get; set; } = "Anclado";
+    public string Name { get; set; } = Loc.T("Anclado");
     public List<PinEntry> Items { get; set; } = new();
 }
 
@@ -81,6 +82,9 @@ public sealed class WinxSettings
     public bool ShowBluetoothModule { get; set; } = true;
     public bool ShowVolumeModule { get; set; } = true;
     public bool ShowBatteryModule { get; set; } = true;
+
+    /// <summary>Idioma de la interfaz: "auto" (el de Windows), "es", "en"…</summary>
+    public string Language { get; set; } = "auto";
 
     // Apariencia
     public WinxTheme Theme { get; set; } = WinxTheme.System;

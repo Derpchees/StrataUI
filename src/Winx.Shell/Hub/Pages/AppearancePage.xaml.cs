@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -6,6 +6,7 @@ using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Winx.Shell.Services;
 using Winx.Shell.Services.Themes;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Hub.Pages;
 
@@ -55,7 +56,7 @@ public partial class AppearancePage : Page
                 Content = BuildThemeCard(theme, selected),
                 Template = FlatTemplate(),
             };
-            System.Windows.Automation.AutomationProperties.SetName(card, $"Tema {theme.Name}");
+            System.Windows.Automation.AutomationProperties.SetName(card, Loc.F("Tema {0}", theme.Name));
             card.Tag = theme.Kind;
             card.Click += (_, _) =>
             {
@@ -214,7 +215,7 @@ public partial class AppearancePage : Page
     private void UpdateWallpaper()
     {
         var path = Wallpaper.Current;
-        WallpaperPath.Text = string.IsNullOrEmpty(path) ? "Color sólido" : path;
+        WallpaperPath.Text = string.IsNullOrEmpty(path) ? Loc.T("Color sólido") : path;
         WallpaperPreview.Source = LoadThumbnail(path);
         RestoreWallpaperButton.Visibility = Settings.Current.OriginalWallpaper is null
             ? Visibility.Collapsed
@@ -245,8 +246,8 @@ public partial class AppearancePage : Page
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Elegir fondo de pantalla",
-            Filter = "Imágenes|*.jpg;*.jpeg;*.png;*.bmp;*.webp|Todos los archivos|*.*",
+            Title = Loc.T("Elegir fondo de pantalla"),
+            Filter = Loc.T("Imágenes|*.jpg;*.jpeg;*.png;*.bmp;*.webp|Todos los archivos|*.*"),
         };
         if (dialog.ShowDialog() != true)
             return;
@@ -279,7 +280,7 @@ public partial class AppearancePage : Page
         catch (Exception ex)
         {
             Log.Error("No se pudo cambiar el fondo", ex);
-            System.Windows.MessageBox.Show($"No se pudo cambiar el fondo:\n{ex.Message}", "WINX");
+            System.Windows.MessageBox.Show(Loc.F("No se pudo cambiar el fondo:\n{0}", ex.Message), "WINX");
             return false;
         }
     }

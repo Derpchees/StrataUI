@@ -1,4 +1,5 @@
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Tweaks;
 
@@ -33,7 +34,7 @@ public sealed record Tweak(
     string[]? Options = null,
     TweakRefresh Refresh = TweakRefresh.Broadcast)
 {
-    public static readonly string[] Toggle = ["Desactivado", "Activado"];
+    public static readonly string[] Toggle = [Loc.T("Desactivado"), Loc.T("Activado")];
 
     public string[] Choices => Options ?? Toggle;
     public bool IsToggle => Options is null;

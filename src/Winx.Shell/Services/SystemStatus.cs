@@ -1,5 +1,6 @@
-using System.Net.NetworkInformation;
+﻿using System.Net.NetworkInformation;
 using Forms = System.Windows.Forms;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services;
 
@@ -23,7 +24,7 @@ public static class SystemStatus
             .ToList();
 
         if (!NetworkInterface.GetIsNetworkAvailable() || up.Count == 0)
-            return new NetworkInfo(WifiGlyph, false, "Sin conexión");
+            return new NetworkInfo(WifiGlyph, false, Loc.T("Sin conexión"));
 
         var wifi = up.FirstOrDefault(n => n.NetworkInterfaceType == NetworkInterfaceType.Wireless80211);
         return wifi != null

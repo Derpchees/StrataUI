@@ -1,4 +1,4 @@
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -8,6 +8,7 @@ using System.Windows.Media;
 using Winx.Shell.Controls;
 using Winx.Shell.Services;
 using ShellNotifyIcon = ManagedShell.WindowsTray.NotifyIcon;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Hub.Pages;
 
@@ -63,7 +64,7 @@ public partial class TrayPage : Page
 
         string fileName = string.IsNullOrEmpty(icon.Path) ? "" : Path.GetFileName(icon.Path);
         string title = icon.Title?.Split('\n')[0].Trim() ?? "";
-        string name = FirstNonEmpty(description, title, fileName, "Ícono sin nombre");
+        string name = FirstNonEmpty(description, title, fileName, Loc.T("Ícono sin nombre"));
         string detail = title != name && title.Length > 0 ? title : fileName;
         return new TrayIconItem(icon, name, detail);
     }

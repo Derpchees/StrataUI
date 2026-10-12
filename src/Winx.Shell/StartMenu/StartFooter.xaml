@@ -1,24 +1,25 @@
-<UserControl x:Class="Winx.Shell.StartMenu.StartFooter"
+﻿<UserControl x:Class="Winx.Shell.StartMenu.StartFooter"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:start="clr-namespace:Winx.Shell.StartMenu">
     <UserControl.Resources>
         <ContextMenu x:Key="PowerMenu" Placement="Top">
-            <MenuItem Header="Bloquear" Command="{x:Static start:StartCommands.Power}" CommandParameter="Lock">
+            <MenuItem Header="{l:T 'Bloquear'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="Lock">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="LockClosed24" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Cerrar sesión" Command="{x:Static start:StartCommands.Power}" CommandParameter="SignOut">
+            <MenuItem Header="{l:T 'Cerrar sesión'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="SignOut">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="SignOut24" /></MenuItem.Icon>
             </MenuItem>
             <Separator />
-            <MenuItem Header="Suspender" Command="{x:Static start:StartCommands.Power}" CommandParameter="Sleep">
+            <MenuItem Header="{l:T 'Suspender'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="Sleep">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="WeatherMoon24" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Reiniciar" Command="{x:Static start:StartCommands.Power}" CommandParameter="Restart">
+            <MenuItem Header="{l:T 'Reiniciar'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="Restart">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="ArrowClockwise24" /></MenuItem.Icon>
             </MenuItem>
-            <MenuItem Header="Apagar" Command="{x:Static start:StartCommands.Power}" CommandParameter="PowerOff">
+            <MenuItem Header="{l:T 'Apagar'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="PowerOff">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="Power24" /></MenuItem.Icon>
             </MenuItem>
         </ContextMenu>
@@ -34,7 +35,7 @@
         <Button x:Name="UserBadge" Style="{StaticResource FlyoutRow}" HorizontalAlignment="Left" Padding="8,6"
                 Visibility="{Binding ShowUser, Converter={StaticResource BoolToVis}}"
                 Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="User"
-                ToolTip="Abrir tu carpeta de usuario">
+                ToolTip="{l:T 'Abrir tu carpeta de usuario'}">
             <StackPanel Orientation="Horizontal">
                 <Grid Width="32" Height="32" Margin="0,0,10,0">
                     <Ellipse Fill="{DynamicResource WinxAccentBrush}" />

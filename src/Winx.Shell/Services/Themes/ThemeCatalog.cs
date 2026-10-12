@@ -1,3 +1,5 @@
+﻿using Winx.Shell.Services.Localization;
+
 namespace Winx.Shell.Services.Themes;
 
 /// <summary>
@@ -31,15 +33,15 @@ public static class ThemeCatalog
 
     public static IReadOnlyList<ThemeInfo> All { get; } =
     [
-        new(WinxTheme.System, "Sistema", "Claro u oscuro según Windows, con Mica.", null, Backdrop.Mica),
-        new(WinxTheme.Light, "Claro", "Superficies claras y limpias.", true, Backdrop.Mica),
-        new(WinxTheme.Dark, "Oscuro", "Superficies oscuras, ideal de noche.", false, Backdrop.Mica),
-        new(WinxTheme.Transparent, "Transparencia", "Vidrio esmerilado que deja ver el fondo.", null, Backdrop.Acrylic, Radius: 6),
-        new(WinxTheme.LiquidGlass, "Liquid Glass", "Vidrio claro estilo iOS: cristalino, flotante, con bordes de luz.",
+        new(WinxTheme.System, Loc.T("Sistema"), Loc.T("Claro u oscuro según Windows, con Mica."), null, Backdrop.Mica),
+        new(WinxTheme.Light, Loc.T("Claro"), Loc.T("Superficies claras y limpias."), true, Backdrop.Mica),
+        new(WinxTheme.Dark, Loc.T("Oscuro"), Loc.T("Superficies oscuras, ideal de noche."), false, Backdrop.Mica),
+        new(WinxTheme.Transparent, Loc.T("Transparencia"), Loc.T("Vidrio esmerilado que deja ver el fondo."), null, Backdrop.Acrylic, Radius: 6),
+        new(WinxTheme.LiquidGlass, "Liquid Glass", Loc.T("Vidrio claro estilo iOS: cristalino, flotante, con bordes de luz."),
             true, Backdrop.Blur, Glass: true, Floating: true, Radius: 14, PanelRadius: 22),
-        new(WinxTheme.LiquidGlassDark, "Liquid Glass oscuro", "Vidrio ahumado estilo iOS: cristalino, flotante, con bordes de luz.",
+        new(WinxTheme.LiquidGlassDark, Loc.T("Liquid Glass oscuro"), Loc.T("Vidrio ahumado estilo iOS: cristalino, flotante, con bordes de luz."),
             false, Backdrop.Blur, Glass: true, Floating: true, Radius: 14, PanelRadius: 22),
-        new(WinxTheme.Material, "Material", "Material Design: superficies tonales con tu acento.", null, Backdrop.Solid,
+        new(WinxTheme.Material, "Material", Loc.T("Material Design: superficies tonales con tu acento."), null, Backdrop.Solid,
             Tonal: true, Radius: 14, PanelRadius: 16),
     ];
 

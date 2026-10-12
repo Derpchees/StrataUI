@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Interop;
@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using NAudio.CoreAudioApi;
 using NAudio.CoreAudioApi.Interfaces;
+using Winx.Shell.Services.Localization;
 
 namespace Winx.Shell.Services.Audio;
 
@@ -296,7 +297,7 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
     private static (string Key, string Name, ImageSource? Icon) Describe(AudioSessionControl session)
     {
         if (session.IsSystemSoundsSession)
-            return ("system", "Sonidos del sistema", null);
+            return ("system", Loc.T("Sonidos del sistema"), null);
 
         try
         {
@@ -322,7 +323,7 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
         catch (ArgumentException)
         {
             // El proceso ya terminó.
-            var display = string.IsNullOrWhiteSpace(session.DisplayName) ? "Aplicación" : session.DisplayName;
+            var display = string.IsNullOrWhiteSpace(session.DisplayName) ? Loc.T("Aplicación") : session.DisplayName;
             return (session.GetSessionInstanceIdentifier, display, null);
         }
     }
