@@ -8,7 +8,29 @@ public enum TaskbarAlignment { Center, Left }
 
 public enum WinxTheme { System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material }
 
-public enum StartMenuStyle { Windows11, List, Fullscreen, Compact, Spotlight, Icons }
+public enum StartMenuStyle { Windows11, List, Fullscreen, Compact, Spotlight, Icons, Profile }
+
+public enum StartIconSize { Small, Medium, Large }
+
+/// <summary>Sección de apps ancladas con nombre.</summary>
+public sealed class PinSection
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string Name { get; set; } = "Anclado";
+    public List<PinEntry> Items { get; set; } = new();
+}
+
+/// <summary>Elemento anclado: una app (<see cref="AppId"/>) o una carpeta con varias.</summary>
+public sealed class PinEntry
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public string? AppId { get; set; }
+    public string? FolderName { get; set; }
+    public List<string>? FolderApps { get; set; }
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsFolder => FolderApps != null;
+}
 
 public enum StartIconKind { Winx, Windows, WindowsMono, Circle, Dot, Grid, Search }
 
@@ -32,8 +54,13 @@ public sealed class WinxSettings
     /// <summary>Botones del pie del menú, en orden (IDs de StartFooterCatalog).</summary>
     public List<string> StartFooterButtons { get; set; } = ["Explorer", "WinxSettings", "Power"];
     public bool StartUseWinKey { get; set; } = true;
-    /// <summary>IDs de apps ancladas (AppUserModelID / nombre de análisis); null = primera vez.</summary>
+    /// <summary>Formato anterior de anclados (lista plana); se migra a <see cref="StartLayout"/>.</summary>
     public List<string>? PinnedStartApps { get; set; }
+    /// <summary>Anclados organizados en secciones y carpetas; null = primera vez.</summary>
+    public List<PinSection>? StartLayout { get; set; }
+    public StartIconSize StartIconSize { get; set; } = StartIconSize.Medium;
+    /// <summary>Tamaño elegido por el usuario para cada estilo de menú: [ancho, alto] en DIP.</summary>
+    public Dictionary<string, double[]> StartMenuSizes { get; set; } = new();
 
     // Módulos del área de estado
     public bool ShowNetworkModule { get; set; } = true;
@@ -81,9 +108,14 @@ public static class Settings
         Changed?.Invoke();
     }
 
+    /// <summary>Solo pruebas: evita escribir el settings.json real del usuario.</summary>
+    internal static bool SuppressSave { get; set; }
+
     /// <summary>Guarda sin notificar (para datos internos como los íconos conocidos).</summary>
     public static void Save()
     {
+        if (SuppressSave)
+            return;
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);

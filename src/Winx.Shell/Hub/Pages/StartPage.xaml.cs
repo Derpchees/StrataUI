@@ -18,6 +18,7 @@ public partial class StartPage : Page
         "Una columna angosta con las apps ancladas en lista.",
         "Solo una barra de búsqueda centrada en la pantalla, estilo Spotlight.",
         "Cuadrícula de íconos sin texto; el nombre aparece al pasar el mouse.",
+        "Como Windows 11, con tu foto grande arriba sobresaliendo del menú, tu nombre y un saludo.",
     ];
 
     private readonly bool _loading = true;
@@ -28,6 +29,7 @@ public partial class StartPage : Page
         var s = Settings.Current;
         StyleBox.SelectedIndex = (int)s.StartStyle;
         StyleDescription.Text = Descriptions[(int)s.StartStyle];
+        IconSizeBox.SelectedIndex = (int)s.StartIconSize;
         PinnedSwitch.IsChecked = s.StartShowPinned;
         AllAppsSwitch.IsChecked = s.StartShowAllApps;
         RecentSwitch.IsChecked = s.StartShowRecent;
@@ -45,6 +47,12 @@ public partial class StartPage : Page
             return;
         StyleDescription.Text = Descriptions[StyleBox.SelectedIndex];
         Settings.Update(s => s.StartStyle = (StartMenuStyle)StyleBox.SelectedIndex);
+    }
+
+    private void IconSize_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loading && IconSizeBox.SelectedIndex >= 0)
+            Settings.Update(s => s.StartIconSize = (StartIconSize)IconSizeBox.SelectedIndex);
     }
 
     private void Options_Changed(object sender, RoutedEventArgs e) => Settings.Update(s =>

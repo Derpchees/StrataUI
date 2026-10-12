@@ -25,9 +25,7 @@
                 <StackPanel>
                     <StackPanel Visibility="{Binding HomeVisible, Converter={StaticResource BoolToVis}}">
                         <StackPanel Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}">
-                            <TextBlock Style="{StaticResource StartSectionTitle}" FontSize="16" Margin="8,0,0,8" Text="Anclado" />
-                            <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppTileLarge}"
-                                          ItemsPanel="{StaticResource WrapItems}" />
+                            <start:PinnedLayoutView />
                         </StackPanel>
                         <StackPanel Visibility="{Binding ShowAllAppsButton, Converter={StaticResource BoolToVis}}">
                             <TextBlock Style="{StaticResource StartSectionTitle}" FontSize="16" Margin="8,24,0,8" Text="Todas las apps" />

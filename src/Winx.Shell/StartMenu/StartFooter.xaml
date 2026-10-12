@@ -31,7 +31,7 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <Button Style="{StaticResource FlyoutRow}" HorizontalAlignment="Left" Padding="8,6"
+        <Button x:Name="UserBadge" Style="{StaticResource FlyoutRow}" HorizontalAlignment="Left" Padding="8,6"
                 Visibility="{Binding ShowUser, Converter={StaticResource BoolToVis}}"
                 Command="{x:Static start:StartCommands.OpenFolder}" CommandParameter="User"
                 ToolTip="Abrir tu carpeta de usuario">

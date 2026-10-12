@@ -137,6 +137,8 @@ public static class StartMenuService
 
     public static void Initialize()
     {
+        ApplyIconSizes();
+        Settings.Changed += ApplyIconSizes;
         // La carpeta se llena de forma asíncrona (cientos de eventos): se reconstruye la lista
         // cuando deja de cambiar durante un momento.
         _rebuildTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
@@ -155,6 +157,28 @@ public static class StartMenuService
     }
 
     public static void Shutdown() => _appsFolder?.Dispose();
+
+    /// <summary>
+    /// Tamaños de íconos del menú Inicio como recursos dinámicos: las plantillas los leen con
+    /// DynamicResource, así que cambiar la opción en el Hub se refleja sin reabrir nada.
+    /// </summary>
+    public static void ApplyIconSizes()
+    {
+        var (tile, row, grid, large) = Settings.Current.StartIconSize switch
+        {
+            StartIconSize.Small => (26.0, 20.0, 30.0, 40.0),
+            StartIconSize.Large => (44.0, 30.0, 50.0, 64.0),
+            _ => (32.0, 24.0, 38.0, 48.0),
+        };
+        var resources = Application.Current.Resources;
+        resources["StartTileIconSize"] = tile;
+        resources["StartTileWidth"] = tile * 3;
+        resources["StartRowIconSize"] = row;
+        resources["StartGridIconSize"] = grid;
+        resources["StartGridButtonSize"] = grid + 26;
+        resources["StartLargeIconSize"] = large;
+        resources["StartLargeTileWidth"] = large * 2.6;
+    }
 
     private static void Rebuild()
     {
@@ -179,22 +203,27 @@ public static class StartMenuService
         foreach (var app in items)
             Apps.Add(app);
 
-        if (Settings.Current.PinnedStartApps is null && items.Count > 20)
-        {
-            // Primera vez: anclar apps comunes instaladas, en el orden de la lista. Se ignoran los
-            // accesos tipo URL (steam://rungameid/…), que son juegos y no la app que se busca.
-            var candidates = items.Where(a => !a.Id.Contains("://", StringComparison.Ordinal)).ToList();
-            Settings.Current.PinnedStartApps = DefaultPins
-                .Select(pin => candidates.FirstOrDefault(a => a.Name.Equals(pin, StringComparison.OrdinalIgnoreCase))
-                               ?? candidates.FirstOrDefault(a => a.Id.Contains(pin, StringComparison.OrdinalIgnoreCase)))
-                .Where(a => a != null)
-                .Select(a => a!.Id)
-                .Distinct()
-                .Take(18)
-                .ToList();
-            Settings.Save();
-        }
-        RebuildPinned();
+        // Con pocas apps el catálogo todavía se está cargando: no decidir los anclados por defecto aún.
+        if (items.Count > 20)
+            PinLayout.EnsureLayout(() => DefaultPinIds(items));
+        PinLayout.RebuildViews();
+    }
+
+    /// <summary>
+    /// Apps comunes instaladas, en el orden de la lista. Se ignoran los accesos tipo URL
+    /// (steam://rungameid/…), que son juegos y no la app que se busca.
+    /// </summary>
+    private static List<string> DefaultPinIds(IReadOnlyList<StartApp> items)
+    {
+        var candidates = items.Where(a => !a.Id.Contains("://", StringComparison.Ordinal)).ToList();
+        return DefaultPins
+            .Select(pin => candidates.FirstOrDefault(a => a.Name.Equals(pin, StringComparison.OrdinalIgnoreCase))
+                           ?? candidates.FirstOrDefault(a => a.Id.Contains(pin, StringComparison.OrdinalIgnoreCase)))
+            .Where(a => a != null)
+            .Select(a => a!.Id)
+            .Distinct()
+            .Take(18)
+            .ToList();
     }
 
     // Desinstaladores, documentación y enlaces web que ensucian la lista.
@@ -204,30 +233,21 @@ public static class StartMenuService
         || name.EndsWith(" Uninstaller", StringComparison.OrdinalIgnoreCase)
         || name.Contains("Readme", StringComparison.OrdinalIgnoreCase);
 
-    private static void RebuildPinned()
-    {
-        var ids = Settings.Current.PinnedStartApps ?? [];
-        Pinned.Clear();
-        foreach (var id in ids)
-            if (Apps.FirstOrDefault(a => a.Id == id) is { } app)
-                Pinned.Add(app);
-    }
-
-    public static bool IsPinned(string id) => Settings.Current.PinnedStartApps?.Contains(id) == true;
+    public static bool IsPinned(string id) => PinLayout.Contains(id);
 
     public static void SetPinned(StartApp app, bool pinned)
     {
-        var ids = Settings.Current.PinnedStartApps ??= new();
-        ids.Remove(app.Id);
         if (pinned)
-            ids.Add(app.Id);
-        Settings.Save();
-        RebuildPinned();
+            PinLayout.Pin(app.Id);
+        else
+            PinLayout.Unpin(app.Id);
         app.NotifyPinned();
     }
 
+    /// <summary>Vuelve a los anclados por defecto (borra secciones y carpetas).</summary>
     public static void ResetPinned()
     {
+        Settings.Current.StartLayout = null;
         Settings.Current.PinnedStartApps = null;
         Rebuild();
     }

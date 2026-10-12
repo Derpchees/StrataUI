@@ -174,6 +174,7 @@ public static class StartMenuLauncher
             case StartMenuStyle.Compact: FlyoutManager.Toggle<StartMenuCompact>(anchor); break;
             case StartMenuStyle.Spotlight: FlyoutManager.Toggle<StartMenuSpotlight>(anchor); break;
             case StartMenuStyle.Icons: FlyoutManager.Toggle<StartMenuIcons>(anchor); break;
+            case StartMenuStyle.Profile: FlyoutManager.Toggle<StartMenuProfile>(anchor); break;
             default: FlyoutManager.Toggle<StartMenuWin11>(anchor); break;
         }
     }

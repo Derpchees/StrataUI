@@ -30,11 +30,11 @@
 
     <!-- App en cuadrícula: ícono grande y nombre debajo -->
     <DataTemplate x:Key="AppTile">
-        <Button Style="{StaticResource FlyoutRow}" Width="96" Padding="4,10,4,8" HorizontalContentAlignment="Center"
+        <Button Style="{StaticResource FlyoutRow}" Width="{DynamicResource StartTileWidth}" Padding="4,10,4,8" HorizontalContentAlignment="Center"
                 Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
                 ToolTip="{Binding Name}" ContextMenu="{StaticResource AppContextMenu}">
             <StackPanel>
-                <Image Source="{Binding Icon}" Width="32" Height="32" Margin="0,0,0,6"
+                <Image Source="{Binding Icon}" Width="{DynamicResource StartTileIconSize}" Height="{DynamicResource StartTileIconSize}" Margin="0,0,0,6"
                        RenderOptions.BitmapScalingMode="HighQuality" />
                 <TextBlock Text="{Binding Name}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap"
                            TextTrimming="CharacterEllipsis" MaxHeight="32" HorizontalAlignment="Center"
@@ -45,11 +45,11 @@
 
     <!-- App grande para pantalla completa -->
     <DataTemplate x:Key="AppTileLarge">
-        <Button Style="{StaticResource FlyoutRow}" Width="128" Padding="6,14,6,10" HorizontalContentAlignment="Center"
+        <Button Style="{StaticResource FlyoutRow}" Width="{DynamicResource StartLargeTileWidth}" Padding="6,14,6,10" HorizontalContentAlignment="Center"
                 Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
                 ToolTip="{Binding Name}" ContextMenu="{StaticResource AppContextMenu}">
             <StackPanel>
-                <Image Source="{Binding Icon}" Width="48" Height="48" Margin="0,0,0,8"
+                <Image Source="{Binding Icon}" Width="{DynamicResource StartLargeIconSize}" Height="{DynamicResource StartLargeIconSize}" Margin="0,0,0,8"
                        RenderOptions.BitmapScalingMode="HighQuality" />
                 <TextBlock Text="{Binding Name}" FontSize="13" TextAlignment="Center" TextWrapping="Wrap"
                            TextTrimming="CharacterEllipsis" MaxHeight="36" HorizontalAlignment="Center"
@@ -64,7 +64,7 @@
                 Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
                 ContextMenu="{StaticResource AppContextMenu}">
             <StackPanel Orientation="Horizontal">
-                <Image Source="{Binding Icon}" Width="24" Height="24" Margin="0,0,12,0"
+                <Image Source="{Binding Icon}" Width="{DynamicResource StartRowIconSize}" Height="{DynamicResource StartRowIconSize}" Margin="0,0,12,0"
                        RenderOptions.BitmapScalingMode="HighQuality" />
                 <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" />
             </StackPanel>

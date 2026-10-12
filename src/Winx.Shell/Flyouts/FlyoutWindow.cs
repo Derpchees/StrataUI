@@ -33,6 +33,7 @@ public abstract class FlyoutWindow : FluentWindow
         // Paneles: Acrylic como los de Windows; sólido en Material; en Liquid Glass, desenfoque
         // limpio propio (sin el ruido ni la luminosidad del Acrylic) con esquinas grandes.
         var theme = ThemeManager.Theme;
+        // Se decide aquí: cambiar WindowBackdropType más tarde hace que WPF-UI deshaga el efecto.
         WindowBackdropType = theme.Backdrop == Backdrop.Acrylic ? WindowBackdropType.Acrylic : WindowBackdropType.None;
         if (theme.Backdrop == Backdrop.Blur)
         {
@@ -45,8 +46,10 @@ public abstract class FlyoutWindow : FluentWindow
             };
             Loaded += (_, _) => Background = Brushes.Transparent;
         }
-        if (theme.PanelRadius > 8) // más que las esquinas de DWM: se recorta la ventana
-            SizeChanged += (_, _) => ClipToPanelRadius(theme.PanelRadius);
+        // WindowChrome (lo usa WPF-UI) borra la región de la ventana al cambiar de tamaño:
+        // se reaplica después de que termine de procesar el cambio.
+        SizeChanged += (_, _) => Dispatcher.BeginInvoke(ApplyRegion, System.Windows.Threading.DispatcherPriority.Background);
+        ContentRendered += (_, _) => ApplyRegion();
         WindowCornerPreference = WindowCornerPreference.Round;
         Opacity = 0; // se muestra al terminar de posicionarse, sin parpadeo
 
@@ -117,14 +120,25 @@ public abstract class FlyoutWindow : FluentWindow
     /// <summary>El panel ocupa toda el área de trabajo del monitor (menú a pantalla completa).</summary>
     protected virtual bool FillWorkArea => false;
 
-    private void ClipToPanelRadius(double radius)
+    /// <summary>
+    /// Espacio (DIP) que algo del panel ocupa por encima de su borde superior; se descuenta del
+    /// alto máximo para que quepa en la pantalla (la foto del menú Perfil).
+    /// </summary>
+    protected virtual double TopOverflow => 0;
+
+    /// <summary>Recorta la ventana con esquinas redondeadas si el tema las pide más grandes que las de DWM.</summary>
+    private void ApplyRegion()
     {
-        if (FillWorkArea)
+        double radius = ThemeManager.Theme.PanelRadius;
+        if (FillWorkArea || radius <= 8)
             return; // a pantalla completa no lleva esquinas
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
         var bounds = new Int32Rect(0, 0, (int)Math.Round(ActualWidth * scale), (int)Math.Round(ActualHeight * scale));
         WindowEffects.SetRoundedRegion(this, bounds, (int)Math.Round(radius * scale));
     }
+
+    /// <summary>Agrega un elemento por encima de todo el contenido (p. ej. asas para redimensionar).</summary>
+    protected void AddOverlay(UIElement element) => _root?.Children.Add(element);
 
     private static Border Layer(string? background, string? border)
     {
@@ -173,7 +187,7 @@ public abstract class FlyoutWindow : FluentWindow
         var center = anchor.PointToScreen(new Point(anchor.ActualWidth / 2, 0));
         var work = Forms.Screen.FromPoint(new System.Drawing.Point((int)center.X, (int)center.Y)).WorkingArea;
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleY;
-        MaxHeight = work.Height / scale - 2 * GapPx;
+        MaxHeight = work.Height / scale - 2 * GapPx - TopOverflow;
     }
 
     private void PositionAbove(FrameworkElement anchor)

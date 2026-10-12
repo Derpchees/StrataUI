@@ -37,10 +37,10 @@
                 </ItemsControl.Style>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Button Style="{StaticResource FlyoutIconButton}" Width="64" Height="64" Margin="2"
+                        <Button Style="{StaticResource FlyoutIconButton}" Width="{DynamicResource StartGridButtonSize}" Height="{DynamicResource StartGridButtonSize}" Margin="2"
                                 Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
                                 ToolTip="{Binding Name}" ContextMenu="{StaticResource AppContextMenu}">
-                            <Image Source="{Binding Icon}" Width="36" Height="36" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <Image Source="{Binding Icon}" Width="{DynamicResource StartGridIconSize}" Height="{DynamicResource StartGridIconSize}" RenderOptions.BitmapScalingMode="HighQuality" />
                         </Button>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>

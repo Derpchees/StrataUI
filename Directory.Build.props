@@ -1,9 +1,9 @@
-<Project>
-  <!-- Versión única de toda la solución. Actualízala junto con CHANGELOG.md y el tag de git (vX.Y.Z). -->
+﻿<Project>
+  <!-- VersiÃ³n Ãºnica de toda la soluciÃ³n. ActualÃ­zala junto con CHANGELOG.md y el tag de git (vX.Y.Z). -->
   <PropertyGroup>
-    <Version>0.6.0</Version>
+    <Version>0.7.0</Version>
     <Product>WINX</Product>
     <Company>WINX</Company>
-    <Copyright>© 2026 WINX</Copyright>
+    <Copyright>Â© 2026 WINX</Copyright>
   </PropertyGroup>
 </Project>

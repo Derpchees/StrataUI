@@ -23,6 +23,22 @@
                     <ComboBoxItem Content="Compacto" />
                     <ComboBoxItem Content="Solo búsqueda" />
                     <ComboBoxItem Content="Íconos" />
+                    <ComboBoxItem Content="Perfil" />
+                </ComboBox>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ResizeImage24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Tamaño de los íconos" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Apps ancladas, listas y cuadrículas del menú. El tamaño del menú se cambia arrastrando sus bordes." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="IconSizeBox" MinWidth="210" SelectionChanged="IconSize_Changed">
+                    <ComboBoxItem Content="Pequeños" />
+                    <ComboBoxItem Content="Medianos" />
+                    <ComboBoxItem Content="Grandes" />
                 </ComboBox>
             </ui:CardControl>
 
@@ -36,7 +52,7 @@
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="Mostrar apps ancladas" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="Clic derecho sobre una app en el menú para anclarla o desanclarla" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="En los estilos Windows 11, Perfil y Pantalla completa puedes arrastrarlas para ordenarlas, soltar una sobre otra para crear una carpeta y crear secciones con nombre (doble clic en el título para renombrar)." />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <StackPanel Orientation="Horizontal">

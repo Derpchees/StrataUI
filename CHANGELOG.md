@@ -6,6 +6,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.7.0] - 2026-10-11
+
+### Añadido
+- Estilo de menú Inicio **Perfil**: como el de Windows 11, con tu foto grande arriba sobresaliendo
+  del borde del menú, tu nombre y un saludo según la hora.
+- Todos los menús Inicio (salvo pantalla completa) cambian de tamaño arrastrando sus bordes; el
+  tamaño se recuerda por estilo.
+- Tamaño de los íconos del menú Inicio: pequeños, medianos o grandes.
+- Anclados organizados a mano (estilos Windows 11, Perfil y Pantalla completa):
+  - Arrastrar para reordenar, también entre secciones.
+  - Soltar una app sobre otra crea una carpeta; soltarla sobre una carpeta la agrega. Las carpetas
+    se renombran, se desagrupan y sus apps se sacan arrastrándolas.
+  - Secciones con nombre: crear, renombrar (doble clic en el título) y eliminar.
+  - Los anclados anteriores pasan solos a una sección "Anclado".
+
 ## [0.6.0] - 2026-10-11
 
 ### Añadido
