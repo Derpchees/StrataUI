@@ -123,7 +123,7 @@
     <StackPanel Margin="14,8,6,10">
         <!-- ── Salida ── -->
         <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,6,0,6" Text="Salida" />
-        <Grid Margin="0,0,8,8">
+        <Grid Margin="0,0,8,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -137,12 +137,34 @@
                     ValueChanged="MasterSlider_ValueChanged" />
             <TextBlock x:Name="MasterPercent" Grid.Column="2" Style="{StaticResource FlyoutPercent}" />
         </Grid>
-        <ItemsControl x:Name="OutputList" ItemTemplate="{StaticResource DeviceTile}" ItemsPanel="{StaticResource TilePanel}" />
-        <ContentControl x:Name="OutputOptions" ContentTemplate="{StaticResource DeviceOptions}" Visibility="Collapsed" />
+        <!-- Dispositivos (plegados por defecto): la fila muestra el actual -->
+        <Button x:Name="OutputHeader" Style="{StaticResource FlyoutRow}" Margin="0,1,8,1" Click="DevicesHeader_Click">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon x:Name="OutputDeviceIcon" Symbol="Speaker224" FontSize="16" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="Dispositivo de salida" />
+                    <TextBlock x:Name="OutputDeviceText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <ui:SymbolIcon x:Name="OutputChevron" Grid.Column="2" Symbol="ChevronDown24" FontSize="14" RenderTransformOrigin="0.5,0.5">
+                    <ui:SymbolIcon.RenderTransform>
+                        <RotateTransform />
+                    </ui:SymbolIcon.RenderTransform>
+                </ui:SymbolIcon>
+            </Grid>
+        </Button>
+        <StackPanel x:Name="OutputDevices" Margin="0,6,0,0" Visibility="Collapsed">
+            <ItemsControl x:Name="OutputList" ItemTemplate="{StaticResource DeviceTile}" ItemsPanel="{StaticResource TilePanel}" />
+            <ContentControl x:Name="OutputOptions" ContentTemplate="{StaticResource DeviceOptions}" Visibility="Collapsed" />
+        </StackPanel>
 
         <!-- ── Entrada ── -->
         <TextBlock Style="{StaticResource FlyoutSection}" Margin="4,10,0,6" Text="Entrada" />
-        <Grid Margin="0,0,8,8">
+        <Grid Margin="0,0,8,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -156,10 +178,32 @@
                     ValueChanged="InputSlider_ValueChanged" />
             <TextBlock x:Name="InputPercent" Grid.Column="2" Style="{StaticResource FlyoutPercent}" />
         </Grid>
-        <ItemsControl x:Name="InputList" ItemTemplate="{StaticResource DeviceTile}" ItemsPanel="{StaticResource TilePanel}" />
-        <TextBlock x:Name="NoInputText" Style="{StaticResource FlyoutHint}" Margin="4,0,0,8" Visibility="Collapsed"
-                   Text="No hay micrófonos conectados." />
-        <ContentControl x:Name="InputOptions" ContentTemplate="{StaticResource DeviceOptions}" Visibility="Collapsed" />
+        <!-- Dispositivos (plegados por defecto): la fila muestra el actual -->
+        <Button x:Name="InputHeader" Style="{StaticResource FlyoutRow}" Margin="0,1,8,1" Click="DevicesHeader_Click">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon x:Name="InputDeviceIcon" Symbol="Mic24" FontSize="16" Margin="0,0,12,0" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="Dispositivo de entrada" />
+                    <TextBlock x:Name="InputDeviceText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <ui:SymbolIcon x:Name="InputChevron" Grid.Column="2" Symbol="ChevronDown24" FontSize="14" RenderTransformOrigin="0.5,0.5">
+                    <ui:SymbolIcon.RenderTransform>
+                        <RotateTransform />
+                    </ui:SymbolIcon.RenderTransform>
+                </ui:SymbolIcon>
+            </Grid>
+        </Button>
+        <StackPanel x:Name="InputDevices" Margin="0,6,0,0" Visibility="Collapsed">
+            <ItemsControl x:Name="InputList" ItemTemplate="{StaticResource DeviceTile}" ItemsPanel="{StaticResource TilePanel}" />
+            <TextBlock x:Name="NoInputText" Style="{StaticResource FlyoutHint}" Margin="4,0,0,8" Visibility="Collapsed"
+                       Text="No hay micrófonos conectados." />
+            <ContentControl x:Name="InputOptions" ContentTemplate="{StaticResource DeviceOptions}" Visibility="Collapsed" />
+        </StackPanel>
 
         <Separator Margin="0,6,8,4" Opacity="0.4" />
 

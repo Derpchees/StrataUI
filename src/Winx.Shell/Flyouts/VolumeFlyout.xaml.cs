@@ -92,6 +92,8 @@ public partial class VolumeFlyout : FlyoutWindow
         OutputList.ItemsSource = outputs;
         InputList.ItemsSource = inputs;
         NoInputText.Visibility = inputs.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        ShowCurrent(outputs, OutputDeviceText, OutputDeviceIcon);
+        ShowCurrent(inputs, InputDeviceText, InputDeviceIcon);
 
         // Las opciones abiertas siguen al dispositivo (cambia la marca de "llamadas"); si se
         // desconectó, se cierran.
@@ -103,6 +105,29 @@ public partial class VolumeFlyout : FlyoutWindow
             else
                 _options.Refresh(current.Device);
         }
+    }
+
+    /// <summary>La fila plegada muestra el dispositivo en uso con su ícono.</summary>
+    private static void ShowCurrent(List<DeviceTile> tiles, System.Windows.Controls.TextBlock text, SymbolIcon icon)
+    {
+        var current = tiles.FirstOrDefault(t => t.IsDefault);
+        text.Text = current?.Name ?? "Sin dispositivo";
+        if (current != null)
+            icon.Symbol = current.Symbol;
+    }
+
+    private void DevicesHeader_Click(object sender, RoutedEventArgs e)
+    {
+        var (panel, chevron) = ReferenceEquals(sender, OutputHeader)
+            ? (OutputDevices, OutputChevron)
+            : (InputDevices, InputChevron);
+        bool expand = panel.Visibility != Visibility.Visible;
+        panel.Visibility = expand ? Visibility.Visible : Visibility.Collapsed;
+        if (chevron.RenderTransform is RotateTransform rotate)
+            rotate.Angle = expand ? 180 : 0;
+        // Al plegar, las opciones abiertas de ese grupo se cierran (y el micrófono deja de medirse).
+        if (!expand && _options?.Device.IsInput == ReferenceEquals(panel, InputDevices))
+            CloseOptions();
     }
 
     /// <summary>
