@@ -117,20 +117,16 @@
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Botones de la parte inferior'}" />
             <TextBlock Style="{StaticResource CardDescription}" Margin="0,-4,0,8"
-                       Text="{l:T 'Aparecen a la derecha del pie del menú, en este orden.'}" />
-            <ItemsControl x:Name="FooterList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ui:CardControl Style="{StaticResource HubCard}" Padding="14,8">
-                            <ui:CardControl.Icon><ui:SymbolIcon Symbol="{Binding Icon}" /></ui:CardControl.Icon>
-                            <ui:CardControl.Header>
-                                <TextBlock Style="{StaticResource CardTitle}" Text="{Binding Label}" VerticalAlignment="Center" />
-                            </ui:CardControl.Header>
-                            <ui:ToggleSwitch Tag="{Binding Id}" Loaded="FooterSwitch_Loaded" Click="FooterSwitch_Click" />
-                        </ui:CardControl>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                       Text="{l:T 'Aparecen a la derecha del pie del menú, en este orden. Arrástralos para ordenarlos; con + agregas uno y con × lo quitas.'}" />
+            <Border Padding="16,12,12,6" CornerRadius="8" BorderThickness="1"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                <DockPanel>
+                    <ui:Button x:Name="FooterAddButton" DockPanel.Dock="Right" VerticalAlignment="Top" Padding="8,5"
+                               Icon="{ui:SymbolIcon Add24}" ToolTip="{l:T 'Agregar un botón'}" Click="FooterAdd_Click" />
+                    <WrapPanel x:Name="FooterChips" MinHeight="34" />
+                </DockPanel>
+            </Border>
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Teclado'}" />
             <ui:CardControl Style="{StaticResource HubCard}">

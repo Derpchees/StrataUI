@@ -40,6 +40,32 @@
         <Setter Property="Margin" Value="0,4" />
     </Style>
 
+    <!-- Medidores de la barra (CPU, GPU, RAM, FPS): valor arriba y detalle abajo, letra pequeña. -->
+    <Style x:Key="MeterButton" TargetType="ButtonBase" BasedOn="{StaticResource TaskbarButton}">
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="Margin" Value="1,4" />
+        <Setter Property="MinWidth" Value="40" />
+    </Style>
+
+    <Style x:Key="MeterValue" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource WinxForegroundBrush}" />
+    </Style>
+
+    <Style x:Key="MeterDetail" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Opacity" Value="0.75" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource WinxForegroundBrush}" />
+        <Style.Triggers>
+            <Trigger Property="Text" Value="">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- Imagen de una notificación (foto del remitente, logotipo del sitio), a la izquierda del texto.
          Contexto: WinxNotification (Picture, PictureIsCircle, HasPicture). -->
     <Style x:Key="NotificationPicture" TargetType="Border">

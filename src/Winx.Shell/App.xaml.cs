@@ -72,6 +72,17 @@ public partial class App : Application
             Shutdown(Services.Audio.AudioDeviceOptions.RunElevated(e.Args));
             return;
         }
+        // Lecturas avanzadas (temperaturas, FPS) y liberar RAM: ver Services/Sensors.
+        if (e.Args.Length > 0 && e.Args[0] == Sensors.HelperArg)
+        {
+            Shutdown(Sensors.RunHelper(e.Args));
+            return;
+        }
+        if (e.Args.Length > 0 && e.Args[0] == Sensors.FreeRamArg)
+        {
+            Shutdown(Sensors.RunFreeRam(e.Args));
+            return;
+        }
 
         // Pide a la instancia en ejecución que se cierre limpiamente (restaura la barra de Windows).
         if (e.Args.Contains(ExitArg, StringComparer.OrdinalIgnoreCase))
@@ -169,6 +180,9 @@ public partial class App : Application
         Services.Notifications.WindowsBanners.Update();
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
+        if (Settings.Current.SensorsAtStartup && Settings.Current.BarItems.Values.Any(items =>
+                items.Contains(BarItem.Fps) || items.Contains(BarItem.Cpu) || items.Contains(BarItem.Gpu)))
+            _ = Sensors.StartAsync();
         _ = Task.Run(AutoStart.Migrate);
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged += OnWindowsPreferenceChanged;
@@ -220,21 +234,27 @@ public partial class App : Application
         bool multiMonitor = screens.Count > 1;
         var s = Settings.Current;
 
-        // La barra principal (de WINX, no necesariamente la de Windows) primero, para que reciba
-        // la bandeja del sistema. Esa siempre existe; las demás pueden ocultarse.
+        // Las barras del monitor principal de WINX siempre existen; las demás pueden ocultarse.
         string main = MainScreenDevice(screens.Select(sc => (sc.DeviceName, sc.Primary)));
+        var plan = new List<(AppBarScreen Screen, TaskbarPosition Edge, BarRole Role, string Id)>();
         foreach (var screen in screens.OrderByDescending(sc => sc.DeviceName == main))
         {
             bool isMain = screen.DeviceName == main;
             if (!isMain && s.TaskbarHiddenScreens.Contains(screen.DeviceName))
                 continue;
-            var bars = BarsFor(s.PositionOf(screen.DeviceName), s.SecondBarOf(screen.DeviceName), isMain);
-            foreach (var (edge, role) in bars)
-            {
-                var taskbar = new Taskbar(_shell!, screen, multiMonitor, edge, role);
-                taskbar.Show();
-                _taskbars.Add(taskbar);
-            }
+            var position = s.PositionOf(screen.DeviceName);
+            foreach (var (edge, role) in BarsFor(position, s.SecondBarOf(screen.DeviceName), isMain))
+                plan.Add((screen, edge, role, BarLayout.Id(screen.DeviceName, second: edge != position)));
+        }
+
+        // La bandeja va en la barra que la lleve (Hub › Elementos de la barra) y esa se crea
+        // primero, para que reciba los íconos.
+        string trayBar = BarLayout.TrayBar(plan.Select(p => (p.Id, p.Role)).ToList(), s);
+        foreach (var (screen, edge, role, id) in plan.OrderByDescending(p => p.Id == trayBar))
+        {
+            var taskbar = new Taskbar(_shell!, screen, multiMonitor, edge, role with { HasTray = id == trayBar }, id, role);
+            taskbar.Show();
+            _taskbars.Add(taskbar);
         }
         // Ya se sabe qué monitores quedaron sin barra: la principal muestra también sus ventanas.
         foreach (var taskbar in _taskbars)
@@ -290,8 +310,12 @@ public partial class App : Application
                + "|" + s.TaskbarMainScreen
                // La barra transparente también se aplica recreándolas: cambiar en vivo de Acrylic a
                // transparente deja negra la parte transparente (DWM no suelta el material anterior).
-               + "|" + s.TaskbarFullyTransparent;
+               + "|" + s.TaskbarFullyTransparent
+               + "|" + BarLayout.TrayKey(s);
     }
+
+    /// <summary>Barras abiertas (el Hub las muestra para elegir qué lleva cada una).</summary>
+    public IReadOnlyList<Taskbar> Taskbars => _taskbars;
 
     private string _barLayout = "";
 
@@ -359,16 +383,20 @@ public partial class App : Application
     private static void UpdateKeyHook() =>
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, Settings.Current.ShowOsd);
 
-    /// <summary>Barra del monitor principal con el botón Inicio (tecla Windows, Win+X).</summary>
+    /// <summary>Barra con el botón Inicio (tecla Windows, Win+X): la del monitor principal si lo lleva.</summary>
     private Taskbar? AppsTaskbar =>
-        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Role.ShowsApps) ?? _taskbars.FirstOrDefault(t => t.Role.ShowsApps);
+        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Start))
+        ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Start))
+        ?? _taskbars.FirstOrDefault(t => t.IsMain);
 
     /// <summary>Barra junto a la que aparecen los avisos en pantalla (volumen, brillo, Bloq Mayús…).</summary>
     public Taskbar? OsdTaskbar => StatusTaskbar ?? AppsTaskbar;
 
-    /// <summary>Barra del monitor principal con el reloj (Win+N).</summary>
+    /// <summary>Barra con el reloj (Win+N): la del monitor principal si lo lleva.</summary>
     private Taskbar? StatusTaskbar =>
-        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Role.ShowsStatus) ?? _taskbars.FirstOrDefault(t => t.Role.ShowsStatus);
+        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Clock))
+        ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Clock))
+        ?? _taskbars.FirstOrDefault(t => t.IsMain);
 
     private void OnSettingsChanged()
     {

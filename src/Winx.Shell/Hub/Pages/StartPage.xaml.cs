@@ -38,7 +38,7 @@ public partial class StartPage : Page
         UserSwitch.IsChecked = s.StartShowUser;
         PictureSwitch.IsChecked = s.StartShowUserPicture;
         WinKeySwitch.IsChecked = s.StartUseWinKey;
-        FooterList.ItemsSource = StartFooterCatalog.All;
+        BuildFooter();
         BuildIconGallery();
         _loading = false;
     }
@@ -71,26 +71,72 @@ public partial class StartPage : Page
     private void ResetPinned_Click(object sender, RoutedEventArgs e) => StartMenuService.ResetPinned();
 
     // ── Botones del pie ─────────────────────────────────────────────────────
+    // Fichas en el orden del menú: se arrastran para ordenarlas (ver Hub/ChipDrag).
 
-    private void FooterSwitch_Loaded(object sender, RoutedEventArgs e)
+    private ChipDrag? _footerDrag;
+
+    private void BuildFooter()
     {
-        if (sender is ToggleButton { Tag: string id } toggle)
-            toggle.IsChecked = Settings.Current.StartFooterButtons.Contains(id);
+        _footerDrag ??= CreateFooterDrag();
+        FooterChips.Children.Clear();
+        foreach (var button in StartFooterCatalog.Selected)
+            FooterChips.Children.Add(FooterChip(button));
     }
 
-    private void FooterSwitch_Click(object sender, RoutedEventArgs e)
+    private ChipDrag CreateFooterDrag()
     {
-        if (sender is not ToggleButton { Tag: string id } toggle)
-            return;
-        bool on = toggle.IsChecked == true;
-        Settings.Update(s =>
+        var drag = new ChipDrag(this, () => [FooterChips]);
+        drag.Committed += SaveFooter;
+        return drag;
+    }
+
+    private FrameworkElement FooterChip(StartFooterButton button)
+    {
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        content.Children.Add(new Wpf.Ui.Controls.SymbolIcon { Symbol = button.Icon, FontSize = 16, Margin = new Thickness(0, 0, 8, 0) });
+        content.Children.Add(new TextBlock { Text = button.Label, VerticalAlignment = VerticalAlignment.Center, Style = (Style)FindResource("CardTitle") });
+        var chip = new Border { Style = (Style)FindResource("BarChip"), Tag = button.Id, Child = content, ToolTip = Loc.T("Arrastra para moverlo") };
+        var remove = new Wpf.Ui.Controls.Button
         {
-            // Se guarda en el orden del catálogo, que es el que se ve en esta página.
-            var selected = new HashSet<string>(s.StartFooterButtons);
-            if (on) selected.Add(id); else selected.Remove(id);
-            s.StartFooterButtons = StartFooterCatalog.All.Select(b => b.Id).Where(selected.Contains).ToList();
-        });
+            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Dismiss16, FontSize = 11 },
+            Padding = new Thickness(4),
+            Margin = new Thickness(6, 0, 0, 0),
+            Appearance = Wpf.Ui.Controls.ControlAppearance.Transparent,
+            BorderThickness = new Thickness(0),
+            ToolTip = Loc.T("Quitar"),
+            Cursor = System.Windows.Input.Cursors.Hand,
+        };
+        remove.Click += (_, _) =>
+        {
+            FooterChips.Children.Remove(chip);
+            SaveFooter();
+        };
+        content.Children.Add(remove);
+        _footerDrag!.Attach(chip);
+        return chip;
     }
+
+    private void FooterAdd_Click(object sender, RoutedEventArgs e)
+    {
+        var present = FooterChips.Children.OfType<FrameworkElement>().Select(c => (string)c.Tag).ToHashSet();
+        var menu = new ContextMenu { PlacementTarget = FooterAddButton, Placement = PlacementMode.Bottom };
+        foreach (var button in StartFooterCatalog.All.Where(b => !present.Contains(b.Id)))
+        {
+            var entry = new MenuItem { Header = button.Label, Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = button.Icon } };
+            entry.Click += (_, _) =>
+            {
+                FooterChips.Children.Add(FooterChip(button));
+                SaveFooter();
+            };
+            menu.Items.Add(entry);
+        }
+        if (menu.Items.Count == 0)
+            menu.Items.Add(new MenuItem { Header = Loc.T("Ya están todos"), IsEnabled = false });
+        menu.IsOpen = true;
+    }
+
+    private void SaveFooter() => Settings.Update(s =>
+        s.StartFooterButtons = FooterChips.Children.OfType<FrameworkElement>().Select(c => (string)c.Tag).ToList());
 
     // ── Ícono del botón Inicio ──────────────────────────────────────────────
 

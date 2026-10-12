@@ -22,7 +22,6 @@ public partial class TaskbarPage : Page
         HeightBox.SelectedItem = HeightBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == s.TaskbarHeight.ToString()) ?? HeightBox.Items[1];
         Select(AppsModeBox, s.TaskbarAppsMode.ToString());
-        StatusAllSwitch.IsChecked = s.StatusOnAllTaskbars;
         BuildMainScreenBox();
         BuildMonitorList();
 
@@ -187,8 +186,8 @@ public partial class TaskbarPage : Page
             Settings.Update(s => s.TaskbarAppsMode = Enum.Parse<TaskbarAppsMode>(tag));
     }
 
-    private void StatusAll_Click(object sender, RoutedEventArgs e) =>
-        Settings.Update(s => s.StatusOnAllTaskbars = StatusAllSwitch.IsChecked == true);
+    private void BarItems_Click(object sender, RoutedEventArgs e) =>
+        (Window.GetWindow(this) as HubWindow)?.NavigateTo("Tray");
 
     // ── Barra ───────────────────────────────────────────────────────────────
 

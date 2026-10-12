@@ -215,6 +215,11 @@ public partial class Taskbar
         yield return BrightnessButton;
         yield return VolumeButton;
         yield return BatteryButton;
+        yield return CpuButton;
+        yield return GpuButton;
+        yield return RamButton;
+        yield return FpsButton;
+        yield return FreeRamButton;
         yield return ClockButton;
         yield return ShowDesktopArea;
     }

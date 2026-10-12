@@ -40,7 +40,11 @@ public partial class Taskbar : AppBarWindow
     private readonly ICollectionView? _hiddenTrayView;
     private TaskbarAppsMode _appsMode;
 
-    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, BarRole role)
+    /// <param name="role">Lo que lleva (la bandeja ya asignada a la barra que la tiene).</param>
+    /// <param name="barId">Identificador para los elementos elegidos en el Hub (<see cref="BarLayout.Id"/>).</param>
+    /// <param name="defaultsRole">El papel de siempre, para los elementos por defecto.</param>
+    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, BarRole role,
+                   string barId, BarRole defaultsRole)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
                screen, EdgeOf(position), AppBarMode.Normal, ReservedSize(IsVerticalPosition(position)))
     {
@@ -48,12 +52,10 @@ public partial class Taskbar : AppBarWindow
         _multiMonitor = multiMonitor;
         Position = position;
         Role = role;
+        BarId = barId;
+        _defaultsRole = defaultsRole;
         IsMain = role.HasTray;
         InitializeComponent();
-        if (!role.ShowsApps)
-            TaskArea.Visibility = Visibility.Collapsed;
-        if (!role.ShowsStatus)
-            StatusPanel.Visibility = Visibility.Collapsed;
         if (IsVertical)
         {
             DesiredWidth = ReservedSize(vertical: true);
@@ -206,12 +208,19 @@ public partial class Taskbar : AppBarWindow
         MediaButton.Height = 36;
         // Los módulos de estado van juntos también en vertical: más anchos que altos y sin separación.
         BatteryContent.Orientation = Orientation.Vertical;
-        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton })
+        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, BrightnessButton, VolumeButton, BatteryButton, FreeRamButton })
         {
             button.HorizontalAlignment = HorizontalAlignment.Center;
             button.Width = 36;
             button.Height = 30;
             button.Margin = new Thickness(4, 0, 4, 0);
+        }
+        // Medidores: dos líneas centradas, del ancho de la barra.
+        foreach (var meter in new Control[] { CpuButton, GpuButton, RamButton, FpsButton })
+        {
+            meter.HorizontalAlignment = HorizontalAlignment.Stretch;
+            meter.Margin = new Thickness(4, 1, 4, 1);
+            meter.Padding = new Thickness(2, 4, 2, 4);
         }
         ClockButton.Padding = new Thickness(2, 6, 2, 6);
         ClockContent.Orientation = Orientation.Vertical;
@@ -331,14 +340,9 @@ public partial class Taskbar : AppBarWindow
             _taskView.Refresh();
         }
         ApplyCombine(s.CombineTaskWindows);
-        bool status = ShowsStatusModules;
+        ApplyLayout();
         DateText.Visibility = s.ShowDate ? Visibility.Visible : Visibility.Collapsed;
-        NetworkButton.Visibility = status && s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
-        BluetoothButton.Visibility = status && s.ShowBluetoothModule ? Visibility.Visible : Visibility.Collapsed;
-        VolumeButton.Visibility = status && s.ShowVolumeModule ? Visibility.Visible : Visibility.Collapsed;
-        BrightnessButton.Visibility = status && s.ShowBrightnessModule && Services.Brightness.BrightnessService.Available
-            ? Visibility.Visible : Visibility.Collapsed;
-        ClockButton.Visibility = status ? Visibility.Visible : Visibility.Collapsed;
+        BrightnessButton.Visibility = Services.Brightness.BrightnessService.Available ? Visibility.Visible : Visibility.Collapsed;
         RescheduleClock();
         UpdateClock();
         UpdateStatus();
@@ -501,8 +505,7 @@ public partial class Taskbar : AppBarWindow
         NetworkGlyph.Opacity = network.Connected ? 1 : 0.4;
         NetworkButton.ToolTip = network.Description;
 
-        bool status = ShowsStatusModules;
-        var battery = status && Settings.Current.ShowBatteryModule ? SystemStatus.GetBattery() : null;
+        var battery = Has(BarItem.Battery) ? SystemStatus.GetBattery() : null;
         BatteryButton.Visibility = battery is null ? Visibility.Collapsed : Visibility.Visible;
         if (battery != null)
         {
@@ -537,6 +540,13 @@ public partial class Taskbar : AppBarWindow
             TrayPromotion.ReleaseHiddenView(_hiddenTrayView);
         ClockTick -= UpdateClock;
         SystemStatus.Changed -= UpdateStatus;
+        if (_metersOn)
+        {
+            _metersOn = false;
+            SystemMonitor.Unsubscribe();
+            SystemMonitor.Changed -= UpdateMeters;
+            Sensors.Changed -= UpdateMeters;
+        }
         base.CustomClosing();
     }
 
@@ -560,13 +570,165 @@ public partial class Taskbar : AppBarWindow
 
     public BarRole Role { get; }
 
+    /// <summary>Identificador de la barra para los elementos elegidos en el Hub.</summary>
+    public string BarId { get; }
+
+    private readonly BarRole _defaultsRole;
+    private List<BarItem> _items = new();
+    private bool _metersOn;
+
+    /// <summary>Elementos que lleva esta barra, en orden.</summary>
+    public IReadOnlyList<BarItem> Items => _items;
+
+    public bool Has(BarItem item) => _items.Contains(item);
+
     /// <summary>
-    /// Red, Bluetooth, sonido, reloj…: en las barras con área de estado del monitor principal, o en
-    /// todas si así se eligió en el Hub. Una barra dedicada al área de estado (segunda barra) siempre
-    /// los muestra: es lo único que lleva.
+    /// Pone en el área de estado los elementos elegidos para esta barra, en su orden (los demás
+    /// salen del panel). Inicio va siempre delante de las ventanas. La bandeja solo puede ir en
+    /// la barra que la recibe (<see cref="IsMain"/>).
     /// </summary>
-    private bool ShowsStatusModules =>
-        Role.ShowsStatus && (Role.IsMainScreen || !Role.ShowsApps || Settings.Current.StatusOnAllTaskbars);
+    private void ApplyLayout()
+    {
+        var items = BarLayout.ItemsFor(BarId, _defaultsRole, Settings.Current);
+        if (!IsMain)
+            items.Remove(BarItem.Tray);
+        else if (!items.Contains(BarItem.Tray))
+            items.Insert(items.Contains(BarItem.Start) ? 1 : 0, BarItem.Tray);
+        if (_items.SequenceEqual(items) && StatusPanel.Children.Count > 0)
+            return;
+        _items = items;
+
+        StartButton.Visibility = Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
+        TaskArea.Visibility = Role.ShowsApps || Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
+        TaskScroller.Visibility = Role.ShowsApps ? Visibility.Visible : Visibility.Collapsed;
+
+        StatusPanel.Children.Clear();
+        foreach (var item in items)
+        {
+            if (Element(item) is { } element)
+                StatusPanel.Children.Add(element);
+        }
+        bool any = StatusPanel.Children.Count > 0;
+        if (any)
+            StatusPanel.Children.Add(ShowDesktopArea);
+        StatusPanel.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
+
+        bool meters = Has(BarItem.Cpu) || Has(BarItem.Gpu) || Has(BarItem.Ram) || Has(BarItem.Fps);
+        if (meters != _metersOn)
+        {
+            _metersOn = meters;
+            if (meters)
+            {
+                SystemMonitor.Subscribe();
+                SystemMonitor.Changed += UpdateMeters;
+                Sensors.Changed += UpdateMeters;
+            }
+            else
+            {
+                SystemMonitor.Unsubscribe();
+                SystemMonitor.Changed -= UpdateMeters;
+                Sensors.Changed -= UpdateMeters;
+            }
+        }
+        UpdateMeters();
+        ScheduleContrast();
+    }
+
+    private FrameworkElement? Element(BarItem item) => item switch
+    {
+        BarItem.Media => MediaModule,
+        BarItem.Tray => TrayArea,
+        BarItem.Network => NetworkButton,
+        BarItem.Bluetooth => BluetoothButton,
+        BarItem.Brightness => BrightnessButton,
+        BarItem.Volume => VolumeButton,
+        BarItem.Battery => BatteryButton,
+        BarItem.Cpu => CpuButton,
+        BarItem.Gpu => GpuButton,
+        BarItem.Ram => RamButton,
+        BarItem.Fps => FpsButton,
+        BarItem.FreeRam => FreeRamButton,
+        BarItem.Clock => ClockButton,
+        _ => null, // Inicio va con las ventanas
+    };
+
+    // ── Medidores ───────────────────────────────────────────────────────────
+
+    private void UpdateMeters()
+    {
+        if (!_metersOn)
+            return;
+        bool temps = Settings.Current.ShowTemperatures;
+        string sensorsHint = Sensors.Running ? "" : "\n" + Loc.T("Clic en el contador de FPS para activar temperaturas y FPS.");
+
+        // En vertical no cabe "RAM 87%" en una línea: nombre arriba y el número abajo.
+        string Value(string name, double? percent) =>
+            IsVertical ? percent is { } p ? $"{Math.Round(p)}%" : "—"
+            : percent is { } q ? Loc.F("{0} {1}%", name, Math.Round(q)) : name;
+        CpuLabel.Text = GpuLabel.Text = RamLabel.Text = "";
+        if (IsVertical)
+        {
+            CpuLabel.Text = "CPU";
+            GpuLabel.Text = "GPU";
+            RamLabel.Text = "RAM";
+        }
+
+        CpuValue.Text = Value("CPU", SystemMonitor.CpuPercent);
+        CpuDetail.Text = temps && Sensors.CpuTemperature is { } cpuTemp ? $"{cpuTemp:0} °C" : "";
+        CpuButton.ToolTip = Loc.T("Uso de la CPU") + (temps && Sensors.CpuTemperature is null
+            ? (Sensors.Running && Sensors.MissingPawnIo ? "\n" + Loc.T("La temperatura de la CPU necesita PawnIO (pawnio.eu).") : sensorsHint)
+            : "");
+
+        GpuValue.Text = Value("GPU", SystemMonitor.GpuPercent);
+        GpuDetail.Text = temps && Sensors.GpuTemperature is { } gpuTemp ? $"{gpuTemp:0} °C" : "";
+        GpuButton.ToolTip = Loc.T("Uso de la GPU") + (temps && Sensors.GpuTemperature is null ? sensorsHint : "");
+
+        RamValue.Text = Value("RAM", SystemMonitor.RamTotal > 0 ? SystemMonitor.RamPercent : null);
+        RamDetail.Text = SystemMonitor.RamTotal > 0 ? $"{SystemMonitor.RamUsed / 1073741824.0:0.0} GB" : "";
+        RamButton.ToolTip = SystemMonitor.RamTotal > 0
+            ? Loc.F("Memoria en uso: {0:0.0} de {1:0.0} GB", SystemMonitor.RamUsed / 1073741824.0, SystemMonitor.RamTotal / 1073741824.0)
+            : Loc.T("Memoria RAM");
+
+        if (Has(BarItem.Fps))
+        {
+            var target = Sensors.TargetProcess(Settings.Current.FpsScreen);
+            int? fps = target is { } pid ? Sensors.FpsOf(pid) : null;
+            FpsValue.Text = Sensors.Starting ? "…" : fps?.ToString() ?? "—";
+            FpsButton.ToolTip = !Sensors.Running ? Loc.T("Clic para empezar a contar los FPS (pide permiso de administrador).")
+                : fps is null ? Loc.T("La app de ese monitor no está dibujando con la GPU.")
+                : Loc.F("FPS de {0}", Sensors.ProcessName(target!.Value));
+        }
+    }
+
+    private void Meter_Click(object sender, RoutedEventArgs e) => ShellHelper.StartTaskManager();
+
+    private async void Fps_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Sensors.Running)
+            await Sensors.StartAsync();
+    }
+
+    private async void FreeRam_Click(object sender, RoutedEventArgs e)
+    {
+        FreeRamButton.IsEnabled = false;
+        try
+        {
+            ulong before = SystemMonitor.AvailableRam();
+            bool done = await Sensors.FreeRamAsync()
+                        || await Tweaks.Elevation.RunSelfAsync(Sensors.FreeRamArg) == 0;
+            if (!done)
+                return;
+            ulong after = SystemMonitor.AvailableRam();
+            double freed = after > before ? (after - before) / 1073741824.0 : 0;
+            Log.Info($"RAM liberada: {freed:0.00} GB");
+            Services.Notifications.NotificationService.ShowLocal(Loc.T("Liberar RAM"),
+                freed >= 0.01 ? Loc.F("Se liberaron {0:0.0} GB de memoria.", freed) : Loc.T("La memoria ya estaba libre."));
+        }
+        finally
+        {
+            FreeRamButton.IsEnabled = true;
+        }
+    }
 
     private void StartButton_Click(object sender, RoutedEventArgs e) =>
         StartMenu.StartMenuLauncher.Toggle(StartButton);
@@ -610,7 +772,7 @@ public partial class Taskbar : AppBarWindow
     private void UpdateMedia()
     {
         var s = Settings.Current;
-        bool show = ShowsStatusModules && s.ShowMediaModule && Media.HasSession;
+        bool show = Has(BarItem.Media) && Media.HasSession;
         MediaModule.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (!show)
             return;

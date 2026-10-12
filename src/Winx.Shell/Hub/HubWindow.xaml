@@ -46,7 +46,7 @@
                         <ui:SymbolIcon Symbol="Grid24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Bandeja y área de estado'}" TargetPageType="{x:Type pages:TrayPage}">
+                <ui:NavigationViewItem Content="{l:T 'Elementos de la barra'}" TargetPageType="{x:Type pages:TrayPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Apps24" />
                     </ui:NavigationViewItem.Icon>

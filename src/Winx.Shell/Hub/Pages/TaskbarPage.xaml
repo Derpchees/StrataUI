@@ -106,18 +106,19 @@
                         <ComboBoxItem Content="{l:T 'Solo la del monitor de la ventana'}" Tag="OwnOnly" />
                     </ComboBox>
                 </ui:CardControl>
-
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Speaker224" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Red, Bluetooth, sonido y reloj en todas las barras'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Desactivado, solo aparecen en la barra principal, junto a la bandeja.'}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="StatusAllSwitch" Click="StatusAll_Click" />
-                </ui:CardControl>
             </StackPanel>
+
+            <!-- Qué lleva cada barra (red, sonido, reloj, bandeja…) se elige en "Elementos de la barra". -->
+            <ui:CardControl Style="{StaticResource HubCard}" Click="BarItems_Click" Cursor="Hand">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Apps24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Qué lleva cada barra'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Inicio, bandeja, red, sonido, reloj y los demás elementos se eligen y ordenan en Elementos de la barra.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:SymbolIcon Symbol="ChevronRight24" />
+            </ui:CardControl>
 
         </StackPanel>
     </ScrollViewer>

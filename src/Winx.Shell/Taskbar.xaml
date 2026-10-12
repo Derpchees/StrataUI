@@ -5,6 +5,7 @@
                      xmlns:appbar="clr-namespace:ManagedShell.AppBar;assembly=ManagedShell.AppBar"
                      xmlns:controls="clr-namespace:Winx.Shell.Controls"
                      xmlns:conv="clr-namespace:Winx.Shell.Converters"
+                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                      Title="WINX"
                      WindowStyle="None"
                      ResizeMode="NoResize"
@@ -211,6 +212,41 @@
                         </StackPanel>
                     </Button>
     
+                    <!-- Rendimiento: uso (y temperatura) de CPU y GPU, memoria y FPS. Dos líneas cortas:
+                         caben también en las barras verticales. Ver Services/SystemMonitor. -->
+                    <Button x:Name="CpuButton" Style="{StaticResource MeterButton}" Click="Meter_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="CpuLabel" Style="{StaticResource MeterDetail}" />
+                            <TextBlock x:Name="CpuValue" Style="{StaticResource MeterValue}" Text="CPU" />
+                            <TextBlock x:Name="CpuDetail" Style="{StaticResource MeterDetail}" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="GpuButton" Style="{StaticResource MeterButton}" Click="Meter_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="GpuLabel" Style="{StaticResource MeterDetail}" />
+                            <TextBlock x:Name="GpuValue" Style="{StaticResource MeterValue}" Text="GPU" />
+                            <TextBlock x:Name="GpuDetail" Style="{StaticResource MeterDetail}" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="RamButton" Style="{StaticResource MeterButton}" Click="Meter_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="RamLabel" Style="{StaticResource MeterDetail}" />
+                            <TextBlock x:Name="RamValue" Style="{StaticResource MeterValue}" Text="RAM" />
+                            <TextBlock x:Name="RamDetail" Style="{StaticResource MeterDetail}" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="FpsButton" Style="{StaticResource MeterButton}" Click="Fps_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="FpsValue" Style="{StaticResource MeterValue}" Text="—" />
+                            <TextBlock Style="{StaticResource MeterDetail}" Text="FPS" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="FreeRamButton" Style="{StaticResource StatusButton}" ToolTip="{l:T 'Liberar RAM'}"
+                            Click="FreeRam_Click">
+                        <ui:SymbolIcon x:Name="FreeRamGlyph" Symbol="Broom24" FontSize="16"
+                                       Foreground="{DynamicResource WinxForegroundBrush}" />
+                    </Button>
+
                     <Button x:Name="ClockButton" Style="{StaticResource TaskbarButton}" Padding="10,0"
                             Click="ClockButton_Click">
                         <StackPanel x:Name="ClockContent" Orientation="Horizontal">

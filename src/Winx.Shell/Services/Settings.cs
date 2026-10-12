@@ -52,6 +52,12 @@ public sealed class PinEntry
 
 public enum StartIconKind { Winx, Windows, WindowsMono, Circle, Dot, Grid, Search }
 
+/// <summary>
+/// Lo que puede llevar una barra además de las ventanas abiertas. Cada barra tiene su lista, en
+/// orden (Hub › Elementos de la barra); Inicio va siempre delante de las ventanas.
+/// </summary>
+public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock }
+
 /// <summary>Esquina de la pantalla donde aparecen los avisos.</summary>
 public enum NotificationCorner { BottomRight, BottomLeft, TopRight, TopLeft }
 
@@ -95,6 +101,12 @@ public sealed class WinxSettings
         TaskbarPosition.Right => TaskbarPosition.Left,
         _ => TaskbarPosition.Top,
     };
+    /// <summary>
+    /// Elementos de cada barra en orden (clave: <see cref="BarLayout.Id"/>, "\\.\DISPLAY1|1"). Una
+    /// barra sin entrada usa los de siempre (<see cref="BarLayout.Defaults"/>).
+    /// </summary>
+    public Dictionary<string, List<BarItem>> BarItems { get; set; } = new();
+
     public int TaskbarHeight { get; set; } = 48;
     /// <summary>Un solo botón por app con todas sus ventanas (como "Combinar botones" de Windows).</summary>
     public bool CombineTaskWindows { get; set; }
@@ -139,6 +151,15 @@ public sealed class WinxSettings
     public bool ShowBatteryPercent { get; set; }
     /// <summary>Botones anterior, reproducir/pausar y siguiente junto a la canción.</summary>
     public bool ShowMediaControls { get; set; } = true;
+    /// <summary>Temperatura junto al uso de la CPU y de la GPU (necesita las lecturas avanzadas).</summary>
+    public bool ShowTemperatures { get; set; } = true;
+    /// <summary>Monitor cuyo juego o app se mide en el contador de FPS (nombre de dispositivo); null = el principal de WINX.</summary>
+    public string? FpsScreen { get; set; }
+    /// <summary>
+    /// Lecturas avanzadas (temperaturas y FPS, con administrador) al abrir WINX; si no, empiezan al
+    /// hacer clic en el contador de FPS.
+    /// </summary>
+    public bool SensorsAtStartup { get; set; }
 
     // Notificaciones
     /// <summary>Centro de notificaciones de WINX (desactivado: el reloj abre el de Windows).</summary>

@@ -381,6 +381,17 @@ public static class NotificationService
         Dismiss(item);
     }
 
+    /// <summary>Aviso propio de WINX (p. ej. cuánta RAM se liberó); el texto llega ya traducido.</summary>
+    public static void ShowLocal(string title, string body) => Arrived?.Invoke(new WinxNotification
+    {
+        IsLocal = true,
+        AppName = "WINX",
+        Title = title,
+        Body = body,
+        Time = DateTimeOffset.Now,
+        Icon = new BitmapImage(new Uri("pack://application:,,,/Assets/winx.ico")),
+    });
+
     /// <summary>Muestra un aviso de ejemplo (botón "Probar" del Hub).</summary>
     public static void ShowTest() => Arrived?.Invoke(new WinxNotification
     {
