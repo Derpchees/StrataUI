@@ -36,6 +36,14 @@ public sealed class WinxNotification : System.ComponentModel.INotifyPropertyChan
     /// <summary>Sitio que la envió desde el navegador (WhatsApp Web, Gmail…): de ahí sale el ícono.</summary>
     public string? SiteDomain { get; init; }
 
+    /// <summary>Imagen del aviso (foto del remitente, logotipo del sitio), como la muestra Windows a la izquierda.</summary>
+    public ImageSource? Picture { get; init; }
+
+    /// <summary>La imagen va recortada en círculo (fotos de contactos).</summary>
+    public bool PictureIsCircle { get; init; }
+
+    public bool HasPicture => Picture != null;
+
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     /// <summary>Aviso propio de WINX (prueba, actualización): no existe en Windows.</summary>
     public bool IsLocal { get; init; }
@@ -211,33 +219,48 @@ public static class NotificationService
             catch (Exception)
             {
             }
-            // Apps web instaladas (Brave._crx_…) y otras sin nombre en Windows: el del menú Inicio.
+            // Apps web instaladas (Brave._crx_…) y otras sin nombre en Windows: el del menú Inicio o
+            // el que la app registró para sus notificaciones.
             if (string.IsNullOrWhiteSpace(appName) && appId != null)
-                appName = StartMenu.StartMenuService.Apps.FirstOrDefault(a => a.Id.Equals(appId, StringComparison.OrdinalIgnoreCase))?.Name;
+                appName = StartMenu.StartMenuService.Apps.FirstOrDefault(a => a.Id.Equals(appId, StringComparison.OrdinalIgnoreCase))?.Name
+                          ?? AppIcons.RegisteredName(appId)
+                          ?? Media.MediaService.CleanName(appId);
 
-            // Del navegador, si el sitio aparece como un texto con su dominio ("web.whatsapp.com"). Windows
-            // no deja leer la atribución de Chromium, así que en una pestaña normal no suele estar; las
-            // apps web instaladas (Brave._crx_…) llegan con su propia identidad y no lo necesitan.
+            // El XML original (base de datos de Windows) trae lo que la API esconde: la atribución
+            // del navegador con el dominio del sitio y la imagen del aviso.
+            var details = NotificationDb.Details(raw.Id);
+
             string? siteDomain = null;
-            if (WebSites.IsBrowserId(appId) || texts.Count > 1 && WebSites.IsBrowserId(appName))
+            bool fromBrowser = WebSites.IsBrowserId(appId) || WebSites.IsBrowserId(appName);
+            if (fromBrowser)
             {
-                for (int i = texts.Count - 1; i >= 1 && siteDomain is null; i--)
+                string? domain = details?.Domain;
+                // Sin base de datos: a veces el dominio llega como un texto más ("web.whatsapp.com").
+                for (int i = texts.Count - 1; i >= 1; i--)
                 {
-                    if (WebSites.AsDomain(texts[i]) is { } domain)
+                    if (WebSites.AsDomain(texts[i]) is { } inText)
                     {
                         texts.RemoveAt(i);
-                        var site = WebSites.FromDomain(domain);
-                        siteDomain = site?.Domain ?? domain;
-                        appName = site?.Name ?? WebSites.DomainName(domain);
+                        domain ??= inText;
+                        break;
                     }
                 }
+                if (domain != null)
+                {
+                    var site = WebSites.FromDomain(domain);
+                    siteDomain = site?.Domain ?? domain;
+                    appName = site?.Name ?? WebSites.DomainName(domain);
+                }
             }
+            var picture = details?.Picture is { } file ? AppIcons.Load(file, 96) : null;
             return new WinxNotification
             {
                 Id = raw.Id,
                 AppName = string.IsNullOrWhiteSpace(appName) ? Loc.T("Notificación") : appName,
                 AppId = appId,
                 SiteDomain = siteDomain,
+                Picture = picture,
+                PictureIsCircle = details?.CircleCrop == true,
                 Title = texts.FirstOrDefault() ?? "",
                 Body = string.Join("\n", texts.Skip(1)),
                 Time = raw.CreationTime,
@@ -250,17 +273,18 @@ public static class NotificationService
         }
     }
 
-    /// <summary>Ícono de la app: el del menú Inicio si está; si no, el logotipo que da Windows.</summary>
+    /// <summary>
+    /// Ícono de la app: el del menú Inicio, el que registró para sus notificaciones o el de su
+    /// ventana (ver <see cref="AppIcons"/>); si no, el logotipo que da Windows.
+    /// </summary>
     private static async Task<ImageSource?> IconFor(UserNotification raw, string? appId, string appName)
     {
-        string key = appId ?? "";
+        // Sin identidad se guarda por nombre (antes todas las apps sin identidad compartían ícono).
+        string key = appId ?? "name:" + appName;
         if (IconCache.TryGetValue(key, out var cached))
             return cached;
-        // Las apps sin ícono no se guardan: puede aparecer cuando termine de cargar el catálogo. Si la
-        // identidad no coincide (apps web instaladas), se busca por el nombre.
-        var apps = StartMenu.StartMenuService.Apps;
-        ImageSource? icon = (apps.FirstOrDefault(a => a.Id.Equals(appId, StringComparison.OrdinalIgnoreCase))
-                             ?? apps.FirstOrDefault(a => a.Name.Equals(appName, StringComparison.CurrentCultureIgnoreCase)))?.Icon;
+        // Las apps sin ícono no se guardan: puede aparecer cuando termine de cargar el catálogo.
+        ImageSource? icon = AppIcons.Find(appId, appName);
         if (icon is null)
         {
             try

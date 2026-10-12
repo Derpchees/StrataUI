@@ -133,6 +133,7 @@ public partial class App : Application
 
         ThemeManager.Initialize();
         Services.Themes.WindowsTheming.Initialize();
+        Services.Themes.Motion.Initialize();
 
         // Diagnóstico: con WINX_SHELL_LOG=ruta, ManagedShell escribe su registro detallado (bandeja, tareas).
         if (Environment.GetEnvironmentVariable("WINX_SHELL_LOG") is { Length: > 0 } shellLog)

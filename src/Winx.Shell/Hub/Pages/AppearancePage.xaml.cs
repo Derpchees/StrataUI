@@ -34,12 +34,38 @@ public partial class AppearancePage : Page
         TransparentSwitch.IsChecked = s.TaskbarFullyTransparent;
         Select(AnimationBox, s.PanelAnimation.ToString());
         Select(SpeedBox, s.AnimationSpeed.ToString());
+        Select(AccentSourceBox, s.AccentFromWallpaper ? "Wallpaper" : s.AccentColor is null ? "Windows" : "Custom");
         _loading = false;
-        WindowsAccentSwitch.IsChecked = s.AccentColor is null;
         BuildThemeGallery();
         BuildSwatches();
         UpdateSwatches();
         UpdateWallpaper();
+
+        // Wallpaper Engine pudo abrirse, cerrarse o cambiar su opción mientras el Hub estaba cerrado.
+        Services.Themes.WallpaperEngine.Recheck();
+        UpdateWallpaperEngine();
+        Services.Themes.WallpaperEngine.Changed += UpdateWallpaperEngine;
+        ThemeManager.ThemeChanged += OnThemeChanged;
+        Unloaded += (_, _) =>
+        {
+            Services.Themes.WallpaperEngine.Changed -= UpdateWallpaperEngine;
+            ThemeManager.ThemeChanged -= OnThemeChanged;
+        };
+    }
+
+    /// <summary>Las miniaturas de los temas llevan el acento: se rehacen al cambiarlo.</summary>
+    private void OnThemeChanged()
+    {
+        BuildThemeGallery();
+        UpdateSwatches();
+    }
+
+    private void UpdateWallpaperEngine()
+    {
+        bool blocked = Services.Themes.WallpaperEngine.AdjustingWindowsColor;
+        WallpaperEngineBar.IsOpen = blocked;
+        WallpaperAccentItem.IsEnabled = !blocked;
+        WallpaperAccentItem.Content = blocked ? Loc.T("Del fondo de pantalla (en pausa)") : Loc.T("Del fondo de pantalla");
     }
 
     // ── Galería de temas ───────────────────────────────────────────────────
@@ -93,7 +119,7 @@ public partial class AppearancePage : Page
     private FrameworkElement BuildThemeCard(ThemeInfo theme, bool selected)
     {
         bool light = theme.Light ?? ThemeManager.WindowsUsesLightTheme();
-        var palette = Palette.Build(theme, light, ThemeManager.Accent);
+        var palette = Palette.Build(theme, light, ThemeManager.Readable(ThemeManager.Accent, light));
         Brush Res(string key) => (Brush)palette[key];
 
         var wallpaper = new LinearGradientBrush(Palette.Hex("#FF5B7FFF"), Palette.Hex("#FFFF7AB6"), 35);
@@ -208,7 +234,11 @@ public partial class AppearancePage : Page
                 BorderThickness = new Thickness(0),
                 Cursor = System.Windows.Input.Cursors.Hand,
             };
-            swatch.Click += (_, _) => Settings.Update(s => s.AccentColor = hex);
+            swatch.Click += (_, _) => Settings.Update(s =>
+            {
+                s.AccentColor = hex;
+                s.AccentFromWallpaper = false;
+            });
             swatch.Click += (_, _) => UpdateSwatches();
             Swatches.Children.Add(swatch);
         }
@@ -216,9 +246,9 @@ public partial class AppearancePage : Page
 
     private void UpdateSwatches()
     {
-        var current = Settings.Current.AccentColor;
-        SwatchPanel.IsEnabled = current != null;
-        SwatchPanel.Opacity = current != null ? 1 : 0.4;
+        var s = Settings.Current;
+        var current = s.AccentFromWallpaper ? null : s.AccentColor;
+        SwatchPanel.Visibility = current != null ? Visibility.Visible : Visibility.Collapsed;
         foreach (Button swatch in Swatches.Children)
         {
             bool selected = string.Equals((string)swatch.Tag, current, StringComparison.OrdinalIgnoreCase);
@@ -227,14 +257,20 @@ public partial class AppearancePage : Page
         }
     }
 
-    private void WindowsAccent_Click(object sender, RoutedEventArgs e)
+    private void AccentSource_Changed(object sender, SelectionChangedEventArgs e)
     {
-        bool useWindows = WindowsAccentSwitch.IsChecked == true;
-        // Al pasar a color propio se parte del acento actual de Windows.
-        var windowsAccent = ThemeManager.GetWindowsAccentColor();
-        Settings.Update(s => s.AccentColor = useWindows
-            ? null
-            : $"#{windowsAccent.R:X2}{windowsAccent.G:X2}{windowsAccent.B:X2}");
+        if (_loading || AccentSourceBox.SelectedItem is not ComboBoxItem { Tag: string source })
+            return;
+        // Al pasar a color propio se parte del acento que se ve ahora.
+        var shown = ThemeManager.Accent;
+        Settings.Update(s =>
+        {
+            s.AccentFromWallpaper = source == "Wallpaper";
+            if (source == "Windows")
+                s.AccentColor = null;
+            else if (source == "Custom" && s.AccentColor is null)
+                s.AccentColor = $"#{shown.R:X2}{shown.G:X2}{shown.B:X2}";
+        });
         UpdateSwatches();
     }
 

@@ -30,6 +30,8 @@ public partial class PinnedLayoutView : UserControl
     public PinnedLayoutView()
     {
         InitializeComponent();
+        // La carpeta se abre sobre el centro del menú: crece o aparece con la animación elegida.
+        Services.Themes.Motion.Attach(FolderPopup, () => Services.TaskbarPosition.Bottom);
         MouseMove += (_, e) => { if (_drag != null) DragMove(e.GetPosition(this)); };
         MouseLeftButtonUp += (_, e) => { if (_drag != null) EndDrag(e.GetPosition(this)); };
         // Es un evento que sube: el botón que pierde la captura al empezar no debe cancelar el arrastre.

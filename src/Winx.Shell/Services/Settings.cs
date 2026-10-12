@@ -169,6 +169,13 @@ public sealed class WinxSettings
     public WinxTheme Theme { get; set; } = WinxTheme.System;
     /// <summary>Color "#RRGGBB"; null = usar el acento de Windows.</summary>
     public string? AccentColor { get; set; }
+    /// <summary>Acento sacado del fondo de pantalla (tiene prioridad sobre <see cref="AccentColor"/>).</summary>
+    public bool AccentFromWallpaper { get; set; }
+    /// <summary>
+    /// Acento de Windows antes de que WINX le pusiera el suyo ("Aplicar el tema a Windows"):
+    /// [color de Inicio, color de acento] en ABGR; se devuelve al desactivarlo. Null: no lo cambió.
+    /// </summary>
+    public uint[]? WindowsAccentBackup { get; set; }
     /// <summary>Liquid Glass con refracción real (captura del fondo + shader). Oculta la barra y
     /// los paneles de las capturas de pantalla; desactivado usa el desenfoque de Windows.</summary>
     public bool LiveGlass { get; set; } = true;

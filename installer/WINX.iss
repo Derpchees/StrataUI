@@ -21,10 +21,19 @@ AppPublisher=Derpchees
 AppPublisherURL=https://github.com/Derpchees/WINX
 AppSupportURL=https://github.com/Derpchees/WINX/issues
 AppUpdatesURL=https://github.com/Derpchees/WINX/releases
-DefaultDirName={localappdata}\Programs\WINX
-DisableProgramGroupPage=yes
+DefaultDirName={autopf}\WINX
+DefaultGroupName=WINX
+; Asistente completo: bienvenida, carpeta (en la primera instalación; al actualizar se usa la
+; misma), carpeta del menú Inicio, tareas y resumen.
+DisableWelcomePage=no
+DisableProgramGroupPage=auto
 DisableDirPage=auto
+DisableReadyPage=no
+; Por defecto para el usuario actual (sin administrador, en %LOCALAPPDATA%\Programs); el asistente
+; deja elegir instalarlo para todos los usuarios (Archivos de programa, pide UAC).
 PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog commandline
+UsePreviousPrivileges=yes
 OutputDir=..\artifacts
 OutputBaseFilename=WINX-Setup-{#AppVersion}
 SetupIconFile=..\src\Winx.Shell\Assets\winx.ico
@@ -63,9 +72,12 @@ Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs 
 [InstallDelete]
 ; Restos de una versión anterior que ya no forman parte de la app.
 Type: filesandordirs; Name: "{app}\*.pdb"
+; Antes de la 1.0 el acceso directo iba suelto en el menú Inicio; ahora va en su carpeta.
+Type: files; Name: "{autoprograms}\WINX.lnk"
 
 [Icons]
-Name: "{autoprograms}\WINX"; Filename: "{app}\WINX.exe"
+Name: "{group}\WINX"; Filename: "{app}\WINX.exe"
+Name: "{group}\{cm:UninstallProgram,WINX}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\WINX"; Filename: "{app}\WINX.exe"; Tasks: desktopicon
 
 [Registry]

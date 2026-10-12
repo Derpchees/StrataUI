@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows.Media;
 using Winx.Shell.Tweaks;
 
 namespace Winx.Shell.Services.Themes;
@@ -44,6 +45,7 @@ public static class WindowsTheming
                 ForEachExplorerWindow(ResetWindow);
             }
             _appliedSystemTheme = null;
+            RestoreAccent();
             return;
         }
 
@@ -51,7 +53,83 @@ public static class WindowsTheming
             StartWatching();
         ForEachExplorerWindow(ApplyToWindow);
         _ = ApplySystemModeAsync();
+        ApplyAccent();
     }
+
+    // ── Color de acento de Windows ─────────────────────────────────────────
+
+    /// <summary>
+    /// Con un acento propio o del fondo, Windows usa el mismo (Inicio de Windows, Configuración,
+    /// barras de título, apps). Se guarda el que tenía para devolverlo. No se toca mientras
+    /// Wallpaper Engine ajusta el color de Windows: los dos se pisarían con cada fondo.
+    /// </summary>
+    private static void ApplyAccent()
+    {
+        if (ThemeManager.FollowsWindowsAccent || WallpaperEngine.AdjustingWindowsColor)
+        {
+            RestoreAccent();
+            return;
+        }
+        var accent = ThemeManager.Accent;
+        uint wanted = Abgr(accent);
+        if (GetUserColorPreference(out var current, false) != 0)
+            return;
+        if (current.Accent == wanted)
+            return;
+        if (Settings.Current.WindowsAccentBackup is null)
+        {
+            Settings.Current.WindowsAccentBackup = [current.Start, current.Accent];
+            Settings.Save();
+        }
+        // Inicio de Windows con un tono más oscuro del acento, como hace Windows.
+        var start = Palette.Blend(accent, Colors.Black, 0.45);
+        SetAccent(new ColorPreference { Start = Abgr(start), Accent = wanted });
+    }
+
+    private static void RestoreAccent()
+    {
+        if (Settings.Current.WindowsAccentBackup is not [var start, var accent])
+            return;
+        if (!WallpaperEngine.AdjustingWindowsColor)
+            SetAccent(new ColorPreference { Start = start, Accent = accent });
+        Settings.Current.WindowsAccentBackup = null;
+        Settings.Save();
+    }
+
+    /// <summary>
+    /// SetUserColorPreference (uxtheme, ordinal 122) es lo que usa Configuración de Windows: guarda
+    /// el acento, calcula la paleta y avisa a todo el sistema (DWM, Inicio, apps).
+    /// </summary>
+    private static void SetAccent(ColorPreference preference)
+    {
+        try
+        {
+            int hr = SetUserColorPreference(ref preference, true);
+            if (hr != 0)
+                Log.Info($"Windows no aceptó el color de acento (0x{hr:X8})");
+            else
+                Log.Info($"Acento de Windows: {preference.Accent:X8}");
+        }
+        catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException)
+        {
+            Log.Error("Esta versión de Windows no permite cambiar el acento", ex);
+        }
+    }
+
+    private static uint Abgr(Color color) => 0xFF000000u | (uint)color.B << 16 | (uint)color.G << 8 | color.R;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ColorPreference
+    {
+        public uint Start;
+        public uint Accent;
+    }
+
+    [DllImport("uxtheme.dll", EntryPoint = "#120")]
+    private static extern int GetUserColorPreference(out ColorPreference preference, bool forceReload);
+
+    [DllImport("uxtheme.dll", EntryPoint = "#122")]
+    private static extern int SetUserColorPreference(ref ColorPreference preference, bool forceCommit);
 
     /// <summary>Modo claro/oscuro y transparencia del sistema (con respaldo, vía el motor de ajustes).</summary>
     private static async Task ApplySystemModeAsync()

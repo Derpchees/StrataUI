@@ -9,7 +9,9 @@ namespace Winx.Shell.Services.Themes;
 /// </summary>
 public static class Palette
 {
-    public static ResourceDictionary Build(ThemeInfo theme, bool light, Color accent, double barHeight = 48, bool liveGlass = false)
+    /// <param name="shown">Acento tal como lo pintan los controles (el de WPF-UI); si falta, se calcula.</param>
+    public static ResourceDictionary Build(ThemeInfo theme, bool light, Color accent, double barHeight = 48, bool liveGlass = false,
+                                           Color? shown = null)
     {
         // Base neutra (equivalente a la paleta de Windows 11)
         Color background = light ? Hex("#EEEEEE") : Hex("#1C1C1C");
@@ -69,7 +71,7 @@ public static class Palette
         }
 
         // Acento legible: sobre fondo oscuro se aclara, como hace Windows.
-        Color accentShown = light ? accent : Blend(accent, Colors.White, 0.4);
+        Color accentShown = shown ?? (light ? accent : Blend(accent, Colors.White, 0.4));
 
         var dict = new ResourceDictionary
         {

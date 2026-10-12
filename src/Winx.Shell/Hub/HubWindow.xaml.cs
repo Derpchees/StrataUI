@@ -1,5 +1,7 @@
 using Winx.Shell.Hub.Pages;
+using System.Windows;
 using Winx.Shell.Services;
+using Winx.Shell.Services.Themes;
 using Wpf.Ui.Controls;
 
 namespace Winx.Shell.Hub;
@@ -19,7 +21,18 @@ public partial class HubWindow : FluentWindow
         ApplyBackdrop();
         ThemeManager.ThemeChanged += ApplyBackdrop;
         Closed += (_, _) => ThemeManager.ThemeChanged -= ApplyBackdrop;
-        Loaded += (_, _) => Nav.Navigate(_startPage);
+        // Las animaciones del Hub son las elegidas en Apariencia, no la transición fija de WPF-UI.
+        Nav.Transition = Wpf.Ui.Animations.Transition.None;
+        Nav.Navigated += (_, e) =>
+        {
+            if (e.Page is FrameworkElement page)
+                Motion.In(page, page, TaskbarPosition.Bottom, 0.6);
+        };
+        Loaded += (_, _) =>
+        {
+            Motion.In(Root, Root, TaskbarPosition.Bottom, 0.8);
+            Nav.Navigate(_startPage);
+        };
     }
 
     private void ApplyBackdrop() => WindowBackdropType = ThemeManager.WindowBackdrop;

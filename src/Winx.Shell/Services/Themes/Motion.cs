@@ -1,15 +1,74 @@
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 
 namespace Winx.Shell.Services.Themes;
 
 /// <summary>
-/// Animaciones de entrada y salida de paneles, menú Inicio, avisos y OSD, según lo elegido en
+/// Animaciones de entrada y salida de paneles, menú Inicio, avisos, OSD, menús, tooltips y el Hub, según lo elegido en
 /// Hub › Apariencia (<see cref="PanelAnimation"/> y <see cref="AnimationSpeed"/>).
 /// </summary>
 public static class Motion
 {
+    /// <summary>
+    /// Toda la app usa las animaciones elegidas: los menús contextuales y los tooltips de cualquier
+    /// ventana de WINX se animan solos al abrirse (más cortas que las de un panel).
+    /// </summary>
+    public static void Initialize()
+    {
+        EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
+        EventManager.RegisterClassHandler(typeof(ToolTip), ToolTip.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
+    }
+
+    private static void OnMenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement element || !ReferenceEquals(e.OriginalSource, sender))
+            return;
+        In(element, element, FromPointer(element), element is ToolTip ? 0.35 : 0.5);
+    }
+
+    /// <summary>Un popup propio (bandeja oculta, carpeta del menú Inicio) se anima al abrirse.</summary>
+    public static void Attach(Popup popup, Func<TaskbarPosition> from)
+    {
+        popup.PopupAnimation = PopupAnimation.None;
+        popup.Opened += (_, _) =>
+        {
+            if (popup.Child is FrameworkElement child)
+                In(child, child, from(), 0.6);
+        };
+    }
+
+    /// <summary>
+    /// Lado desde el que llega un menú: si quedó debajo del puntero baja desde arriba; si quedó
+    /// encima (abierto desde la barra inferior), sube.
+    /// </summary>
+    private static TaskbarPosition FromPointer(FrameworkElement element)
+    {
+        try
+        {
+            if (!GetCursorPos(out var cursor) || PresentationSource.FromVisual(element) is null)
+                return TaskbarPosition.Top;
+            var top = element.PointToScreen(new Point(0, 0));
+            return top.Y >= cursor.Y - 4 ? TaskbarPosition.Top : TaskbarPosition.Bottom;
+        }
+        catch (InvalidOperationException)
+        {
+            return TaskbarPosition.Top;
+        }
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out NativePoint point);
+
     private static TimeSpan Duration(bool closing)
     {
         double ms = Settings.Current.AnimationSpeed switch
@@ -25,12 +84,13 @@ public static class Motion
     /// <summary>
     /// Entrada: <paramref name="fade"/> (la ventana o el elemento) se desvanece y
     /// <paramref name="moving"/> se desliza o crece. <paramref name="from"/> es el lado desde el
-    /// que llega (la barra, la esquina de los avisos).
+    /// que llega (la barra, la esquina de los avisos). <paramref name="size"/> acorta recorrido y
+    /// duración para cosas pequeñas (menús, tooltips, páginas del Hub).
     /// </summary>
-    public static void In(UIElement fade, FrameworkElement moving, TaskbarPosition from)
+    public static void In(UIElement fade, FrameworkElement moving, TaskbarPosition from, double size = 1)
     {
         var style = Settings.Current.PanelAnimation;
-        var duration = Duration(closing: false);
+        var duration = Duration(closing: false) * Math.Max(0.6, size);
         if (style == PanelAnimation.None)
         {
             fade.BeginAnimation(UIElement.OpacityProperty, null);
@@ -45,7 +105,7 @@ public static class Motion
         {
             case PanelAnimation.Slide or PanelAnimation.Rise:
                 {
-                    double distance = style == PanelAnimation.Rise ? 60 : 16;
+                    double distance = (style == PanelAnimation.Rise ? 60 : 16) * size;
                     IEasingFunction slideEase = style == PanelAnimation.Rise
                         ? new QuinticEase { EasingMode = EasingMode.EaseOut }
                         : ease;
@@ -61,7 +121,7 @@ public static class Motion
                     var scale = new ScaleTransform(1, 1);
                     moving.RenderTransformOrigin = Origin(from);
                     moving.RenderTransform = scale;
-                    double start = style == PanelAnimation.Pop ? 0.8 : 0.92;
+                    double start = 1 - (style == PanelAnimation.Pop ? 0.2 : 0.08) * size;
                     IEasingFunction grow = style == PanelAnimation.Pop
                         ? new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.45 }
                         : ease;

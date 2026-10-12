@@ -11,7 +11,7 @@
                  ExtendsContentIntoTitleBar="True"
                  WindowCornerPreference="Round">
     <!-- Tinte del tema sobre el material de fondo (opaco en Material, sutil en los de vidrio) -->
-    <Grid Background="{DynamicResource WinxHubTintBrush}">
+    <Grid x:Name="Root" Background="{DynamicResource WinxHubTintBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />

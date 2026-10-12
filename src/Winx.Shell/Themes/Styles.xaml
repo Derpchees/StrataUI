@@ -40,6 +40,25 @@
         <Setter Property="Margin" Value="0,4" />
     </Style>
 
+    <!-- Imagen de una notificación (foto del remitente, logotipo del sitio), a la izquierda del texto.
+         Contexto: WinxNotification (Picture, PictureIsCircle, HasPicture). -->
+    <Style x:Key="NotificationPicture" TargetType="Border">
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Margin" Value="0,6,10,0" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="CornerRadius" Value="6" />
+        <!-- El fondo (ImageBrush con la imagen) va en cada plantilla: un estilo congela sus valores. -->
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding HasPicture}" Value="False">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding PictureIsCircle}" Value="True">
+                <Setter Property="CornerRadius" Value="20" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="IconText" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
         <Setter Property="FontSize" Value="15" />

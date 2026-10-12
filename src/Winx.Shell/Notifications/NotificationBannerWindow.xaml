@@ -25,7 +25,15 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
-                        <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <!-- Imagen del aviso (foto del remitente, logotipo del sitio), como en Windows -->
+                        <Border Grid.Row="1" Grid.RowSpan="2" Style="{StaticResource NotificationPicture}">
+                            <Border.Background><ImageBrush ImageSource="{Binding Picture}" Stretch="UniformToFill" /></Border.Background>
+                        </Border>
+                        <Grid Grid.ColumnSpan="2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
@@ -44,10 +52,10 @@
                                 <ui:SymbolIcon Symbol="Dismiss24" FontSize="11" />
                             </Button>
                         </Grid>
-                        <TextBlock Grid.Row="1" Margin="0,6,0,0" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                        <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,6,0,0" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
                                    TextTrimming="CharacterEllipsis" MaxHeight="40"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" Text="{Binding Title}" />
-                        <TextBlock Grid.Row="2" Margin="0,2,0,0" FontSize="13" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                        <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,2,0,0" FontSize="13" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                    MaxHeight="58" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Text="{Binding Body}" />
                     </Grid>
                 </Border>

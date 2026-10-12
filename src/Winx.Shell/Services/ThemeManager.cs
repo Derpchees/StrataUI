@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
 using Winx.Shell.Services.Themes;
@@ -30,8 +31,22 @@ public static class ThemeManager
     public static bool UseLiveGlass =>
         Theme.Glass && Settings.Current.LiveGlass && Services.Themes.Glass.LiquidGlassEffect.IsSupported;
 
+    /// <summary>
+    /// Acento elegido: el del fondo de pantalla, uno propio o el de Windows. El del fondo queda en
+    /// pausa mientras Wallpaper Engine ajusta el color de Windows (los dos se pisarían).
+    /// </summary>
     public static Color Accent =>
-        TryParseColor(Settings.Current.AccentColor) ?? GetWindowsAccentColor();
+        (UsesWallpaperAccent ? WallpaperAccent.Current : null)
+        ?? TryParseColor(Settings.Current.AccentColor)
+        ?? GetWindowsAccentColor();
+
+    /// <summary>El acento sale del fondo (opción activa y sin Wallpaper Engine ajustando el color).</summary>
+    public static bool UsesWallpaperAccent =>
+        Settings.Current.AccentFromWallpaper && !WallpaperEngine.AdjustingWindowsColor;
+
+    /// <summary>El acento es el de Windows (nada que llevarle a Windows).</summary>
+    public static bool FollowsWindowsAccent =>
+        !UsesWallpaperAccent && TryParseColor(Settings.Current.AccentColor) is null;
 
     /// <summary>Material para ventanas FluentWindow (Hub, paneles) según el tema.</summary>
     public static WindowBackdropType WindowBackdrop => Theme.Backdrop switch
@@ -41,27 +56,97 @@ public static class ThemeManager
         _ => WindowBackdropType.None,
     };
 
-    private static (WinxTheme, string?, int, bool) _appliedKey;
+    private static (WinxTheme, string?, int, bool, bool) _appliedKey;
+    private static HwndSource? _colorWatcher;
 
     public static void Initialize()
     {
+        WallpaperEngine.Watch();
+        WallpaperEngine.Recheck();
+        WallpaperAccent.Update();
         Apply();
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
         Settings.Changed += OnSettingsChanged;
+        WallpaperAccent.Changed += Recheck;
+        WallpaperEngine.Changed += Recheck;
+        WatchColorization();
     }
 
     public static void Shutdown()
     {
         SystemEvents.UserPreferenceChanged -= OnUserPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
+        WallpaperAccent.Changed -= Recheck;
+        WallpaperEngine.Changed -= Recheck;
+        WallpaperAccent.Shutdown();
+        WallpaperEngine.Shutdown();
+        _colorWatcher?.Dispose();
+        _colorWatcher = null;
     }
 
     /// <summary>Solo se reaplica si cambió algo que afecta al tema (no, p. ej., los segundos del reloj).</summary>
     private static void OnSettingsChanged()
     {
         var s = Settings.Current;
-        if ((s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass) != _appliedKey)
+        WallpaperAccent.Update();
+        if ((s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper) != _appliedKey)
             Apply();
+    }
+
+    /// <summary>Reaplica si cambió lo que se ve (claro/oscuro o el acento efectivo).</summary>
+    private static void Recheck()
+    {
+        if ((Theme.Kind, IsLight, Accent) != _appliedLook)
+            Apply();
+    }
+
+    /// <summary>
+    /// Windows (o Wallpaper Engine) puede cambiar el acento sin mandar WM_SETTINGCHANGE: DWM avisa a
+    /// todas las ventanas de primer nivel con WM_DWMCOLORIZATIONCOLORCHANGED, y una invisible lo recibe.
+    /// </summary>
+    private static void WatchColorization()
+    {
+        const int WmDwmColorizationColorChanged = 0x0320;
+        _colorWatcher = new HwndSource(new HwndSourceParameters("WINX color")
+        {
+            Width = 0,
+            Height = 0,
+            WindowStyle = unchecked((int)0x80000000), // WS_POPUP, nunca se muestra
+        });
+        _colorWatcher.AddHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) =>
+        {
+            if (msg == WmDwmColorizationColorChanged)
+                Application.Current.Dispatcher.BeginInvoke(Recheck, System.Windows.Threading.DispatcherPriority.Background);
+            return IntPtr.Zero;
+        });
+    }
+
+    /// <summary>
+    /// Acento que se puede ver: sobre el tema oscuro no puede ser casi negro, ni casi blanco sobre
+    /// el claro (Wallpaper Engine, p. ej., deja a Windows con el acento negro).
+    /// </summary>
+    public static Color Readable(Color accent, bool light)
+    {
+        var color = accent;
+        for (int i = 0; i < 20; i++)
+        {
+            double luminance = Luminance(color);
+            if (light ? luminance <= 0.45 : luminance >= 0.16)
+                break;
+            color = Palette.Blend(color, light ? Colors.Black : Colors.White, 0.08);
+        }
+        return color;
+    }
+
+    /// <summary>Luminancia relativa (WCAG), de 0 (negro) a 1 (blanco).</summary>
+    internal static double Luminance(Color c)
+    {
+        static double Channel(byte value)
+        {
+            double v = value / 255.0;
+            return v <= 0.03928 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+        }
+        return 0.2126 * Channel(c.R) + 0.7152 * Channel(c.G) + 0.0722 * Channel(c.B);
     }
 
     public static bool WindowsUsesLightTheme()
@@ -97,10 +182,11 @@ public static class ThemeManager
     {
         var watch = System.Diagnostics.Stopwatch.StartNew();
         var s = Settings.Current;
-        _appliedKey = (s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass);
+        _appliedKey = (s.Theme, s.AccentColor, s.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper);
         var theme = Theme;
         bool light = IsLight;
-        var accent = Accent;
+        var chosen = Accent;
+        var accent = Readable(chosen, light);
 
         // 1) WPF-UI: recargar su tema re-evalúa todos los controles abiertos, así que solo se hace
         //    si cambió claro/oscuro. El material de cada ventana lo pone cada ventana (pasar un
@@ -121,12 +207,15 @@ public static class ThemeManager
         // 2) Paleta de WINX al final: así sus claves sobrescriben las de WPF-UI (tarjetas, menús,
         //    tooltips) y todo el programa sigue el tema, no solo la barra.
         var resources = Application.Current.Resources;
-        var next = Palette.Build(theme, light, accent, Settings.Current.TaskbarHeight, UseLiveGlass);
+        // El acento que se ve en WINX es el mismo que usan los controles de WPF-UI (interruptores,
+        // botones principales, selección), no un cálculo aparte con otro tono.
+        Color? shown = (resources["AccentFillColorDefaultBrush"] as SolidColorBrush)?.Color;
+        var next = Palette.Build(theme, light, accent, Settings.Current.TaskbarHeight, UseLiveGlass, shown);
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);
         resources.MergedDictionaries.Add(next);
         _current = next;
-        _appliedLook = (theme.Kind, light, accent);
+        _appliedLook = (theme.Kind, light, chosen);
 
         ThemeChanged?.Invoke();
         Log.Info($"Tema {theme.Name} ({(light ? "claro" : "oscuro")}) aplicado en {watch.ElapsedMilliseconds} ms");
@@ -143,10 +232,6 @@ public static class ThemeManager
             return;
         // Windows manda "General" por muchos motivos (fondo, fuentes…): solo se reaplica si
         // cambió algo que el tema usa (claro/oscuro de Windows o su acento).
-        Application.Current.Dispatcher.BeginInvoke(() =>
-        {
-            if ((Theme.Kind, IsLight, Accent) != _appliedLook)
-                Apply();
-        });
+        Application.Current.Dispatcher.BeginInvoke(Recheck);
     }
 }

@@ -60,6 +60,7 @@ public partial class Taskbar : AppBarWindow
             Width = DesiredWidth;
         }
         ApplyOrientation();
+        Services.Themes.Motion.Attach(HiddenTrayPopup, () => Position);
         StartButton.ContextMenu = StartMenu.WinXMenu.Create(StartButton);
 
         VersionItem.Header = $"WINX v{App.Version}";

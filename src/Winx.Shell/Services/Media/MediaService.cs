@@ -352,15 +352,9 @@ public static class MediaService
         AppName = _site?.Name ?? FriendlyName(sourceId);
     }
 
-    /// <summary>Ícono de una app por su AppUserModelID, del catálogo del menú Inicio.</summary>
-    private static ImageSource? AppIconFor(string id)
-    {
-        if (string.IsNullOrEmpty(id))
-            return null;
-        return StartMenu.StartMenuService.Apps.FirstOrDefault(a =>
-            a.Id.Equals(id, StringComparison.OrdinalIgnoreCase)
-            || Path.GetFileName(a.Id).Equals(id, StringComparison.OrdinalIgnoreCase))?.Icon;
-    }
+    /// <summary>Ícono de una app por su AppUserModelID (menú Inicio, registro o su ventana).</summary>
+    private static ImageSource? AppIconFor(string id) =>
+        string.IsNullOrEmpty(id) ? null : AppIcons.Find(id, null);
 
     // ── Nombre de la app ────────────────────────────────────────────────────
 

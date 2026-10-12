@@ -74,8 +74,14 @@ public partial class NotificationBannerWindow : Window
             _banners.Insert(0, item);
         else
             _banners.Add(item);
+        // Los que sobran se quitan sin animación (Remove la espera y la lista tardaría en bajar).
         while (_banners.Count > MaxBanners)
-            Remove(IsTop ? _banners[^1] : _banners[0]);
+        {
+            var oldest = IsTop ? _banners[^1] : _banners[0];
+            if (_timers.Remove(oldest, out var old))
+                old.Stop();
+            Discard(oldest);
+        }
 
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(Math.Max(2, Settings.Current.NotificationSeconds)) };
         timer.Tick += (_, _) => Remove(item);
@@ -94,8 +100,18 @@ public partial class NotificationBannerWindow : Window
 
     private void Remove(WinxNotification item)
     {
-        if (_timers.Remove(item, out var timer))
-            timer.Stop();
+        if (!_timers.Remove(item, out var timer))
+            return; // ya se está yendo
+        timer.Stop();
+        // Sale hacia el borde con la animación elegida; después se quita de la lista.
+        if (IsVisible && BannerList.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement banner)
+            Services.Themes.Motion.Out(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right, () => Discard(item));
+        else
+            Discard(item);
+    }
+
+    private void Discard(WinxNotification item)
+    {
         _banners.Remove(item);
         if (_banners.Count == 0)
             Hide();
