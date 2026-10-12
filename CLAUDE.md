@@ -143,8 +143,9 @@ tecla Windows, Win+N).
 - **Traducciones**: la clave es el texto en español, así que una palabra con dos sentidos comparte
   traducción ("Inicio" del menú y la página "Inicio" del Explorador). Si el sentido cambia, usar
   textos distintos ("Inicio del Explorador").
-- **Glifos de Segoe Fluent** en C#: escribirlos como `''`, no el carácter; al reescribir un
-  archivo copiando el texto, los caracteres de uso privado se pierden y queda `''`.
+- **Glifos de Segoe Fluent** en C#: escribirlos con la secuencia de escape (barra invertida, u y el código: E701), no el
+  carácter; al reescribir un archivo copiando el texto, los caracteres de uso privado se pierden y
+  queda `''`. Algunas herramientas de edición convierten la secuencia en el carácter: revisarlo.
 - **Directivas en HKCU**: `HKCU\Software\Policies` solo la escriben administradores (los ajustes
   ahí piden UAC: `RegSetting.NeedsAdminFor`).
 - **DDC/CI**: el identificador de un monitor físico puede valer 0; no usarlo como "no hay".
