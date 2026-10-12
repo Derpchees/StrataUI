@@ -99,16 +99,21 @@ public abstract class StartMenuBase : FlyoutWindow
     }
 
     /// <summary>
-    /// Asas invisibles en el borde libre del menú: arriba (el de abajo está pegado a la barra) y
-    /// en el lateral que se aleja del botón Inicio. En menús centrados el ancho crece por ambos lados.
+    /// Asas invisibles en los bordes libres del menú (los que no están pegados a la barra) y en el
+    /// lateral que se aleja del botón Inicio. En menús centrados el ancho crece por ambos lados.
     /// </summary>
     private void AddResizeGrips()
     {
-        bool growsLeft = Placement == FlyoutPlacement.Right;
-        bool symmetric = Placement is FlyoutPlacement.Center or FlyoutPlacement.ScreenCenter;
+        // Con la barra a un lado, el menú queda pegado a ella: crece hacia el lado contrario y hacia abajo.
+        bool sideBar = BarPosition is TaskbarPosition.Left or TaskbarPosition.Right && Placement != FlyoutPlacement.ScreenCenter;
+        bool growsLeft = sideBar ? BarPosition == TaskbarPosition.Right : Placement == FlyoutPlacement.Right;
+        bool symmetric = !sideBar && Placement is FlyoutPlacement.Center or FlyoutPlacement.ScreenCenter;
         var sideAlign = growsLeft ? HorizontalAlignment.Left : HorizontalAlignment.Right;
-        // En "solo búsqueda" el borde fijo es el de arriba, así que el alto (si lo hubiera) iría abajo.
-        var verticalEdge = Placement == FlyoutPlacement.ScreenCenter ? VerticalAlignment.Bottom : VerticalAlignment.Top;
+        // El alto se cambia en el borde libre: arriba si la barra está abajo; abajo en los demás
+        // casos (barra arriba o a un lado, o "solo búsqueda", que tiene fija la parte de arriba).
+        var verticalEdge = BarPosition == TaskbarPosition.Bottom && Placement != FlyoutPlacement.ScreenCenter
+            ? VerticalAlignment.Top
+            : VerticalAlignment.Bottom;
 
 
         var grips = new Grid();

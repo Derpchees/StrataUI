@@ -1,4 +1,4 @@
-<appbar:AppBarWindow x:Class="Winx.Shell.Taskbar"
+﻿<appbar:AppBarWindow x:Class="Winx.Shell.Taskbar"
                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                      xmlns:appbar="clr-namespace:ManagedShell.AppBar;assembly=ManagedShell.AppBar"
@@ -34,18 +34,18 @@
 
     <!-- La ventana es transparente: el color del tema lo pone este Border (sobre el desenfoque si
          aplica). En temas flotantes se separa de los bordes y toma forma de cápsula. -->
-    <Border Background="{DynamicResource WinxTaskbarBackgroundBrush}"
+    <Border x:Name="BarBorder" Background="{DynamicResource WinxTaskbarBackgroundBrush}"
             BorderBrush="{DynamicResource WinxTaskbarEdgeBrush}"
             BorderThickness="{DynamicResource WinxTaskbarBorderThickness}"
-            CornerRadius="{DynamicResource WinxTaskbarCornerRadius}"
-            Margin="{DynamicResource WinxTaskbarMargin}">
+            CornerRadius="{DynamicResource WinxTaskbarCornerRadius}">
         <!-- En Liquid Glass con refracción en vivo, aquí se inserta la superficie de vidrio (por código) -->
         <Grid x:Name="GlassHost">
             <!-- Brillo interior sutil del vidrio -->
             <Border IsHitTestVisible="False" Background="{DynamicResource WinxGlassHighlightBrush}"
                     CornerRadius="{DynamicResource WinxTaskbarCornerRadius}"
                     Visibility="{DynamicResource WinxGlassVisibility}" />
-            <Grid>
+            <!-- En barras verticales (izquierda/derecha) las columnas pasan a filas: ver ApplyOrientation -->
+            <Grid x:Name="MainGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -79,7 +79,7 @@
                 </DockPanel>
     
                 <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <StackPanel x:Name="StatusPanel" Grid.Column="1" Orientation="Horizontal">
                     <StackPanel x:Name="TrayArea" Orientation="Horizontal">
                         <ToggleButton x:Name="ChevronButton" Style="{StaticResource TaskbarButton}" Width="28"
                                       Padding="0" ToolTip="Mostrar iconos ocultos"
@@ -142,15 +142,15 @@
     
                     <Button x:Name="ClockButton" Style="{StaticResource TaskbarButton}" Padding="10,0"
                             Click="ClockButton_Click">
-                        <StackPanel>
+                        <StackPanel x:Name="ClockPanel">
                             <TextBlock x:Name="TimeText" HorizontalAlignment="Right" FontSize="12" />
                             <TextBlock x:Name="DateText" HorizontalAlignment="Right" FontSize="12" />
                         </StackPanel>
                     </Button>
     
-                    <Border Width="12" Background="Transparent" ToolTip="Mostrar escritorio"
+                    <Border x:Name="ShowDesktopArea" Width="12" Background="Transparent" ToolTip="Mostrar escritorio"
                             MouseLeftButtonUp="ShowDesktop_Click">
-                        <Border Width="1" Height="16" HorizontalAlignment="Right"
+                        <Border x:Name="ShowDesktopLine" Width="1" Height="16" HorizontalAlignment="Right"
                                 Background="{DynamicResource WinxTaskbarBorderBrush}" />
                     </Border>
                 </StackPanel>

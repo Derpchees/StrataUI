@@ -1,7 +1,9 @@
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -25,16 +27,28 @@ public partial class Taskbar : AppBarWindow
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _statusTimer;
 
-    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor)
+    private readonly ICollectionView _taskView;
+    private bool _windowsPerMonitor;
+
+    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
-               screen, AppBarEdge.Bottom, AppBarMode.Normal, ReservedHeight)
+               screen, EdgeOf(position), AppBarMode.Normal, ReservedSize(IsVerticalPosition(position)))
     {
         _shell = shell;
         _multiMonitor = multiMonitor;
+        Position = position;
         InitializeComponent();
+        if (IsVertical)
+        {
+            DesiredWidth = ReservedSize(vertical: true);
+            Width = DesiredWidth;
+        }
+        ApplyOrientation();
 
         VersionItem.Header = $"WINX v{App.Version}";
-        TaskList.ItemsSource = CreateTaskView();
+        _windowsPerMonitor = Settings.Current.TaskbarWindowsPerMonitor;
+        _taskView = CreateTaskView();
+        TaskList.ItemsSource = _taskView;
 
         if (screen.Primary)
         {
@@ -70,20 +84,127 @@ public partial class Taskbar : AppBarWindow
         ThemeManager.ThemeChanged += OnThemeChanged;
     }
 
+    /// <summary>Borde en el que está la barra (cambiarlo recrea la barra).</summary>
+    public TaskbarPosition Position { get; }
+
+    public bool IsVertical => IsVerticalPosition(Position);
+
+    private static bool IsVerticalPosition(TaskbarPosition position) =>
+        position is TaskbarPosition.Left or TaskbarPosition.Right;
+
+    private static AppBarEdge EdgeOf(TaskbarPosition position) => position switch
+    {
+        TaskbarPosition.Top => AppBarEdge.Top,
+        TaskbarPosition.Left => AppBarEdge.Left,
+        TaskbarPosition.Right => AppBarEdge.Right,
+        _ => AppBarEdge.Bottom,
+    };
+
     /// <summary>
-    /// Cambia el alto reservado sin destruir la barra (recrearla obligaba a Windows a
+    /// Cambia el grosor reservado sin destruir la barra (recrearla obligaba a Windows a
     /// reacomodar todas las ventanas maximizadas dos veces).
     /// </summary>
-    public void Resize(double height)
+    public void Resize()
     {
-        DesiredHeight = height;
-        Height = height;
+        double size = ReservedSize(IsVertical);
+        if (IsVertical)
+        {
+            DesiredWidth = size;
+            Width = size;
+        }
+        else
+        {
+            DesiredHeight = size;
+            Height = size;
+        }
         UpdatePosition();
     }
 
-    /// <summary>Alto reservado en pantalla: la barra más el margen inferior si flota.</summary>
-    public static double ReservedHeight =>
-        Settings.Current.TaskbarHeight + (ThemeManager.Theme.Floating ? ThemeCatalog.FloatingMargin : 0);
+    /// <summary>
+    /// Grosor reservado en pantalla: la barra más el margen si flota. Las verticales son algo más
+    /// anchas que el alto elegido, para que quepan el reloj y la fecha.
+    /// </summary>
+    public static double ReservedSize(bool vertical) =>
+        Settings.Current.TaskbarHeight + (vertical ? VerticalExtra : 0)
+        + (ThemeManager.Theme.Floating ? ThemeCatalog.FloatingMargin : 0);
+
+    private const double VerticalExtra = 16;
+
+    /// <summary>
+    /// La barra se diseña horizontal; en los bordes izquierdo y derecho sus partes se apilan:
+    /// Inicio y ventanas arriba, bandeja, estado y reloj abajo.
+    /// </summary>
+    private void ApplyOrientation()
+    {
+        HiddenTrayPopup.Placement = Position switch
+        {
+            TaskbarPosition.Top => PlacementMode.Bottom,
+            TaskbarPosition.Left => PlacementMode.Right,
+            TaskbarPosition.Right => PlacementMode.Left,
+            _ => PlacementMode.Top,
+        };
+        HiddenTrayPopup.VerticalOffset = Position switch { TaskbarPosition.Top => 8, TaskbarPosition.Bottom => -8, _ => 0 };
+        HiddenTrayPopup.HorizontalOffset = Position switch { TaskbarPosition.Left => 8, TaskbarPosition.Right => -8, _ => 0 };
+        if (!IsVertical)
+            return;
+
+        MainGrid.ColumnDefinitions.Clear();
+        MainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        MainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        Grid.SetColumn(StatusPanel, 0);
+        Grid.SetRow(StatusPanel, 1);
+
+        TaskArea.HorizontalAlignment = HorizontalAlignment.Stretch;
+        DockPanel.SetDock(StartButton, Dock.Top);
+        StartButton.Width = double.NaN;
+        StartButton.Height = 44;
+        TaskScroller.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+        TaskScroller.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+        TaskList.ItemsPanel = Panel(typeof(StackPanel));
+
+        StatusPanel.Orientation = Orientation.Vertical;
+        TrayArea.Orientation = Orientation.Vertical;
+        PinnedTray.ItemsPanel = Panel(typeof(WrapPanel));
+        PinnedTray.HorizontalAlignment = HorizontalAlignment.Center;
+        foreach (var button in new FrameworkElement[] { ChevronButton, NetworkButton, BluetoothButton, VolumeButton, BatteryButton })
+        {
+            button.HorizontalAlignment = HorizontalAlignment.Center;
+            button.Height = 36;
+        }
+        ClockButton.Padding = new Thickness(2, 6, 2, 6);
+        TimeText.HorizontalAlignment = DateText.HorizontalAlignment = HorizontalAlignment.Center;
+        TimeText.FontSize = DateText.FontSize = 11;
+
+        ShowDesktopArea.Width = double.NaN;
+        ShowDesktopArea.Height = 12;
+        ShowDesktopLine.Width = 16;
+        ShowDesktopLine.Height = 1;
+        ShowDesktopLine.HorizontalAlignment = HorizontalAlignment.Center;
+        ShowDesktopLine.VerticalAlignment = VerticalAlignment.Bottom;
+
+        static ItemsPanelTemplate Panel(Type type)
+        {
+            var factory = new FrameworkElementFactory(type);
+            if (type == typeof(StackPanel))
+                factory.SetValue(StackPanel.OrientationProperty, Orientation.Vertical);
+            return new ItemsPanelTemplate(factory);
+        }
+    }
+
+    /// <summary>En temas flotantes, separación de los tres lados que no tocan el borde de la pantalla.</summary>
+    private Thickness FloatingMargin()
+    {
+        if (!ThemeManager.Theme.Floating)
+            return new Thickness(0);
+        double m = ThemeCatalog.FloatingMargin;
+        return Position switch
+        {
+            TaskbarPosition.Top => new Thickness(m, m, m, 0),
+            TaskbarPosition.Left => new Thickness(m, m, 0, m),
+            TaskbarPosition.Right => new Thickness(0, m, m, m),
+            _ => new Thickness(m, 0, m, m),
+        };
+    }
 
     /// <summary>
     /// Desenfoque detrás de la barra (Acrylic o vidrio limpio) y, si flota, recorte a la cápsula
@@ -97,6 +218,18 @@ public partial class Taskbar : AppBarWindow
         // Con refracción en vivo el shader pinta el vidrio; el desenfoque de DWM queda debajo
         // solo para suavizar el borde antialiasado.
         WindowEffects.SetBlur(this, theme.Backdrop);
+        var margin = FloatingMargin();
+        BarBorder.Margin = margin;
+        // Línea hacia el interior de la pantalla, o cápsula con radio de la mitad del grosor.
+        double thickness = IsVertical ? ActualWidth - margin.Left - margin.Right : ActualHeight - margin.Top - margin.Bottom;
+        Resources["WinxTaskbarCornerRadius"] = new CornerRadius(theme.Floating && thickness > 0 ? thickness / 2 : 0);
+        Resources["WinxTaskbarBorderThickness"] = theme.Floating ? new Thickness(1) : Position switch
+        {
+            TaskbarPosition.Top => new Thickness(0, 0, 0, 1),
+            TaskbarPosition.Left => new Thickness(0, 0, 1, 0),
+            TaskbarPosition.Right => new Thickness(1, 0, 0, 0),
+            _ => new Thickness(0, 1, 0, 0),
+        };
         UpdateGlassSurface();
         if (!theme.Floating || ActualWidth <= 0)
         {
@@ -104,10 +237,10 @@ public partial class Taskbar : AppBarWindow
             return;
         }
         double scale = DpiScale;
-        int margin = (int)Math.Round(ThemeCatalog.FloatingMargin * scale);
-        int width = (int)Math.Round(ActualWidth * scale) - 2 * margin;
-        int height = (int)Math.Round(ActualHeight * scale) - margin;
-        WindowEffects.SetRoundedRegion(this, new Int32Rect(margin, 0, width, height), height / 2);
+        int left = (int)Math.Round(margin.Left * scale), top = (int)Math.Round(margin.Top * scale);
+        int width = (int)Math.Round((ActualWidth - margin.Left - margin.Right) * scale);
+        int height = (int)Math.Round((ActualHeight - margin.Top - margin.Bottom) * scale);
+        WindowEffects.SetRoundedRegion(this, new Int32Rect(left, top, width, height), Math.Min(width, height) / 2);
     }
 
     private void UpdateGlassSurface()
@@ -125,7 +258,7 @@ public partial class Taskbar : AppBarWindow
         }
         if (_glass != null)
         {
-            _glass.CornerRadius = Settings.Current.TaskbarHeight / 2;
+            _glass.CornerRadius = ((CornerRadius)Resources["WinxTaskbarCornerRadius"]).TopLeft;
             _glass.SetLook(ThemeManager.IsLight);
         }
     }
@@ -143,9 +276,18 @@ public partial class Taskbar : AppBarWindow
             StartButton.Content = StartIcons.Create(s.StartIcon);
             StartButton.Tag = s.StartIcon;
         }
-        TaskArea.HorizontalAlignment = s.TaskbarAlignment == TaskbarAlignment.Left
-            ? HorizontalAlignment.Left
-            : HorizontalAlignment.Center;
+        // "Izquierda" en una barra vertical es arriba.
+        if (IsVertical)
+            TaskArea.VerticalAlignment = s.TaskbarAlignment == TaskbarAlignment.Left ? VerticalAlignment.Top : VerticalAlignment.Center;
+        else
+            TaskArea.HorizontalAlignment = s.TaskbarAlignment == TaskbarAlignment.Left
+                ? HorizontalAlignment.Left
+                : HorizontalAlignment.Center;
+        if (s.TaskbarWindowsPerMonitor != _windowsPerMonitor)
+        {
+            _windowsPerMonitor = s.TaskbarWindowsPerMonitor;
+            _taskView.Refresh();
+        }
         DateText.Visibility = s.ShowDate ? Visibility.Visible : Visibility.Collapsed;
         NetworkButton.Visibility = s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
         BluetoothButton.Visibility = s.ShowBluetoothModule ? Visibility.Visible : Visibility.Collapsed;
@@ -159,7 +301,8 @@ public partial class Taskbar : AppBarWindow
         var view = _shell.Tasks.CreateGroupedWindowsCollection();
         view.Filter = item => item is ApplicationWindow window
                               && window.ShowInTaskbar
-                              && (!_multiMonitor || window.HMonitor == Screen.HMonitor);
+                              && (!_multiMonitor || !_windowsPerMonitor || window.HMonitor == Screen.HMonitor
+                                  || (Screen.Primary && !App.Current.HasTaskbarOn(window.HMonitor)));
 
         if (view is ICollectionViewLiveShaping live && live.CanChangeLiveFiltering)
         {
@@ -169,6 +312,8 @@ public partial class Taskbar : AppBarWindow
         }
         return view;
     }
+
+    public void RefreshTasks() => _taskView.Refresh();
 
     private void UpdateChevron() =>
         ChevronButton.Visibility = _shell.NotificationArea.UnpinnedIcons
@@ -182,7 +327,13 @@ public partial class Taskbar : AppBarWindow
         var rect = WindowRect;
         _shell.NotificationArea.SetTrayHostSizeData(new TrayHostSizeData
         {
-            edge = NativeMethods.ABEdge.ABE_BOTTOM,
+            edge = Position switch
+            {
+                TaskbarPosition.Top => NativeMethods.ABEdge.ABE_TOP,
+                TaskbarPosition.Left => NativeMethods.ABEdge.ABE_LEFT,
+                TaskbarPosition.Right => NativeMethods.ABEdge.ABE_RIGHT,
+                _ => NativeMethods.ABEdge.ABE_BOTTOM,
+            },
             rc = new NativeMethods.Rect
             {
                 Left = (int)(rect.Left * DpiScale),
@@ -197,8 +348,19 @@ public partial class Taskbar : AppBarWindow
     {
         var now = DateTime.Now;
         TimeText.Text = now.ToString(Settings.Current.ShowSeconds ? "T" : "t");
-        DateText.Text = now.ToString("d");
+        DateText.Text = IsVertical ? now.ToString(ShortDateWithoutYear()) : now.ToString("d");
         ClockButton.ToolTip = now.ToString("D");
+    }
+
+    /// <summary>
+    /// Fecha corta del sistema sin el año ("10/11", "11/10"…): en una barra vertical no cabe entera.
+    /// </summary>
+    internal static string ShortDateWithoutYear(System.Globalization.CultureInfo? culture = null)
+    {
+        string pattern = (culture ?? System.Globalization.CultureInfo.CurrentCulture).DateTimeFormat.ShortDatePattern;
+        // Quita el año y el separador que lo une al resto ("dd/MM/yyyy", "yyyy-MM-dd", "M/d/yyyy").
+        string withoutYear = System.Text.RegularExpressions.Regex.Replace(pattern, @"[^dMy]*y+[^dMy]*", "");
+        return withoutYear.Length > 0 ? withoutYear : pattern;
     }
 
     private void UpdateStatus()
@@ -253,9 +415,18 @@ public partial class Taskbar : AppBarWindow
 
     private void TaskScroller_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
     {
-        if (TaskScroller.ScrollableWidth <= 0)
-            return;
-        TaskScroller.ScrollToHorizontalOffset(TaskScroller.HorizontalOffset - e.Delta / 2.0);
+        if (IsVertical)
+        {
+            if (TaskScroller.ScrollableHeight <= 0)
+                return;
+            TaskScroller.ScrollToVerticalOffset(TaskScroller.VerticalOffset - e.Delta / 2.0);
+        }
+        else
+        {
+            if (TaskScroller.ScrollableWidth <= 0)
+                return;
+            TaskScroller.ScrollToHorizontalOffset(TaskScroller.HorizontalOffset - e.Delta / 2.0);
+        }
         e.Handled = true;
     }
 

@@ -22,9 +22,83 @@ public partial class TaskbarPage : Page
         BluetoothSwitch.IsChecked = s.ShowBluetoothModule;
         VolumeSwitch.IsChecked = s.ShowVolumeModule;
         BatterySwitch.IsChecked = s.ShowBatteryModule;
+        PerMonitorSwitch.IsChecked = s.TaskbarWindowsPerMonitor;
+        BuildMonitorList();
 
         _loading = false;
     }
+
+    // ── Monitores ───────────────────────────────────────────────────────────
+
+    private static readonly string[] PositionNames = ["Abajo", "Arriba", "Izquierda", "Derecha"];
+
+    /// <summary>Una tarjeta por monitor: borde de la barra y, en los secundarios, si lleva barra.</summary>
+    private void BuildMonitorList()
+    {
+        var screens = System.Windows.Forms.Screen.AllScreens.OrderBy(sc => sc.Bounds.X).ThenBy(sc => sc.Bounds.Y).ToList();
+        PerMonitorCard.Visibility = screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        for (int i = 0; i < screens.Count; i++)
+        {
+            var screen = screens[i];
+            string device = screen.DeviceName;
+            var header = new StackPanel();
+            header.Children.Add(new TextBlock
+            {
+                Style = (Style)FindResource("CardTitle"),
+                Text = screens.Count > 1 ? $"Monitor {i + 1}{(screen.Primary ? " (principal)" : "")}" : "Monitor",
+            });
+            header.Children.Add(new TextBlock
+            {
+                Style = (Style)FindResource("CardDescription"),
+                Text = $"{screen.Bounds.Width} × {screen.Bounds.Height}"
+                       + (screen.Primary ? " · lleva la bandeja del sistema" : ""),
+            });
+
+            var position = new ComboBox { MinWidth = 140, ItemsSource = PositionNames, SelectedIndex = (int)Settings.Current.PositionOf(device) };
+            position.SelectionChanged += (_, _) =>
+            {
+                if (!_loading && position.SelectedIndex >= 0)
+                    Settings.Update(s => s.TaskbarPositions[device] = (TaskbarPosition)position.SelectedIndex);
+            };
+
+            var controls = new StackPanel { Orientation = Orientation.Horizontal };
+            controls.Children.Add(position);
+            if (!screen.Primary)
+            {
+                // El principal siempre tiene barra (bandeja, tecla Windows).
+                var visible = new Wpf.Ui.Controls.ToggleSwitch
+                {
+                    Margin = new Thickness(16, 0, 0, 0),
+                    IsChecked = !Settings.Current.TaskbarHiddenScreens.Contains(device),
+                    ToolTip = "Mostrar la barra en este monitor",
+                };
+                visible.Click += (_, _) =>
+                {
+                    bool show = visible.IsChecked == true;
+                    position.IsEnabled = show;
+                    Settings.Update(s =>
+                    {
+                        s.TaskbarHiddenScreens.Remove(device);
+                        if (!show)
+                            s.TaskbarHiddenScreens.Add(device);
+                    });
+                };
+                position.IsEnabled = visible.IsChecked == true;
+                controls.Children.Add(visible);
+            }
+
+            MonitorList.Children.Add(new Wpf.Ui.Controls.CardControl
+            {
+                Style = (Style)FindResource("HubCard"),
+                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Desktop24 },
+                Header = header,
+                Content = controls,
+            });
+        }
+    }
+
+    private void PerMonitor_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.TaskbarWindowsPerMonitor = PerMonitorSwitch.IsChecked == true);
 
     private void Alignment_Changed(object sender, SelectionChangedEventArgs e)
     {

@@ -164,8 +164,13 @@ public abstract class FlyoutWindow : FluentWindow
     /// <summary>Alineación horizontal respecto al botón que abre el panel.</summary>
     protected virtual FlyoutPlacement Placement => FlyoutPlacement.Right;
 
+    /// <summary>Borde de la barra desde la que se abrió (el panel aparece pegado a ella).</summary>
+    protected TaskbarPosition BarPosition { get; private set; } = TaskbarPosition.Bottom;
+
     public void ShowAt(FrameworkElement anchor)
     {
+        if (Window.GetWindow(anchor) is Taskbar bar)
+            BarPosition = bar.Position;
         if (FillWorkArea)
             SizeToContent = SizeToContent.Manual;
         Show();
@@ -229,14 +234,34 @@ public abstract class FlyoutWindow : FluentWindow
         }
 
         var anchorLeft = anchor.PointToScreen(new Point(0, 0));
-        int preferred = Placement switch
+        // Lo que sobresale por arriba (la foto del menú Perfil) también tiene que caber.
+        int top = work.Top + gap + (int)Math.Round(TopOverflow * scale);
+        int x, y;
+        if (BarPosition is TaskbarPosition.Left or TaskbarPosition.Right)
         {
-            FlyoutPlacement.Center => (int)anchorCenter.X - width / 2,
-            FlyoutPlacement.Left => (int)anchorLeft.X,
-            _ => (int)anchorRight.X - width,
-        };
-        int x = Math.Clamp(preferred, work.Left + gap, work.Right - width - gap);
-        int y = work.Bottom - height - gap;
+            // Barra vertical: el panel va a su lado. "Left" (Inicio) se alinea con el borde de
+            // arriba del botón, "Right" (bandeja) con el de abajo, "Center" con su centro.
+            var anchorBottom = anchor.PointToScreen(new Point(0, anchor.ActualHeight));
+            int preferredY = Placement switch
+            {
+                FlyoutPlacement.Center => (int)((anchorLeft.Y + anchorBottom.Y) / 2) - height / 2,
+                FlyoutPlacement.Left => (int)anchorLeft.Y,
+                _ => (int)anchorBottom.Y - height,
+            };
+            y = Math.Clamp(preferredY, top, Math.Max(top, work.Bottom - height - gap));
+            x = BarPosition == TaskbarPosition.Left ? work.Left + gap : work.Right - width - gap;
+        }
+        else
+        {
+            int preferred = Placement switch
+            {
+                FlyoutPlacement.Center => (int)anchorCenter.X - width / 2,
+                FlyoutPlacement.Left => (int)anchorLeft.X,
+                _ => (int)anchorRight.X - width,
+            };
+            x = Math.Clamp(preferred, work.Left + gap, work.Right - width - gap);
+            y = BarPosition == TaskbarPosition.Top ? top : work.Bottom - height - gap;
+        }
         SetWindowPos(hwnd, IntPtr.Zero, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
@@ -248,9 +273,17 @@ public abstract class FlyoutWindow : FluentWindow
         // Se desliza solo el contenido; las capas de fondo quedan fijas sobre el Acrylic.
         if (_root?.Children[^1] is FrameworkElement content)
         {
-            var slide = new TranslateTransform(0, 16);
+            // Entra desde la barra: desde abajo si está abajo, desde la izquierda si está a la izquierda…
+            var (property, from) = BarPosition switch
+            {
+                TaskbarPosition.Top => (TranslateTransform.YProperty, -16.0),
+                TaskbarPosition.Left => (TranslateTransform.XProperty, -16.0),
+                TaskbarPosition.Right => (TranslateTransform.XProperty, 16.0),
+                _ => (TranslateTransform.YProperty, 16.0),
+            };
+            var slide = new TranslateTransform();
             content.RenderTransform = slide;
-            slide.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(16, 0, duration) { EasingFunction = ease });
+            slide.BeginAnimation(property, new DoubleAnimation(from, 0, duration) { EasingFunction = ease });
         }
     }
 

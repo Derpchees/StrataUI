@@ -12,7 +12,7 @@ a la normalidad.
 
 | Componente              | Estado                                                        |
 |-------------------------|---------------------------------------------------------------|
-| Barra de tareas         | ✅ por monitor, alineación y tamaño configurables              |
+| Barra de tareas         | ✅ una por monitor, en cualquier borde (abajo, arriba, izquierda, derecha), alineación y tamaño configurables |
 | Bandeja del sistema     | ✅ íconos visibles u ocultos, configurable desde el Hub        |
 | Hub de configuración    | ✅ barra, bandeja, apariencia, optimización, general           |
 | Optimización (debloat)  | ✅ apps, privacidad, IA, sistema, Update, Explorador… con respaldo |

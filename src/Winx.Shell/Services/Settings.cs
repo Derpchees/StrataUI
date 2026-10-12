@@ -6,6 +6,9 @@ namespace Winx.Shell.Services;
 
 public enum TaskbarAlignment { Center, Left }
 
+/// <summary>Borde de la pantalla donde va la barra.</summary>
+public enum TaskbarPosition { Bottom, Top, Left, Right }
+
 public enum WinxTheme { System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material }
 
 public enum StartMenuStyle { Windows11, List, Fullscreen, Compact, Spotlight, Icons, Profile }
@@ -39,6 +42,15 @@ public sealed class WinxSettings
 {
     // Barra de tareas
     public TaskbarAlignment TaskbarAlignment { get; set; } = TaskbarAlignment.Center;
+    /// <summary>Posición de la barra en cada monitor (clave: nombre del dispositivo, "\\.\DISPLAY1"); abajo si no está.</summary>
+    public Dictionary<string, TaskbarPosition> TaskbarPositions { get; set; } = new();
+    /// <summary>Monitores sin barra de WINX (nunca el principal: ahí va la bandeja).</summary>
+    public List<string> TaskbarHiddenScreens { get; set; } = new();
+    /// <summary>En cada barra, solo las ventanas de su monitor (false: todas en todas).</summary>
+    public bool TaskbarWindowsPerMonitor { get; set; } = true;
+
+    public TaskbarPosition PositionOf(string screen) =>
+        TaskbarPositions.TryGetValue(screen, out var position) ? position : TaskbarPosition.Bottom;
     public int TaskbarHeight { get; set; } = 48;
     public bool ShowSeconds { get; set; }
     public bool ShowDate { get; set; } = true;

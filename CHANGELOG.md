@@ -6,6 +6,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.9.0] - 2026-10-11
+
+### Añadido
+- Posición de la barra **en cada monitor**: abajo, arriba, izquierda o derecha (Hub › Barra de
+  tareas › Monitores).
+  - En los bordes laterales la barra es vertical: Inicio y ventanas arriba, bandeja, estado y
+    reloj abajo, con la fecha sin el año.
+  - Los paneles y el menú Inicio se abren pegados a la barra, entren por ese lado y tienen las
+    asas de tamaño en los bordes libres; el indicador de ventana abierta va junto al borde.
+  - En los temas flotantes la cápsula se separa de los tres lados libres.
+- Mostrar u ocultar la barra en los monitores secundarios; las ventanas de un monitor sin barra
+  aparecen en la principal.
+- Opción para que cada barra muestre solo las ventanas de su monitor o todas.
+
 ## [0.8.0] - 2026-10-11
 
 ### Añadido

@@ -140,7 +140,7 @@ public partial class App : Application
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         Settings.Changed += OnSettingsChanged;
-        _barHeight = Taskbar.ReservedHeight;
+        _barHeight = Taskbar.ReservedSize(vertical: false);
 
         int hubIndex = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
         if (hubIndex >= 0)
@@ -180,16 +180,37 @@ public partial class App : Application
     {
         var screens = AppBarScreen.FromAllScreens();
         _screenCount = screens.Count;
+        _barLayout = BarLayoutKey();
         bool multiMonitor = screens.Count > 1;
+        var s = Settings.Current;
 
-        // La barra principal primero, para que reciba la bandeja del sistema.
+        // La barra principal primero, para que reciba la bandeja del sistema. El monitor principal
+        // siempre tiene barra; los demás pueden ocultarla.
         foreach (var screen in screens.OrderByDescending(s => s.Primary))
         {
-            var taskbar = new Taskbar(_shell!, screen, multiMonitor);
+            if (!screen.Primary && s.TaskbarHiddenScreens.Contains(screen.DeviceName))
+                continue;
+            var taskbar = new Taskbar(_shell!, screen, multiMonitor, s.PositionOf(screen.DeviceName));
             taskbar.Show();
             _taskbars.Add(taskbar);
         }
+        // Ya se sabe qué monitores quedaron sin barra: la principal muestra también sus ventanas.
+        foreach (var taskbar in _taskbars)
+            taskbar.RefreshTasks();
     }
+
+    /// <summary>Hay una barra de WINX en ese monitor.</summary>
+    public bool HasTaskbarOn(IntPtr hMonitor) => _taskbars.Any(t => t.Screen.HMonitor == hMonitor);
+
+    /// <summary>Lo que obliga a recrear las barras: posición por monitor y monitores sin barra.</summary>
+    private static string BarLayoutKey()
+    {
+        var s = Settings.Current;
+        return string.Join(";", s.TaskbarPositions.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
+               + "|" + string.Join(";", s.TaskbarHiddenScreens.Order());
+    }
+
+    private string _barLayout = "";
 
     private void CloseTaskbars()
     {
@@ -226,11 +247,23 @@ public partial class App : Application
     private void OnSettingsChanged()
     {
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey);
-        if (_exiting || Taskbar.ReservedHeight == _barHeight)
+        if (_exiting)
             return;
-        _barHeight = Taskbar.ReservedHeight;
+        if (BarLayoutKey() != _barLayout)
+        {
+            // Cambiar de borde implica registrar la barra de nuevo ante Windows: se recrean.
+            Log.Info("Cambió la posición de las barras; recreando");
+            Flyouts.FlyoutManager.CloseAll();
+            CloseTaskbars();
+            OpenTaskbars();
+            _barHeight = Taskbar.ReservedSize(vertical: false);
+            return;
+        }
+        if (Taskbar.ReservedSize(vertical: false) == _barHeight)
+            return;
+        _barHeight = Taskbar.ReservedSize(vertical: false);
         foreach (var taskbar in _taskbars)
-            taskbar.Resize(_barHeight);
+            taskbar.Resize();
     }
 
     /// <summary>

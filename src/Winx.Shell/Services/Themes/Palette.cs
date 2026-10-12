@@ -94,10 +94,8 @@ public static class Palette
             ["WinxCornerRadius"] = new CornerRadius(theme.Radius),
             ["WinxLargeCornerRadius"] = new CornerRadius(theme.Radius + 4),
             ["WinxPanelCornerRadius"] = new CornerRadius(theme.PanelRadius),
-            // Barra: pegada al borde con línea superior, o cápsula flotante.
-            ["WinxTaskbarMargin"] = theme.Floating
-                ? new Thickness(ThemeCatalog.FloatingMargin, 0, ThemeCatalog.FloatingMargin, ThemeCatalog.FloatingMargin)
-                : new Thickness(0),
+            // Barra: pegada al borde con línea superior, o cápsula flotante (cada barra los ajusta a
+            // su borde y su grosor; ver Taskbar.ApplyBackdrop).
             ["WinxTaskbarCornerRadius"] = new CornerRadius(theme.Floating ? barHeight / 2 : 0),
             ["WinxTaskbarBorderThickness"] = theme.Floating ? new Thickness(1) : new Thickness(0, 1, 0, 0),
             ["WinxTaskbarEdgeBrush"] = theme.Glass ? GlassRim(light) : Brush(border),

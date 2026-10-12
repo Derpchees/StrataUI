@@ -1,4 +1,4 @@
-<Page x:Class="Winx.Shell.Hub.Pages.TaskbarPage"
+﻿<Page x:Class="Winx.Shell.Hub.Pages.TaskbarPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -13,7 +13,7 @@
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="Alineación" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="Posición del botón Inicio y de las apps abiertas" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Posición del botón Inicio y de las apps abiertas (en barras verticales, Izquierda es arriba)" />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ComboBox x:Name="AlignmentBox" MinWidth="160" SelectionChanged="Alignment_Changed">
@@ -27,7 +27,7 @@
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="Tamaño" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="Alto de la barra en todos los monitores" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Grosor de la barra en todos los monitores" />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ComboBox x:Name="HeightBox" MinWidth="160" SelectionChanged="Height_Changed">
@@ -35,6 +35,22 @@
                     <ComboBoxItem Content="Normal" Tag="48" />
                     <ComboBoxItem Content="Grande" Tag="56" />
                 </ComboBox>
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Monitores" />
+            <TextBlock Style="{StaticResource CardDescription}" Margin="0,-4,0,8"
+                       Text="Cada monitor tiene su propia barra; elige en qué borde va. Numerados de izquierda a derecha." />
+            <StackPanel x:Name="MonitorList" />
+
+            <ui:CardControl x:Name="PerMonitorCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple16" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Cada barra muestra solo las ventanas de su monitor" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="Desactivado, todas las barras muestran todas las ventanas." />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="PerMonitorSwitch" Click="PerMonitor_Click" />
             </ui:CardControl>
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="Reloj" />
