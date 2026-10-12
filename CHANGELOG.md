@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.17.0] - 2026-10-12
+
+### Cambiado
+- **WINX arranca antes que las demás apps al iniciar sesión**: el inicio automático pasa de la
+  clave Run (que Windows demora) a una tarea programada sin retraso y con prioridad normal, también
+  con batería. Así los íconos de bandeja de las apps que abren al iniciar llegan a WINX y no se
+  quedan en la barra del Explorador. Quien ya lo tenía activado se cambia solo al abrir WINX. No
+  corre como administrador a propósito: con WINX elevado las apps no podrían mandarle sus íconos y
+  todo lo que se abriera desde WINX saldría elevado.
+
 ## [0.16.3] - 2026-10-12
 
 ### Corregido

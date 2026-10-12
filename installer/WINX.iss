@@ -69,7 +69,7 @@ Name: "{autoprograms}\WINX"; Filename: "{app}\WINX.exe"
 Name: "{autodesktop}\WINX"; Filename: "{app}\WINX.exe"; Tasks: desktopicon
 
 [Registry]
-; El mismo valor que escribe el Hub (Services\AutoStart.cs).
+; El valor de siempre; al abrirse, WINX lo cambia por una tarea programada (Services\AutoStart.cs).
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "WINX"; ValueData: """{app}\WINX.exe"""; Tasks: autostart
 
 [Run]
@@ -101,11 +101,16 @@ begin
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Code: Integer;
 begin
   if CurUninstallStep = usUninstall then
   begin
     Sleep(500);
     // El inicio automático puede haberlo activado el Hub aunque no se eligiera al instalar.
     RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'WINX');
+    // WINX pasa la clave Run a una tarea programada (Services\AutoStart.cs): se borra también.
+    Exec(ExpandConstant('{sys}\schtasks.exe'), ExpandConstant('/Delete /TN "WINX ({username})" /F'), '',
+         SW_HIDE, ewWaitUntilTerminated, Code);
   end;
 end;

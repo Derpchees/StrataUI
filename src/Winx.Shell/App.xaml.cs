@@ -168,6 +168,7 @@ public partial class App : Application
         Services.Notifications.WindowsBanners.Update();
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
+        _ = Task.Run(AutoStart.Migrate);
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged += OnWindowsPreferenceChanged;
         Settings.Changed += OnSettingsChanged;

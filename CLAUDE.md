@@ -202,6 +202,9 @@ tecla Windows, Win+N).
   la app sigue viva. Lo que una app así registró en el Explorador no se puede traer (ni la barra
   clásica ni `ITrayNotify` responden en 26300): solo vuelve si la app se reinicia.
   Diagnóstico: con la variable `WINX_SHELL_LOG=ruta`, ManagedShell escribe su registro detallado.
+- **Inicio automático** (`Services/AutoStart`): tarea programada "WINX (usuario)" al iniciar sesión,
+  sin elevar (elevado, UIPI bloquea los íconos de bandeja de las apps normales). Si no se puede
+  crear, clave Run. El instalador escribe la clave Run y WINX la migra al abrirse.
 - **Claves de íconos de la bandeja**: `NotifyIcon.Identifier` lleva el texto emergente si el
   ícono no tiene GUID (cambia con el tiempo); para guardar usar `TrayPromotion.Key`/`Matches`.
 - **Barras verticales**: cualquier cosa nueva en la barra debe funcionar en los cuatro bordes
