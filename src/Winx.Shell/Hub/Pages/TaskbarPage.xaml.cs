@@ -18,6 +18,7 @@ public partial class TaskbarPage : Page
         Select(AlignmentBox, s.TaskbarAlignment.ToString());
         CenterAppsSwitch.IsChecked = s.TaskbarCenterApps;
         PreviewsSwitch.IsChecked = s.ShowTaskPreviews;
+        CombineSwitch.IsChecked = s.CombineTaskWindows;
         HeightBox.SelectedItem = HeightBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == s.TaskbarHeight.ToString()) ?? HeightBox.Items[1];
         Select(AppsModeBox, s.TaskbarAppsMode.ToString());
@@ -196,6 +197,9 @@ public partial class TaskbarPage : Page
         if (!_loading && AlignmentBox.SelectedItem is ComboBoxItem { Tag: string tag })
             Settings.Update(s => s.TaskbarAlignment = Enum.Parse<TaskbarAlignment>(tag));
     }
+
+    private void Combine_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.CombineTaskWindows = CombineSwitch.IsChecked == true);
 
     private void Previews_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.ShowTaskPreviews = PreviewsSwitch.IsChecked == true);

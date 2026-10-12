@@ -3,6 +3,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Windows.Media.Control;
 using Winx.Shell.Services.Localization;
+using Winx.Shell.Services.WebApps;
 using Session = Windows.Media.Control.GlobalSystemMediaTransportControlsSession;
 
 namespace Winx.Shell.Services.Media;
@@ -32,6 +33,13 @@ public static class MediaService
     public static string Artist { get; private set; } = "";
     public static string Album { get; private set; } = "";
     public static string AppName { get; private set; } = "";
+
+    /// <summary>Ícono de la app que suena, o del sitio si suena en el navegador (YouTube…).</summary>
+    public static ImageSource? AppIcon => _site is { } site ? WebSites.Icon(site.Domain) : _appIcon;
+
+    private static WebApp? _site;
+    private static ManagedShell.WindowsTasks.ApplicationWindow? _siteWindow;
+    private static ImageSource? _appIcon;
     public static ImageSource? Cover { get; private set; }
     public static bool IsPlaying { get; private set; }
     public static bool CanPrevious { get; private set; }
@@ -50,6 +58,11 @@ public static class MediaService
     {
         try
         {
+            WebSites.IconsChanged += () =>
+            {
+                if (_site != null)
+                    Changed?.Invoke();
+            };
             _manager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
             _manager.SessionsChanged += (_, _) => OnUi(Refresh);
             _manager.CurrentSessionChanged += (_, _) => OnUi(Refresh);
@@ -100,6 +113,9 @@ public static class MediaService
         if (_session is null)
         {
             Title = Artist = Album = AppName = "";
+            _site = null;
+            _siteWindow = null;
+            _appIcon = null;
             Cover = null;
             _coverKey = "";
             _coverPendingKey = null;
@@ -108,6 +124,7 @@ public static class MediaService
             return;
         }
         AppName = FriendlyName(_session.SourceAppUserModelId);
+        _appIcon = AppIconFor(_session.SourceAppUserModelId);
         UpdatePlayback();
         _ = UpdateMediaAsync();
     }
@@ -152,6 +169,7 @@ public static class MediaService
             Title = props.Title ?? "";
             Artist = string.IsNullOrWhiteSpace(props.Artist) ? props.AlbumArtist ?? "" : props.Artist;
             Album = props.AlbumTitle ?? "";
+            FindSite(session.SourceAppUserModelId);
             // La carátula solo se vuelve a leer si cambió la canción (leerla cuesta). Spotify y otros
             // avisan primero del título y la imagen llega después: solo se da por leída cuando se
             // cargó, y si aún no está se reintenta en un momento.
@@ -279,6 +297,11 @@ public static class MediaService
             return;
         try
         {
+            if (_siteWindow is { } tab && App.Current.Shell.Tasks.GroupedWindows.OfType<ManagedShell.WindowsTasks.ApplicationWindow>().Contains(tab))
+            {
+                tab.BringToFront();
+                return;
+            }
             var window = App.Current.Shell.Tasks.GroupedWindows.OfType<ManagedShell.WindowsTasks.ApplicationWindow>()
                 .FirstOrDefault(w => string.Equals(w.AppUserModelID, id, StringComparison.OrdinalIgnoreCase)
                                      || string.Equals(Path.GetFileName(w.WinFileName), id, StringComparison.OrdinalIgnoreCase));
@@ -300,6 +323,43 @@ public static class MediaService
     {
         _chosenId = sourceId;
         Refresh();
+    }
+
+    // ── Sitio dentro del navegador ──────────────────────────────────────────
+
+    /// <summary>
+    /// Si suena en el navegador, qué sitio es: el navegador solo dice "Brave", así que se busca la
+    /// ventana cuya pestaña lleva en el título lo que suena ("Canción - YouTube - Brave").
+    /// </summary>
+    private static void FindSite(string sourceId)
+    {
+        _site = null;
+        _siteWindow = null;
+        if (!WebSites.IsBrowserId(sourceId) || Title.Length == 0)
+        {
+            AppName = FriendlyName(sourceId);
+            return;
+        }
+        foreach (var window in App.Current.Shell.Tasks.GroupedWindows.OfType<ManagedShell.WindowsTasks.ApplicationWindow>())
+        {
+            if (!WebSites.IsBrowserExe(window.WinFileName) || string.IsNullOrEmpty(window.Title)
+                || !WebSites.PageTitle(window.Title).Contains(Title, StringComparison.OrdinalIgnoreCase))
+                continue;
+            _siteWindow = window;
+            _site = WebSites.FromWindowTitle(window.Title);
+            break;
+        }
+        AppName = _site?.Name ?? FriendlyName(sourceId);
+    }
+
+    /// <summary>Ícono de una app por su AppUserModelID, del catálogo del menú Inicio.</summary>
+    private static ImageSource? AppIconFor(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+            return null;
+        return StartMenu.StartMenuService.Apps.FirstOrDefault(a =>
+            a.Id.Equals(id, StringComparison.OrdinalIgnoreCase)
+            || Path.GetFileName(a.Id).Equals(id, StringComparison.OrdinalIgnoreCase))?.Icon;
     }
 
     // ── Nombre de la app ────────────────────────────────────────────────────

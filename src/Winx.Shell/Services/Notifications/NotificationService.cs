@@ -7,11 +7,12 @@ using System.Windows.Threading;
 using Windows.UI.Notifications;
 using Windows.UI.Notifications.Management;
 using Winx.Shell.Services.Localization;
+using Winx.Shell.Services.WebApps;
 
 namespace Winx.Shell.Services.Notifications;
 
 /// <summary>Una notificación tal como la muestra WINX.</summary>
-public sealed class WinxNotification
+public sealed class WinxNotification : System.ComponentModel.INotifyPropertyChanged
 {
     public uint Id { get; init; }
     public string AppName { get; init; } = "";
@@ -20,7 +21,22 @@ public sealed class WinxNotification
     public string Title { get; init; } = "";
     public string Body { get; init; } = "";
     public DateTimeOffset Time { get; init; }
-    public ImageSource? Icon { get; set; }
+    public ImageSource? Icon
+    {
+        get => _icon;
+        set
+        {
+            _icon = value;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(Icon)));
+        }
+    }
+
+    private ImageSource? _icon;
+
+    /// <summary>Sitio que la envió desde el navegador (WhatsApp Web, Gmail…): de ahí sale el ícono.</summary>
+    public string? SiteDomain { get; init; }
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     /// <summary>Aviso propio de WINX (prueba, actualización): no existe en Windows.</summary>
     public bool IsLocal { get; init; }
     /// <summary>Qué hacer al hacer clic en un aviso propio.</summary>
@@ -49,6 +65,12 @@ public static class NotificationService
     private static int _waitedForCatalog;
     private static readonly Dictionary<string, ImageSource?> IconCache = new();
 
+    /// <summary>
+    /// Descartadas en WINX que Windows no quiso quitar de su centro: no se vuelven a mostrar mientras
+    /// sigan allí (si no, "Borrar todo" las traería de vuelta en la siguiente consulta).
+    /// </summary>
+    private static readonly HashSet<uint> Dismissed = new();
+
     /// <summary>Notificaciones actuales, la más reciente primero.</summary>
     public static ObservableCollection<WinxNotification> Items { get; } = new();
 
@@ -76,6 +98,8 @@ public static class NotificationService
         }
         if (Running)
             return;
+        WebSites.IconsChanged -= OnSiteIconsChanged;
+        WebSites.IconsChanged += OnSiteIconsChanged;
         try
         {
             _listener ??= UserNotificationListener.Current;
@@ -106,6 +130,16 @@ public static class NotificationService
 
     public static void Shutdown() => _timer?.Stop();
 
+    /// <summary>Llegaron íconos de sitios: se ponen en sus notificaciones.</summary>
+    private static void OnSiteIconsChanged()
+    {
+        foreach (var item in Items)
+        {
+            if (item.SiteDomain is { } domain && WebSites.Icon(domain) is { } icon && !ReferenceEquals(item.Icon, icon))
+                item.Icon = icon;
+        }
+    }
+
     private static async Task PollAsync()
     {
         if (_polling || _listener is null)
@@ -118,6 +152,8 @@ public static class NotificationService
         {
             var current = await _listener.GetNotificationsAsync(NotificationKinds.Toast);
             var ids = current.Select(n => n.Id).ToHashSet();
+            Dismissed.IntersectWith(ids); // las que Windows ya quitó no hace falta recordarlas
+            current = current.Where(n => !Dismissed.Contains(n.Id)).ToList();
             bool changed = false;
 
             foreach (var gone in Items.Where(i => !ids.Contains(i.Id)).ToList())
@@ -131,7 +167,10 @@ public static class NotificationService
             {
                 if (Convert(raw) is not { } item)
                     continue;
-                item.Icon = await IconFor(raw, item.AppId);
+                // Del navegador: el ícono del sitio (si aún no se descargó, llega con WebSites.IconsChanged).
+                item.Icon = item.SiteDomain is { } domain
+                    ? WebSites.Icon(domain) ?? await IconFor(raw, item.AppId, item.AppName)
+                    : await IconFor(raw, item.AppId, item.AppName);
                 int index = 0;
                 while (index < Items.Count && Items[index].Time > item.Time)
                     index++;
@@ -172,11 +211,33 @@ public static class NotificationService
             catch (Exception)
             {
             }
+            // Apps web instaladas (Brave._crx_…) y otras sin nombre en Windows: el del menú Inicio.
+            if (string.IsNullOrWhiteSpace(appName) && appId != null)
+                appName = StartMenu.StartMenuService.Apps.FirstOrDefault(a => a.Id.Equals(appId, StringComparison.OrdinalIgnoreCase))?.Name;
+
+            // Del navegador, si el sitio aparece como un texto con su dominio ("web.whatsapp.com"). Windows
+            // no deja leer la atribución de Chromium, así que en una pestaña normal no suele estar; las
+            // apps web instaladas (Brave._crx_…) llegan con su propia identidad y no lo necesitan.
+            string? siteDomain = null;
+            if (WebSites.IsBrowserId(appId) || texts.Count > 1 && WebSites.IsBrowserId(appName))
+            {
+                for (int i = texts.Count - 1; i >= 1 && siteDomain is null; i--)
+                {
+                    if (WebSites.AsDomain(texts[i]) is { } domain)
+                    {
+                        texts.RemoveAt(i);
+                        var site = WebSites.FromDomain(domain);
+                        siteDomain = site?.Domain ?? domain;
+                        appName = site?.Name ?? WebSites.DomainName(domain);
+                    }
+                }
+            }
             return new WinxNotification
             {
                 Id = raw.Id,
                 AppName = string.IsNullOrWhiteSpace(appName) ? Loc.T("Notificación") : appName,
                 AppId = appId,
+                SiteDomain = siteDomain,
                 Title = texts.FirstOrDefault() ?? "",
                 Body = string.Join("\n", texts.Skip(1)),
                 Time = raw.CreationTime,
@@ -190,13 +251,16 @@ public static class NotificationService
     }
 
     /// <summary>Ícono de la app: el del menú Inicio si está; si no, el logotipo que da Windows.</summary>
-    private static async Task<ImageSource?> IconFor(UserNotification raw, string? appId)
+    private static async Task<ImageSource?> IconFor(UserNotification raw, string? appId, string appName)
     {
         string key = appId ?? "";
         if (IconCache.TryGetValue(key, out var cached))
             return cached;
-        // Las apps sin ícono no se guardan: puede aparecer cuando termine de cargar el catálogo.
-        ImageSource? icon = StartMenu.StartMenuService.Apps.FirstOrDefault(a => a.Id == appId)?.Icon;
+        // Las apps sin ícono no se guardan: puede aparecer cuando termine de cargar el catálogo. Si la
+        // identidad no coincide (apps web instaladas), se busca por el nombre.
+        var apps = StartMenu.StartMenuService.Apps;
+        ImageSource? icon = (apps.FirstOrDefault(a => a.Id.Equals(appId, StringComparison.OrdinalIgnoreCase))
+                             ?? apps.FirstOrDefault(a => a.Name.Equals(appName, StringComparison.CurrentCultureIgnoreCase)))?.Icon;
         if (icon is null)
         {
             try
@@ -232,31 +296,48 @@ public static class NotificationService
     {
         Items.Remove(item);
         if (!item.IsLocal)
+            Remove(item.Id);
+        Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Borra todas. Windows a veces rechaza el borrado en bloque (0x80070490, "no encontrado", p. ej.
+    /// si alguna ya no existe): entonces se quitan una por una.
+    /// </summary>
+    public static void ClearAll()
+    {
+        var items = Items.Where(i => !i.IsLocal).ToList();
+        Items.Clear();
+        bool cleared = false;
+        try
         {
-            try
-            {
-                _listener?.RemoveNotification(item.Id);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("No se pudo quitar la notificación", ex);
-            }
+            _listener?.ClearNotifications();
+            cleared = true;
+        }
+        catch (Exception ex)
+        {
+            Log.Info($"Windows no borró las notificaciones de una vez ({ex.Message.Trim()}); se quitan una por una");
+        }
+        if (!cleared)
+        {
+            foreach (var item in items)
+                Remove(item.Id);
         }
         Changed?.Invoke();
     }
 
-    public static void ClearAll()
+    /// <summary>Quita una notificación del centro de Windows; si no se puede, al menos no vuelve a WINX.</summary>
+    private static void Remove(uint id)
     {
-        Items.Clear();
         try
         {
-            _listener?.ClearNotifications();
+            _listener?.RemoveNotification(id);
         }
         catch (Exception ex)
         {
-            Log.Error("No se pudieron borrar las notificaciones", ex);
+            Dismissed.Add(id);
+            Log.Info($"Windows no quitó la notificación {id} ({ex.Message.Trim()}); se oculta en WINX");
         }
-        Changed?.Invoke();
     }
 
     /// <summary>Abre la app que envió la notificación y la quita, como al hacer clic en Windows.</summary>

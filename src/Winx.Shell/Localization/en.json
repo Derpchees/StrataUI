@@ -664,5 +664,8 @@
   "Porcentaje de la batería": "Battery percentage",
   "El número dentro del ícono, con un rayo mientras carga": "The number inside the icon, with a bolt while charging",
   "Avisos en pantalla": "On-screen displays",
-  "Junto a la barra al cambiar el volumen o el brillo, al silenciar y al pulsar Bloq Mayús, Bloq Num o Bloq Despl.": "Next to the taskbar when changing volume or brightness, muting, and pressing Caps Lock, Num Lock or Scroll Lock."
+  "Junto a la barra al cambiar el volumen o el brillo, al silenciar y al pulsar Bloq Mayús, Bloq Num o Bloq Despl.": "Next to the taskbar when changing volume or brightness, muting, and pressing Caps Lock, Num Lock or Scroll Lock.",
+  "Cerrar todas las ventanas": "Close all windows",
+  "Agrupar las ventanas de cada app": "Group each app's windows",
+  "Un solo botón por app, con el número de ventanas; al hacer clic se elige cuál abrir. YouTube, WhatsApp Web y otros sitios cuentan como su propia app.": "One button per app with its window count; click to choose which one to open. YouTube, WhatsApp Web and other sites count as their own app."
 }

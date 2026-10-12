@@ -96,6 +96,10 @@
                                             <ImageBrush x:Name="MediaCover" Stretch="UniformToFill" />
                                         </Border.Background>
                                     </Border>
+                                    <!-- La app (o el sitio: YouTube…) en la esquina de la carátula -->
+                                    <Image x:Name="MediaAppBadge" Width="12" Height="12" Margin="0,0,-3,-3"
+                                           HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                           RenderOptions.BitmapScalingMode="HighQuality" />
                                 </Grid>
                             </Border>
                             <StackPanel x:Name="MediaText" Margin="8,0,2,0" MaxWidth="170" VerticalAlignment="Center">

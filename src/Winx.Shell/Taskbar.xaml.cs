@@ -64,7 +64,9 @@ public partial class Taskbar : AppBarWindow
 
         VersionItem.Header = $"WINX v{App.Version}";
         _appsMode = WindowsTaskbarPrefs.AppsMode(Settings.Current);
+        _combine = Settings.Current.CombineTaskWindows;
         _taskView = CreateTaskView();
+        WatchWindows();
         TaskList.ItemsSource = _taskView;
 
         // El texto del tooltip del reloj se arma al abrirlo (fecha y notificaciones pendientes).
@@ -327,6 +329,7 @@ public partial class Taskbar : AppBarWindow
             _appsMode = appsMode;
             _taskView.Refresh();
         }
+        ApplyCombine(s.CombineTaskWindows);
         bool status = ShowsStatusModules;
         DateText.Visibility = s.ShowDate ? Visibility.Visible : Visibility.Collapsed;
         NetworkButton.Visibility = status && s.ShowNetworkModule ? Visibility.Visible : Visibility.Collapsed;
@@ -340,8 +343,6 @@ public partial class Taskbar : AppBarWindow
         UpdateStatus();
         UpdateNotificationBadge();
         UpdateMedia();
-        if (s.TaskbarFullyTransparent != _transparent)
-            ApplyBackdrop();
     }
 
     /// <summary>
@@ -380,7 +381,7 @@ public partial class Taskbar : AppBarWindow
             TaskOrder.Instance.Seed(_shell.Tasks.GroupedWindows.OfType<ApplicationWindow>());
             list.CustomSort = TaskOrder.Instance;
         }
-        view.Filter = item => item is ApplicationWindow window && window.ShowInTaskbar && Shows(window);
+        view.Filter = item => item is ApplicationWindow window && ShowsWindow(window) && LeadsGroup(window);
 
         if (view is ICollectionViewLiveShaping live && live.CanChangeLiveFiltering)
         {
@@ -521,6 +522,7 @@ public partial class Taskbar : AppBarWindow
     protected override void CustomClosing()
     {
         StopContrast();
+        UnwatchWindows();
         Settings.Changed -= ApplySettings;
         App.Current.Audio.Changed -= UpdateVolume;
         Services.Brightness.BrightnessService.Changed -= ApplySettings;
@@ -612,6 +614,7 @@ public partial class Taskbar : AppBarWindow
         if (!show)
             return;
         MediaCover.ImageSource = Media.Cover;
+        MediaAppBadge.Source = Media.AppIcon;
         MediaTitle.Text = Media.Title;
         // Segunda línea: artista y álbum (lo que haya).
         string details = string.Join(" · ", new[] { Media.Artist, Media.Album }.Where(t => t.Length > 0).Distinct());

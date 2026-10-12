@@ -48,6 +48,17 @@
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Stack24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Agrupar las ventanas de cada app'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Un solo botón por app, con el número de ventanas; al hacer clic se elige cuál abrir. YouTube, WhatsApp Web y otros sitios cuentan como su propia app.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="CombineSwitch" Click="Combine_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowAutofitHeight24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>

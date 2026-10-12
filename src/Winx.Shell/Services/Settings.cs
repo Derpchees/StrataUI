@@ -96,6 +96,8 @@ public sealed class WinxSettings
         _ => TaskbarPosition.Top,
     };
     public int TaskbarHeight { get; set; } = 48;
+    /// <summary>Un solo botón por app con todas sus ventanas (como "Combinar botones" de Windows).</summary>
+    public bool CombineTaskWindows { get; set; }
     /// <summary>Vista previa en vivo de la ventana al pasar el mouse por su botón.</summary>
     public bool ShowTaskPreviews { get; set; } = true;
     public bool ShowSeconds { get; set; }

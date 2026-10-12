@@ -274,7 +274,10 @@ public partial class App : Application
         return string.Join(";", s.TaskbarPositions.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
                + "|" + string.Join(";", s.SecondTaskbars.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
                + "|" + string.Join(";", s.TaskbarHiddenScreens.Order())
-               + "|" + s.TaskbarMainScreen;
+               + "|" + s.TaskbarMainScreen
+               // La barra transparente también se aplica recreándolas: cambiar en vivo de Acrylic a
+               // transparente deja negra la parte transparente (DWM no suelta el material anterior).
+               + "|" + s.TaskbarFullyTransparent;
     }
 
     private string _barLayout = "";

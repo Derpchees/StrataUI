@@ -59,12 +59,19 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   gancho de teclado se queda con las teclas de volumen y WINX cambia el volumen.
 - **Animaciones**: `Services/Themes/Motion` (`In`/`Out`) según `PanelAnimation` y `AnimationSpeed`;
   usarlo en cualquier ventana emergente nueva.
-- **Barra transparente** (`Taskbar.Transparency.cs`): sin acento de DWM (el "gradiente
-  transparente" pinta un color propio) y cada zona toma `WinxForegroundBrush` claro u oscuro según
+- **Barra transparente** (`Taskbar.Transparency.cs`): sin acento de DWM y con el marco extendido
+  después de quitar el acento; cambiarla recrea las barras (pasar en vivo de Acrylic a transparente
+  la dejaba negra; el "gradiente transparente" pinta el acento de Windows o esconde todo). Cada zona toma `WinxForegroundBrush` claro u oscuro según
   lo que hay detrás, leído con la barra excluida de la captura un momento. Una zona nueva de la
   barra va en `ContrastZones()` y su texto debe usar `WinxForegroundBrush`.
 - **Ventanas de la barra**: el orden es `TaskOrder` (vista con `CustomSort`); la vista previa es
-  `Controls/TaskPreviewWindow` (miniatura de DWM: ventana sin `AllowsTransparency`).
+  `Controls/TaskPreviewWindow` (miniaturas de DWM: ventana sin `AllowsTransparency`). Agrupar por
+  app (`Taskbar.Groups.cs`): solo la primera ventana de cada grupo pasa el filtro de la vista;
+  `TaskGroups.Key` decide el grupo (sitio web, AppUserModelID o ejecutable).
+- **Apps web** (`Services/WebApps/WebSites`): el sitio se reconoce por el título de la pestaña
+  (catálogo `Known`, con pruebas en `WebSitesTests`). En notificaciones Windows no deja leer la
+  atribución de Chromium (el dominio): solo las apps web instaladas (`Brave._crx_…`) llegan con su
+  identidad.
 - **Multimedia**: `Services/Media/MediaService` (System Media Transport Controls: lo mismo que
   usa Windows, sirve para cualquier app que se anuncie). Para probar sin molestar al usuario, un
   reproductor de prueba con `MediaPlayer` y volumen 0 (los datos van en `MediaPlaybackItem`, no en
@@ -177,12 +184,17 @@ tecla Windows, Win+N).
   Comprobar con `[Enum]::GetNames` cargando `lib\net472\Wpf.Ui.dll` en PowerShell.
 - **Glifos de Segoe Fluent** en C#: escribirlos con la secuencia de escape (barra invertida, u y el código: E701), no el
   carácter; al reescribir un archivo copiando el texto, los caracteres de uso privado se pierden y
-  queda `''`. La herramienta Write convierte la secuencia en el carácter: después de crear un
-  archivo con glifos, buscar caracteres U+E000–U+F8FF y volver a escribirlos como secuencia.
+  queda `''`. La herramienta Write convierte cualquier `\uXXXX` en el carácter (también `\u200b`,
+  invisible): después de crear un archivo, buscar caracteres U+E000–U+F8FF y U+200B–U+200F y
+  volver a escribirlos como secuencia.
 - **Directivas en HKCU**: `HKCU\Software\Policies` solo la escriben administradores (los ajustes
   ahí piden UAC: `RegSetting.NeedsAdminFor`).
 - **DDC/CI**: el identificador de un monitor físico puede valer 0; no usarlo como "no hay".
 - **Bandeja**: el clic izquierdo se envía a la app al soltar (para distinguirlo de un arrastre).
+  Las apps mandan sus íconos a la primera `Shell_TrayWnd` que encuentra `FindWindow`; en Windows
+  26300 la del Explorador puede quedar en una capa del sistema que WINX no puede pasar (no sale en
+  `EnumWindows` ni se mueve con `SetWindowPos`) y entonces la bandeja de WINX queda vacía. La
+  barra clásica `ToolbarWindow32` del Explorador ya no existe, así que no hay de dónde importarlos.
 - **Barras verticales**: cualquier cosa nueva en la barra debe funcionar en los cuatro bordes
   (orientación en `Taskbar.ApplyOrientation`, indicador en `TaskButton.FitTo`, posición de
   ventanas emergentes según `Position`).

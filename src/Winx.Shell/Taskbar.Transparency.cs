@@ -65,6 +65,14 @@ public partial class Taskbar
         UpdateGlassSurface();
         WindowEffects.SetBlur(this, ThemeManager.Theme.Backdrop, clear: true);
         WindowEffects.SetRoundedRegion(this, null, 0);
+        // WPF y WPF-UI terminan de aplicar lo suyo sobre la ventana después: se repite cuando quedan
+        // inactivos, o la parte transparente puede quedar negra.
+        if (changed)
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_transparent)
+                    WindowEffects.SetBlur(this, ThemeManager.Theme.Backdrop, clear: true);
+            }, DispatcherPriority.ApplicationIdle);
         HookContrast();
         ScheduleContrast();
         return true;

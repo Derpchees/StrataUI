@@ -54,10 +54,17 @@ public partial class Taskbar
                 || !ScreenRect(item, 0).Contains(point))
                 continue;
             // Sobre otro botón: ocupa su lugar (después si venía de antes, antes si venía de después).
-            TaskOrder.Instance.Move(moving, windows[i], after: i > from, App.Current.Shell.Tasks.GroupedWindows.OfType<ApplicationWindow>());
+            // Con las ventanas agrupadas se mueve el grupo entero y se pasa por encima del otro grupo completo.
+            bool after = i > from;
+            var target = GroupMembers(windows[i]);
+            TaskOrder.Instance.Move(GroupMembers(moving), after ? target[^1] : target[0], after, AllWindows);
             return;
         }
     }
 
-    private void OnTaskOrderChanged() => _taskView.Refresh();
+    private void OnTaskOrderChanged()
+    {
+        _taskView.Refresh();
+        TasksChanged?.Invoke(); // el primero del grupo pudo cambiar
+    }
 }

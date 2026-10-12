@@ -1,34 +1,44 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
 using ManagedShell.WindowsTasks;
 using Winx.Shell.Services;
+using Winx.Shell.Services.Localization;
 using Winx.Shell.Services.Themes;
 
 namespace Winx.Shell.Controls;
 
 /// <summary>
-/// Vista previa en vivo de una ventana al pasar el mouse por su botón en la barra, como en Windows:
-/// título, cerrar y la miniatura que dibuja DWM (se actualiza sola, sin capturas). Clic: la trae al
-/// frente. Una sola ventana para todas las barras.
+/// Vista previa en vivo de las ventanas de un botón de la barra, como en Windows: por cada ventana,
+/// su título, cerrar y la miniatura que dibuja DWM (se actualiza sola, sin capturas). Clic: la trae
+/// al frente. Con las ventanas agrupadas por app muestra todas las del grupo. Una sola ventana de
+/// vista previa para todas las barras.
 /// </summary>
 public partial class TaskPreviewWindow : Window
 {
     private static readonly TimeSpan ShowDelay = TimeSpan.FromMilliseconds(450);
     private static readonly TimeSpan HideDelay = TimeSpan.FromMilliseconds(250);
-    private const double MaxThumbWidth = 240, MaxThumbHeight = 150;
 
     private static TaskPreviewWindow? _instance;
     private static readonly DispatcherTimer ShowTimer = new() { Interval = ShowDelay };
     private static readonly DispatcherTimer HideTimer = new() { Interval = HideDelay };
     private static FrameworkElement? _pendingAnchor;
-    private static ApplicationWindow? _pendingWindow;
+    private static Func<IReadOnlyList<ApplicationWindow>>? _pendingWindows;
 
-    private IntPtr _thumb;
-    private ApplicationWindow? _window;
+    /// <summary>Una ventana en la vista previa con su miniatura de DWM.</summary>
+    private sealed class Entry
+    {
+        public required ApplicationWindow Window { get; init; }
+        public required Border Root { get; init; }
+        public required Border ThumbHost { get; init; }
+        public IntPtr Thumb { get; set; }
+    }
+
+    private readonly List<Entry> _entries = new();
     private FrameworkElement? _anchor;
 
     static TaskPreviewWindow()
@@ -36,8 +46,8 @@ public partial class TaskPreviewWindow : Window
         ShowTimer.Tick += (_, _) =>
         {
             ShowTimer.Stop();
-            if (_pendingAnchor is { IsMouseOver: true } anchor && _pendingWindow is { } window)
-                Show(anchor, window);
+            if (_pendingAnchor is { IsMouseOver: true } anchor && _pendingWindows is { } windows)
+                Show(anchor, windows());
         };
         HideTimer.Tick += (_, _) =>
         {
@@ -66,21 +76,33 @@ public partial class TaskPreviewWindow : Window
 
     // ── Desde los botones de la barra ───────────────────────────────────────
 
-    /// <summary>El mouse entró en un botón: la vista previa aparece tras una pausa (o enseguida si ya se ve otra).</summary>
-    public static void HoverStart(FrameworkElement anchor, ApplicationWindow window)
+    /// <summary>
+    /// El mouse entró en un botón: la vista previa aparece tras una pausa (o enseguida si ya se ve
+    /// otra). Las ventanas se piden al mostrarla, por si cambiaron mientras tanto.
+    /// </summary>
+    public static void HoverStart(FrameworkElement anchor, Func<IReadOnlyList<ApplicationWindow>> windows)
     {
         if (!Settings.Current.ShowTaskPreviews)
             return;
         HideTimer.Stop();
         _pendingAnchor = anchor;
-        _pendingWindow = window;
+        _pendingWindows = windows;
         if (_instance is { IsVisible: true })
         {
-            Show(anchor, window);
+            Show(anchor, windows());
             return;
         }
         ShowTimer.Stop();
         ShowTimer.Start();
+    }
+
+    /// <summary>Muestra ya las ventanas (clic en un botón con varias ventanas agrupadas).</summary>
+    public static void ShowNow(FrameworkElement anchor, IReadOnlyList<ApplicationWindow> windows)
+    {
+        ShowTimer.Stop();
+        HideTimer.Stop();
+        _pendingAnchor = anchor;
+        Show(anchor, windows);
     }
 
     /// <summary>El mouse salió del botón: se oculta si tampoco está sobre la vista previa.</summary>
@@ -100,6 +122,9 @@ public partial class TaskPreviewWindow : Window
         _instance?.HidePreview();
     }
 
+    public static bool IsShowingFor(FrameworkElement anchor) =>
+        _instance is { IsVisible: true } preview && ReferenceEquals(preview._anchor, anchor);
+
     public static void CloseAll()
     {
         Dismiss();
@@ -107,24 +132,29 @@ public partial class TaskPreviewWindow : Window
         _instance = null;
     }
 
-    private static void Show(FrameworkElement anchor, ApplicationWindow window)
+    private static void Show(FrameworkElement anchor, IReadOnlyList<ApplicationWindow> windows)
     {
+        if (windows.Count == 0)
+            return;
         _instance ??= new TaskPreviewWindow();
-        _instance.Present(anchor, window);
+        _instance.Present(anchor, windows);
     }
 
     // ── Contenido ───────────────────────────────────────────────────────────
 
-    private void Present(FrameworkElement anchor, ApplicationWindow window)
+    private void Present(FrameworkElement anchor, IReadOnlyList<ApplicationWindow> windows)
     {
         bool appearing = !IsVisible;
         _anchor = anchor;
-        if (!ReferenceEquals(window, _window))
+        new WindowInteropHelper(this).EnsureHandle();
+        Entries.Orientation = Edge is TaskbarPosition.Left or TaskbarPosition.Right ? Orientation.Vertical : Orientation.Horizontal;
+        if (!_entries.Select(e => e.Window).SequenceEqual(windows))
         {
-            _window = window;
-            TitleText.Text = window.Title;
-            AppIcon.Source = window.Icon;
-            Register(window.Handle);
+            Clear();
+            // Con muchas ventanas, miniaturas más chicas para que quepan.
+            double maxWidth = windows.Count > 4 ? 170 : windows.Count > 2 ? 200 : 240;
+            foreach (var window in windows)
+                AddEntry(window, maxWidth, maxWidth * 0.625);
         }
         if (appearing)
         {
@@ -134,69 +164,151 @@ public partial class TaskPreviewWindow : Window
         Place();
         Dispatcher.BeginInvoke(() =>
         {
-            UpdateThumb();
+            UpdateThumbs();
             if (appearing)
                 Motion.In(this, Card, Edge);
         }, DispatcherPriority.Loaded);
     }
 
-    private void Register(IntPtr source)
+    private void AddEntry(ApplicationWindow window, double maxWidth, double maxHeight)
     {
-        Unregister();
-        if (DwmRegisterThumbnail(Handle == IntPtr.Zero ? new WindowInteropHelper(this).EnsureHandle() : Handle, source, out _thumb) != 0)
+        var icon = new Image { Width = 16, Height = 16, Margin = new Thickness(0, 0, 8, 0), Source = TaskGroups.Icon(window) };
+        RenderOptions.SetBitmapScalingMode(icon, BitmapScalingMode.HighQuality);
+        var title = new TextBlock
         {
-            _thumb = IntPtr.Zero;
-            return;
-        }
-        // Miniatura del tamaño de la ventana, sin pasar del máximo.
-        double width = MaxThumbWidth, height = MaxThumbHeight;
-        if (DwmQueryThumbnailSourceSize(_thumb, out var size) == 0 && size.X > 0 && size.Y > 0)
+            Text = window.Title,
+            FontSize = 12,
+            MaxWidth = maxWidth - 40,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        title.SetResourceReference(TextBlock.ForegroundProperty, "WinxForegroundBrush");
+        var close = new Button
         {
-            // Las ventanas en píxeles físicos: se pasa a DIP para comparar con el máximo.
-            double dpi = VisualTreeHelper.GetDpi(this).DpiScaleX;
-            double scale = Math.Min(MaxThumbWidth / (size.X / dpi), MaxThumbHeight / (size.Y / dpi));
-            width = Math.Max(80, size.X / dpi * scale);
-            height = Math.Max(48, size.Y / dpi * scale);
-        }
-        ThumbHost.Width = width;
-        ThumbHost.Height = height;
+            Style = (Style)FindResource("TaskbarButton"),
+            Width = 24,
+            Height = 24,
+            Margin = new Thickness(8, 0, 0, 0),
+            Padding = new Thickness(0),
+            ToolTip = Loc.T("Cerrar ventana"),
+            Content = new TextBlock { Style = (Style)FindResource("IconText"), FontSize = 10, Text = "\uE8BB" },
+        };
+        var header = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Grid.SetColumn(title, 1);
+        Grid.SetColumn(close, 2);
+        header.Children.Add(icon);
+        header.Children.Add(title);
+        header.Children.Add(close);
+
+        var thumbHost = new Border { Width = maxWidth, Height = maxHeight, HorizontalAlignment = HorizontalAlignment.Center };
+        var content = new StackPanel();
+        content.Children.Add(header);
+        content.Children.Add(thumbHost);
+        var root = new Border
+        {
+            Padding = new Thickness(6, 4, 6, 6),
+            Margin = new Thickness(2),
+            CornerRadius = new CornerRadius(6),
+            Background = Brushes.Transparent,
+            Cursor = Cursors.Hand,
+            Child = content,
+        };
+        root.MouseEnter += (_, _) => root.SetResourceReference(Border.BackgroundProperty, "WinxHoverBrush");
+        root.MouseLeave += (_, _) => root.Background = Brushes.Transparent;
+        root.MouseLeftButtonUp += (_, e) =>
+        {
+            if (e.OriginalSource is DependencyObject source && close.IsAncestorOf(source))
+                return;
+            Dismiss();
+            window.BringToFront();
+        };
+
+        var entry = new Entry { Window = window, Root = root, ThumbHost = thumbHost };
+        close.Click += (_, _) => CloseEntry(entry);
+        Register(entry, maxWidth, maxHeight);
+        _entries.Add(entry);
+        Entries.Children.Add(root);
     }
 
-    private void UpdateThumb()
+    private void CloseEntry(Entry entry)
     {
-        if (_thumb == IntPtr.Zero || !IsVisible)
+        entry.Window.Close();
+        Unregister(entry);
+        _entries.Remove(entry);
+        Entries.Children.Remove(entry.Root);
+        if (_entries.Count == 0)
+            Dismiss();
+        else
+            Dispatcher.BeginInvoke(UpdateThumbs, DispatcherPriority.Loaded);
+    }
+
+    /// <summary>Miniatura con la proporción de la ventana, sin pasar del máximo.</summary>
+    private void Register(Entry entry, double maxWidth, double maxHeight)
+    {
+        if (DwmRegisterThumbnail(Handle, entry.Window.Handle, out var thumb) != 0)
+            return;
+        entry.Thumb = thumb;
+        if (DwmQueryThumbnailSourceSize(thumb, out var size) == 0 && size.X > 0 && size.Y > 0)
+        {
+            // Las ventanas miden en píxeles físicos: se pasa a DIP para compararlas con el máximo.
+            double dpi = VisualTreeHelper.GetDpi(this).DpiScaleX;
+            double scale = Math.Min(maxWidth / (size.X / dpi), maxHeight / (size.Y / dpi));
+            entry.ThumbHost.Width = Math.Max(80, size.X / dpi * scale);
+            entry.ThumbHost.Height = Math.Max(48, size.Y / dpi * scale);
+        }
+    }
+
+    private void UpdateThumbs()
+    {
+        if (!IsVisible)
             return;
         double dpi = VisualTreeHelper.GetDpi(this).DpiScaleX;
-        var origin = ThumbHost.TransformToAncestor(this).Transform(new Point(0, 0));
-        var props = new DwmThumbnailProperties
+        foreach (var entry in _entries)
         {
-            Flags = DwmTnpVisible | DwmTnpRectDestination | DwmTnpSourceClientAreaOnly,
-            Visible = true,
-            SourceClientAreaOnly = false,
-            Destination = new NativeRect
+            if (entry.Thumb == IntPtr.Zero || !entry.ThumbHost.IsVisible)
+                continue;
+            var origin = entry.ThumbHost.TransformToAncestor(this).Transform(new Point(0, 0));
+            var props = new DwmThumbnailProperties
             {
-                Left = (int)Math.Round(origin.X * dpi),
-                Top = (int)Math.Round(origin.Y * dpi),
-                Right = (int)Math.Round((origin.X + ThumbHost.ActualWidth) * dpi),
-                Bottom = (int)Math.Round((origin.Y + ThumbHost.ActualHeight) * dpi),
-            },
-        };
-        DwmUpdateThumbnailProperties(_thumb, ref props);
+                Flags = DwmTnpVisible | DwmTnpRectDestination | DwmTnpSourceClientAreaOnly,
+                Visible = true,
+                SourceClientAreaOnly = false,
+                Destination = new NativeRect
+                {
+                    Left = (int)Math.Round(origin.X * dpi),
+                    Top = (int)Math.Round(origin.Y * dpi),
+                    Right = (int)Math.Round((origin.X + entry.ThumbHost.ActualWidth) * dpi),
+                    Bottom = (int)Math.Round((origin.Y + entry.ThumbHost.ActualHeight) * dpi),
+                },
+            };
+            DwmUpdateThumbnailProperties(entry.Thumb, ref props);
+        }
     }
 
-    private void Unregister()
+    private static void Unregister(Entry entry)
     {
-        if (_thumb != IntPtr.Zero)
-            DwmUnregisterThumbnail(_thumb);
-        _thumb = IntPtr.Zero;
+        if (entry.Thumb != IntPtr.Zero)
+            DwmUnregisterThumbnail(entry.Thumb);
+        entry.Thumb = IntPtr.Zero;
+    }
+
+    private void Clear()
+    {
+        foreach (var entry in _entries)
+            Unregister(entry);
+        _entries.Clear();
+        Entries.Children.Clear();
     }
 
     private void HidePreview()
     {
         if (!IsVisible)
             return;
-        Unregister();
-        _window = null;
+        Clear();
+        _anchor = null;
         Hide();
     }
 
@@ -237,25 +349,7 @@ public partial class TaskPreviewWindow : Window
         x = Math.Clamp(x, work.Left + gap, Math.Max(work.Left + gap, work.Right - width - gap));
         y = Math.Clamp(y, work.Top + gap, Math.Max(work.Top + gap, work.Bottom - height - gap));
         SetWindowPos(Handle, HwndTopmost, x, y, 0, 0, SwpNoSize | SwpNoActivate);
-        Dispatcher.BeginInvoke(UpdateThumb, DispatcherPriority.Render);
-    }
-
-    // ── Clics ───────────────────────────────────────────────────────────────
-
-    private void Card_Click(object sender, MouseButtonEventArgs e)
-    {
-        if (e.OriginalSource is DependencyObject source && CloseButton.IsAncestorOf(source))
-            return;
-        var window = _window;
-        Dismiss();
-        window?.BringToFront();
-    }
-
-    private void Close_Click(object sender, RoutedEventArgs e)
-    {
-        var window = _window;
-        Dismiss();
-        window?.Close();
+        Dispatcher.BeginInvoke(UpdateThumbs, DispatcherPriority.Render);
     }
 
     private IntPtr Handle => new WindowInteropHelper(this).Handle;

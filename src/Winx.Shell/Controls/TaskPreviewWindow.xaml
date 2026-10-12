@@ -8,25 +8,8 @@
         ShowInTaskbar="False" ShowActivated="False" Topmost="True" UseLayoutRounding="True"
         FontFamily="{StaticResource UiFont}">
     <!-- Sin AllowsTransparency: las miniaturas de DWM no se dibujan en ventanas en capas. -->
-    <Border x:Name="Card" Background="{DynamicResource WinxPopupBackgroundBrush}" Padding="10,8,10,10"
-            MouseLeftButtonUp="Card_Click" Cursor="Hand">
-        <StackPanel>
-            <Grid Margin="0,0,0,8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Image x:Name="AppIcon" Width="16" Height="16" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="HighQuality" />
-                <TextBlock x:Name="TitleText" Grid.Column="1" FontSize="12" VerticalAlignment="Center" MaxWidth="220"
-                           TextTrimming="CharacterEllipsis" Foreground="{DynamicResource WinxForegroundBrush}" />
-                <Button x:Name="CloseButton" Grid.Column="2" Style="{StaticResource TaskbarButton}" Width="24" Height="24"
-                        Margin="8,0,0,0" Padding="0" ToolTip="{l:T 'Cerrar ventana'}" Click="Close_Click">
-                    <TextBlock Style="{StaticResource IconText}" FontSize="10" Text="&#xE8BB;" />
-                </Button>
-            </Grid>
-            <!-- Aquí DWM dibuja la miniatura en vivo de la ventana -->
-            <Border x:Name="ThumbHost" Width="240" Height="150" />
-        </StackPanel>
+    <Border x:Name="Card" Background="{DynamicResource WinxPopupBackgroundBrush}" Padding="6">
+        <!-- Una entrada por ventana (varias si la barra agrupa las de una misma app); se arman por código -->
+        <StackPanel x:Name="Entries" Orientation="Horizontal" />
     </Border>
 </Window>

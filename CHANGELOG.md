@@ -6,6 +6,28 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.16.0] - 2026-10-12
+
+### Añadido
+- **Apps web en la barra**: una pestaña con YouTube, YouTube Music, WhatsApp Web, Gmail, Spotify,
+  Netflix, Discord, ChatGPT y otros sitios conocidos se muestra con el ícono del sitio (y el
+  navegador en chiquito en la esquina). Los íconos se descargan una vez y se guardan en
+  `%LOCALAPPDATA%\WINX\icons`.
+- **Multimedia de apps web**: lo que suena en el navegador muestra el sitio (p. ej. YouTube) en
+  lugar de "Brave", con su ícono en la esquina de la carátula; el clic trae al frente esa pestaña.
+  Las demás apps también llevan su ícono en la carátula.
+- **Agrupar las ventanas de cada app** (Hub › Barra de tareas): un solo botón por app con el
+  número de ventanas; el clic muestra todas en la vista previa para elegir y el indicador marca si
+  alguna está activa. Al arrastrar se mueve el grupo entero. Cada sitio web cuenta como su propia app.
+- La vista previa muestra varias ventanas a la vez.
+
+### Corregido
+- **Borrar todo** en el centro de notificaciones: Windows a veces rechaza el borrado en bloque y las
+  notificaciones volvían; ahora se quitan una por una y las que Windows no deja quitar ya no se muestran.
+- Las notificaciones de apps web instaladas (WhatsApp Web de Brave…) muestran su nombre e ícono.
+- **Barra totalmente transparente**: al activarla desde el Hub quedaba negra; ahora las barras se
+  recrean al cambiarla, como con la posición.
+
 ## [0.15.2] - 2026-10-12
 
 ### Cambiado

@@ -25,14 +25,10 @@ public static class WindowEffects
         if (HwndSource.FromHwnd(hwnd) is { CompositionTarget: { } target })
             target.BackgroundColor = enabled ? Colors.Transparent : SystemColors.WindowColor;
 
-        // Sin esto DWM ignora el canal alfa de WPF y pinta un color plano detrás de la ventana:
-        // extender el marco a todo el cliente hace que lo transparente muestre el efecto.
-        var margins = enabled ? new Margins(-1) : new Margins(0);
-        DwmExtendFrameIntoClientArea(hwnd, ref margins);
-
         var accent = new AccentPolicy
         {
-            // Transparente: sin acento (el "gradiente transparente" de DWM pinta un color propio).
+            // Transparente: sin acento. (El "gradiente transparente" de DWM pinta el color de acento
+            // de Windows o, con su bandera y alfa 0, esconde también el contenido de WPF.)
             AccentState = clear ? AccentDisabled : backdrop switch
             {
                 Backdrop.Acrylic => AccentEnableAcrylicBlurBehind,
@@ -54,6 +50,12 @@ public static class WindowEffects
         {
             Marshal.FreeHGlobal(ptr);
         }
+
+        // Sin esto DWM ignora el canal alfa de WPF y pinta un color plano detrás de la ventana:
+        // extender el marco a todo el cliente hace que lo transparente muestre el efecto. Va después
+        // del acento: al quitar el Acrylic, DWM deshace la extensión anterior y quedaría negro.
+        var margins = enabled ? new Margins(-1) : new Margins(0);
+        DwmExtendFrameIntoClientArea(hwnd, ref margins);
     }
 
     /// <summary>

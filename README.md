@@ -12,7 +12,7 @@ a la normalidad.
 
 | Componente              | Estado                                                        |
 |-------------------------|---------------------------------------------------------------|
-| Barra de tareas         | ✅ una o dos por monitor (bordes opuestos, repartiendo apps y área de estado), en cualquier borde, alineación y tamaño configurables; vista previa en vivo de las ventanas, ordenarlas arrastrando; opción totalmente transparente con texto que se adapta al fondo |
+| Barra de tareas         | ✅ una o dos por monitor (bordes opuestos, repartiendo apps y área de estado), en cualquier borde, alineación y tamaño configurables; vista previa en vivo de las ventanas, ordenarlas arrastrando, agrupar por app; apps web (YouTube, WhatsApp Web…) con su ícono; opción totalmente transparente con texto que se adapta al fondo |
 | Bandeja del sistema     | ✅ íconos visibles u ocultos; se ordenan arrastrando, también entre la barra y los ocultos |
 | Hub de configuración    | ✅ portada, barra, menú Inicio, bandeja y área de estado, notificaciones, apariencia, optimización, actualizaciones, general |
 | Optimización (debloat)  | ✅ rendimiento, apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
@@ -20,7 +20,7 @@ a la normalidad.
 | Panel de sonido         | ✅ salida y entrada con mosaicos de dispositivos, opciones (balance, mejoras de audio, modo exclusivo, llamadas) y volumen por aplicación |
 | Panel de red            | ✅ conexión actual, Wi-Fi: buscar, conectar, desconectar       |
 | Panel de Bluetooth      | ✅ radio, dispositivos, conectar audífonos y bocinas           |
-| Multimedia              | ✅ carátula, canción, artista y álbum en la barra para cualquier app (Spotify, Reproductor multimedia, navegador…), controles opcionales; clic: abre la app |
+| Multimedia              | ✅ carátula, canción, artista y álbum en la barra para cualquier app (Spotify, Reproductor multimedia, navegador…) con su ícono, también el del sitio (YouTube…); controles opcionales; clic: abre la app |
 | Batería                 | ✅ porcentaje opcional dentro del ícono, indicador de carga; panel con tiempo restante, modo de energía y salud |
 | Avisos en pantalla (OSD) | ✅ volumen, silencio, brillo, Bloq Mayús, Bloq Num y Bloq Despl junto a la barra (sin el de Windows) |
 | Brillo                  | ✅ cada monitor por DDC/CI (y pantalla de portátil por WMI), todos a la vez, rueda del mouse |

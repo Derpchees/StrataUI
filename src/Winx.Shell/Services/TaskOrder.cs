@@ -39,9 +39,16 @@ public sealed class TaskOrder : IComparer
         x is ApplicationWindow a && y is ApplicationWindow b ? Of(a).CompareTo(Of(b)) : 0;
 
     /// <summary>Pone <paramref name="moving"/> justo antes (o después) de <paramref name="target"/>.</summary>
-    public void Move(ApplicationWindow moving, ApplicationWindow target, bool after, IEnumerable<ApplicationWindow> all)
+    public void Move(ApplicationWindow moving, ApplicationWindow target, bool after, IEnumerable<ApplicationWindow> all) =>
+        Move([moving], target, after, all);
+
+    /// <summary>
+    /// Pone varias ventanas juntas (un grupo de la barra, en su orden) justo antes o después de
+    /// <paramref name="target"/>.
+    /// </summary>
+    public void Move(IReadOnlyList<ApplicationWindow> moving, ApplicationWindow target, bool after, IEnumerable<ApplicationWindow> all)
     {
-        if (ReferenceEquals(moving, target))
+        if (moving.Count == 0 || moving.Contains(target))
             return;
         // Renumerar con huecos deja sitio entre dos ventanas cualesquiera.
         var ordered = all.OrderBy(Of).ToList();
@@ -49,8 +56,12 @@ public sealed class TaskOrder : IComparer
         _next = 0;
         foreach (var window in ordered)
             _order[window.Handle] = _next += 2;
-        double place = _order[target.Handle] + (after ? 1 : -1);
-        _order[moving.Handle] = place;
+        if (!_order.TryGetValue(target.Handle, out double anchor))
+            return;
+        // Entre el destino y su vecino hay un hueco de 2: el grupo entra en él, en su orden.
+        double start = anchor + (after ? 0.5 : -1.5);
+        for (int i = 0; i < moving.Count; i++)
+            _order[moving[i].Handle] = start + i / (double)(moving.Count + 1);
         Changed?.Invoke();
     }
 }
