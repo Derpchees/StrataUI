@@ -6,6 +6,15 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [0.11.1] - 2026-10-11
+
+### Corregido
+- En inglés, el botón y el menú Inicio decían "Home": compartían texto con la opción "Inicio" del
+  Explorador, que ahora se llama "Inicio del Explorador".
+
+### Cambiado
+- CLAUDE.md: conceptos de la arquitectura, consejos para probar y trampas nuevas.
+
 ## [0.11.0] - 2026-10-11
 
 ### Añadido

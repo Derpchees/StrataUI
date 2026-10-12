@@ -194,7 +194,7 @@ public static class TweakCatalog
         new("launch-to", Explorer, Loc.T("Abrir el Explorador en"),
             Loc.T("Carpeta que se muestra al abrir el Explorador."),
             [new RegSetting(Hive.CurrentUser, Advanced, "LaunchTo", [2, 1, 3], 2)],
-            Options: [Loc.T("Inicio"), Loc.T("Este equipo"), Loc.T("Descargas")]),
+            Options: [Loc.T("Inicio del Explorador"), Loc.T("Este equipo"), Loc.T("Descargas")]),
         new("compact-mode", Explorer, Loc.T("Vista compacta"),
             Loc.T("Reduce el espacio entre elementos."),
             [CU(Advanced, "UseCompactMode", 0, 1)]),

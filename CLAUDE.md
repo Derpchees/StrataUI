@@ -19,12 +19,38 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
     `LocalizationTests` falla si falta alguna o si no coinciden los huecos `{0}`.
   - Un idioma nuevo es otro `xx.json` más su código en `Loc.Translated`.
 
+## Conceptos de la arquitectura
+
+- **Barra principal de WINX ≠ monitor principal de Windows.** Se elige en el Hub
+  (`Settings.TaskbarMainScreen`, resuelto por `App.MainScreenDevice`). La bandeja, la tecla
+  Windows, Win+X y las ventanas de monitores sin barra van a la barra con `Taskbar.IsMain`;
+  no usar `Screen.Primary` para eso.
+- **Las barras se recrean, no se transforman**, cuando cambia la posición por monitor, los
+  monitores sin barra o el principal (`App.BarLayoutKey`). Todo lo demás se aplica en vivo en
+  `Taskbar.ApplySettings`, que corre con `Settings.Changed`.
+- **Opciones "Igual que Windows"** (alineación, apps por monitor): leer siempre el valor efectivo
+  con `WindowsTaskbarPrefs.Alignment(s)` / `WindowsTaskbarPrefs.AppsMode(s)`, nunca el ajuste crudo.
+  Se releen cuando Windows avisa (`SystemEvents.UserPreferenceChanged`).
+- **Paneles** (sonido, red, Bluetooth, menús Inicio): heredan de `Flyouts/FlyoutWindow`, que los
+  coloca junto a la barra en cualquier borde (`BarPosition`), aplica el tema y la región, reserva
+  lo que sobresale (`TopOverflow`) y puede seguir abierto sin foco (`StayOpenWhenDeactivated`).
+  Se abren con `FlyoutManager.Toggle<T>(botón)`.
+- **Opción nueva**: propiedad con valor por defecto en `WinxSettings` → control en la página del
+  Hub que guarda con `Settings.Update(...)` → reacción en `Settings.Changed`. Los ajustes viven en
+  `%LOCALAPPDATA%\WINX\settings.json`; una propiedad que falta en el archivo toma su valor por defecto.
+- **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y
+  lanzado con `Elevation.RunSelfAsync(...)` (UAC). El proceso elevado valida sus argumentos y
+  solo hace lo previsto (ver `AudioDeviceOptions.RunElevated`, `TweakEngine.RunElevatedCommand`).
+
 ## Compilar, ejecutar y probar
 
 ```powershell
 .\scripts\run.ps1                          # cierra WINX, compila y lo vuelve a abrir
 dotnet test tests\Winx.Tests -c Release    # pruebas (xUnit)
 ```
+
+- Argumentos útiles: `WINX.exe --hub Taskbar` abre el Hub en una página, `--exit` cierra la
+  instancia en ejecución, `--restore-taskbar` devuelve la barra de Windows si WINX murió mal.
 
 - Compilar mientras WINX corre falla porque el .exe está en uso: primero `WINX.exe --exit`
   (o `run.ps1`). Para solo comprobar que compila sin cerrarlo:
@@ -65,6 +91,16 @@ El usuario usa la instancia de WINX que relanzo y cambia opciones por su cuenta.
   probar la validación sin elevar y pedir al usuario que pruebe el resto.
 - Pruebas con mouse simulado: comprobar antes que el panel esté abierto; si no, los clics caen en
   las ventanas del usuario.
+- Su PC: Windows en inglés (en-US), así que WINX se ve en inglés salvo que elija Español en el
+  Hub; los títulos de ventana también están traducidos ("Volume", "Start"). Dos monitores de
+  2560×1440: el principal de Windows es `\\.\DISPLAY1` (X = 0, 100 %) y el otro está a su
+  izquierda (X negativa, 125 %).
+- Automatización (UIA): la barra y el Hub se llaman los dos "WINX"; distinguirlos por tamaño.
+  Invocar el botón de un panel lo abre o lo cierra: comprobar antes si ya está abierto.
+- El gancho de teclado ignora las teclas simuladas (`SendInput`): la tecla Windows y Win+X no se
+  pueden probar automáticamente.
+- Capturas de pantalla desde PowerShell: llamar a `SetProcessDPIAware()` primero, o las
+  coordenadas salen escaladas.
 
 ## Trampas conocidas
 
@@ -81,3 +117,9 @@ El usuario usa la instancia de WINX que relanzo y cambia opciones por su cuenta.
   propiedades de los dispositivos se escriben elevando (`Services/Audio/AudioDeviceOptions`).
 - **Arrastrar en paneles**: DragDrop de OLE cancela en silencio ante cualquier excepción en un
   manejador; el menú Inicio arrastra con captura del mouse.
+- **Traducciones**: la clave es el texto en español, así que una palabra con dos sentidos comparte
+  traducción ("Inicio" del menú y la página "Inicio" del Explorador). Si el sentido cambia, usar
+  textos distintos ("Inicio del Explorador").
+- **Barras verticales**: cualquier cosa nueva en la barra debe funcionar en los cuatro bordes
+  (orientación en `Taskbar.ApplyOrientation`, indicador en `TaskButton.FitTo`, posición de
+  ventanas emergentes según `Position`).
