@@ -207,7 +207,7 @@
                         <StackPanel Margin="0,0,12,0">
                             <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor que mide el contador de FPS'}" />
                             <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                       Text="{l:T 'Cuenta los FPS de la app que ocupa ese monitor, aunque el contador esté en la barra de otro.'}" />
+                                       Text="{l:T 'Automático: la app activa, en cualquier monitor. Con un monitor elegido, la app que lo ocupa aunque el contador esté en la barra de otro. Con generación de cuadros (DLSS, FSR, Lossless Scaling…) muestra los FPS en pantalla y abajo los reales.'}" />
                         </StackPanel>
                         <ComboBox x:Name="FpsScreenBox" Grid.Column="1" MinWidth="200" SelectionChanged="FpsScreen_Changed" />
                     </Grid>

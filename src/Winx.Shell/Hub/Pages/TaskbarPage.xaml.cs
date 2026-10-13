@@ -240,7 +240,7 @@ public partial class TaskbarPage : Page
     private void BuildFpsScreens()
     {
         var screens = ScreenPicker.Screens();
-        FpsScreenBox.Items.Add(new ComboBoxItem { Content = Loc.T("El principal de WINX"), Tag = null });
+        FpsScreenBox.Items.Add(new ComboBoxItem { Content = Loc.T("Automático: la app activa"), Tag = null });
         for (int i = 0; i < screens.Count; i++)
             FpsScreenBox.Items.Add(new ComboBoxItem { Content = ScreenPicker.NameOf(screens[i], i, screens.Count), Tag = screens[i].DeviceName });
         string? chosen = Settings.Current.FpsScreen;

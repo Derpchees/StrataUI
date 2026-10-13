@@ -7,11 +7,11 @@ using Microsoft.Win32;
 namespace Winx.Shell.Services;
 
 /// <summary>
-/// Inicio automÃ¡tico con Windows. Se usa una tarea programada al iniciar sesiÃ³n (sin retraso y con
-/// prioridad normal): arranca antes que las apps de la clave Run, que Windows demora, y asÃ­ los
-/// Ã­conos de bandeja de esas apps llegan a WINX y no al Explorador. Sin elevar a propÃ³sito: con WINX
-/// como administrador las apps normales no podrÃ­an mandarle sus Ã­conos (Windows bloquea esos
-/// mensajes hacia un proceso elevado) y todo lo que se abriera desde WINX saldrÃ­a elevado.
+/// Inicio automático con Windows. Se usa una tarea programada al iniciar sesión (sin retraso y con
+/// prioridad normal): arranca antes que las apps de la clave Run, que Windows demora, y así los
+/// íconos de bandeja de esas apps llegan a WINX y no al Explorador. Sin elevar a propósito: con WINX
+/// como administrador las apps normales no podrían mandarle sus íconos (Windows bloquea esos
+/// mensajes hacia un proceso elevado) y todo lo que se abriera desde WINX saldría elevado.
 /// Si la tarea no se puede crear, se usa la clave Run como antes.
 /// </summary>
 public static class AutoStart
@@ -45,8 +45,8 @@ public static class AutoStart
     }
 
     /// <summary>
-    /// Pasa a la tarea programada a quien tenÃ­a la clave Run (versiones anteriores), y la actualiza si
-    /// WINX cambiÃ³ de carpeta. Corre en segundo plano al iniciar.
+    /// Pasa a la tarea programada a quien tenía la clave Run (versiones anteriores), y la actualiza si
+    /// WINX cambió de carpeta. Corre en segundo plano al iniciar.
     /// </summary>
     public static void Migrate()
     {
@@ -59,13 +59,13 @@ public static class AutoStart
                 if (CreateTask())
                 {
                     SetRunKey(false);
-                    Log.Info("Inicio automÃ¡tico: ahora con una tarea programada al iniciar sesiÃ³n");
+                    Log.Info("Inicio automático: ahora con una tarea programada al iniciar sesión");
                 }
             }
         }
         catch (Exception ex)
         {
-            Log.Error("No se pudo actualizar el inicio automÃ¡tico", ex);
+            Log.Error("No se pudo actualizar el inicio automático", ex);
         }
     }
 
@@ -109,7 +109,7 @@ public static class AutoStart
         string xml = $"""
             <?xml version="1.0" encoding="UTF-16"?>
             <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-              <RegistrationInfo><Description>Inicia WINX al iniciar sesiÃ³n.</Description></RegistrationInfo>
+              <RegistrationInfo><Description>Inicia WINX al iniciar sesión.</Description></RegistrationInfo>
               <Triggers><LogonTrigger><Enabled>true</Enabled><UserId>{user}</UserId></LogonTrigger></Triggers>
               <Principals><Principal id="Author"><UserId>{user}</UserId><LogonType>InteractiveToken</LogonType><RunLevel>LeastPrivilege</RunLevel></Principal></Principals>
               <Settings>
@@ -129,7 +129,7 @@ public static class AutoStart
             File.WriteAllText(file, xml, Encoding.Unicode);
             var (code, output) = Schtasks($"/Create /TN \"{TaskName}\" /XML \"{file}\" /F");
             if (code != 0)
-                Log.Info($"No se pudo crear la tarea de inicio automÃ¡tico: {output.Trim()}");
+                Log.Info($"No se pudo crear la tarea de inicio automático: {output.Trim()}");
             return code == 0;
         }
         finally

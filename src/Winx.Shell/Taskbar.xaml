@@ -238,7 +238,7 @@
                     <Button x:Name="FpsButton" Style="{StaticResource MeterButton}" Click="Fps_Click">
                         <StackPanel>
                             <TextBlock x:Name="FpsValue" Style="{StaticResource MeterValue}" Text="—" />
-                            <TextBlock Style="{StaticResource MeterDetail}" Text="FPS" />
+                            <TextBlock x:Name="FpsDetail" Style="{StaticResource MeterDetail}" Text="FPS" />
                         </StackPanel>
                     </Button>
                     <Button x:Name="FreeRamButton" Style="{StaticResource StatusButton}" ToolTip="{l:T 'Liberar RAM'}"

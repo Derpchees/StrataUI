@@ -25,7 +25,8 @@ public static class Sensors
 
     private static NamedPipeServerStream? _pipe;
     private static StreamWriter? _writer;
-    private static Dictionary<int, int> _presents = new();
+    private static Dictionary<int, FrameRate> _presents = new();
+    private static Dictionary<int, string> _kinds = new();
     private static TaskCompletionSource<bool>? _freed;
 
     public static bool Running { get; private set; }
@@ -49,22 +50,59 @@ public static class Sensors
         }
     }
 
-    /// <summary>Presentaciones por segundo de un proceso (null si no presenta nada o no hay datos).</summary>
-    public static int? FpsOf(int processId) =>
-        Running && _presents.TryGetValue(processId, out int count) && count > 0 ? count : null;
+    /// <summary>FPS de un proceso: en pantalla, reales y el tipo de generación de cuadros (si la hay).</summary>
+    public readonly record struct Fps(int Shown, int Real, string? FrameGeneration)
+    {
+        /// <summary>Hay generación de cuadros: llegan a la pantalla bastantes más de los que dibuja la app.</summary>
+        public bool Generated => Real > 0 && Shown >= Real * 1.4;
+    }
+
+    /// <summary>FPS del proceso (null si no presenta nada o no hay datos).</summary>
+    public static Fps? FpsOf(int processId)
+    {
+        if (!Running || !_presents.TryGetValue(processId, out var rate) || rate.Shown <= 0)
+            return null;
+        // Lossless Scaling dibuja los cuadros generados en su propia ventana, encima del juego.
+        if (LosslessScalingRate() is { } ls && ls.Shown >= rate.Shown * 1.4)
+            return new Fps(ls.Shown, rate.Real, "Lossless Scaling");
+        var fps = new Fps(rate.Shown, rate.Real, null);
+        return fps.Generated && _kinds.GetValueOrDefault(processId) is { } kind ? fps with { FrameGeneration = kind + " FG" } : fps;
+    }
+
+    private static FrameRate? LosslessScalingRate()
+    {
+        foreach (var (pid, rate) in _presents)
+        {
+            if (ProcessName(pid, title: false).Equals("LosslessScaling", StringComparison.OrdinalIgnoreCase))
+                return rate;
+        }
+        return null;
+    }
 
     // ── App medida ──────────────────────────────────────────────────────────
 
     /// <summary>
     /// Proceso cuyos FPS se muestran: la ventana activa si está en el monitor elegido; si no, la de
     /// más arriba que ocupe buena parte de ese monitor (un juego en otra pantalla sigue contando
-    /// aunque se use la otra). Null si no hay ninguna o las lecturas no están activas.
+    /// aunque se use la otra). Sin monitor elegido (automático), la ventana activa en cualquiera y,
+    /// si no ocupa bastante pantalla, la del monitor principal de WINX. Null si no hay ninguna o las
+    /// lecturas no están activas.
     /// </summary>
     public static int? TargetProcess(string? device)
     {
         if (!Running)
             return null;
         var screens = System.Windows.Forms.Screen.AllScreens;
+        // Automático: la ventana activa en cualquier monitor (el juego que se está usando).
+        if (device is null)
+        {
+            IntPtr active = GetForegroundWindow();
+            foreach (var each in screens)
+            {
+                if (IsTarget(active, each.Bounds))
+                    return ProcessOf(active);
+            }
+        }
         var screen = screens.FirstOrDefault(s => s.DeviceName == device)
                      ?? screens.FirstOrDefault(s => s.DeviceName == App.MainScreenDevice(screens.Select(sc => (sc.DeviceName, sc.Primary))))
                      ?? System.Windows.Forms.Screen.PrimaryScreen;
@@ -85,25 +123,25 @@ public static class Sensors
         return found;
     }
 
-    private static readonly Dictionary<int, string> Names = new();
+    private static readonly Dictionary<(int, bool), string> Names = new();
 
-    /// <summary>Nombre del proceso medido (para el tooltip).</summary>
-    public static string ProcessName(int processId)
+    /// <summary>Nombre del proceso medido: el título de su ventana (para el tooltip) o el del ejecutable.</summary>
+    public static string ProcessName(int processId, bool title = true)
     {
-        if (Names.TryGetValue(processId, out var name))
+        if (Names.TryGetValue((processId, title), out var name))
             return name;
         try
         {
             using var process = Process.GetProcessById(processId);
-            name = process.MainWindowTitle is { Length: > 0 } title ? title : process.ProcessName;
+            name = title && process.MainWindowTitle is { Length: > 0 } windowTitle ? windowTitle : process.ProcessName;
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             name = processId.ToString(CultureInfo.InvariantCulture);
         }
-        if (Names.Count > 64)
+        if (Names.Count > 128)
             Names.Clear();
-        return Names[processId] = name;
+        return Names[(processId, title)] = name;
     }
 
     private static int? ProcessOf(IntPtr hwnd)
@@ -247,8 +285,14 @@ public static class Sensors
         try
         {
             using var reader = new StreamReader(pipe);
+            bool first = true;
             while (await reader.ReadLineAsync() is { } line)
+            {
+                if (first)
+                    Log.Info("Lecturas avanzadas: primera lectura recibida: " + line);
+                first = false;
                 System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => Apply(line));
+            }
         }
         catch (IOException)
         {
@@ -263,7 +307,10 @@ public static class Sensors
         });
     }
 
-    /// <summary>Una línea del proceso elevado: "cpu=54.0;gpu=61;pawnio=1;fps=1234:144,5678:60" o "freed".</summary>
+    /// <summary>
+    /// Una línea del proceso elevado: "cpu=54.0;gpu=61;pawnio=1;fps=1234:144:72,5678:60:60;fg=1234:DLSS"
+    /// (fps = proceso:en pantalla:reales) o "freed".
+    /// </summary>
     internal static void Apply(string line)
     {
         if (line == "freed")
@@ -271,7 +318,8 @@ public static class Sensors
             _freed?.TrySetResult(true);
             return;
         }
-        var presents = new Dictionary<int, int>();
+        var presents = new Dictionary<int, FrameRate>();
+        var kinds = new Dictionary<int, string>();
         foreach (var part in line.Split(';', StringSplitOptions.RemoveEmptyEntries))
         {
             int eq = part.IndexOf('=');
@@ -293,13 +341,23 @@ public static class Sensors
                     foreach (var pair in value.Split(',', StringSplitOptions.RemoveEmptyEntries))
                     {
                         var bits = pair.Split(':');
-                        if (bits.Length == 2 && int.TryParse(bits[0], out int pid) && int.TryParse(bits[1], out int count))
-                            presents[pid] = count;
+                        if (bits.Length == 3 && int.TryParse(bits[0], out int pid)
+                            && int.TryParse(bits[1], out int shown) && int.TryParse(bits[2], out int real))
+                            presents[pid] = new FrameRate(shown, real);
+                    }
+                    break;
+                case "fg":
+                    foreach (var pair in value.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var bits = pair.Split(':');
+                        if (bits.Length == 2 && int.TryParse(bits[0], out int pid) && bits[1] is "DLSS" or "FSR" or "XeSS")
+                            kinds[pid] = bits[1];
                     }
                     break;
             }
         }
         _presents = presents;
+        _kinds = kinds;
         Changed?.Invoke();
     }
 
@@ -335,7 +393,9 @@ public static class Sensors
     {
         if (args.Length != 1)
             return 2;
-        using var pipe = new NamedPipeClientStream(".", SensorsTask.PipeName(SensorsTask.UserSid), PipeDirection.InOut);
+        // Asíncrona: en una tubería síncrona Windows pone en fila las operaciones del mismo
+        // identificador, y la lectura pendiente de órdenes bloqueaba para siempre el envío de lecturas.
+        using var pipe = new NamedPipeClientStream(".", SensorsTask.PipeName(SensorsTask.UserSid), PipeDirection.InOut, PipeOptions.Asynchronous);
         try
         {
             pipe.Connect(10000);
@@ -365,9 +425,31 @@ public static class Sensors
                 writer.WriteLine(line);
         }
 
-        using var temperatures = new Temperatures();
+        var clock = Stopwatch.StartNew();
         using var frames = new FrameCounter();
+        var probe = new FrameGenerationProbe();
         frames.Start();
+        Log.Info($"Lecturas avanzadas: contador de FPS listo en {clock.ElapsedMilliseconds} ms");
+
+        // Temperaturas en su propio hilo: abrir los sensores (sobre todo los de la placa) puede
+        // tardar o quedarse esperando a otro programa que los use, y eso no debe frenar los FPS.
+        double? cpu = null, gpu = null;
+        bool pawnIo = true;
+        new Thread(() =>
+        {
+            var opening = Stopwatch.StartNew();
+            using var temperatures = new Temperatures();
+            pawnIo = temperatures.PawnIo;
+            Log.Info($"Lecturas avanzadas: sensores abiertos en {opening.ElapsedMilliseconds} ms");
+            while (!parent.HasExited)
+            {
+                var reading = Stopwatch.StartNew();
+                (cpu, gpu) = temperatures.Read();
+                if (reading.ElapsedMilliseconds > 2000)
+                    Log.Info($"Lecturas avanzadas: leer las temperaturas tardó {reading.ElapsedMilliseconds} ms");
+                Thread.Sleep(1000);
+            }
+        }) { IsBackground = true }.Start();
 
         // Órdenes de WINX: "free" libera la RAM.
         var commands = new Thread(() =>
@@ -390,13 +472,21 @@ public static class Sensors
         }) { IsBackground = true };
         commands.Start();
 
+        int sent = 0;
         while (!parent.HasExited && pipe.IsConnected)
         {
             Thread.Sleep(1000);
-            var (cpu, gpu) = temperatures.Read();
             var counts = frames.TakeCounts();
+            // El tipo de generación de cuadros solo se busca en los procesos que la usan.
+            var kinds = counts.Where(c => c.Value.Shown >= c.Value.Real * 1.4)
+                .Select(c => (Pid: c.Key, Kind: probe.KindOf(c.Key)))
+                .Where(k => k.Kind != null);
             string line = string.Create(CultureInfo.InvariantCulture,
-                $"cpu={cpu:0.0};gpu={gpu:0.0};pawnio={(temperatures.PawnIo ? 1 : 0)};fps={string.Join(",", counts.Select(c => $"{c.Key}:{c.Value}"))}");
+                $"cpu={cpu:0.0};gpu={gpu:0.0};pawnio={(pawnIo ? 1 : 0)}"
+                + $";fps={string.Join(",", counts.Select(c => $"{c.Key}:{c.Value.Shown}:{c.Value.Real}"))}"
+                + $";fg={string.Join(",", kinds.Select(k => $"{k.Pid}:{k.Kind}"))}");
+            if (frames.Debug && ++sent % 10 == 1)
+                Log.Info("Lecturas avanzadas: enviado " + line);
             try
             {
                 Send(line);
@@ -406,13 +496,18 @@ public static class Sensors
                 break;
             }
         }
+        Log.Info("Lecturas avanzadas: proceso elevado terminado");
         return 0;
     }
 
-    /// <summary>Temperaturas con LibreHardwareMonitor (CPU: paquete o el núcleo más caliente; GPU: núcleo).</summary>
+    /// <summary>
+    /// Temperaturas con LibreHardwareMonitor. CPU: la que da la placa base (la de la BIOS y las apps
+    /// del fabricante, más estable); si la placa no la informa, la del procesador (paquete, Tctl o el
+    /// núcleo más caliente). GPU: la del núcleo.
+    /// </summary>
     private sealed class Temperatures : IDisposable
     {
-        private readonly LibreHardwareMonitor.Hardware.Computer _computer = new() { IsCpuEnabled = true, IsGpuEnabled = true };
+        private readonly LibreHardwareMonitor.Hardware.Computer _computer = new() { IsCpuEnabled = true, IsGpuEnabled = true, IsMotherboardEnabled = true };
 
         public bool PawnIo { get; }
 
@@ -423,15 +518,16 @@ public static class Sensors
                 PawnIo = LibreHardwareMonitor.PawnIo.PawnIo.IsInstalled;
                 _computer.Open();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Sin sensores: se mandan vacíos.
+                Log.Error("Lecturas avanzadas: no se pudieron abrir los sensores", ex);
             }
         }
 
         public (double? Cpu, double? Gpu) Read()
         {
-            double? cpu = null, gpu = null;
+            double? cpu = null, gpu = null, board = null;
             bool integrated = false;
             try
             {
@@ -440,6 +536,27 @@ public static class Sensors
                     // Intel integrada: no informa temperatura propia; está en el mismo chip que la CPU.
                     if (hardware.HardwareType == LibreHardwareMonitor.Hardware.HardwareType.GpuIntel)
                         integrated = true;
+                    if (hardware.HardwareType == LibreHardwareMonitor.Hardware.HardwareType.Motherboard)
+                    {
+                        // El chip de la placa (Super I/O) va como subcomponente; su sensor se llama "CPU".
+                        // Aparte: si la placa falla, la CPU y la GPU se siguen leyendo.
+                        try
+                        {
+                            hardware.Update();
+                            foreach (var chip in hardware.SubHardware)
+                            {
+                                chip.Update();
+                                board ??= chip.Sensors.FirstOrDefault(s => s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature
+                                                                          && s.Name.Equals("CPU", StringComparison.OrdinalIgnoreCase)
+                                                                          && s.Value is > 0 and < 150)?.Value;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ReportOnce("placa", ex);
+                        }
+                        continue;
+                    }
                     hardware.Update();
                     var temps = hardware.Sensors
                         .Where(s => s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature && s.Value is > 0)
@@ -461,12 +578,22 @@ public static class Sensors
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                ReportOnce("temperaturas", ex);
             }
             if (gpu is null && integrated)
                 gpu = cpu;
-            return (cpu, gpu);
+            return (board ?? cpu, gpu);
+        }
+
+        private readonly HashSet<string> _reported = new();
+
+        /// <summary>Registra el primer error de cada parte (se lee cada segundo: no llenar el registro).</summary>
+        private void ReportOnce(string part, Exception ex)
+        {
+            if (_reported.Add(part))
+                Log.Error($"Lecturas avanzadas: falló la lectura ({part})", ex);
         }
 
         public void Dispose()
@@ -481,17 +608,40 @@ public static class Sensors
         }
     }
 
-    /// <summary>Cuenta las presentaciones de cada proceso con ETW (DXGI, Direct3D 9 y DxgKrnl).</summary>
+    /// <summary>Cuadros de un proceso en el último segundo: los que llegan a la pantalla y los que dibujó la app.</summary>
+    internal readonly record struct FrameRate(int Shown, int Real);
+
+    /// <summary>
+    /// Cuenta los cuadros de cada proceso con ETW, como PresentMon: presentaciones de DXGI y Direct3D 9
+    /// (las que hace la app o, con DLSS/FSR FG, también las que inserta la generación de cuadros) y
+    /// del núcleo gráfico (OpenGL, Vulkan y los cuadros que inserta el controlador: Smooth Motion,
+    /// AFMF). Los cuadros reales se toman de las marcas de Reflex (PCLStats, que llevan todos los
+    /// juegos con DLSS FG): una por cuadro que simula el juego.
+    /// </summary>
     private sealed class FrameCounter : IDisposable
     {
         private static readonly Guid Dxgi = new("CA11C036-0102-4A2D-A6AD-F03CFED5D3C9");
         private static readonly Guid D3D9 = new("783ACA0A-790E-4D7F-8451-AA850511C6B9");
         private static readonly Guid DxgKrnl = new("802EC45A-1E99-4B83-9920-87C98277BA9D");
-        private const int DxgiPresentStart = 42, D3D9PresentStart = 1, DxgKrnlPresentInfo = 184;
+        private static readonly Guid PclStats = new("0D216F06-82A6-4D49-BC4F-8F38AE56EFAB");
+        private const int DxgiPresentStart = 42, D3D9PresentStart = 1;
+        // Present_Info (copia), Flip_Info (pantalla completa) y PresentHistoryDetailed_Start (ventana
+        // con composición): cada presentación pasa por al menos uno; se toma el mayor, no la suma.
+        private static readonly int[] KernelPresents = [184, 168, 215];
+        private const uint PclSimulationStart = 0;
 
         private Microsoft.Diagnostics.Tracing.Session.TraceEventSession? _session;
         private readonly object _lock = new();
-        private Dictionary<int, int> _api = new(), _kernel = new();
+        private Dictionary<int, int> _api = new(), _real = new();
+        private Dictionary<(int Pid, int Id), int> _kernel = new();
+
+        /// <summary>Diagnóstico: con el archivo %LOCALAPPDATA%\WINX\fps-debug se registran los eventos que llegan.</summary>
+        public bool Debug => _debug;
+
+        private readonly bool _debug = File.Exists(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "WINX", "fps-debug"));
+        private Dictionary<string, int> _histogram = new();
+        private int _seconds;
 
         public void Start()
         {
@@ -500,9 +650,13 @@ public static class Sensors
                 const string name = "WINX-FPS";
                 // Una sesión con el mismo nombre que quedó abierta (WINX murió) se reemplaza.
                 _session = new Microsoft.Diagnostics.Tracing.Session.TraceEventSession(name) { StopOnDispose = true };
-                _session.EnableProvider(Dxgi, Microsoft.Diagnostics.Tracing.TraceEventLevel.Informational);
-                _session.EnableProvider(D3D9, Microsoft.Diagnostics.Tracing.TraceEventLevel.Informational);
-                _session.EnableProvider(DxgKrnl, Microsoft.Diagnostics.Tracing.TraceEventLevel.Informational, 0x8000000 | 0x1);
+                // Solo los eventos que se cuentan: el núcleo gráfico manda miles por segundo de otros.
+                static Microsoft.Diagnostics.Tracing.Session.TraceEventProviderOptions Only(params int[] ids) =>
+                    new() { EventIDsToEnable = ids };
+                _session.EnableProvider(Dxgi, Microsoft.Diagnostics.Tracing.TraceEventLevel.Informational, ulong.MaxValue, Only(DxgiPresentStart));
+                _session.EnableProvider(D3D9, Microsoft.Diagnostics.Tracing.TraceEventLevel.Informational, ulong.MaxValue, Only(D3D9PresentStart));
+                _session.EnableProvider(DxgKrnl, Microsoft.Diagnostics.Tracing.TraceEventLevel.Informational, 0x8000000 | 0x1, Only(KernelPresents));
+                _session.EnableProvider(PclStats, Microsoft.Diagnostics.Tracing.TraceEventLevel.Verbose);
                 _session.Source.AllEvents += OnEvent;
                 new Thread(() =>
                 {
@@ -515,45 +669,129 @@ public static class Sensors
                     }
                 }) { IsBackground = true }.Start();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Error("Contador de FPS: no se pudo abrir la sesión de ETW", ex);
                 _session = null; // sin FPS
             }
         }
 
         private void OnEvent(Microsoft.Diagnostics.Tracing.TraceEvent e)
         {
-            int id = (int)e.ID;
-            Dictionary<int, int>? target =
-                (e.ProviderGuid == Dxgi && id == DxgiPresentStart) || (e.ProviderGuid == D3D9 && id == D3D9PresentStart) ? _api
-                : e.ProviderGuid == DxgKrnl && id == DxgKrnlPresentInfo ? _kernel
-                : null;
-            if (target is null)
+            int id = (int)e.ID, pid = e.ProcessID;
+            if (_debug)
+            {
+                string provider = e.ProviderGuid == Dxgi ? "DXGI" : e.ProviderGuid == D3D9 ? "D3D9"
+                    : e.ProviderGuid == DxgKrnl ? "DxgKrnl" : e.ProviderGuid == PclStats ? "PCL" : e.ProviderGuid.ToString();
+                string key = provider == "PCL" ? $"{pid} PCL {e.EventName} len={e.EventDataLength} m={Marker(e)}" : $"{pid} {provider} {id}";
+                lock (_lock)
+                    _histogram[key] = _histogram.GetValueOrDefault(key) + 1;
+            }
+            if (e.ProviderGuid == PclStats)
+            {
+                // PCLStatsEvent: Marker (UINT32) y FrameID (UINT64).
+                if (e.EventDataLength >= 12 && Marker(e) == PclSimulationStart)
+                    lock (_lock)
+                        _real[pid] = _real.GetValueOrDefault(pid) + 1;
                 return;
-            lock (_lock)
-                target[e.ProcessID] = target.GetValueOrDefault(e.ProcessID) + 1;
+            }
+            if ((e.ProviderGuid == Dxgi && id == DxgiPresentStart) || (e.ProviderGuid == D3D9 && id == D3D9PresentStart))
+            {
+                lock (_lock)
+                    _api[pid] = _api.GetValueOrDefault(pid) + 1;
+            }
+            else if (e.ProviderGuid == DxgKrnl && Array.IndexOf(KernelPresents, id) >= 0)
+            {
+                lock (_lock)
+                    _kernel[(pid, id)] = _kernel.GetValueOrDefault((pid, id)) + 1;
+            }
+        }
+
+        private static uint? Marker(Microsoft.Diagnostics.Tracing.TraceEvent e)
+        {
+            if (e.EventDataLength < 4)
+                return null;
+            byte[] data = e.EventData();
+            return BitConverter.ToUInt32(data, 0);
         }
 
         /// <summary>
-        /// Presentaciones del último segundo por proceso: las de DXGI/D3D9 si las hay; si no
-        /// (OpenGL, Vulkan), las del núcleo gráfico.
+        /// Cuadros del último segundo por proceso. En pantalla: el mayor entre lo que presenta la app y
+        /// lo que llega al núcleo gráfico. Reales: las marcas de Reflex si las hay; si no, lo que
+        /// presenta la app (el controlador puede insertar más); si tampoco, lo del núcleo.
         /// </summary>
-        public Dictionary<int, int> TakeCounts()
+        public Dictionary<int, FrameRate> TakeCounts()
         {
-            Dictionary<int, int> api, kernel;
+            Dictionary<int, int> api, real;
+            Dictionary<(int Pid, int Id), int> kernel;
+            Dictionary<string, int>? histogram = null;
             lock (_lock)
             {
                 (api, _api) = (_api, new());
+                (real, _real) = (_real, new());
                 (kernel, _kernel) = (_kernel, new());
+                if (_debug && ++_seconds % 5 == 0)
+                    (histogram, _histogram) = (_histogram, new());
             }
-            foreach (var (pid, count) in kernel)
-                api.TryAdd(pid, count);
-            return api;
+            if (histogram != null)
+                Log.Info($"FPS (5 s, sesión {(_session is null ? "cerrada" : "abierta")}, {histogram.Count} claves): " +string.Join(" | ", histogram.OrderByDescending(h => h.Value).Take(25).Select(h => $"{h.Key}={h.Value}")));
+
+            var shownByKernel = kernel.GroupBy(k => k.Key.Pid).ToDictionary(g => g.Key, g => g.Max(k => k.Value));
+            var result = new Dictionary<int, FrameRate>();
+            foreach (int pid in api.Keys.Concat(shownByKernel.Keys).Distinct())
+            {
+                int app = api.GetValueOrDefault(pid), byKernel = shownByKernel.GetValueOrDefault(pid);
+                int shown = Math.Max(app, byKernel);
+                int frames = real.GetValueOrDefault(pid) is > 0 and var marks ? Math.Min(marks, shown)
+                    : app > 0 ? app : byKernel;
+                if (shown > 0)
+                    result[pid] = new FrameRate(shown, frames);
+            }
+            return result;
         }
 
         public void Dispose() => _session?.Dispose();
     }
 
+    /// <summary>
+    /// Generación de cuadros que usa un proceso, por las bibliotecas que tiene cargadas (se revisa
+    /// cada 30 s por proceso). Los juegos con anti-trampas pueden no dejar verlas: queda sin nombre.
+    /// </summary>
+    private sealed class FrameGenerationProbe
+    {
+        private readonly Dictionary<int, (DateTime When, string? Kind)> _cache = new();
+
+        public string? KindOf(int pid)
+        {
+            if (_cache.TryGetValue(pid, out var cached) && DateTime.UtcNow - cached.When < TimeSpan.FromSeconds(30))
+                return cached.Kind;
+            string? kind = null;
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                foreach (ProcessModule module in process.Modules)
+                {
+                    string name = module.ModuleName.ToLowerInvariant();
+                    string? found = name is "nvngx_dlssg.dll" or "sl.dlss_g.dll" ? "DLSS"
+                        : name.Contains("frameinterpolation") || name.StartsWith("amd_fidelityfx_") || name.Contains("ffx_fsr3") ? "FSR"
+                        : name.StartsWith("libxess_fg") ? "XeSS"
+                        : null;
+                    if (found is null)
+                        continue;
+                    kind = found;
+                    if (kind == "DLSS")
+                        break; // DLSS gana: un juego puede traer también FidelityFX para escalar
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
+            {
+            }
+            if (_cache.Count > 64)
+                _cache.Clear();
+            _cache[pid] = (DateTime.UtcNow, kind);
+            return kind;
+        }
+    }
     /// <summary>Vacía la memoria de trabajo de todos los procesos y la lista de espera (necesita administrador).</summary>
     private static class FreeMemory
     {

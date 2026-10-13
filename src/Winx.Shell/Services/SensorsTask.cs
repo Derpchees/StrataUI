@@ -59,10 +59,13 @@ public static class SensorsTask
     {
         try
         {
-            // Misma versión completa (incluye el commit): una copia de otra compilación se renueva.
+            // Misma versión completa (incluye el commit) y el mismo WINX.dll: una copia de otra
+            // compilación se renueva (dos compilaciones del mismo commit tienen la misma versión).
             if (!File.Exists(ProtectedExe)
                 || FileVersionInfo.GetVersionInfo(ProtectedExe).ProductVersion
-                   != FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion)
+                   != FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion
+                || !SameFile(Path.Combine(Path.GetDirectoryName(ProtectedExe)!, "WINX.dll"),
+                             Path.Combine(AppContext.BaseDirectory, "WINX.dll")))
                 return false;
             return RunSchtasks($"/Query /TN \"{TaskName(UserSid)}\"") == 0;
         }
@@ -70,6 +73,14 @@ public static class SensorsTask
         {
             return false;
         }
+    }
+
+    /// <summary>Mismo tamaño y fecha (la copia conserva la fecha del original).</summary>
+    private static bool SameFile(string a, string b)
+    {
+        var x = new FileInfo(a);
+        var y = new FileInfo(b);
+        return x.Exists && y.Exists && x.Length == y.Length && x.LastWriteTimeUtc == y.LastWriteTimeUtc;
     }
 
     /// <summary>Crea o renueva la tarea (pide UAC). Devuelve false si se canceló o falló.</summary>

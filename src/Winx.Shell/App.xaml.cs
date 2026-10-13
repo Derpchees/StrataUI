@@ -177,6 +177,8 @@ public partial class App : Application
         UpdateKeyHook();
         OpenTaskbars();
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
+        ExplorerWatch.Restarted += OnExplorerRestarted;
+        ExplorerWatch.Start();
         _ = Services.Brightness.BrightnessService.RefreshAsync();
         Services.Media.MediaService.Initialize();
         Services.Notifications.NotificationService.Arrived += OnNotificationArrived;
@@ -355,6 +357,26 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// El Explorador se reinició (o arrancó después de WINX): no conoce las barras de WINX, así que
+    /// no reserva su espacio y las ventanas maximizadas quedan debajo. Se vuelven a crear (eso las
+    /// registra ante el nuevo Explorador) y se oculta otra vez su barra.
+    /// </summary>
+    private void OnExplorerRestarted()
+    {
+        if (_exiting || _shell is null)
+            return;
+        Log.Info("Barra del Explorador nueva: se registran otra vez las barras de WINX");
+        _shell.ExplorerHelper.SetTaskbarState(NativeMethods.ABState.AutoHide);
+        _shell.ExplorerHelper.SetTaskbarVisibility(SwpHideWindow);
+        _shell.ExplorerHelper.SetSecondaryTaskbarVisibility(SwpHideWindow);
+        Flyouts.FlyoutManager.CloseAll();
+        CloseTaskbars();
+        OpenTaskbars();
+    }
+
+    private const int SwpHideWindow = 0x0080;
+
+    /// <summary>
     /// Windows avisa cuando cambian sus preferencias (p. ej. la alineación de su barra): las barras
     /// que las siguen las vuelven a leer.
     /// </summary>
@@ -515,6 +537,7 @@ public partial class App : Application
         SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
         TrayOwnership.Stop();
+        ExplorerWatch.Stop();
         TrayMemory.Flush();
         Services.StartMenu.WinKeyHook.Update(false, false);
         Services.Notifications.NotificationService.Shutdown();

@@ -805,5 +805,11 @@
   "Del fondo de pantalla (en pausa)": "From the wallpaper (paused)",
   "Elegido por mí": "My own color",
   "Wallpaper Engine está cambiando el color de Windows": "Wallpaper Engine is changing the Windows color",
-  "Mientras tenga activado Ajustar el color de Windows (Configuración › General), WINX no saca el color del fondo ni cambia el acento de Windows. Desactívalo ahí y esta opción vuelve sola.": "While its Adjust Windows color option is on (Settings › General), WINX won't take the color from the wallpaper or change the Windows accent. Turn it off there and this option comes back on its own."
+  "Mientras tenga activado Ajustar el color de Windows (Configuración › General), WINX no saca el color del fondo ni cambia el acento de Windows. Desactívalo ahí y esta opción vuelve sola.": "While its Adjust Windows color option is on (Settings › General), WINX won't take the color from the wallpaper or change the Windows accent. Turn it off there and this option comes back on its own.",
+  "Automático: la app activa": "Automatic: the active app",
+  "Automático: la app activa, en cualquier monitor. Con un monitor elegido, la app que lo ocupa aunque el contador esté en la barra de otro. Con generación de cuadros (DLSS, FSR, Lossless Scaling…) muestra los FPS en pantalla y abajo los reales.": "Automatic: the active app, on any monitor. With a monitor chosen, the app filling it even if the counter is on another monitor's taskbar. With frame generation (DLSS, FSR, Lossless Scaling…) it shows the FPS on screen and the real ones below.",
+  "{0} reales": "{0} real",
+  "Con generación de cuadros ({0}): {1} FPS": "With frame generation ({0}): {1} FPS",
+  "Sin generación de cuadros: {0} FPS": "Without frame generation: {0} FPS",
+  "tipo desconocido": "unknown type"
 }

@@ -741,11 +741,17 @@ public partial class Taskbar : AppBarWindow
         if (Has(BarItem.Fps))
         {
             var target = Sensors.TargetProcess(Settings.Current.FpsScreen);
-            int? fps = target is { } pid ? Sensors.FpsOf(pid) : null;
-            FpsValue.Text = Sensors.Starting ? "…" : fps?.ToString() ?? "—";
+            var fps = target is { } pid ? Sensors.FpsOf(pid) : null;
+            // Con generación de cuadros: arriba los que llegan a la pantalla y abajo los reales.
+            FpsValue.Text = Sensors.Starting ? "…" : fps?.Shown.ToString() ?? "—";
+            FpsDetail.Text = fps is { Generated: true } generated ? Loc.F("{0} reales", generated.Real) : "FPS";
             FpsButton.ToolTip = !Sensors.Running ? Loc.T("Clic para empezar a contar los FPS (pide permiso de administrador).")
                 : fps is null ? Loc.T("La app de ese monitor no está dibujando con la GPU.")
-                : Loc.F("FPS de {0}", Sensors.ProcessName(target!.Value));
+                : fps.Value.Generated
+                    ? Loc.F("FPS de {0}", Sensors.ProcessName(target!.Value)) + "\n"
+                      + Loc.F("Con generación de cuadros ({0}): {1} FPS", fps.Value.FrameGeneration ?? Loc.T("tipo desconocido"), fps.Value.Shown) + "\n"
+                      + Loc.F("Sin generación de cuadros: {0} FPS", fps.Value.Real)
+                    : Loc.F("FPS de {0}", Sensors.ProcessName(target!.Value));
         }
     }
 

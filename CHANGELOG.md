@@ -6,6 +6,31 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.1.0] - 2026-10-12
+
+### Añadido
+- **Generación de cuadros en el contador de FPS**: con DLSS FG, FSR FG, XeSS FG, Lossless Scaling o
+  la que inserta el controlador (Smooth Motion, AFMF), arriba se ven los FPS en pantalla y abajo los
+  reales ("366 / 124 reales"); el tooltip dice cuál se usa. Los reales salen de las marcas de Reflex
+  que llevan los juegos con DLSS FG o, si no, de lo que presenta el juego.
+- El contador de FPS mide por defecto **la app activa en cualquier monitor** ("Automático"); se
+  puede seguir fijando un monitor en Hub › Barra de tareas.
+
+### Cambiado
+- La temperatura de la CPU es la que da la placa base (la de la BIOS y las apps del fabricante, más
+  estable que la del procesador); sin ella, la del procesador como antes.
+- El contador de FPS pide a Windows solo los eventos que cuenta: el proceso de lecturas gasta mucho
+  menos.
+
+### Corregido
+- **Las ventanas maximizadas quedaban debajo de las barras** cuando el Explorador se reiniciaba o
+  arrancaba después de WINX al iniciar sesión: ahora WINX lo detecta y vuelve a reservar el espacio.
+- Las lecturas avanzadas se quedaban sin temperaturas ni FPS: el envío se bloqueaba en la tubería
+  con el proceso elevado.
+- Después de compilar o actualizar WINX sin cambiar de versión, el proceso de lecturas podía seguir
+  usando la copia anterior.
+- Acentos dañados en el registro del inicio automático.
+
 ## [1.0.0] - 2026-10-12
 
 Primera versión estable, con instalador para descargar desde GitHub Releases.

@@ -21,7 +21,7 @@ necesita, no hace falta instalar .NET. Después, el Hub avisa e instala las actu
 |-------------------------|---------------------------------------------------------------|
 | Barra de tareas         | ✅ una o dos por monitor (bordes opuestos, repartiendo apps y área de estado), en cualquier borde, alineación y tamaño configurables; vista previa en vivo de las ventanas, ordenarlas arrastrando, agrupar por app; apps web (YouTube, WhatsApp Web…) con su ícono; opción totalmente transparente con texto que se adapta al fondo |
 | Elementos de la barra   | ✅ cada barra lleva los elementos elegidos (Inicio, bandeja, red, Bluetooth, brillo, volumen, batería, reloj, multimedia, medidores) en el orden elegido: se arrastran en la barra misma o en el Hub, también de una barra a otra |
-| Rendimiento             | ✅ uso de CPU, GPU y RAM; temperaturas y contador de FPS (del monitor elegido) con lecturas avanzadas (permiso de administrador una sola vez; la temperatura de la CPU necesita PawnIO); liberar RAM |
+| Rendimiento             | ✅ uso de CPU, GPU y RAM; temperaturas y contador de FPS (de la app activa o del monitor elegido, con FPS reales y en pantalla si hay generación de cuadros) con lecturas avanzadas (permiso de administrador una sola vez; la temperatura de la CPU necesita PawnIO); liberar RAM |
 | Bandeja del sistema     | ✅ íconos visibles u ocultos; se ordenan arrastrando, también entre la barra y los ocultos |
 | Hub de configuración    | ✅ portada; personalización: barra de tareas (qué lleva cada barra), bandeja, menú Inicio, notificaciones, apariencia, control multimedia, paneles; optimización, actualizaciones, general |
 | Optimización (debloat)  | ✅ rendimiento, apps, privacidad, IA, sistema, Update, Explorador… con respaldo |
