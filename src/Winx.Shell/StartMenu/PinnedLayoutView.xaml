@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Winx.Shell.StartMenu.PinnedLayoutView"
+<UserControl x:Class="Winx.Shell.StartMenu.PinnedLayoutView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:Winx.Shell.Services.Localization"
@@ -112,6 +112,7 @@
         </DataTemplate>
     </UserControl.Resources>
 
+    <Grid>
     <StackPanel>
         <ItemsControl ItemsSource="{x:Static svc:PinLayout.Sections}">
             <ItemsControl.ItemTemplate>
@@ -131,7 +132,7 @@
                             <TextBox Visibility="Collapsed" Text="{Binding Name, Mode=OneTime}" MinWidth="160" HorizontalAlignment="Left"
                                      KeyDown="SectionEditor_KeyDown" LostFocus="SectionEditor_LostFocus" />
                         </Grid>
-                        <!-- Zona de la sección: soltar en un hueco agrega al final -->
+                        <!-- Cuadrícula de la sección: soltar en una celda vacía deja el elemento ahí -->
                         <ItemsControl ItemsSource="{Binding Tiles}" ItemsPanel="{StaticResource WrapItems}" MinHeight="44"
                                       Background="Transparent" />
                     </StackPanel>
@@ -190,4 +191,12 @@
             </Border>
         </Popup>
     </StackPanel>
+
+    <!-- Al arrastrar: contorno de la celda vacía donde caería el elemento -->
+    <Canvas IsHitTestVisible="False">
+        <Border x:Name="CellHint" Visibility="Collapsed" IsHitTestVisible="False" BorderThickness="1.5" CornerRadius="{DynamicResource WinxCornerRadius}"
+                BorderBrush="{DynamicResource WinxAccentBrush}" Background="{DynamicResource WinxSurfaceBrush}" Opacity="0.8" />
+    </Canvas>
+    </Grid>
 </UserControl>
+

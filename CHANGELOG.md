@@ -6,6 +6,17 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.2.0] - 2026-10-12
+
+### Añadido
+- **Menú Inicio con colocación libre**: un anclado se arrastra a cualquier celda vacía (después del
+  último o en la fila nueva que aparece al arrastrar) y queda ahí; su lugar queda vacío y nada se
+  corre. Un contorno marca la celda donde caerá. Ya no hace falta crear huecos con clic derecho.
+- Una app que se ancla ocupa el primer hueco del menú en vez de ir al final.
+
+### Cambiado
+- El medidor de RAM muestra lo usado y el total ("9.2/32 GB").
+
 ## [1.1.0] - 2026-10-12
 
 ### Añadido

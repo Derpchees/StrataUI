@@ -111,13 +111,70 @@ public static class PinLayout
 
     // ── Operaciones ─────────────────────────────────────────────────────────
 
+    /// <summary>Ancla una app: ocupa el primer hueco que haya (en orden de secciones); si no hay, va al final de la primera.</summary>
     public static void Pin(string appId)
     {
         if (Contains(appId))
             return;
         if (Editable.Count == 0)
             Editable.Add(new PinSection());
-        Editable[0].Items.Add(new PinEntry { AppId = appId });
+        var entry = new PinEntry { AppId = appId };
+        foreach (var section in Editable)
+        {
+            int gap = section.Items.FindIndex(e => e.IsGap);
+            if (gap >= 0)
+            {
+                section.Items[gap] = entry;
+                Commit();
+                return;
+            }
+        }
+        Editable[0].Items.Add(entry);
+        Commit();
+    }
+
+    /// <summary>
+    /// Coloca un elemento (o una app que sale de una carpeta) en una celda de la cuadrícula de una
+    /// sección, como en la pantalla de inicio de un teléfono: si la celda es un hueco lo ocupa; si
+    /// está después del último elemento, se rellena con huecos hasta ella. El lugar que deja el
+    /// elemento queda como hueco, así nada se corre.
+    /// </summary>
+    public static void PlaceAtCell(string sectionId, int cell, string? entryId, string? fromFolderId = null, string? appId = null)
+    {
+        if (FindSection(sectionId) is not { } target || cell < 0)
+            return;
+        if (cell < target.Items.Count)
+        {
+            if (target.Items[cell].IsGap)
+                DropOnGap(target.Items[cell].Id, entryId, fromFolderId, appId);
+            return;
+        }
+
+        PinEntry entry;
+        if (entryId != null)
+        {
+            var (section, found) = FindEntryWithSection(entryId);
+            if (section is null || found is null)
+                return;
+            section.Items[section.Items.IndexOf(found)] = new PinEntry(); // su lugar queda vacío
+            entry = found;
+        }
+        else if (fromFolderId != null && appId != null)
+        {
+            var (folderSection, folder) = FindEntryWithSection(fromFolderId);
+            if (folderSection is null || folder?.FolderApps is null)
+                return;
+            folder.FolderApps.Remove(appId);
+            NormalizeFolder(folderSection, folder);
+            entry = new PinEntry { AppId = appId };
+        }
+        else
+        {
+            return;
+        }
+        while (target.Items.Count < cell)
+            target.Items.Add(new PinEntry());
+        target.Items.Add(entry);
         Commit();
     }
 

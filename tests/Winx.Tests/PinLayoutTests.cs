@@ -134,6 +134,41 @@ public sealed class PinLayoutTests
     }
 
     [Fact]
+    public void Placing_past_the_end_fills_with_gaps_and_leaves_a_gap_behind()
+    {
+        // Como en un teléfono: "a" va a la celda 5 y nada se corre.
+        PinLayout.PlaceAtCell("s1", 5, "e-a");
+        Assert.Equal(["_", "b", "c", "_", "_", "a"], Ids(0));
+
+        // Otra sección y una app que sale de una carpeta.
+        PinLayout.Merge("e-c", "e-b");
+        var folder = Layout[0].Items[1].Id;
+        PinLayout.PlaceAtCell("s2", 2, null, folder, "c");
+        Assert.Equal(["d", "_", "c"], Ids(1));
+        Assert.Equal(["_", "b", "_", "_", "a"], Ids(0)); // la carpeta con solo "b" vuelve a ser "b"
+    }
+
+    [Fact]
+    public void Placing_on_a_gap_cell_takes_it_and_an_occupied_cell_is_ignored()
+    {
+        PinLayout.InsertGap("e-b", after: false);           // a _ b c
+        PinLayout.PlaceAtCell("s1", 1, "e-d");
+        Assert.Equal(["a", "d", "b", "c"], Ids(0));
+        PinLayout.PlaceAtCell("s1", 0, "e-c");               // ocupada: no cambia nada
+        Assert.Equal(["a", "d", "b", "c"], Ids(0));
+    }
+
+    [Fact]
+    public void Pinning_fills_the_first_gap()
+    {
+        PinLayout.InsertGap("e-b", after: false);
+        PinLayout.Pin("x");
+        Assert.Equal(["a", "x", "b", "c"], Ids(0));
+        PinLayout.Pin("y");                                  // sin huecos: al final
+        Assert.Equal(["a", "x", "b", "c", "y"], Ids(0));
+    }
+
+    [Fact]
     public void A_gap_is_never_merged_into_a_folder()
     {
         PinLayout.InsertGap("e-a", after: true);

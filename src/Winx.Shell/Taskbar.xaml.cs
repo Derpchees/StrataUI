@@ -733,7 +733,11 @@ public partial class Taskbar : AppBarWindow
         GpuButton.ToolTip = Loc.T("Uso de la GPU") + (temps && Sensors.GpuTemperature is null ? why : "");
 
         RamValue.Text = Value("RAM", SystemMonitor.RamTotal > 0 ? SystemMonitor.RamPercent : null);
-        RamDetail.Text = SystemMonitor.RamTotal > 0 ? $"{SystemMonitor.RamUsed / 1073741824.0:0.0} GB" : "";
+        // En uso / total ("9.2/32 GB"): el total redondeado, como se anuncia la memoria instalada.
+        RamDetail.Text = SystemMonitor.RamTotal > 0
+            ? string.Create(System.Globalization.CultureInfo.CurrentCulture,
+                $"{SystemMonitor.RamUsed / 1073741824.0:0.0}/{Math.Round(SystemMonitor.RamTotal / 1073741824.0):0} GB")
+            : "";
         RamButton.ToolTip = SystemMonitor.RamTotal > 0
             ? Loc.F("Memoria en uso: {0:0.0} de {1:0.0} GB", SystemMonitor.RamUsed / 1073741824.0, SystemMonitor.RamTotal / 1073741824.0)
             : Loc.T("Memoria RAM");

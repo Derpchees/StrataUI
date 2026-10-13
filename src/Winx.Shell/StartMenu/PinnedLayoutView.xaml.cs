@@ -10,7 +10,7 @@ namespace Winx.Shell.StartMenu;
 /// <summary>
 /// Anclados organizados en secciones con nombre y carpetas. Arrastrar una app:
 /// al centro de otra crea una carpeta (o entra en ella), a un lado la mueve antes o después,
-/// a un hueco de una sección la deja al final.
+/// a un hueco o a cualquier celda vacía la deja ahí (su lugar queda vacío y nada se corre).
 /// </summary>
 /// <remarks>
 /// El arrastre se hace capturando el mouse en lugar de DragDrop de OLE: así el ícono sigue
@@ -89,8 +89,16 @@ public partial class PinnedLayoutView : UserControl
         DragGhost.PlacementTarget = this;
         DragGhost.IsOpen = true;
         CaptureMouse(); // el botón tenía la captura: así tampoco se dispara su clic al soltar
+        // Una fila más en cada sección: se puede soltar debajo de lo que ya hay.
+        foreach (var panel in SectionPanels())
+        {
+            _grown.Add((panel, panel.MinHeight));
+            panel.MinHeight = panel.ActualHeight + (CellSize(panel)?.Height ?? 0);
+        }
         DragMove(position);
     }
+
+    private readonly List<(ItemsControl Panel, double MinHeight)> _grown = new();
 
     private void DragMove(Point position)
     {
@@ -112,6 +120,20 @@ public partial class PinnedLayoutView : UserControl
             var zone = ZoneOf(tile, TranslatePoint(position, tile), _drag!);
             SetHint(tile, zone == DropZone.Merge ? 1.12 : 1, zone switch { DropZone.Before => 8, DropZone.After => -8, _ => 0 });
         }
+
+        // Fuera de los mosaicos: se marca la celda vacía donde caería.
+        if (tile is null && CellAt(position) is { } cell)
+        {
+            Canvas.SetLeft(CellHint, cell.Bounds.X);
+            Canvas.SetTop(CellHint, cell.Bounds.Y);
+            CellHint.Width = cell.Bounds.Width;
+            CellHint.Height = cell.Bounds.Height;
+            CellHint.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            CellHint.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void EndDrag(Point position)
@@ -119,13 +141,109 @@ public partial class PinnedLayoutView : UserControl
         var drag = _drag!;
         var tile = TileAt(position);
         var section = SectionAt(position);
+        var cell = tile is null ? CellAt(position) : null;
         var pointInTile = tile != null ? TranslatePoint(position, tile) : default;
         CancelDrag();
 
         if (tile != null)
             DropOnTile(tile, pointInTile, drag);
+        else if (cell != null)
+            PinLayout.PlaceAtCell(cell.Value.SectionId, cell.Value.Index, drag.EntryId, drag.FromFolderId, drag.AppId);
         else if (section != null)
-            Place(drag, section.Id, int.MaxValue); // en un hueco de la sección: al final
+            Place(drag, section.Id, int.MaxValue); // en la sección, fuera de la cuadrícula: al final
+    }
+
+    // ── Celdas vacías ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Celda vacía bajo el cursor (después del último elemento de una sección o en la fila nueva
+    /// que aparece al arrastrar). Las columnas salen del ancho real del menú y del de un mosaico.
+    /// </summary>
+    private (string SectionId, int Index, Rect Bounds)? CellAt(Point position)
+    {
+        if (Ancestor(position, d => d is ItemsControl { DataContext: PinSectionView }) is not ItemsControl { DataContext: PinSectionView section } panel
+            || CellSize(panel) is not { } size)
+            return null;
+        var p = TranslatePoint(position, panel);
+        int columns = Math.Max(1, (int)(panel.ActualWidth / size.Width + 0.01));
+        int column = (int)Math.Floor(p.X / size.Width);
+        if (column < 0 || column >= columns || p.Y < 0)
+            return null;
+
+        // Las filas pueden medir distinto (nombres de una o dos líneas): se usan las reales y, debajo, la más alta.
+        var rows = RowTops(panel);
+        int row = rows.FindLastIndex(top => top <= p.Y);
+        double rowTop;
+        if (row < 0)
+        {
+            row = 0;
+            rowTop = 0;
+        }
+        else if (row == rows.Count - 1 && p.Y >= rows[row] + size.Height)
+        {
+            int extra = (int)Math.Floor((p.Y - rows[row]) / size.Height);
+            rowTop = rows[row] + extra * size.Height;
+            row += extra;
+        }
+        else
+        {
+            rowTop = rows[row];
+        }
+        int index = row * columns + column;
+        if (index < section.Tiles.Count)
+            return null; // ahí hay un mosaico (o un hueco, que se atiende como mosaico)
+        var origin = panel.TranslatePoint(new Point(column * size.Width, rowTop), this);
+        return (section.Id, index, new Rect(origin, size));
+    }
+
+    private static List<double> RowTops(ItemsControl panel)
+    {
+        var tops = new List<double>();
+        for (int i = 0; i < panel.Items.Count; i++)
+        {
+            if (panel.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement container)
+            {
+                double top = container.TranslatePoint(default, panel).Y;
+                if (tops.Count == 0 || top > tops[^1] + 1)
+                    tops.Add(top);
+            }
+        }
+        return tops;
+    }
+
+    private Size _lastCellSize;
+
+    /// <summary>Tamaño de una celda (el de un mosaico con su margen); en una sección vacía, el último conocido.</summary>
+    private Size? CellSize(ItemsControl panel)
+    {
+        double height = 0, width = 0;
+        for (int i = 0; i < panel.Items.Count; i++)
+        {
+            if (panel.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement { ActualWidth: > 0 } container)
+            {
+                width = container.ActualWidth;
+                height = Math.Max(height, container.ActualHeight);
+            }
+        }
+        if (width > 0)
+            _lastCellSize = new Size(width, height);
+        return _lastCellSize.Width > 0 ? _lastCellSize : null;
+    }
+
+    private IEnumerable<ItemsControl> SectionPanels()
+    {
+        var stack = new Stack<DependencyObject>([this]);
+        while (stack.Count > 0)
+        {
+            var d = stack.Pop();
+            if (d is ItemsControl { DataContext: PinSectionView } panel)
+            {
+                yield return panel;
+                continue;
+            }
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(d); i++)
+                stack.Push(VisualTreeHelper.GetChild(d, i));
+        }
     }
 
     private void CancelDrag()
@@ -134,6 +252,10 @@ public partial class PinnedLayoutView : UserControl
             return;
         _drag = null;
         DragGhost.IsOpen = false;
+        CellHint.Visibility = Visibility.Collapsed;
+        foreach (var (panel, minHeight) in _grown)
+            panel.MinHeight = minHeight;
+        _grown.Clear();
         if (_hintTile != null)
             SetHint(_hintTile, 1, 0);
         _hintTile = null;
@@ -162,7 +284,16 @@ public partial class PinnedLayoutView : UserControl
 
     private DependencyObject? Ancestor(Point position, Func<DependencyObject, bool> match)
     {
-        var hit = VisualTreeHelper.HitTest(this, position)?.VisualHit;
+        // El contorno de la celda (encima de todo) no cuenta aunque no reciba clics.
+        DependencyObject? hit = null;
+        VisualTreeHelper.HitTest(this,
+            d => ReferenceEquals(d, CellHint) ? HitTestFilterBehavior.ContinueSkipSelfAndChildren : HitTestFilterBehavior.Continue,
+            r =>
+            {
+                hit = r.VisualHit;
+                return HitTestResultBehavior.Stop;
+            },
+            new PointHitTestParameters(position));
         for (var d = hit; d != null && !ReferenceEquals(d, this); d = VisualTreeHelper.GetParent(d))
             if (match(d))
                 return d;
