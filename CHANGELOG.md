@@ -65,6 +65,11 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   de soltarlo dentro del panel, que se abre al pasar sobre la flecha).
 
 ### Corregido
+- **El contador de FPS saltaba mucho** (en un juego quieto a 245 FPS mostraba de 23 a 199): contaba
+  los eventos que llegaban cada segundo, y Windows los entrega en tandas. Ahora usa la hora de cada
+  cuadro y muestra el promedio del último segundo (probado con Space Marine 2: 242–247).
+- La generación de cuadros de DLSS salía como "tipo desconocido" en juegos que no dejan ver sus
+  bibliotecas (anti-trampas): ahora se reconoce por las marcas de Reflex.
 - **El menú de clic derecho de algunos íconos de la bandeja (WhatsApp) salía en otro monitor**
   cuando la bandeja está en un monitor a la izquierda o arriba del principal: esas apps leen mal las
   coordenadas negativas. Ahora Strata UI lleva el menú junto al ícono.

@@ -478,8 +478,10 @@ public static class Sensors
             Thread.Sleep(1000);
             var counts = frames.TakeCounts();
             // El tipo de generación de cuadros solo se busca en los procesos que la usan.
+            // Si el juego no deja ver sus bibliotecas (anti-trampas), las marcas de Reflex de
+            // presentación fuera de banda delatan a DLSS Frame Generation.
             var kinds = counts.Where(c => c.Value.Shown >= c.Value.Real * 1.4)
-                .Select(c => (Pid: c.Key, Kind: probe.KindOf(c.Key)))
+                .Select(c => (Pid: c.Key, Kind: probe.KindOf(c.Key) ?? (frames.OutOfBand.Contains(c.Key) ? "DLSS" : null)))
                 .Where(k => k.Kind != null);
             string line = string.Create(CultureInfo.InvariantCulture,
                 $"cpu={cpu:0.0};gpu={gpu:0.0};pawnio={(pawnIo ? 1 : 0)}"
@@ -608,6 +610,34 @@ public static class Sensors
         }
     }
 
+    /// <summary>Marcas de tiempo (ms del reloj de la sesión) de un tipo de cuadro de un proceso.</summary>
+    internal sealed class FrameTrack
+    {
+        public readonly Queue<double> Times = new();
+        public double Last;
+
+        public void Add(double time)
+        {
+            Times.Enqueue(time);
+            Last = time;
+        }
+
+        /// <summary>
+        /// Cuadros por segundo en el segundo que termina en <paramref name="now"/>: con cuadros
+        /// recientes, el promedio de sus intervalos (no salta de a uno por redondeo); si el proceso
+        /// dejó de presentar, los que quedan en la ventana (va bajando hasta 0).
+        /// </summary>
+        public int Rate(double now)
+        {
+            while (Times.Count > 0 && Times.Peek() <= now - 1000)
+                Times.Dequeue();
+            int count = Times.Count;
+            if (count >= 3 && now - Last < 250 && Last > Times.Peek())
+                return (int)Math.Round((count - 1) * 1000.0 / (Last - Times.Peek()));
+            return count;
+        }
+    }
+
     /// <summary>Cuadros de un proceso en el último segundo: los que llegan a la pantalla y los que dibujó la app.</summary>
     internal readonly record struct FrameRate(int Shown, int Real);
 
@@ -617,6 +647,10 @@ public static class Sensors
     /// del núcleo gráfico (OpenGL, Vulkan y los cuadros que inserta el controlador: Smooth Motion,
     /// AFMF). Los cuadros reales se toman de las marcas de Reflex (PCLStats, que llevan todos los
     /// juegos con DLSS FG): una por cuadro que simula el juego.
+    /// <para>Los FPS salen de la marca de tiempo de cada cuadro (el promedio del último segundo de
+    /// cuadros), no de cuántos eventos llegaron desde la lectura anterior: ETW los entrega en tandas
+    /// (más o menos cada segundo) y contar por llegada daba, en un juego quieto a 112 FPS, 46 y 179
+    /// alternados.</para>
     /// </summary>
     private sealed class FrameCounter : IDisposable
     {
@@ -629,11 +663,19 @@ public static class Sensors
         // con composición): cada presentación pasa por al menos uno; se toma el mayor, no la suma.
         private static readonly int[] KernelPresents = [184, 168, 215];
         private const uint PclSimulationStart = 0;
+        /// <summary>OUT_OF_BAND_PRESENT_START: la presentación de un cuadro que inserta DLSS Frame Generation.</summary>
+        private const uint PclOutOfBandPresent = 11;
+
+        /// <summary>Procesos que mandaron marcas de presentación fuera de banda desde la lectura anterior.</summary>
+        public HashSet<int> OutOfBand { get; private set; } = new();
+        private HashSet<int> _outOfBand = new();
 
         private Microsoft.Diagnostics.Tracing.Session.TraceEventSession? _session;
         private readonly object _lock = new();
-        private Dictionary<int, int> _api = new(), _real = new();
-        private Dictionary<(int Pid, int Id), int> _kernel = new();
+        private readonly Dictionary<int, FrameTrack> _api = new(), _real = new();
+        private readonly Dictionary<(int Pid, int Id), FrameTrack> _kernel = new();
+        /// <summary>El evento más nuevo que llegó (de cualquier proceso): el "ahora" del reloj de los cuadros.</summary>
+        private double _latest;
 
         /// <summary>Diagnóstico: con el archivo %LOCALAPPDATA%\StrataUI\fps-debug se registran los eventos que llegan.</summary>
         public bool Debug => _debug;
@@ -676,9 +718,17 @@ public static class Sensors
             }
         }
 
+        private static void Add<TKey>(Dictionary<TKey, FrameTrack> tracks, TKey key, double time) where TKey : notnull
+        {
+            if (!tracks.TryGetValue(key, out var track))
+                tracks[key] = track = new FrameTrack();
+            track.Add(time);
+        }
+
         private void OnEvent(Microsoft.Diagnostics.Tracing.TraceEvent e)
         {
             int id = (int)e.ID, pid = e.ProcessID;
+            double time = e.TimeStampRelativeMSec;
             if (_debug)
             {
                 string provider = e.ProviderGuid == Dxgi ? "DXGI" : e.ProviderGuid == D3D9 ? "D3D9"
@@ -690,20 +740,33 @@ public static class Sensors
             if (e.ProviderGuid == PclStats)
             {
                 // PCLStatsEvent: Marker (UINT32) y FrameID (UINT64).
-                if (e.EventDataLength >= 12 && Marker(e) == PclSimulationStart)
+                uint? marker = e.EventDataLength >= 12 ? Marker(e) : null;
+                if (marker == PclSimulationStart)
                     lock (_lock)
-                        _real[pid] = _real.GetValueOrDefault(pid) + 1;
+                    {
+                        Add(_real, pid, time);
+                        _latest = Math.Max(_latest, time);
+                    }
+                else if (marker == PclOutOfBandPresent)
+                    lock (_lock)
+                        _outOfBand.Add(pid);
                 return;
             }
             if ((e.ProviderGuid == Dxgi && id == DxgiPresentStart) || (e.ProviderGuid == D3D9 && id == D3D9PresentStart))
             {
                 lock (_lock)
-                    _api[pid] = _api.GetValueOrDefault(pid) + 1;
+                {
+                    Add(_api, pid, time);
+                    _latest = Math.Max(_latest, time);
+                }
             }
             else if (e.ProviderGuid == DxgKrnl && Array.IndexOf(KernelPresents, id) >= 0)
             {
                 lock (_lock)
-                    _kernel[(pid, id)] = _kernel.GetValueOrDefault((pid, id)) + 1;
+                {
+                    Add(_kernel, (pid, id), time);
+                    _latest = Math.Max(_latest, time);
+                }
             }
         }
 
@@ -716,20 +779,23 @@ public static class Sensors
         }
 
         /// <summary>
-        /// Cuadros del último segundo por proceso. En pantalla: el mayor entre lo que presenta la app y
-        /// lo que llega al núcleo gráfico. Reales: las marcas de Reflex si las hay; si no, lo que
-        /// presenta la app (el controlador puede insertar más); si tampoco, lo del núcleo.
+        /// Cuadros por segundo de cada proceso (el último segundo de cuadros). En pantalla: el mayor
+        /// entre lo que presenta la app y lo que llega al núcleo gráfico. Reales: las marcas de Reflex
+        /// si las hay; si no, lo que presenta la app (el controlador puede insertar más); si tampoco,
+        /// lo del núcleo.
         /// </summary>
         public Dictionary<int, FrameRate> TakeCounts()
         {
-            Dictionary<int, int> api, real;
-            Dictionary<(int Pid, int Id), int> kernel;
+            var api = new Dictionary<int, int>();
+            var real = new Dictionary<int, int>();
+            var kernel = new Dictionary<(int Pid, int Id), int>();
             Dictionary<string, int>? histogram = null;
             lock (_lock)
             {
-                (api, _api) = (_api, new());
-                (real, _real) = (_real, new());
-                (kernel, _kernel) = (_kernel, new());
+                Rates(_api, api);
+                Rates(_real, real);
+                Rates(_kernel, kernel);
+                (OutOfBand, _outOfBand) = (_outOfBand, new());
                 if (_debug && ++_seconds % 5 == 0)
                     (histogram, _histogram) = (_histogram, new());
             }
@@ -748,6 +814,19 @@ public static class Sensors
                     result[pid] = new FrameRate(shown, frames);
             }
             return result;
+        }
+
+        /// <summary>FPS de cada pista; las que se quedaron sin cuadros se descartan.</summary>
+        private void Rates<TKey>(Dictionary<TKey, FrameTrack> tracks, Dictionary<TKey, int> into) where TKey : notnull
+        {
+            foreach (var (key, track) in tracks.ToList())
+            {
+                int rate = track.Rate(_latest);
+                if (rate > 0)
+                    into[key] = rate;
+                else
+                    tracks.Remove(key);
+            }
         }
 
         public void Dispose() => _session?.Dispose();
