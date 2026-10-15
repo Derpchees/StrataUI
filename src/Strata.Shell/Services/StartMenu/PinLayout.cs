@@ -181,11 +181,16 @@ public static class PinLayout
         Commit();
     }
 
+    /// <summary>Desancla una app: su celda queda vacía (como al moverla, nada se corre).</summary>
     public static void Unpin(string appId)
     {
         foreach (var section in Model)
         {
-            section.Items.RemoveAll(e => e.AppId == appId);
+            for (int i = 0; i < section.Items.Count; i++)
+            {
+                if (section.Items[i].AppId == appId)
+                    section.Items[i] = new PinEntry();
+            }
             foreach (var folder in section.Items.Where(e => e.IsFolder).ToList())
             {
                 folder.FolderApps!.Remove(appId);

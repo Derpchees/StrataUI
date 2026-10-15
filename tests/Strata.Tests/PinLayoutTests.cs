@@ -81,6 +81,16 @@ public sealed class PinLayoutTests
     }
 
     [Fact]
+    public void Unpinning_leaves_its_cell_empty()
+    {
+        // Como al moverla: las demás no se corren (y al final no queda una celda vacía colgando).
+        PinLayout.Unpin("b");
+        Assert.Equal(["a", "_", "c"], Ids(0));
+        PinLayout.Unpin("c");
+        Assert.Equal(["a"], Ids(0));
+    }
+
+    [Fact]
     public void Unpin_removes_from_folders_too()
     {
         PinLayout.Merge("e-b", "e-a");

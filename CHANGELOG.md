@@ -7,6 +7,9 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **"Anclar a Inicio de Strata UI" en el clic derecho del Explorador** (archivos, accesos directos y
+  carpetas): en el menú clásico ("Mostrar más opciones" en Windows 11) y en Nilesoft Shell. Se puede
+  quitar en Hub › Menú Inicio.
 - **Optimización › Hardware**: el procesador y las gráficas del equipo y, con una tarjeta NVIDIA, los
   ajustes globales de su controlador (modo de energía, baja latencia, filtrado de texturas y caché de
   sombreadores), con "Dejar como estaba". Además, los servicios de datos de uso de NVIDIA, AMD e
@@ -39,6 +42,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   llegaba como un rectángulo al revés.
 
 ### Cambiado
+- Desanclar una app de Inicio deja su celda vacía en lugar de correr las demás (como al moverla).
 - **WINX ahora se llama Strata UI.** El programa es `StrataUI.exe`, los datos viven en
   `%LOCALAPPDATA%\StrataUI` y las publicaciones en `github.com/Derpchees/StrataUI`.
 - Al actualizar desde WINX todo se conserva: la configuración, los anclados, el registro y las

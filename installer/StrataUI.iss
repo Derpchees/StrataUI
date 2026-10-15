@@ -142,6 +142,8 @@ begin
                 ewWaitUntilTerminated, Code);
     // El inicio automático puede haberlo activado el Hub aunque no se eligiera al instalar.
     RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'StrataUI');
+    // "Anclar a Inicio de Strata UI" del menú del Explorador (lo pone la app: Services\StartMenu\ExplorerMenu.cs).
+    RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\Classes\AllFilesystemObjects\shell\StrataUI.PinToStart');
     // Strata UI pasa la clave Run a una tarea programada (Services\AutoStart.cs): se borra también.
     Exec(ExpandConstant('{sys}\schtasks.exe'), ExpandConstant('/Delete /TN "StrataUI ({username})" /F'), '',
          SW_HIDE, ewWaitUntilTerminated, Code);

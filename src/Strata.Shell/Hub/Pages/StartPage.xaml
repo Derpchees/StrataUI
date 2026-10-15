@@ -151,6 +151,19 @@
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="MouseMonitorSwitch" Click="Options_Changed" />
             </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Explorador de archivos'}" />
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Pin24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Anclar a Inicio desde el clic derecho'}" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="{l:T 'Agrega «Anclar a Inicio de Strata UI» al menú de archivos, accesos directos y carpetas. En Windows 11 está en «Mostrar más opciones»; también sale en Nilesoft Shell.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="ExplorerMenuSwitch" Click="Options_Changed" />
+            </ui:CardControl>
         </StackPanel>
     </ScrollViewer>
 </Page>

@@ -155,6 +155,8 @@ public sealed class StrataSettings
     public bool StartUseWinKey { get; set; } = true;
     /// <summary>La tecla Windows abre Inicio en el monitor donde está el mouse (si ahí hay una barra con Inicio).</summary>
     public bool StartOnMouseMonitor { get; set; } = true;
+    /// <summary>"Anclar a Inicio de Strata UI" en el menú contextual del Explorador (Services/StartMenu/ExplorerMenu).</summary>
+    public bool StartExplorerMenu { get; set; } = true;
     /// <summary>Formato anterior de anclados (lista plana); se migra a <see cref="StartLayout"/>.</summary>
     public List<string>? PinnedStartApps { get; set; }
     /// <summary>Anclados organizados en secciones y carpetas; null = primera vez.</summary>

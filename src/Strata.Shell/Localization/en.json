@@ -888,5 +888,8 @@
   "Alto rendimiento": "High performance",
   "Tamaño de la caché de sombreadores": "Shader cache size",
   "Ilimitada: los juegos no vuelven a compilar sombreadores que ya tenían (menos tirones).": "Unlimited: games don't recompile shaders they already had (less stutter).",
-  "Ilimitada": "Unlimited"
+  "Ilimitada": "Unlimited",
+  "Anclar a Inicio de Strata UI": "Pin to Strata UI Start",
+  "Anclar a Inicio desde el clic derecho": "Pin to Start from the right-click menu",
+  "Agrega «Anclar a Inicio de Strata UI» al menú de archivos, accesos directos y carpetas. En Windows 11 está en «Mostrar más opciones»; también sale en Nilesoft Shell.": "Adds “Pin to Strata UI Start” to the menu of files, shortcuts and folders. On Windows 11 it's under “Show more options”; it also shows up in Nilesoft Shell."
 }

@@ -27,6 +27,7 @@ public partial class App : Application
     private EventWaitHandle? _exitEvent;
     private RegisteredWaitHandle? _exitWait;
     private EventWaitHandle? _openHubEvent;
+    private bool _explorerMenu;
     private RegisteredWaitHandle? _openHubWait;
     private ShellManager? _shell;
     private readonly List<Taskbar> _taskbars = new();
@@ -99,6 +100,12 @@ public partial class App : Application
         if (e.Args.Length > 0 && e.Args[0] == Services.Vendors.NvidiaSettings.Arg)
         {
             Shutdown(Services.Vendors.NvidiaSettings.RunHelper(e.Args));
+            return;
+        }
+        // "Anclar a Inicio de Strata UI" desde el menú del Explorador (ver Services/StartMenu/ExplorerMenu).
+        if (e.Args.Length > 0 && e.Args[0] == Services.StartMenu.ExplorerMenu.PinArg)
+        {
+            Shutdown(Services.StartMenu.ExplorerMenu.RunRequest(e.Args));
             return;
         }
         // Diálogo de abrir archivo o carpeta en un proceso aparte (ver Services/FilePicker).
@@ -210,6 +217,9 @@ public partial class App : Application
                 items.Contains(BarItem.Fps) || items.Contains(BarItem.Cpu) || items.Contains(BarItem.Gpu)))
             _ = Sensors.StartAsync();
         _ = Task.Run(AutoStart.Migrate);
+        Services.StartMenu.ExplorerMenu.Listen();
+        _explorerMenu = Settings.Current.StartExplorerMenu;
+        Services.StartMenu.ExplorerMenu.Update();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged += OnWindowsPreferenceChanged;
         Settings.Changed += OnSettingsChanged;
@@ -463,6 +473,11 @@ public partial class App : Application
     private void OnSettingsChanged()
     {
         UpdateKeyHook();
+        if (Settings.Current.StartExplorerMenu != _explorerMenu)
+        {
+            _explorerMenu = Settings.Current.StartExplorerMenu;
+            Services.StartMenu.ExplorerMenu.Update();
+        }
         Services.Notifications.NotificationService.Update();
         if (!_exiting)
             Services.Notifications.WindowsBanners.Update();
@@ -597,6 +612,7 @@ public partial class App : Application
         _exitEvent?.Dispose();
         _openHubWait?.Unregister(null);
         _openHubEvent?.Dispose();
+        Services.StartMenu.ExplorerMenu.Stop();
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
         _mutex = null;
