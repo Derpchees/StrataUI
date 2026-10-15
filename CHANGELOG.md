@@ -7,6 +7,9 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Más fluidez**: el resaltado de los botones de la barra, los paneles y el menú Inicio entra y sale
+  con un fundido, al presionar el contenido se encoge un poco (como en Windows 11), los botones de
+  las apps que se abren entran con una animación y los widgets aparecen con un fundido.
 - **Widgets de escritorio** (Hub › Widgets): reloj digital con o sin fecha y **visualizador de
   música** (barras con el acento que siguen lo que suena, con la canción debajo). Viven sobre el
   fondo, siguen a la vista con "Mostrar escritorio", se mueven arrastrándolos y su clic derecho da

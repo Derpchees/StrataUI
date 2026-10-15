@@ -41,6 +41,7 @@ public partial class TaskButton : UserControl
             {
                 FitTo(_bar.Position);
                 _bar.TasksChanged += UpdateGroup;
+                AnimateIfNew();
             }
             if (DataContext is INotifyPropertyChanged window)
                 window.PropertyChanged += OnWindowChanged;
@@ -62,6 +63,30 @@ public partial class TaskButton : UserControl
     }
 
     private Taskbar? _bar;
+
+    /// <summary>Ventanas que ya tuvieron botón: la lista se regenera seguido y solo las nuevas se animan.</summary>
+    private static readonly HashSet<IntPtr> Seen = new();
+    private static readonly DateTime StartedAt = DateTime.UtcNow;
+
+    /// <summary>
+    /// Una ventana recién abierta entra con un fundido y creciendo un poco (no al arrancar Strata UI,
+    /// cuando aparecen todas juntas, ni con las animaciones apagadas).
+    /// </summary>
+    private void AnimateIfNew()
+    {
+        if (Window is not { } window || !Seen.Add(window.Handle))
+            return;
+        if (DateTime.UtcNow - StartedAt < TimeSpan.FromSeconds(3) || Settings.Current.PanelAnimation == PanelAnimation.None)
+            return;
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+        var duration = TimeSpan.FromMilliseconds(220);
+        var scale = new System.Windows.Media.ScaleTransform(0.6, 0.6);
+        IconHost.RenderTransformOrigin = new Point(0.5, 0.5);
+        IconHost.RenderTransform = scale;
+        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, new System.Windows.Media.Animation.DoubleAnimation(0.6, 1, duration) { EasingFunction = ease });
+        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, new System.Windows.Media.Animation.DoubleAnimation(0.6, 1, duration) { EasingFunction = ease });
+        Root.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration));
+    }
 
     private void OnWindowChanged(object? sender, PropertyChangedEventArgs e)
     {

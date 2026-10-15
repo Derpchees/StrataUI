@@ -46,6 +46,12 @@ public sealed class WidgetWindow : Window
         MouseLeftButtonDown += OnMouseDown;
         MouseMove += OnMouseMove;
         MouseLeftButtonUp += OnMouseUp;
+        // Aparece con un fundido suave (al agregarlo o al abrir Strata UI).
+        Loaded += (_, _) =>
+        {
+            if (Settings.Current.PanelAnimation != PanelAnimation.None)
+                BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(400)));
+        };
     }
 
     public void Update(WidgetConfig config)
