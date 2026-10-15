@@ -1,10 +1,22 @@
 # Changelog
 
-Todos los cambios relevantes de WINX se documentan aquí.
+Todos los cambios relevantes de Strata UI (llamado WINX hasta la 1.3) se documentan aquí.
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
+
+### Cambiado
+- **WINX ahora se llama Strata UI.** El programa es `StrataUI.exe`, los datos viven en
+  `%LOCALAPPDATA%\StrataUI` y las publicaciones en `github.com/Derpchees/StrataUI`.
+- Al actualizar desde WINX todo se conserva: la configuración, los anclados, el registro y las
+  notificaciones pasan a la carpeta nueva la primera vez que se abre; el inicio automático pasa a la
+  tarea "StrataUI"; la carpeta del menú Inicio y el acceso directo se renuevan y se borra el
+  ejecutable viejo. Las lecturas avanzadas piden permiso otra vez (como en cada actualización) y al
+  aceptarlo se quita la tarea y la copia de WINX.
+- README nuevo, en inglés, para GitHub.
+- **Logo nuevo**: tres capas, más simple y nítido en cualquier tamaño (dentro de la app se dibuja
+  como vector; el `.ico` lleva cada tamaño de 16 a 256 px dibujado aparte).
 
 ## [1.3.0] - 2026-10-14
 

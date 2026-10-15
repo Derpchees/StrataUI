@@ -1,0 +1,53 @@
+﻿<start:StartMenuBase x:Class="Strata.Shell.StartMenu.StartMenuIcons"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
+                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                     xmlns:start="clr-namespace:Strata.Shell.StartMenu"
+                     Title="{l:T 'Inicio'}" Width="372" Height="460" SizeToContent="Manual">
+    <!-- Minimalista: cuadrícula de íconos sin texto (el nombre aparece al pasar el mouse) -->
+    <Grid Margin="12,12,12,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TextBox x:Name="SearchBox" PlaceholderText="{l:T 'Buscar'}"
+                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+            <ui:TextBox.Icon>
+                <ui:SymbolIcon Symbol="Search24" />
+            </ui:TextBox.Icon>
+        </ui:TextBox>
+
+        <ScrollViewer Grid.Row="1" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsPanel="{StaticResource WrapItems}">
+                <ItemsControl.Style>
+                    <!-- Anclados en reposo; todas las apps o resultados según el caso -->
+                    <Style TargetType="ItemsControl">
+                        <Setter Property="ItemsSource" Value="{Binding Pinned}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ShowPinned}" Value="False">
+                                <Setter Property="ItemsSource" Value="{Binding AllApps}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsSearching}" Value="True">
+                                <Setter Property="ItemsSource" Value="{Binding Results}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ItemsControl.Style>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource FlyoutIconButton}" Width="{DynamicResource StartGridButtonSize}" Height="{DynamicResource StartGridButtonSize}" Margin="2"
+                                Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
+                                ToolTip="{Binding Name}" ContextMenu="{StaticResource AppContextMenu}">
+                            <Image Source="{Binding Icon}" Width="{DynamicResource StartGridIconSize}" Height="{DynamicResource StartGridIconSize}" RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <start:StartFooter Grid.Row="2" Margin="0,8,0,0" />
+    </Grid>
+</start:StartMenuBase>

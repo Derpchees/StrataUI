@@ -1,0 +1,62 @@
+﻿<start:StartMenuBase x:Class="Strata.Shell.StartMenu.StartMenuCompact"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
+                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                     xmlns:start="clr-namespace:Strata.Shell.StartMenu"
+                     Title="{l:T 'Inicio'}" Width="340" Height="540" SizeToContent="Manual">
+    <!-- Minimalista: una columna con buscador, anclados en lista y el pie -->
+    <Grid Margin="12,12,12,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TextBox x:Name="SearchBox" PlaceholderText="{l:T 'Buscar'}"
+                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+            <ui:TextBox.Icon>
+                <ui:SymbolIcon Symbol="Search24" />
+            </ui:TextBox.Icon>
+        </ui:TextBox>
+
+        <ScrollViewer Grid.Row="1" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <StackPanel Visibility="{Binding HomeVisible, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl ItemsSource="{Binding Pinned}" ItemTemplate="{StaticResource AppRow}"
+                                  Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}" />
+                    <Button Style="{StaticResource FlyoutRow}" Margin="0,6,0,0" Click="ShowAll_Click"
+                            Visibility="{Binding ShowAllAppsButton, Converter={StaticResource BoolToVis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Apps24" Margin="2,0,14,0" />
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Todas las apps'}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Visibility="{Binding AllAppsVisible, Converter={StaticResource BoolToVis}}">
+                    <Button Style="{StaticResource FlyoutRow}" Click="Back_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="ArrowLeft24" Margin="2,0,14,0" />
+                            <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Atrás'}" />
+                        </StackPanel>
+                    </Button>
+                    <ItemsControl ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppRow}">
+                        <ItemsControl.GroupStyle>
+                            <StaticResource ResourceKey="LetterGroups" />
+                        </ItemsControl.GroupStyle>
+                    </ItemsControl>
+                </StackPanel>
+
+                <StackPanel Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
+                    <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}" />
+                    <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
+                               Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
+                               Text="{l:T 'Sin resultados. Enter lo ejecuta como comando.'}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <start:StartFooter Grid.Row="2" Margin="0,8,0,0" />
+    </Grid>
+</start:StartMenuBase>

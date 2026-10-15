@@ -1,0 +1,233 @@
+<Page x:Class="Strata.Shell.Hub.Pages.TaskbarPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
+      xmlns:hub="clr-namespace:Strata.Shell.Hub"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="{l:T 'Barra de tareas'}"
+      ScrollViewer.CanContentScroll="False">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <hub:PageHeader Icon="PanelBottom20" Title="{l:T 'Barra de tareas'}"
+                            Subtitle="{l:T 'Qué lleva la barra de cada monitor, su aspecto, posición, reloj y rendimiento.'}" />
+            <hub:ScreenPicker />
+
+            <!-- ── Qué lleva la barra (de este monitor) ─────────────────────── -->
+            <Grid Margin="2,8,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource HubSectionTitle}" Margin="0" VerticalAlignment="Center" Text="{l:T 'Qué lleva la barra'}" />
+                <ui:Button Grid.Column="1" Content="{l:T 'Restablecer'}" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetLayout_Click" />
+            </Grid>
+            <TextBlock Style="{StaticResource CardDescription}" Margin="2,4,0,10" TextWrapping="Wrap"
+                       Text="{l:T 'Activa lo que quieres en la barra de este monitor. Para ordenarlos, arrástralos en la barra misma (también a la de otro monitor); clic derecho en uno: su configuración en Windows.'}" />
+            <hub:BarItemsEditor x:Name="BarEditor" />
+
+            <!-- ── Barra ─────────────────────────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Barra'}" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlignCenterHorizontal24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Alineación'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Posición del botón Inicio y de las apps abiertas (en barras verticales, Izquierda es arriba)'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="AlignmentBox" MinWidth="200" SelectionChanged="Alignment_Changed">
+                    <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="Windows" />
+                    <ComboBoxItem Content="{l:T 'Centro'}" Tag="Center" />
+                    <ComboBoxItem Content="{l:T 'Izquierda'}" Tag="Left" />
+                </ComboBox>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CenterHorizontal24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Centrar las apps abiertas'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Con Inicio a la izquierda, las apps quedan igual al centro de la barra.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="CenterAppsSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple20" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Vista previa de las ventanas'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Al pasar el mouse por una app abierta se ve su ventana en vivo. Arrastra los botones para ordenarlos.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="PreviewsSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Stack24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Agrupar las ventanas de cada app'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Un solo botón por app, que se ve apilado si tiene varias ventanas; al hacer clic se elige cuál abrir. YouTube, WhatsApp Web y otros sitios cuentan como su propia app.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="CombineSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowAutofitHeight24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Tamaño'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Grosor de la barra de este monitor'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="HeightBox" MinWidth="160" SelectionChanged="Height_Changed">
+                    <ComboBoxItem Content="{l:T 'Compacta'}" Tag="40" />
+                    <ComboBoxItem Content="{l:T 'Normal'}" Tag="48" />
+                    <ComboBoxItem Content="{l:T 'Grande'}" Tag="56" />
+                </ComboBox>
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Battery524" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Porcentaje de la batería'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'El número dentro del ícono, con un rayo mientras carga'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="BatteryPercentSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <!-- ── Posición (de este monitor) ────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Posición'}" />
+            <StackPanel x:Name="MonitorPanel" />
+
+            <!-- ── Reloj ─────────────────────────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Reloj'}" />
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Clock24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar segundos'}" VerticalAlignment="Center" />
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="SecondsSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CalendarLtr24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar fecha'}" VerticalAlignment="Center" />
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="DateSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <!-- ── Rendimiento (de este monitor) ─────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Rendimiento'}" />
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Temperature24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar temperaturas'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Debajo del uso de la CPU y de la GPU'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="TemperaturesSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <!-- ── Para todos los monitores ──────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Para todos los monitores'}" />
+
+            <StackPanel x:Name="MultiMonitorOptions">
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Star24" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor principal de Strata UI'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Lleva la bandeja del sistema y abre el menú con la tecla Windows. No cambia el monitor principal de Windows.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox x:Name="MainScreenBox" MinWidth="200" SelectionChanged="MainScreen_Changed" />
+                </ui:CardControl>
+
+                <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple16" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar las apps abiertas en'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'En qué barras aparece cada ventana.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox x:Name="AppsModeBox" MinWidth="260" SelectionChanged="AppsMode_Changed">
+                        <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="Windows" />
+                        <ComboBoxItem Content="{l:T 'Todas las barras'}" Tag="AllTaskbars" />
+                        <ComboBoxItem Content="{l:T 'La principal y la del monitor de la ventana'}" Tag="MainAndOwn" />
+                        <ComboBoxItem Content="{l:T 'Solo la del monitor de la ventana'}" Tag="OwnOnly" />
+                    </ComboBox>
+                </ui:CardControl>
+            </StackPanel>
+
+            <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon DeveloperBoard24}" IsExpanded="True">
+                <ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Lecturas avanzadas'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'El uso de CPU, GPU y RAM se lee sin permisos especiales. Las temperaturas y los FPS necesitan las lecturas avanzadas: Windows pide permiso la primera vez y después de cada actualización de Strata UI.'}" />
+                    </StackPanel>
+                </ui:CardExpander.Header>
+                <StackPanel>
+                    <Grid Style="{StaticResource HubSubOption}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Estado'}" />
+                            <TextBlock x:Name="SensorsState" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <ui:Button x:Name="SensorsButton" Click="Sensors_Click" />
+                            <ui:Button x:Name="SensorsRemoveButton" Margin="8,0,0,0" Content="{l:T 'Quitar el permiso'}"
+                                       ToolTip="{l:T 'Borra la tarea con permiso de administrador (pide permiso para borrarla)'}" Click="SensorsRemove_Click" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid Style="{StaticResource HubSubOption}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Iniciarlas al abrir Strata UI'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Sin pedir permiso, una vez concedido'}" />
+                        </StackPanel>
+                        <ui:ToggleSwitch x:Name="SensorsStartupSwitch" HorizontalAlignment="Right" Click="Global_Changed" />
+                    </Grid>
+                    <Grid Style="{StaticResource HubSubOption}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,12,0">
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor que mide el contador de FPS'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                       Text="{l:T 'Automático: la app activa, en cualquier monitor. Con un monitor elegido, la app que lo ocupa aunque el contador esté en la barra de otro. Con generación de cuadros (DLSS, FSR, Lossless Scaling…) muestra los FPS en pantalla y abajo los reales.'}" />
+                        </StackPanel>
+                        <ComboBox x:Name="FpsScreenBox" Grid.Column="1" MinWidth="200" SelectionChanged="FpsScreen_Changed" />
+                    </Grid>
+                    <ui:InfoBar x:Name="PawnIoBar" Margin="0,4,0,0" Severity="Informational" IsClosable="False" IsOpen="False"
+                                Title="{l:T 'Temperatura de la CPU'}"
+                                Message="{l:T 'Windows solo deja leerla con el controlador PawnIO (gratuito y firmado). Instálalo desde pawnio.eu y reinicia las lecturas avanzadas.'}" />
+                    <ui:Button x:Name="PawnIoButton" Margin="0,6,0,0" HorizontalAlignment="Left" Appearance="Primary"
+                               Icon="{ui:SymbolIcon ArrowDownload24}" Content="{l:T 'Instalar PawnIO'}" Click="PawnIo_Click" />
+                </StackPanel>
+            </ui:CardExpander>
+
+            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Broom24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Liberar RAM'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Vacía la memoria que las apps no están usando y la caché en espera. Usa el mismo permiso que las lecturas avanzadas.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+            </ui:CardControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

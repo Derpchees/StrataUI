@@ -1,0 +1,108 @@
+<Page x:Class="Strata.Shell.Hub.Pages.HomePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
+      xmlns:controls="clr-namespace:Strata.Shell.Controls"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      Title="{l:T 'Resumen'}"
+      ScrollViewer.CanContentScroll="False">
+    <Page.Resources>
+        <!-- Contenido de un mosaico de acceso rápido -->
+        <DataTemplate x:Key="TileContent">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Width="40" Height="40" CornerRadius="10" Margin="0,0,14,0" VerticalAlignment="Top"
+                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                    <ui:SymbolIcon Symbol="{Binding Icon}" FontSize="20" Foreground="{DynamicResource StrataAccentBrush}" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource CardDescription}" Margin="0,2,0,0" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+        <StackPanel Style="{StaticResource HubPageContent}">
+            <!-- Portada: degradado del color de acento -->
+            <Border x:Name="Hero" CornerRadius="14" Padding="28,24" Margin="0,4,0,0" ClipToBounds="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="72" Height="72" CornerRadius="18" Margin="0,0,20,0" Background="#33FFFFFF">
+                        <Image Source="{x:Static controls:Logo.Image}" Width="48" Height="48" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="Strata UI" FontSize="34" FontWeight="Bold" Foreground="White" />
+                        <TextBlock x:Name="HeroSubtitle" FontSize="14" Foreground="#E6FFFFFF" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <!-- Estado de las actualizaciones (clic: ir a Actualizaciones) -->
+                    <Button x:Name="UpdateChip" Grid.Column="2" VerticalAlignment="Center" Cursor="Hand" Click="UpdateChip_Click">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="Bd" CornerRadius="16" Padding="14,8" Background="#33FFFFFF">
+                                    <ContentPresenter />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="#4DFFFFFF" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon x:Name="UpdateIcon" Symbol="CheckmarkCircle24" FontSize="16" Foreground="White" Margin="0,0,8,0" />
+                            <TextBlock x:Name="UpdateText" FontSize="13" Foreground="White" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Personalizar'}" />
+            <ItemsControl x:Name="Tiles">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource HubTile}" Width="282" Click="Tile_Click"
+                                Content="{Binding}" ContentTemplate="{StaticResource TileContent}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Accesos rápidos'}" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlertSnooze24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'No molestar'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Las notificaciones llegan al centro, pero sin avisos.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="DndSwitch" Click="Dnd_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Rocket24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Iniciar Strata UI con Windows'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Reemplaza la barra de Windows en cuanto inicias sesión'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="AutoStartSwitch" Click="AutoStart_Click" />
+            </ui:CardControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

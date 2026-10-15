@@ -1,0 +1,53 @@
+<flyouts:FlyoutWindow x:Class="Strata.Shell.Flyouts.BrightnessFlyout"
+                      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
+                      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                      xmlns:flyouts="clr-namespace:Strata.Shell.Flyouts"
+                      Title="{l:T 'Brillo'}" Width="360">
+    <StackPanel Margin="14,16,14,14">
+        <TextBlock Style="{StaticResource FlyoutTitle}" Margin="4,0,0,8" Text="{l:T 'Brillo'}" />
+
+        <!-- Todos a la vez (solo con varios monitores) -->
+        <Grid x:Name="AllRow" Margin="0,0,8,8" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ui:SymbolIcon Symbol="BrightnessHigh24" FontSize="18" Margin="6,0,6,0" />
+            <StackPanel Grid.Column="1" Margin="8,0">
+                <TextBlock Style="{StaticResource FlyoutHint}" Text="{l:T 'Todos los monitores'}" />
+                <Slider x:Name="AllSlider" Minimum="0" Maximum="100" IsMoveToPointEnabled="True"
+                        ValueChanged="AllSlider_ValueChanged" />
+            </StackPanel>
+            <TextBlock x:Name="AllPercent" Grid.Column="2" Style="{StaticResource FlyoutPercent}" />
+        </Grid>
+
+        <ItemsControl x:Name="MonitorList">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid Margin="0,0,8,6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Symbol="Desktop24" FontSize="18" Margin="6,0,6,0" />
+                        <StackPanel Grid.Column="1" Margin="8,0">
+                            <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Name}" />
+                            <Slider Minimum="0" Maximum="100" IsMoveToPointEnabled="True" SmallChange="1" LargeChange="10"
+                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                    Value="{Binding Percent, Mode=TwoWay}" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Style="{StaticResource FlyoutPercent}" Text="{Binding Percent}" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ui:ProgressRing x:Name="Loading" IsIndeterminate="True" Width="24" Height="24" Margin="0,8" Visibility="Collapsed" />
+        <TextBlock x:Name="EmptyText" Style="{StaticResource FlyoutHint}" Margin="4,0,8,4" TextWrapping="Wrap" Visibility="Collapsed"
+                   Text="{l:T 'Ningún monitor permite cambiar el brillo desde Windows. En los externos, activa DDC/CI en el menú del monitor.'}" />
+    </StackPanel>
+</flyouts:FlyoutWindow>

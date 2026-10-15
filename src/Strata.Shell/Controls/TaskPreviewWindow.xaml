@@ -1,0 +1,15 @@
+<Window x:Class="Strata.Shell.Controls.TaskPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
+        Title="{l:T 'Vista previa'}"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None" ResizeMode="NoResize" Background="Transparent"
+        ShowInTaskbar="False" ShowActivated="False" Topmost="True" UseLayoutRounding="True"
+        FontFamily="{StaticResource UiFont}">
+    <!-- Sin AllowsTransparency: las miniaturas de DWM no se dibujan en ventanas en capas. -->
+    <Border x:Name="Card" Background="{DynamicResource StrataPopupBackgroundBrush}" Padding="6">
+        <!-- Una entrada por ventana (varias si la barra agrupa las de una misma app); se arman por código -->
+        <StackPanel x:Name="Entries" Orientation="Horizontal" />
+    </Border>
+</Window>

@@ -1,0 +1,22 @@
+<Application x:Class="Strata.Shell.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Controles Fluent (Hub, menús contextuales, tooltips) -->
+                <ui:ThemesDictionary Theme="Dark" />
+                <ui:ControlsDictionary />
+                <!-- Estilos propios de la barra; la paleta claro/oscuro la agrega ThemeManager -->
+                <ResourceDictionary Source="Themes/Styles.xaml" />
+                <ResourceDictionary Source="Hub/HubStyles.xaml" />
+                <ResourceDictionary Source="Flyouts/FlyoutStyles.xaml" />
+                <ResourceDictionary Source="StartMenu/StartMenuStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <!-- No definir aquí colores del tema: las claves de la raíz tienen prioridad sobre los
+                 diccionarios combinados y taparían la paleta que genera ThemeManager. -->
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
