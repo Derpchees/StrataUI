@@ -7,6 +7,8 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- El tooltip de los medidores de CPU y GPU dice el modelo del procesador y de la tarjeta gráfica
+  (las dos, si el equipo tiene integrada y dedicada).
 - **Forzar cierre** en el clic derecho de las apps de la barra (como "Finalizar tarea" de Windows).
   Las ventanas del Explorador solo se cierran, para no tumbar el escritorio.
 - Soltar un ícono de la bandeja sobre la flecha (^) lo pasa a los ocultos, como en Windows (además

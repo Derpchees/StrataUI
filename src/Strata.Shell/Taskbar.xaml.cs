@@ -726,11 +726,14 @@ public partial class Taskbar : AppBarWindow
 
         CpuValue.Text = Value("CPU", SystemMonitor.CpuPercent);
         CpuDetail.Text = !temps ? "" : Sensors.CpuTemperature is { } cpuTemp ? $"{cpuTemp:0} °C" : NoTemp;
-        CpuButton.ToolTip = Loc.T("Uso de la CPU") + (temps && Sensors.CpuTemperature is null ? why : "");
+        // El modelo arriba ("AMD Ryzen 7 7840HS…"); con dos gráficas, las dos (el medidor toma la más ocupada).
+        CpuButton.ToolTip = (HardwareInfo.CpuName is { } cpuName ? cpuName + "\n" : "")
+                            + Loc.T("Uso de la CPU") + (temps && Sensors.CpuTemperature is null ? why : "");
 
         GpuValue.Text = Value("GPU", SystemMonitor.GpuPercent);
         GpuDetail.Text = !temps ? "" : Sensors.GpuTemperature is { } gpuTemp ? $"{gpuTemp:0} °C" : NoTemp;
-        GpuButton.ToolTip = Loc.T("Uso de la GPU") + (temps && Sensors.GpuTemperature is null ? why : "");
+        GpuButton.ToolTip = string.Concat(HardwareInfo.GpuNames.Select(name => name + "\n"))
+                            + Loc.T("Uso de la GPU") + (temps && Sensors.GpuTemperature is null ? why : "");
 
         RamValue.Text = Value("RAM", SystemMonitor.RamTotal > 0 ? SystemMonitor.RamPercent : null);
         // En uso / total ("9.2/32 GB"): el total redondeado, como se anuncia la memoria instalada.
