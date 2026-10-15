@@ -7,6 +7,11 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Limpieza con un clic** (Hub › Optimización › Limpieza): temporales, volcados e informes de
+  errores, descargas de Windows Update, caché de Optimización de distribución y miniaturas; opcionales
+  la caché de los navegadores, de sombreadores y los registros viejos. Muestra cuánto ocupa cada cosa,
+  recuerda lo elegido y lo de Windows lo hace con un solo permiso. Solo borra lo que tiene más de un
+  día y se salta lo que esté en uso; la papelera de reciclaje no se toca.
 - **Anclar apps a la barra**: desde el clic derecho de una ventana abierta o del menú Inicio
   ("Anclar a la barra de tareas"). Van delante de las ventanas y se ordenan arrastrándolas; abierta,
   la app usa ese mismo botón para sus ventanas (Mayús+clic o "Abrir otra ventana" abre otra). La

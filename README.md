@@ -44,7 +44,7 @@ and everything goes back to normal.
 | 🎵 **Media** | Album art, title and artist on the bar for any app that reports media (Spotify, browsers, Media Player…), with optional controls. |
 | 📊 **Performance** | CPU, GPU and RAM usage, temperatures and an FPS counter (frame generation aware: DLSS FG, FSR FG, Lossless Scaling…), plus one-click RAM cleanup. |
 | 🎨 **Themes** | System, Light, Dark, Transparency, Liquid Glass and Material, with the Windows accent, your own or one taken from the wallpaper (Wallpaper Engine too). Six animation styles and three speeds. |
-| ⚙️ **Optimization** | Performance, preinstalled apps, privacy, AI features, Windows Update, Explorer and more, always with a backup so you can undo everything. |
+| ⚙️ **Optimization** | One-click junk cleanup (temp files, crash dumps, update caches… never the Recycle Bin), performance, preinstalled apps, privacy, AI features, Windows Update, Explorer and more, always with a backup so you can undo everything. |
 | 🌐 **Languages** | English and Spanish, following Windows or chosen in the Hub. |
 
 Right-click an empty spot on the bar for **Strata UI settings** (the Hub) or **Exit Strata UI**

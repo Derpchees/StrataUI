@@ -119,6 +119,9 @@ public sealed class StrataSettings
     /// </summary>
     public Dictionary<string, Dictionary<BarItem, BarZone>> BarItemZones { get; set; } = new();
 
+    /// <summary>Categorías marcadas en Optimización › Limpieza (null: las que vienen marcadas).</summary>
+    public List<string>? CleanupSelection { get; set; }
+
     /// <summary>Apps ancladas a la barra, en orden (IDs del menú Inicio o rutas; ver Services/TaskbarPins).</summary>
     public List<string> TaskbarPins { get; set; } = new();
 

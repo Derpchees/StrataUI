@@ -89,6 +89,12 @@ public partial class App : Application
             Shutdown(SensorsTask.RunRemove(e.Args));
             return;
         }
+        // Limpieza de las carpetas de Windows, con permiso de administrador (ver Services/Cleanup).
+        if (e.Args.Length > 0 && e.Args[0] == Services.Cleanup.JunkCleaner.ElevatedArg)
+        {
+            Shutdown(Services.Cleanup.JunkCleaner.RunElevated(e.Args));
+            return;
+        }
         // Diálogo de abrir archivo o carpeta en un proceso aparte (ver Services/FilePicker).
         if (e.Args.Length > 0 && e.Args[0] == FilePicker.Arg)
         {
