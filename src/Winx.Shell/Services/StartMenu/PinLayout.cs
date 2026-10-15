@@ -16,7 +16,7 @@ public sealed class PinFolderView(PinEntry entry, IReadOnlyList<StartApp> apps)
     public IReadOnlyList<ImageSource?> Preview => Apps.Take(4).Select(a => a.Icon).ToList();
 }
 
-/// <summary>Hueco entre anclados: ocupa una celda vacía.</summary>
+/// <summary>Celda vacía entre anclados (lo que deja la colocación libre).</summary>
 public sealed class PinGapView(PinEntry entry)
 {
     public string Id => entry.Id;
@@ -73,7 +73,9 @@ public static class PinLayout
     internal static void RebuildViews()
     {
         var byId = StartMenuService.Apps.GroupBy(a => a.Id).ToDictionary(g => g.Key, g => g.First());
-        StartApp? Find(string? id) => id != null && byId.TryGetValue(id, out var app) ? app : null;
+        StartApp? Find(string? id) => id is null ? null
+            : byId.TryGetValue(id, out var app) ? app
+            : StartMenuService.IsPathId(id) ? StartMenuService.FileApp(id) : null;
 
         Sections.Clear();
         foreach (var section in Model)
@@ -102,6 +104,7 @@ public static class PinLayout
         foreach (var id in AllAppIds())
             if (Find(id) is { } app)
                 StartMenuService.Pinned.Add(app);
+        StartMenuService.ForgetFiles(AllAppIds().ToHashSet(StringComparer.OrdinalIgnoreCase));
     }
 
     public static IEnumerable<string> AllAppIds() =>
@@ -245,25 +248,6 @@ public static class PinLayout
         return entry.Id;
     }
 
-    /// <summary>Deja un espacio vacío antes o después de un elemento.</summary>
-    public static void InsertGap(string entryId, bool after)
-    {
-        var (section, entry) = FindEntryWithSection(entryId);
-        if (section is null || entry is null)
-            return;
-        section.Items.Insert(section.Items.IndexOf(entry) + (after ? 1 : 0), new PinEntry());
-        Commit();
-    }
-
-    public static void RemoveGap(string gapId)
-    {
-        if (FindEntry(gapId) is { IsGap: true })
-        {
-            Detach(gapId);
-            Commit();
-        }
-    }
-
     /// <summary>
     /// Suelta sobre un hueco: el elemento ocupa esa celda y el hueco pasa a donde estaba (así se
     /// puede colocar una app en cualquier celda sin correr las demás). Una app que sale de una
@@ -350,6 +334,10 @@ public static class PinLayout
 
     private static void Commit()
     {
+        // Las celdas vacías al final de una sección no separan nada.
+        foreach (var section in Model)
+            while (section.Items.Count > 0 && section.Items[^1].IsGap)
+                section.Items.RemoveAt(section.Items.Count - 1);
         Settings.Save();
         RebuildViews();
         Changed?.Invoke();

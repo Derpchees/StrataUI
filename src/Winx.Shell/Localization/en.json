@@ -535,10 +535,6 @@
   "Actualizaciones": "Updates",
   "Ejecutar como administrador": "Run as administrator",
   "Abrir ubicación del archivo": "Open file location",
-  "Dejar un espacio antes": "Leave a space before",
-  "Dejar un espacio después": "Leave a space after",
-  "Espacio vacío": "Empty space",
-  "Quitar espacio": "Remove space",
   "Anclar a Inicio": "Pin to Start",
   "Tema, color de acento y fondo de pantalla de WINX.": "WINX theme, accent color and wallpaper.",
   "Inicio con Windows, idioma y datos de WINX.": "Startup with Windows, language and WINX data.",
@@ -811,5 +807,14 @@
   "{0} reales": "{0} real",
   "Con generación de cuadros ({0}): {1} FPS": "With frame generation ({0}): {1} FPS",
   "Sin generación de cuadros: {0} FPS": "Without frame generation: {0} FPS",
-  "tipo desconocido": "unknown type"
+  "tipo desconocido": "unknown type",
+  "Abrir en el monitor del mouse": "Open on the mouse's monitor",
+  "La tecla Windows abre el menú en el monitor donde está el puntero, si ahí hay una barra con Inicio. Si no, en la barra principal.": "The Windows key opens the menu on the monitor where the pointer is, if it has a bar with Start. Otherwise, on the main bar.",
+  "Cambiar ícono…": "Change icon…",
+  "Restaurar ícono": "Restore icon",
+  "Anclar archivo o acceso directo…": "Pin file or shortcut…",
+  "Anclar carpeta…": "Pin folder…",
+  "Ícono para {0}": "Icon for {0}",
+  "Imágenes e íconos": "Images and icons",
+  "No se pudo leer una imagen de ese archivo.": "Couldn't read an image from that file."
 }

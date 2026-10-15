@@ -32,7 +32,11 @@
                 </Style>
             </MenuItem.Style>
         </MenuItem>
-        <MenuItem Command="{x:Static start:StartCommands.Uninstall}" CommandParameter="{Binding}" Header="{l:T 'Desinstalar'}" />
+        <MenuItem Command="{x:Static start:StartCommands.ChangeIcon}" CommandParameter="{Binding}" Header="{l:T 'Cambiar ícono…'}" />
+        <MenuItem Command="{x:Static start:StartCommands.ResetIcon}" CommandParameter="{Binding}" Header="{l:T 'Restaurar ícono'}"
+                  Visibility="{Binding HasCustomIcon, Converter={StaticResource BoolToVis}}" />
+        <MenuItem Command="{x:Static start:StartCommands.Uninstall}" CommandParameter="{Binding}" Header="{l:T 'Desinstalar'}"
+                  Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVis}}" />
     </ContextMenu>
 
     <!-- App en cuadrícula: ícono grande y nombre debajo -->

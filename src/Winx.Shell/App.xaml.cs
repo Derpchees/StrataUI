@@ -87,6 +87,12 @@ public partial class App : Application
             Shutdown(SensorsTask.RunRemove(e.Args));
             return;
         }
+        // Diálogo de abrir archivo o carpeta en un proceso aparte (ver Services/FilePicker).
+        if (e.Args.Length > 0 && e.Args[0] == FilePicker.Arg)
+        {
+            Shutdown(FilePicker.RunPicker(e.Args));
+            return;
+        }
 
         // Pide a la instancia en ejecución que se cierre limpiamente (restaura la barra de Windows).
         if (e.Args.Contains(ExitArg, StringComparer.OrdinalIgnoreCase))
@@ -404,16 +410,26 @@ public partial class App : Application
             Notifications.NotificationBannerWindow.ShowBanner(item);
     }
 
-    /// <summary>Tecla Windows: abre el menú Inicio de la barra principal.</summary>
+    /// <summary>
+    /// Tecla Windows: abre el menú Inicio de la barra principal o, si está elegido, el de la barra
+    /// con Inicio del monitor donde está el mouse.
+    /// </summary>
     private void OnWinKey()
     {
-        var taskbar = AppsTaskbar;
+        var taskbar = (Settings.Current.StartOnMouseMonitor ? MouseMonitorStartTaskbar() : null) ?? AppsTaskbar;
         if (taskbar != null)
             StartMenu.StartMenuLauncher.Toggle(taskbar.StartAnchor);
     }
 
     private static void UpdateKeyHook() =>
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, AnyVolumeOsd());
+
+    /// <summary>Barra con el botón Inicio en el monitor del mouse (null si ese monitor no tiene).</summary>
+    private Taskbar? MouseMonitorStartTaskbar()
+    {
+        var device = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).DeviceName;
+        return _taskbars.FirstOrDefault(t => t.Device == device && t.Has(BarItem.Start));
+    }
 
     /// <summary>Barra con el botón Inicio (tecla Windows, Win+X): la del monitor principal si lo lleva.</summary>
     private Taskbar? AppsTaskbar =>

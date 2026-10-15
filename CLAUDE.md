@@ -52,6 +52,8 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **Opción nueva**: propiedad con valor por defecto en `WinxSettings` → control en la página del
   Hub que guarda con `Settings.Update(...)` → reacción en `Settings.Changed`. Los ajustes viven en
   `%LOCALAPPDATA%\WINX\settings.json`; una propiedad que falta en el archivo toma su valor por defecto.
+- **Diálogos de abrir archivo o carpeta**: siempre con `Services/FilePicker` (proceso aparte
+  `--pick`); el diálogo de Windows dentro del proceso de WINX lo tumbó (corrupción del montón).
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y
   lanzado con `Elevation.RunSelfAsync(...)` (UAC). El proceso elevado valida sus argumentos y
   solo hace lo previsto (ver `AudioDeviceOptions.RunElevated`, `TweakEngine.RunElevatedCommand`).

@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Winx.Shell.Flyouts;
 using Winx.Shell.Services;
+using Winx.Shell.Services.Localization;
 using Winx.Shell.Services.StartMenu;
 
 namespace Winx.Shell.StartMenu;
@@ -140,6 +141,43 @@ public static class StartCommands
         FlyoutManager.CloseAll();
         if (p is StartApp app)
             await AppActions.UninstallAsync(app);
+    });
+
+    /// <summary>Elige una imagen (o el ícono de un .exe, .dll o .ico) para la app.</summary>
+    public static ICommand ChangeIcon { get; } = new Relay(async p =>
+    {
+        if (p is not StartApp app)
+            return;
+        // El menú se cierra antes: el diálogo le quitaría el foco.
+        FlyoutManager.CloseAll();
+        var files = await FilePicker.PickFilesAsync(Loc.F("Ícono para {0}", app.Name),
+                                                    Loc.T("Imágenes e íconos") + "|" + CustomIcons.DialogFilter);
+        if (files.Length > 0 && !CustomIcons.Set(app.Id, files[0]))
+            await new Wpf.Ui.Controls.MessageBox
+            {
+                Title = Loc.T("Cambiar ícono…"),
+                Content = Loc.T("No se pudo leer una imagen de ese archivo."),
+                CloseButtonText = Loc.T("Cerrar"),
+            }.ShowDialogAsync();
+    });
+
+    public static ICommand ResetIcon { get; } = new Relay(p =>
+    {
+        if (p is StartApp app)
+            CustomIcons.Reset(app.Id);
+    });
+
+    public static ICommand PinFile { get; } = new Relay(async _ =>
+    {
+        FlyoutManager.CloseAll();
+        // Un acceso directo se ancla tal cual, con sus argumentos.
+        StartMenuService.PinPaths(await FilePicker.PickFilesAsync(Loc.T("Anclar a Inicio"), multiselect: true, keepLinks: true));
+    });
+
+    public static ICommand PinFolder { get; } = new Relay(async _ =>
+    {
+        FlyoutManager.CloseAll();
+        StartMenuService.PinPaths(await FilePicker.PickFoldersAsync(Loc.T("Anclar a Inicio"), multiselect: true));
     });
 
     public static ICommand OpenFolder { get; } = new Relay(p =>

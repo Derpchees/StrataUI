@@ -33,7 +33,7 @@ necesita, no hace falta instalar .NET. Después, el Hub avisa e instala las actu
 | Batería                 | ✅ porcentaje opcional dentro del ícono, indicador de carga; panel con tiempo restante, modo de energía y salud |
 | Avisos en pantalla (OSD) | ✅ volumen, silencio, brillo, Bloq Mayús, Bloq Num y Bloq Despl junto a la barra (sin el de Windows) |
 | Brillo                  | ✅ cada monitor por DDC/CI (y pantalla de portátil por WMI), todos a la vez, rueda del mouse |
-| Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas, secciones y colocación libre (se arrastran a cualquier celda vacía; lo nuevo ocupa el primer hueco), tecla Windows; clic derecho: ejecutar como administrador, abrir ubicación, desinstalar |
+| Menú Inicio             | ✅ 7 estilos (Windows 11, Perfil, Lista, Pantalla completa, Compacto, Solo búsqueda, Íconos), redimensionable, anclados con carpetas, secciones y colocación libre (se arrastran a cualquier celda vacía; lo nuevo ocupa el primer hueco), también archivos, accesos directos y carpetas; íconos personalizados; tecla Windows (en el monitor del mouse); clic derecho: ejecutar como administrador, abrir ubicación, cambiar ícono, desinstalar |
 | Notificaciones          | ✅ centro propio junto al reloj (Win+N), avisos en el monitor y la esquina elegidos, No molestar, calendario; ícono y foto de cada aviso, también de apps web; apaga los avisos de Windows mientras tanto |
 | Animaciones             | ✅ seis estilos y tres velocidades para toda la app: paneles, menú Inicio, avisos, OSD, menús, tooltips y el Hub |
 | Actualizaciones         | ✅ búsqueda automática en GitHub Releases e instalación con un clic |

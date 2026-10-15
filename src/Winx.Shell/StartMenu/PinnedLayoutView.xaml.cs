@@ -391,24 +391,6 @@ public partial class PinnedLayoutView : UserControl
         t.X = offset;
     }
 
-    // ── Huecos ──────────────────────────────────────────────────────────────
-
-    private void GapBefore_Click(object sender, RoutedEventArgs e) => InsertGap(sender, after: false);
-
-    private void GapAfter_Click(object sender, RoutedEventArgs e) => InsertGap(sender, after: true);
-
-    private static void InsertGap(object sender, bool after)
-    {
-        if (EntryIdOf(MenuTarget(sender)?.DataContext) is { } entryId)
-            PinLayout.InsertGap(entryId, after);
-    }
-
-    private void GapRemove_Click(object sender, RoutedEventArgs e)
-    {
-        if (MenuTarget(sender)?.DataContext is PinGapView gap)
-            PinLayout.RemoveGap(gap.Id);
-    }
-
     // ── Carpetas ────────────────────────────────────────────────────────────
 
     private void Folder_Click(object sender, RoutedEventArgs e)

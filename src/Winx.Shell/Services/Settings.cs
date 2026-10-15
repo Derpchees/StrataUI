@@ -126,10 +126,14 @@ public sealed class WinxSettings
     /// <summary>Botones del pie del menú, en orden (IDs de StartFooterCatalog).</summary>
     public List<string> StartFooterButtons { get; set; } = ["Explorer", "WinxSettings", "Power"];
     public bool StartUseWinKey { get; set; } = true;
+    /// <summary>La tecla Windows abre Inicio en el monitor donde está el mouse (si ahí hay una barra con Inicio).</summary>
+    public bool StartOnMouseMonitor { get; set; } = true;
     /// <summary>Formato anterior de anclados (lista plana); se migra a <see cref="StartLayout"/>.</summary>
     public List<string>? PinnedStartApps { get; set; }
     /// <summary>Anclados organizados en secciones y carpetas; null = primera vez.</summary>
     public List<PinSection>? StartLayout { get; set; }
+    /// <summary>Íconos elegidos para apps de Inicio: ID de la app → imagen (Services/StartMenu/CustomIcons).</summary>
+    public Dictionary<string, string> StartCustomIcons { get; set; } = new();
     public StartIconSize StartIconSize { get; set; } = StartIconSize.Medium;
     /// <summary>Nombres debajo de las apps ancladas (sin ellos, el nombre queda en el tooltip).</summary>
     public bool StartShowPinnedLabels { get; set; } = true;

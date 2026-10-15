@@ -38,6 +38,7 @@ public partial class StartPage : Page
         UserSwitch.IsChecked = s.StartShowUser;
         PictureSwitch.IsChecked = s.StartShowUserPicture;
         WinKeySwitch.IsChecked = s.StartUseWinKey;
+        MouseMonitorSwitch.IsChecked = s.StartOnMouseMonitor;
         BuildFooter();
         BuildIconGallery();
         _loading = false;
@@ -66,6 +67,7 @@ public partial class StartPage : Page
         s.StartShowUser = UserSwitch.IsChecked == true;
         s.StartShowUserPicture = PictureSwitch.IsChecked == true;
         s.StartUseWinKey = WinKeySwitch.IsChecked == true;
+        s.StartOnMouseMonitor = MouseMonitorSwitch.IsChecked == true;
     });
 
     private void ResetPinned_Click(object sender, RoutedEventArgs e) => StartMenuService.ResetPinned();

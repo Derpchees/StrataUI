@@ -18,6 +18,9 @@ public sealed class PinLayoutTests
 
     private static PinEntry App(string id) => new() { Id = "e-" + id, AppId = id };
 
+    /// <summary>Deja una celda vacía en esa posición de la sección (como la colocación libre).</summary>
+    private static void GapAt(int section, int index) => Layout[section].Items.Insert(index, new PinEntry { Id = $"g{section}-{index}" });
+
     private static List<PinSection> Layout => Settings.Current.StartLayout!;
 
     private static string[] Ids(int section) =>
@@ -108,29 +111,29 @@ public sealed class PinLayoutTests
     }
 
     [Fact]
-    public void Gaps_are_inserted_and_removed()
+    public void Empty_cells_at_the_end_of_a_section_are_dropped()
     {
-        PinLayout.InsertGap("e-b", after: false);
-        PinLayout.InsertGap("e-c", after: true);
-        Assert.Equal(["a", "_", "b", "c", "_"], Ids(0));
-
-        PinLayout.RemoveGap(Layout[0].Items[1].Id);
-        Assert.Equal(["a", "b", "c", "_"], Ids(0));
+        // Mover lo último de una sección no deja celdas vacías colgando.
+        PinLayout.PlaceAtCell("s2", 3, "e-c");
+        Assert.Equal(["a", "b"], Ids(0));
+        Assert.Equal(["d", "_", "_", "c"], Ids(1));
+        PinLayout.Move("e-c", "s1", 0);
+        Assert.Equal(["d"], Ids(1));
     }
 
     [Fact]
     public void Dropping_on_a_gap_swaps_places()
     {
         // La app ocupa el hueco y el hueco queda donde estaba: las demás no se corren.
-        PinLayout.InsertGap("e-c", after: true);
+        GapAt(0, 3);
         var gap = Layout[0].Items[3].Id;
         PinLayout.DropOnGap(gap, "e-a");
         Assert.Equal(["_", "b", "c", "a"], Ids(0));
 
-        // También entre secciones.
+        // También entre secciones (la sección que queda vacía no guarda la celda).
         PinLayout.DropOnGap(Layout[0].Items[0].Id, "e-d");
         Assert.Equal(["d", "b", "c", "a"], Ids(0));
-        Assert.Equal(["_"], Ids(1));
+        Assert.Empty(Ids(1));
     }
 
     [Fact]
@@ -151,7 +154,7 @@ public sealed class PinLayoutTests
     [Fact]
     public void Placing_on_a_gap_cell_takes_it_and_an_occupied_cell_is_ignored()
     {
-        PinLayout.InsertGap("e-b", after: false);           // a _ b c
+        GapAt(0, 1);                                         // a _ b c
         PinLayout.PlaceAtCell("s1", 1, "e-d");
         Assert.Equal(["a", "d", "b", "c"], Ids(0));
         PinLayout.PlaceAtCell("s1", 0, "e-c");               // ocupada: no cambia nada
@@ -161,7 +164,7 @@ public sealed class PinLayoutTests
     [Fact]
     public void Pinning_fills_the_first_gap()
     {
-        PinLayout.InsertGap("e-b", after: false);
+        GapAt(0, 1);
         PinLayout.Pin("x");
         Assert.Equal(["a", "x", "b", "c"], Ids(0));
         PinLayout.Pin("y");                                  // sin huecos: al final
@@ -171,7 +174,7 @@ public sealed class PinLayoutTests
     [Fact]
     public void A_gap_is_never_merged_into_a_folder()
     {
-        PinLayout.InsertGap("e-a", after: true);
+        GapAt(0, 1);
         var gap = Layout[0].Items[1].Id;
         PinLayout.Merge(gap, "e-c");
         PinLayout.Merge("e-c", gap);

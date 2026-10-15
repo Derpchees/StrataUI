@@ -315,19 +315,16 @@ public partial class AppearancePage : Page
         }
     }
 
-    private void ChooseWallpaper_Click(object sender, RoutedEventArgs e)
+    private async void ChooseWallpaper_Click(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog
-        {
-            Title = Loc.T("Elegir fondo de pantalla"),
-            Filter = Loc.T("Imágenes|*.jpg;*.jpeg;*.png;*.bmp;*.webp|Todos los archivos|*.*"),
-        };
-        if (dialog.ShowDialog() != true)
+        var files = await FilePicker.PickFilesAsync(Loc.T("Elegir fondo de pantalla"),
+                                                    Loc.T("Imágenes|*.jpg;*.jpeg;*.png;*.bmp;*.webp|Todos los archivos|*.*"));
+        if (files.Length == 0)
             return;
 
         Settings.Current.OriginalWallpaper ??= Wallpaper.Current;
         Settings.Save();
-        TrySetWallpaper(dialog.FileName);
+        TrySetWallpaper(files[0]);
     }
 
     private void RestoreWallpaper_Click(object sender, RoutedEventArgs e)

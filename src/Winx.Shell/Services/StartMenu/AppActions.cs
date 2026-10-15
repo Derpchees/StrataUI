@@ -21,13 +21,19 @@ public static class AppActions
     {
         if (IsPackaged(app))
             return null;
-        var path = ReadString("shell:AppsFolder\\" + app.Id, LinkTargetParsingPath);
+        if (app.IsFile && !app.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            return File.Exists(app.Id) ? app.Id : null;
+        var path = ReadString(app.IsFile ? app.Id : "shell:AppsFolder\\" + app.Id, LinkTargetParsingPath);
         return path != null && Path.IsPathFullyQualified(path) && File.Exists(path) ? path : null;
     }
 
     /// <summary>Acceso directo del menú Inicio con el mismo nombre que la app (como "Abrir ubicación" de Windows).</summary>
-    public static string? ShortcutPath(StartApp app) =>
-        Shortcuts().TryGetValue(app.Name, out var path) && File.Exists(path) ? path : null;
+    public static string? ShortcutPath(StartApp app)
+    {
+        if (app.IsFile)
+            return app.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) && File.Exists(app.Id) ? app.Id : null;
+        return Shortcuts().TryGetValue(app.Name, out var path) && File.Exists(path) ? path : null;
+    }
 
     private static Dictionary<string, string>? _shortcuts;
     private static DateTime _shortcutsAt;
@@ -59,14 +65,15 @@ public static class AppActions
         Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms),
     ];
 
-    public static bool CanOpenLocation(StartApp app) => TargetPath(app) != null || ShortcutPath(app) != null;
+    public static bool CanOpenLocation(StartApp app) => app.IsFile || TargetPath(app) != null || ShortcutPath(app) != null;
 
     public static bool CanRunAsAdmin(StartApp app) =>
         TargetPath(app) is { } path && path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 
     public static void OpenLocation(StartApp app)
     {
-        var path = ShortcutPath(app) ?? TargetPath(app);
+        // Un archivo o carpeta anclado se muestra seleccionado en su carpeta.
+        var path = app.IsFile ? app.Id : ShortcutPath(app) ?? TargetPath(app);
         if (path is null)
             return;
         Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
@@ -109,6 +116,7 @@ public static class AppActions
             if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
                 return;
             await RemovePackageAsync(app);
+            StartMenuService.Refresh();
             return;
         }
 

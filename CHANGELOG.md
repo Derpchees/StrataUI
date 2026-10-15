@@ -6,6 +6,28 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.3.0] - 2026-10-14
+
+### Añadido
+- **Anclar archivos, accesos directos y carpetas en Inicio**: clic derecho en un lugar vacío de los
+  anclados › "Anclar archivo o acceso directo…" o "Anclar carpeta…". Se abren con su programa, y
+  "Abrir ubicación del archivo" los muestra en su carpeta.
+- **Cambiar el ícono de cualquier app de Inicio** (clic derecho › "Cambiar ícono…"): una imagen o el
+  ícono de un `.ico`, `.exe` o `.dll`. "Restaurar ícono" vuelve al de Windows.
+- **La tecla Windows abre Inicio en el monitor donde está el mouse** si ahí hay una barra con Inicio
+  (Hub › Menú Inicio › Teclado; activado por defecto).
+
+### Cambiado
+- "Nueva sección" pasó al clic derecho del menú Inicio (en un lugar vacío de los anclados).
+- Se quitaron los espacios manuales ("Dejar un espacio antes/después", "Quitar espacio"): con la
+  colocación libre ya no hacen falta. Las celdas vacías al final de una sección se descartan solas.
+- Los diálogos para elegir archivos (anclar, ícono, fondo de pantalla) se abren en un proceso aparte:
+  dentro del proceso de WINX el de Windows podía cerrarlo.
+
+### Corregido
+- **El menú Inicio no se actualizaba al desinstalar una app** (ni al instalar una, como una app web
+  de Brave o Chrome): ahora vigila las carpetas del menú Inicio y vuelve a leer el catálogo.
+
 ## [1.2.0] - 2026-10-12
 
 ### Añadido

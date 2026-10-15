@@ -11,14 +11,17 @@ using ManagedShell.ShellFolders;
 
 namespace Winx.Shell.Services.StartMenu;
 
-/// <summary>Una app del menú Inicio (entrada de shell:AppsFolder).</summary>
+/// <summary>Una app del menú Inicio (entrada de shell:AppsFolder) o un archivo o carpeta anclado.</summary>
 public sealed class StartApp : INotifyPropertyChanged
 {
     private readonly ShellItem _item;
+    private readonly string? _path;
 
-    internal StartApp(ShellItem item)
+    /// <param name="path">Ruta del archivo, acceso directo o carpeta anclado (null en las apps del catálogo).</param>
+    internal StartApp(ShellItem item, string? path = null)
     {
         _item = item;
+        _path = path;
         if (item is INotifyPropertyChanged notifier)
             notifier.PropertyChanged += (_, e) =>
             {
@@ -27,25 +30,42 @@ public sealed class StartApp : INotifyPropertyChanged
             };
     }
 
-    /// <summary>Identificador estable: AppUserModelID o ruta del acceso directo.</summary>
-    public string Id => _item.FileName ?? _item.Path;
+    /// <summary>Identificador estable: AppUserModelID, ruta del acceso directo o del archivo anclado.</summary>
+    public string Id => _path ?? _item.FileName ?? _item.Path;
     public string Name => _item.DisplayName ?? Id;
-    public ImageSource? Icon => _item.LargeIcon;
+    /// <summary>El ícono elegido con "Cambiar ícono" o, si no hay, el de Windows.</summary>
+    public ImageSource? Icon => CustomIcons.Get(Id) ?? _item.LargeIcon;
     public string Group => GroupOf(Name);
+
+    /// <summary>Archivo, acceso directo o carpeta anclado (no está en el catálogo de apps).</summary>
+    public bool IsFile => _path != null;
 
     public bool IsPinned => StartMenuService.IsPinned(Id);
 
     // Para el menú contextual (se consultan al abrirlo).
     public bool CanOpenLocation => AppActions.CanOpenLocation(this);
     public bool CanRunAsAdmin => AppActions.CanRunAsAdmin(this);
+    public bool CanUninstall => !IsFile;
+    public bool HasCustomIcon => CustomIcons.Has(Id);
 
     internal void NotifyPinned() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinned)));
+
+    internal void NotifyIcon()
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasCustomIcon)));
+    }
+
+    /// <summary>ShellItem del archivo anclado (para liberarlo al desanclarlo).</summary>
+    internal ShellItem Item => _item;
 
     public void Launch()
     {
         try
         {
-            Process.Start(new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{Id}") { UseShellExecute = true });
+            Process.Start(IsFile
+                ? new ProcessStartInfo(Id) { UseShellExecute = true }
+                : new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{Id}") { UseShellExecute = true });
         }
         catch (Exception ex)
         {
@@ -151,16 +171,172 @@ public static class StartMenuService
             _rebuildTimer.Stop();
             Rebuild();
         };
-        _appsFolder = new ShellFolder("shell:AppsFolder", IntPtr.Zero, loadAsync: true, watchChanges: true);
-        _appsFolder.Files.CollectionChanged += (_, _) => Application.Current.Dispatcher.BeginInvoke(() =>
+        _appsFolder = OpenAppsFolder(() =>
         {
             _rebuildTimer.Stop();
             _rebuildTimer.Start();
         });
         _rebuildTimer.Start();
+        CustomIcons.Changed += id =>
+        {
+            foreach (var app in Apps.Concat(_files.Values).Where(a => a.Id == id))
+                app.NotifyIcon();
+        };
+        WatchStartFolders();
     }
 
-    public static void Shutdown() => _appsFolder?.Dispose();
+    public static void Shutdown()
+    {
+        foreach (var watcher in _watchers)
+            watcher.Dispose();
+        _appsFolder?.Dispose();
+        _pendingFolder?.Dispose();
+    }
+
+    private static ShellFolder OpenAppsFolder(Action changed)
+    {
+        var folder = new ShellFolder("shell:AppsFolder", IntPtr.Zero, loadAsync: true, watchChanges: true);
+        folder.Files.CollectionChanged += (_, _) => Application.Current.Dispatcher.BeginInvoke(changed);
+        return folder;
+    }
+
+    // ── Volver a leer el catálogo ───────────────────────────────────────────
+    // El aviso de cambios de shell:AppsFolder no siempre llega al desinstalar (ni al instalar una
+    // app web): se vigilan las carpetas del menú Inicio y, si cambian, se lee el catálogo de nuevo.
+
+    private static readonly List<FileSystemWatcher> _watchers = new();
+    private static ShellFolder? _pendingFolder;
+    private static System.Windows.Threading.DispatcherTimer? _refreshTimer, _swapTimer;
+    private static bool _secondPass;
+
+    private static void WatchStartFolders()
+    {
+        foreach (var root in new[] { Environment.SpecialFolder.Programs, Environment.SpecialFolder.CommonPrograms }
+                     .Select(Environment.GetFolderPath).Where(Directory.Exists))
+        {
+            try
+            {
+                var watcher = new FileSystemWatcher(root)
+                {
+                    IncludeSubdirectories = true,
+                    NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
+                };
+                FileSystemEventHandler changed = (_, _) => Application.Current?.Dispatcher.BeginInvoke(Refresh);
+                watcher.Created += changed;
+                watcher.Deleted += changed;
+                watcher.Renamed += (_, _) => Application.Current?.Dispatcher.BeginInvoke(Refresh);
+                watcher.EnableRaisingEvents = true;
+                _watchers.Add(watcher);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                Log.Error($"No se pudo vigilar {root}", ex);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Vuelve a leer el catálogo de apps (después de instalar o desinstalar). La lista nueva se
+    /// carga aparte y reemplaza a la actual cuando termina, así el menú no queda vacío a medias.
+    /// </summary>
+    public static void Refresh()
+    {
+        if (_appsFolder is null)
+            return;
+        // Un desinstalador borra varios accesos directos seguidos, y Windows tarda unos 3 s en
+        // reflejarlos en shell:AppsFolder: se lee 4 s después del último cambio y otra vez por si acaso.
+        if (_refreshTimer is null)
+        {
+            _refreshTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            _refreshTimer.Tick += OnRefreshTick;
+        }
+        _secondPass = true;
+        _refreshTimer.Stop();
+        _refreshTimer.Start();
+    }
+
+    private static void OnRefreshTick(object? sender, EventArgs e)
+    {
+        _refreshTimer!.Stop();
+        _pendingFolder?.Dispose();
+        _swapTimer ??= CreateSwapTimer();
+        _pendingFolder = OpenAppsFolder(() =>
+        {
+            _swapTimer.Stop();
+            _swapTimer.Start();
+        });
+    }
+
+    private static System.Windows.Threading.DispatcherTimer CreateSwapTimer()
+    {
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (_pendingFolder is not { } fresh || fresh.Files.Count == 0)
+                return;
+            var old = _appsFolder;
+            _pendingFolder = null;
+            _appsFolder = fresh;
+            // Los cambios posteriores de la carpeta nueva van al reconstruir de siempre.
+            fresh.Files.CollectionChanged += (_, _) => Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                _rebuildTimer!.Stop();
+                _rebuildTimer.Start();
+            });
+            Rebuild();
+            old?.Dispose();
+            if (_secondPass)
+            {
+                _secondPass = false;
+                _refreshTimer!.Start();
+            }
+        };
+        return timer;
+    }
+
+    // ── Archivos y carpetas anclados ────────────────────────────────────────
+
+    private static readonly Dictionary<string, StartApp> _files = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Anclado que es una ruta (archivo, acceso directo o carpeta) en lugar de una app.</summary>
+    internal static bool IsPathId(string id) => Path.IsPathFullyQualified(id);
+
+    /// <summary>El archivo o carpeta anclado como app del menú (null si ya no existe).</summary>
+    internal static StartApp? FileApp(string path)
+    {
+        if (_files.TryGetValue(path, out var app))
+            return app;
+        if (!File.Exists(path) && !Directory.Exists(path))
+            return null;
+        try
+        {
+            return _files[path] = new StartApp(new ShellItem(path), path);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo leer {path}", ex);
+            return null;
+        }
+    }
+
+    /// <summary>Libera los archivos que ya no están anclados.</summary>
+    internal static void ForgetFiles(ICollection<string> pinned)
+    {
+        foreach (var path in _files.Keys.Where(p => !pinned.Contains(p)).ToList())
+        {
+            _files[path].Item.Dispose();
+            _files.Remove(path);
+        }
+    }
+
+    /// <summary>Ancla archivos, accesos directos o carpetas en Inicio.</summary>
+    public static void PinPaths(IEnumerable<string> paths)
+    {
+        foreach (var path in paths.Where(IsPathId))
+            if (FileApp(path) is { } app)
+                SetPinned(app, true);
+    }
 
     /// <summary>
     /// Tamaños de íconos del menú Inicio como recursos dinámicos: las plantillas los leen con

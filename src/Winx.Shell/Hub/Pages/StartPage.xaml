@@ -140,6 +140,17 @@
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="WinKeySwitch" Click="Options_Changed" />
             </ui:CardControl>
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Abrir en el monitor del mouse'}" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="{l:T 'La tecla Windows abre el menú en el monitor donde está el puntero, si ahí hay una barra con Inicio. Si no, en la barra principal.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="MouseMonitorSwitch" Click="Options_Changed" />
+            </ui:CardControl>
         </StackPanel>
     </ScrollViewer>
 </Page>
