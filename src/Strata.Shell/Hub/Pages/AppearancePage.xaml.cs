@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Strata.Shell.Services;
+using Strata.Shell.Services.Modules;
 using Strata.Shell.Services.Themes;
 using Strata.Shell.Services.Localization;
 
@@ -9,7 +10,8 @@ namespace Strata.Shell.Hub.Pages;
 
 /// <summary>
 /// Hub › Tema: la galería (estilos y esquemas de color) del monitor elegido, la barra transparente,
-/// el vidrio, llevar el tema a Windows y las animaciones. Los colores están en <see cref="ColorsPage"/>.
+/// el vidrio, llevar el tema a Windows y las animaciones, con los temas y animaciones importados.
+/// Los colores están en <see cref="ColorsPage"/>.
 /// </summary>
 public partial class AppearancePage : Page
 {
@@ -23,18 +25,45 @@ public partial class AppearancePage : Page
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
         LiveGlassSwitch.IsChecked = s.LiveGlass;
         TransparentSwitch.IsChecked = Settings.Current.For(ScreenPicker.Device).TaskbarFullyTransparent;
-        Select(AnimationBox, s.PanelAnimation.ToString());
+        BuildAnimationChoices();
         Select(SpeedBox, s.AnimationSpeed.ToString());
         _loading = false;
         BuildThemeGallery();
 
+        ThemeModulesHost.Content = new ModulesSection(ModuleKind.Theme,
+            Loc.T("Temas en archivos .json: un estilo y, si quieres, sus propios colores. Aparecen en Importados; clic derecho en uno para quitarlo."),
+            showList: false);
+        AnimationModulesHost.Content = new ModulesSection(ModuleKind.Animation,
+            Loc.T("Animaciones en archivos .json: desde dónde llegan, cuánto crecen y con qué rebote. Aparecen en Estilo."),
+            module => UseButton(() => SelectAnimation(Imported + module.Id)));
+
         ThemeManager.ThemeChanged += BuildThemeGallery;
         ScreenPicker.Changed += OnScreenChanged;
+        ModuleStore.Changed += OnModulesChanged;
         Unloaded += (_, _) =>
         {
             ThemeManager.ThemeChanged -= BuildThemeGallery;
             ScreenPicker.Changed -= OnScreenChanged;
+            ModuleStore.Changed -= OnModulesChanged;
         };
+    }
+
+    /// <summary>Prefijo de la etiqueta de lo importado (en la galería y en la lista de animaciones).</summary>
+    private const string Imported = "module:";
+
+    private void OnModulesChanged(ModuleKind kind) => Dispatcher.BeginInvoke(() =>
+    {
+        if (kind == ModuleKind.Theme)
+            BuildThemeGallery();
+        else if (kind == ModuleKind.Animation)
+            BuildAnimationChoices();
+    });
+
+    private static FrameworkElement UseButton(Action use)
+    {
+        var button = new Wpf.Ui.Controls.Button { Content = Loc.T("Usar") };
+        button.Click += (_, _) => use();
+        return button;
     }
 
     /// <summary>Otro monitor elegido: su tema y su barra transparente.</summary>
@@ -42,7 +71,7 @@ public partial class AppearancePage : Page
     {
         _loading = true;
         TransparentSwitch.IsChecked = Settings.Current.For(ScreenPicker.Device).TaskbarFullyTransparent;
-        UpdateGallerySelection(Settings.Current.For(ScreenPicker.Device).Theme);
+        UpdateGallerySelection(ThemeManager.ThemeFor(ScreenPicker.Device).Key);
         _loading = false;
     }
 
@@ -53,9 +82,13 @@ public partial class AppearancePage : Page
     {
         ThemeGallery.Children.Clear();
         SchemeGallery.Children.Clear();
-        foreach (var theme in ThemeCatalog.All)
+        ImportedGallery.Children.Clear();
+        var modules = ModuleStore.All<ThemeModule>(ModuleKind.Theme);
+        ImportedTitle.Visibility = modules.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        string current = ThemeManager.ThemeFor(ScreenPicker.Device).Key;
+        foreach (var theme in ThemeCatalog.All.Concat(modules.Select(m => m.ToTheme())))
         {
-            bool selected = theme.Kind == Settings.Current.For(ScreenPicker.Device).Theme;
+            bool selected = theme.Key == current;
             var card = new Button
             {
                 Width = 168,
@@ -69,25 +102,38 @@ public partial class AppearancePage : Page
                 Template = FlatTemplate(),
             };
             System.Windows.Automation.AutomationProperties.SetName(card, Loc.F("Tema {0}", theme.Name));
-            card.Tag = theme.Kind;
+            card.Tag = theme.Key;
             card.Click += (_, _) =>
             {
                 // Primero se marca la selección (respuesta inmediata) y después se aplica el tema.
-                UpdateGallerySelection(theme.Kind);
-                Dispatcher.BeginInvoke(() => Settings.UpdateScreen(ScreenPicker.Device, s => s.Theme = theme.Kind),
-                                       System.Windows.Threading.DispatcherPriority.Background);
+                UpdateGallerySelection(theme.Key);
+                Dispatcher.BeginInvoke(() => Settings.UpdateScreen(ScreenPicker.Device, s =>
+                {
+                    s.ThemeModule = theme.ModuleId;
+                    if (theme.ModuleId is null)
+                        s.Theme = theme.Kind;
+                }), System.Windows.Threading.DispatcherPriority.Background);
             };
-            (theme.Scheme is null ? ThemeGallery : SchemeGallery).Children.Add(card);
+            if (theme.ModuleId is { } id)
+            {
+                var remove = new MenuItem { Header = Loc.T("Quitar"), Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Delete24 } };
+                remove.Click += (_, _) => ModuleStore.Delete(ModuleKind.Theme, id);
+                card.ContextMenu = new ContextMenu { Items = { remove } };
+                ImportedGallery.Children.Add(card);
+            }
+            else
+                (theme.Scheme is null ? ThemeGallery : SchemeGallery).Children.Add(card);
         }
     }
 
-    private void UpdateGallerySelection(StrataTheme selected)
+    private void UpdateGallerySelection(string selected)
     {
-        foreach (Button card in ThemeGallery.Children.OfType<Button>().Concat(SchemeGallery.Children.OfType<Button>()))
+        foreach (Button card in ThemeGallery.Children.OfType<Button>().Concat(SchemeGallery.Children.OfType<Button>())
+                     .Concat(ImportedGallery.Children.OfType<Button>()))
         {
             if (card.Content is not Border frame)
                 continue;
-            bool isSelected = (StrataTheme)card.Tag == selected;
+            bool isSelected = (string)card.Tag == selected;
             frame.BorderThickness = new Thickness(isSelected ? 2 : 1);
             frame.BorderBrush = isSelected
                 ? (TryFindResource("AccentFillColorDefaultBrush") as Brush) ?? Brushes.DodgerBlue
@@ -182,6 +228,29 @@ public partial class AppearancePage : Page
     private static void Select(ComboBox box, string tag) =>
         box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) ?? box.Items[0];
 
+    /// <summary>Las animaciones incluidas (del XAML) y, después, las importadas.</summary>
+    private void BuildAnimationChoices()
+    {
+        bool loading = _loading;
+        _loading = true;
+        foreach (var item in AnimationBox.Items.OfType<ComboBoxItem>().Where(i => ((string)i.Tag).StartsWith(Imported)).ToList())
+            AnimationBox.Items.Remove(item);
+        foreach (var module in ModuleStore.All<AnimationModule>(ModuleKind.Animation))
+            AnimationBox.Items.Add(new ComboBoxItem { Content = module.Name, Tag = Imported + module.Id });
+        var s = Settings.Current;
+        string chosen = s.AnimationModule is { } id && ModuleStore.Get<AnimationModule>(ModuleKind.Animation, id) is { } found
+            ? Imported + found.Id
+            : s.PanelAnimation.ToString();
+        Select(AnimationBox, chosen);
+        _loading = loading;
+    }
+
+    private void SelectAnimation(string tag)
+    {
+        if (AnimationBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) is { } item)
+            AnimationBox.SelectedItem = item; // Animation_Changed guarda y muestra la vista previa
+    }
+
     private void Animation_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (_loading || AnimationBox.SelectedItem is not ComboBoxItem { Tag: string style }
@@ -189,7 +258,13 @@ public partial class AppearancePage : Page
             return;
         Settings.Update(s =>
         {
-            s.PanelAnimation = Enum.Parse<PanelAnimation>(style);
+            if (style.StartsWith(Imported))
+                s.AnimationModule = style[Imported.Length..];
+            else
+            {
+                s.AnimationModule = null;
+                s.PanelAnimation = Enum.Parse<PanelAnimation>(style);
+            }
             s.AnimationSpeed = Enum.Parse<AnimationSpeed>(speed);
         });
         // Vista previa: un aviso de prueba con la animación elegida.

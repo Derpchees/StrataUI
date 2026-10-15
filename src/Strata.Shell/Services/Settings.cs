@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Strata.Shell.Services.Localization;
@@ -64,7 +64,7 @@ public enum StartIconKind { Strata, Windows, WindowsMono, Circle, Dot, Grid, Sea
 public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock }
 
 /// <summary>Widgets de escritorio (ver Services/Widgets).</summary>
-public enum WidgetKind { Clock, Visualizer }
+public enum WidgetKind { Clock, Visualizer, Custom }
 
 /// <summary>
 /// Un widget del escritorio: su monitor y su posición como fracción del espacio libre del área de
@@ -83,6 +83,8 @@ public sealed class WidgetConfig
     public bool ShowDate { get; set; } = true;
     /// <summary>No se mueve al arrastrarlo.</summary>
     public bool Locked { get; set; }
+    /// <summary>Widget importado (<see cref="WidgetKind.Custom"/>): el ID de su módulo.</summary>
+    public string? Module { get; set; }
 }
 
 /// <summary>
@@ -251,6 +253,8 @@ public sealed class StrataSettings
 
     // Apariencia
     public StrataTheme Theme { get; set; } = StrataTheme.System;
+    /// <summary>Tema importado (ID del módulo); tiene prioridad sobre <see cref="Theme"/>.</summary>
+    public string? ThemeModule { get; set; }
     /// <summary>Color "#RRGGBB"; null = usar el acento de Windows.</summary>
     public string? AccentColor { get; set; }
     /// <summary>Acento sacado del fondo de pantalla (tiene prioridad sobre <see cref="AccentColor"/>).</summary>
@@ -273,6 +277,8 @@ public sealed class StrataSettings
     public bool TaskbarFullyTransparent { get; set; }
     public PanelAnimation PanelAnimation { get; set; } = PanelAnimation.Slide;
     public AnimationSpeed AnimationSpeed { get; set; } = AnimationSpeed.Normal;
+    /// <summary>Animación importada (ID del módulo); tiene prioridad sobre <see cref="PanelAnimation"/>.</summary>
+    public string? AnimationModule { get; set; }
     /// <summary>Fondo que había antes de que Strata UI lo cambiara por primera vez.</summary>
     public string? OriginalWallpaper { get; set; }
 
@@ -303,6 +309,7 @@ public sealed class StrataSettings
         TaskbarHeight = TaskbarHeight,
         TaskbarFullyTransparent = TaskbarFullyTransparent,
         Theme = Theme,
+        ThemeModule = ThemeModule,
         ShowSeconds = ShowSeconds,
         ShowDate = ShowDate,
         ShowTemperatures = ShowTemperatures,
@@ -339,6 +346,8 @@ public sealed class ScreenSettings
 
     // Apariencia de la barra y de los paneles que se abren desde ella
     public StrataTheme Theme { get; set; } = StrataTheme.System;
+    /// <summary>Tema importado (ID del módulo); tiene prioridad sobre <see cref="Theme"/>.</summary>
+    public string? ThemeModule { get; set; }
 
     // Multimedia
     public bool ShowMediaControls { get; set; } = true;

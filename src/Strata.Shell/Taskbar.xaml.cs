@@ -1,4 +1,4 @@
-﻿using System.Collections.Specialized;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
@@ -342,7 +342,7 @@ public partial class Taskbar : AppBarWindow
     }
 
     private ResourceDictionary? _screenPalette;
-    private (StrataTheme, bool, int) _appliedLook;
+    private (string?, bool, int) _appliedLook;
 
     /// <summary>
     /// Si su monitor tiene otro tema (o tamaño) que el general, la barra usa sus propios colores;
@@ -350,7 +350,7 @@ public partial class Taskbar : AppBarWindow
     /// </summary>
     private void ApplyScreenPalette()
     {
-        var look = (BarTheme.Kind, ThemeManager.IsLightFor(Device), S.TaskbarHeight);
+        var look = (BarTheme.Key, ThemeManager.IsLightFor(Device), S.TaskbarHeight);
         var palette = ThemeManager.PaletteFor(Device);
         if (_screenPalette != null)
             Resources.MergedDictionaries.Remove(_screenPalette);

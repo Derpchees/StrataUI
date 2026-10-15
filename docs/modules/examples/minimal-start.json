@@ -1,0 +1,15 @@
+{
+  "type": "startmenu",
+  "name": "Minimal",
+  "description": "A narrow menu with small icons, no labels and only the power button.",
+  "author": "Strata UI",
+  "style": "compact",
+  "iconSize": "small",
+  "pinnedLabels": false,
+  "showRecent": false,
+  "showUser": false,
+  "startIcon": "dot",
+  "footer": ["Power"],
+  "width": 380,
+  "height": 560
+}

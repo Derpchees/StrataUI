@@ -1,4 +1,5 @@
 using System.Windows;
+using Strata.Shell.Services.Modules;
 using Strata.Shell.Widgets;
 
 namespace Strata.Shell.Services.Widgets;
@@ -20,6 +21,7 @@ public static class WidgetManager
             Open(config);
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaysChanged;
         ExplorerWatch.Restarted += OnExplorerRestarted;
+        ModuleStore.Changed += OnModulesChanged;
     }
 
     /// <summary>El Explorador se reinició: la ventana del escritorio es otra y los widgets se vuelven a enganchar.</summary>
@@ -34,6 +36,7 @@ public static class WidgetManager
     {
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaysChanged;
         ExplorerWatch.Restarted -= OnExplorerRestarted;
+        ModuleStore.Changed -= OnModulesChanged;
         foreach (var window in Windows.Values.ToList())
         {
             try
@@ -49,19 +52,20 @@ public static class WidgetManager
     }
 
     /// <summary>Agrega un widget en el monitor principal de Strata UI (arriba al centro, o un poco más abajo si ya hay otros).</summary>
-    public static void Add(WidgetKind kind, bool showDate = true)
+    public static void Add(WidgetKind kind, bool showDate = true, string? module = null)
     {
         var config = new WidgetConfig
         {
             Kind = kind,
             ShowDate = showDate,
+            Module = module,
             Device = App.MainScreenDevice(System.Windows.Forms.Screen.AllScreens.Select(s => (s.DeviceName, s.Primary))),
             X = 0.5,
             Y = Math.Min(0.85, 0.15 + 0.2 * Settings.Current.Widgets.Count),
         };
         Settings.Update(s => s.Widgets.Add(config));
         Open(config);
-        Log.Info($"Widget agregado: {kind}");
+        Log.Info($"Widget agregado: {kind}{(module is null ? "" : " " + module)}");
         Changed?.Invoke();
     }
 
@@ -90,11 +94,30 @@ public static class WidgetManager
         FrameworkElement content = config.Kind switch
         {
             WidgetKind.Visualizer => new VisualizerWidget(config),
+            WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, config.Module) is { } module
+                ? new CustomWidget(config, module)
+                : CustomWidget.Missing(config.Module),
             _ => new ClockWidget(config),
         };
         var window = new WidgetWindow(config, content);
         Windows[config.Id] = window;
         window.Show();
+    }
+
+    /// <summary>Se reimportó o quitó un widget importado: los que lo usan se vuelven a crear.</summary>
+    private static void OnModulesChanged(ModuleKind kind)
+    {
+        if (kind != ModuleKind.Widget)
+            return;
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            foreach (var config in Settings.Current.Widgets.Where(w => w.Kind == WidgetKind.Custom))
+            {
+                if (Windows.Remove(config.Id, out var old))
+                    old.Close();
+                Open(config);
+            }
+        });
     }
 
     /// <summary>Otra resolución o monitores: cada widget vuelve a su lugar relativo.</summary>

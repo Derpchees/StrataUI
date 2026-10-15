@@ -81,8 +81,13 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **OSD** (`Notifications/OsdWindow`, clase `Osd`): volumen, brillo y teclas de bloqueo. El OSD
   nativo de volumen lo dibuja `ShellHost.exe` (no se puede ocultar): por eso, con el OSD activo, el
   gancho de teclado se queda con las teclas de volumen y Strata UI cambia el volumen.
-- **Animaciones**: `Services/Themes/Motion` (`In`/`Out`) según `PanelAnimation` y `AnimationSpeed`;
-  usarlo en cualquier ventana emergente nueva.
+- **Animaciones**: `Services/Themes/Motion` (`In`/`Out`) según `PanelAnimation` y `AnimationSpeed`
+  (o la importada, `AnimationModule`); usarlo en cualquier ventana emergente nueva.
+- **Módulos importables** (`Services/Modules`): temas, animaciones, widgets y aspectos del menú
+  Inicio en JSON declarativo (nada de código ni XAML ajeno), en `%LOCALAPPDATA%\StrataUI\Modules`.
+  La sección del Hub es `Hub/ModulesSection`; el formato está en `docs/modules/README.md` (en
+  inglés) con ejemplos que la prueba `ModuleTests` valida. Un campo nuevo de un módulo va también
+  en esa documentación. Los temas se comparan por `ThemeInfo.Key`, no por `Kind`.
 - **Barra transparente** (`Taskbar.Transparency.cs`): sin acento de DWM y con el marco extendido
   después de quitar el acento; cambiarla recrea las barras (pasar en vivo de Acrylic a transparente
   la dejaba negra; el "gradiente transparente" pinta el acento de Windows o esconde todo). Cada zona toma `StrataForegroundBrush` claro u oscuro según

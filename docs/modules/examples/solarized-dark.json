@@ -1,0 +1,20 @@
+{
+  // Color scheme theme: solid surfaces with Solarized colors.
+  "type": "theme",
+  "name": "Solarized Dark",
+  "description": "Ethan Schoonover's classic low-contrast palette.",
+  "author": "Strata UI",
+  "light": false,
+  "backdrop": "solid",
+  "radius": 8,
+  "panelRadius": 12,
+  "colors": {
+    "bar": "#002B36",
+    "panel": "#073642",
+    "surface": "#0B3E4B",
+    "text": "#FDF6E3",
+    "subText": "#93A1A1",
+    "border": "#124D5B",
+    "accent": "#268BD2"
+  }
+}

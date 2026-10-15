@@ -1,0 +1,11 @@
+{
+  "type": "widget",
+  "name": "Big clock",
+  "description": "Hours in your accent color, with seconds and the date.",
+  "author": "Strata UI",
+  "lines": [
+    { "text": "{time:HH:mm}", "size": 96, "weight": "thin", "color": "accent" },
+    { "text": "{time:ss}", "size": 20, "weight": "semibold", "opacity": 0.7, "spacing": -14 },
+    { "text": "{date:dddd, MMMM d}", "size": 18, "opacity": 0.9 }
+  ]
+}

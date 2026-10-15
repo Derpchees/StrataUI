@@ -6,6 +6,7 @@ using Strata.Shell.Controls;
 using Strata.Shell.Services;
 using Strata.Shell.Services.StartMenu;
 using Strata.Shell.Services.Localization;
+using Strata.Shell.Services.Modules;
 
 namespace Strata.Shell.Hub.Pages;
 
@@ -22,11 +23,56 @@ public partial class StartPage : Page
         Loc.T("Como Windows 11, con tu foto grande arriba sobresaliendo del menú, tu nombre y un saludo."),
     ];
 
-    private readonly bool _loading = true;
+    private bool _loading = true;
 
     public StartPage()
     {
         InitializeComponent();
+        LoadSettings();
+        BuildIconGallery();
+        _loading = false;
+
+        var modules = new ModulesSection(ModuleKind.StartMenu,
+            Loc.T("Aspectos del menú en archivos .json: estilo, íconos, secciones, botones del pie, ícono de Inicio y tamaño."),
+            module =>
+            {
+                var apply = new Wpf.Ui.Controls.Button { Content = Loc.T("Aplicar") };
+                apply.Click += (_, _) =>
+                {
+                    Settings.Update(((StartMenuModule)module).ApplyTo);
+                    LoadSettings();
+                };
+                return apply;
+            });
+        var export = new Wpf.Ui.Controls.Button
+        {
+            Content = Loc.T("Exportar el actual"),
+            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowExportLtr24 },
+            ToolTip = Loc.T("Guarda el menú como está para compartirlo"),
+        };
+        export.Click += (_, _) =>
+        {
+            try
+            {
+                var name = Loc.F("Mi menú Inicio {0:yyyy-MM-dd HH-mm}", DateTime.Now);
+                var path = ModuleStore.Save(ModuleKind.StartMenu, StartMenuModule.From(Settings.Current, name));
+                modules.ShowStatus(Loc.F("Guardado como \"{0}\".", name));
+                ModuleStore.OpenFolder(ModuleKind.StartMenu, path);
+            }
+            catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+            {
+                modules.ShowStatus(ex.Message);
+            }
+        };
+        modules.AddButton(export);
+        ModulesHost.Content = modules;
+    }
+
+    /// <summary>Los controles con la configuración actual (al abrir o al aplicar un aspecto importado).</summary>
+    private void LoadSettings()
+    {
+        bool loading = _loading;
+        _loading = true;
         var s = Settings.Current;
         StyleBox.SelectedIndex = (int)s.StartStyle;
         StyleDescription.Text = Descriptions[(int)s.StartStyle];
@@ -41,8 +87,9 @@ public partial class StartPage : Page
         MouseMonitorSwitch.IsChecked = s.StartOnMouseMonitor;
         ExplorerMenuSwitch.IsChecked = s.StartExplorerMenu;
         BuildFooter();
-        BuildIconGallery();
-        _loading = false;
+        if (IconGallery.Children.Count > 0)
+            UpdateIconSelection();
+        _loading = loading;
     }
 
     private void Style_Changed(object sender, SelectionChangedEventArgs e)

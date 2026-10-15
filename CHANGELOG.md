@@ -7,6 +7,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Módulos importables**: temas, animaciones, widgets y aspectos del menú Inicio en archivos JSON
+  declarativos (no pueden ejecutar nada), cada uno con su botón **Importar…** en su sección del Hub,
+  su carpeta y "Quitar". Los temas importados aparecen en Tema › Importados (por monitor, con sus
+  propios colores si los traen); las animaciones, en Animaciones › Estilo (desde dónde llegan,
+  cuánto crecen, rebote); los widgets son líneas de texto con la hora, la fecha, la canción o la
+  batería; los aspectos del menú Inicio cambian estilo, íconos, secciones, botones del pie, ícono y
+  tamaño, y el menú actual se puede **exportar** para compartirlo. Formato y ejemplos en
+  `docs/modules`.
 - **Portugués, francés y alemán**, además de inglés y español (Hub › General › Idioma). Se pueden
   agregar idiomas propios con un `xx.json` en `%LOCALAPPDATA%\StrataUI\Languages` (aparecen solos en
   la lista; lo que les falte se ve en inglés) y corregir uno incluido poniendo ahí solo los textos

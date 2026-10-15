@@ -1,4 +1,4 @@
-﻿using Strata.Shell.Services.Localization;
+using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services.Themes;
 
@@ -19,6 +19,7 @@ public sealed record ColorScheme(string Bar, string Panel, string Surface, strin
 /// <see cref="Glass"/> agrega bordes de luz especulares (Liquid Glass); <see cref="Floating"/>
 /// separa la barra de los bordes en forma de cápsula; <see cref="Tonal"/> tiñe las superficies
 /// con el acento (Material Design). <see cref="PanelRadius"/> es el redondeo de los paneles.
+/// <see cref="ModuleId"/>: tema importado (Services/Modules).
 /// </summary>
 public sealed record ThemeInfo(
     StrataTheme Kind,
@@ -31,7 +32,12 @@ public sealed record ThemeInfo(
     bool Floating = false,
     double Radius = 5,
     double PanelRadius = 8,
-    ColorScheme? Scheme = null);
+    ColorScheme? Scheme = null,
+    string? ModuleId = null)
+{
+    /// <summary>Identifica el tema (el de la lista o uno importado) para saber si cambió.</summary>
+    public string Key => ModuleId is null ? Kind.ToString() : "module:" + ModuleId;
+}
 
 public static class ThemeCatalog
 {

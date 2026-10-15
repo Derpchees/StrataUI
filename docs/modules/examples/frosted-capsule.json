@@ -1,0 +1,11 @@
+{
+  // Style-only theme: no colors, so it follows Windows light/dark mode and your accent.
+  "type": "theme",
+  "name": "Frosted Capsule",
+  "description": "Frosted glass with a floating, rounded taskbar.",
+  "author": "Strata UI",
+  "backdrop": "acrylic",
+  "floating": true,
+  "radius": 16,
+  "panelRadius": 20
+}

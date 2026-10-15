@@ -19,6 +19,9 @@
             <WrapPanel x:Name="ThemeGallery" Margin="0,0,0,8" />
             <TextBlock Style="{StaticResource CardTitle}" Margin="2,4,0,8" Text="{l:T 'Esquemas de color'}" />
             <WrapPanel x:Name="SchemeGallery" Margin="0,0,0,8" />
+            <TextBlock x:Name="ImportedTitle" Style="{StaticResource CardTitle}" Margin="2,4,0,8" Text="{l:T 'Importados'}" Visibility="Collapsed" />
+            <WrapPanel x:Name="ImportedGallery" Margin="0,0,0,8" />
+            <ContentControl x:Name="ThemeModulesHost" Margin="0,0,0,8" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Eye24" /></ui:CardControl.Icon>
@@ -90,6 +93,8 @@
                     <ComboBoxItem Content="{l:T 'Lenta'}" Tag="Slow" />
                 </ComboBox>
             </ui:CardControl>
+
+            <ContentControl x:Name="AnimationModulesHost" Margin="0,4,0,0" />
 
         </StackPanel>
     </ScrollViewer>

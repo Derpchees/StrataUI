@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Localization;
+using Strata.Shell.Services.Modules;
 using Strata.Shell.Services.Widgets;
 using Wpf.Ui.Controls;
 using PageHeader = Strata.Shell.Hub.PageHeader;
@@ -12,7 +13,8 @@ namespace Strata.Shell.Hub.Pages;
 
 /// <summary>
 /// Hub › Widgets: agregar relojes y visualizadores al escritorio, y ver o quitar los que hay. Se
-/// mueven arrastrándolos en el escritorio; el tamaño y las opciones, con su clic derecho.
+/// mueven arrastrándolos en el escritorio; el tamaño y las opciones, con su clic derecho. También
+/// se importan widgets hechos por otros (<see cref="WidgetModule"/>).
 /// </summary>
 public sealed class WidgetsPage : Page
 {
@@ -35,6 +37,14 @@ public sealed class WidgetsPage : Page
         add.Children.Add(AddButton(SymbolRegular.CalendarClock24, Loc.T("Reloj con fecha"), () => WidgetManager.Add(WidgetKind.Clock, showDate: true)));
         add.Children.Add(AddButton(SymbolRegular.MusicNote224, Loc.T("Visualizador de música"), () => WidgetManager.Add(WidgetKind.Visualizer)));
         content.Children.Add(add);
+        content.Children.Add(new ModulesSection(ModuleKind.Widget,
+            Loc.T("Widgets en archivos .json: líneas de texto con la hora, la fecha, la canción que suena o la batería, con sus fuentes y colores."),
+            module =>
+            {
+                var button = new Wpf.Ui.Controls.Button { Content = Loc.T("Agregar"), Icon = new SymbolIcon { Symbol = SymbolRegular.Add24 } };
+                button.Click += (_, _) => WidgetManager.Add(WidgetKind.Custom, module: module.Id);
+                return button;
+            }));
 
         content.Children.Add(new TextBlock { Style = (Style)FindResource("HubSectionTitle"), Text = Loc.T("En el escritorio") });
         content.Children.Add(_list);
@@ -90,7 +100,15 @@ public sealed class WidgetsPage : Page
                 Style = (Style)FindResource("HubCard"),
                 Header = header,
                 Content = remove,
-                Icon = new SymbolIcon { Symbol = widget.Kind == WidgetKind.Visualizer ? SymbolRegular.MusicNote224 : SymbolRegular.Clock24 },
+                Icon = new SymbolIcon
+                {
+                    Symbol = widget.Kind switch
+                    {
+                        WidgetKind.Visualizer => SymbolRegular.MusicNote224,
+                        WidgetKind.Custom => SymbolRegular.PuzzlePiece24,
+                        _ => SymbolRegular.Clock24,
+                    },
+                },
             });
         }
     }
@@ -98,6 +116,7 @@ public sealed class WidgetsPage : Page
     private static string KindName(WidgetConfig widget) => widget.Kind switch
     {
         WidgetKind.Visualizer => Loc.T("Visualizador de música"),
+        WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, widget.Module)?.Name ?? Loc.T("Widget importado"),
         _ => widget.ShowDate ? Loc.T("Reloj con fecha") : Loc.T("Reloj"),
     };
 }

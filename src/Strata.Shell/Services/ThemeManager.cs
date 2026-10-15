@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
+using Strata.Shell.Services.Modules;
 using Strata.Shell.Services.Themes;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
@@ -38,7 +39,11 @@ public static class ThemeManager
     public static string MainDevice =>
         App.MainScreenDevice(System.Windows.Forms.Screen.AllScreens.Select(sc => (sc.DeviceName, sc.Primary)));
 
-    public static ThemeInfo ThemeFor(string? device) => ThemeCatalog.Get(Settings.Current.For(device).Theme);
+    public static ThemeInfo ThemeFor(string? device)
+    {
+        var screen = Settings.Current.For(device);
+        return ModuleStore.Get<ThemeModule>(ModuleKind.Theme, screen.ThemeModule)?.ToTheme() ?? ThemeCatalog.Get(screen.Theme);
+    }
 
     public static bool IsLightFor(string? device) => ThemeFor(device).Light ?? WindowsUsesLightTheme();
 
@@ -54,7 +59,7 @@ public static class ThemeManager
         var theme = ThemeFor(device);
         bool light = IsLightFor(device);
         int height = Settings.Current.For(device).TaskbarHeight;
-        if ((theme.Kind, light, height) == (Theme.Kind, IsLight, Settings.Current.For(MainDevice).TaskbarHeight))
+        if ((theme.Key, light, height) == (Theme.Key, IsLight, Settings.Current.For(MainDevice).TaskbarHeight))
             return null;
         var accent = Readable(AccentFor(theme), light);
         return Palette.Build(theme, light, accent, height, UseLiveGlassFor(device), light == IsLight ? _shownAccent : null,
@@ -134,7 +139,7 @@ public static class ThemeManager
         _ => WindowBackdropType.None,
     };
 
-    private static (StrataTheme, string?, int, bool, bool, string?, string?) _appliedKey;
+    private static (string, string?, int, bool, bool, string?, string?) _appliedKey;
     private static HwndSource? _colorWatcher;
 
     public static void Initialize()
@@ -147,7 +152,21 @@ public static class ThemeManager
         Settings.Changed += OnSettingsChanged;
         WallpaperAccent.Changed += Recheck;
         WallpaperEngine.Changed += Recheck;
+        ModuleStore.Changed += OnModulesChanged;
         WatchColorization();
+    }
+
+    /// <summary>Se reimportó o quitó un tema importado: si algún monitor lo usa, todo se vuelve a pintar.</summary>
+    private static void OnModulesChanged(ModuleKind kind)
+    {
+        var s = Settings.Current;
+        if (kind != ModuleKind.Theme || (s.ThemeModule is null && s.Screens.Values.All(screen => screen.ThemeModule is null)))
+            return;
+        Application.Current?.Dispatcher.BeginInvoke(() =>
+        {
+            _appliedKey = default;
+            Settings.Update(_ => { });
+        });
     }
 
     public static void Shutdown()
@@ -156,6 +175,7 @@ public static class ThemeManager
         Settings.Changed -= OnSettingsChanged;
         WallpaperAccent.Changed -= Recheck;
         WallpaperEngine.Changed -= Recheck;
+        ModuleStore.Changed -= OnModulesChanged;
         WallpaperAccent.Shutdown();
         WallpaperEngine.Shutdown();
         _colorWatcher?.Dispose();
@@ -171,17 +191,17 @@ public static class ThemeManager
     }
 
     /// <summary>Lo que cambia los recursos generales: el tema y la barra del monitor principal, el acento y el vidrio.</summary>
-    private static (StrataTheme, string?, int, bool, bool, string?, string?) AppliedKey()
+    private static (string, string?, int, bool, bool, string?, string?) AppliedKey()
     {
         var s = Settings.Current;
         var main = s.For(MainDevice);
-        return (main.Theme, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper, s.CustomBarColor, s.CustomPanelColor);
+        return (ThemeFor(MainDevice).Key, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper, s.CustomBarColor, s.CustomPanelColor);
     }
 
     /// <summary>Reaplica si cambió lo que se ve (claro/oscuro o el acento efectivo).</summary>
     private static void Recheck()
     {
-        if ((Theme.Kind, IsLight, Accent) != _appliedLook)
+        if ((Theme.Key, IsLight, Accent) != _appliedLook)
             Apply();
     }
 
@@ -301,7 +321,7 @@ public static class ThemeManager
             resources.MergedDictionaries.Remove(_current);
         resources.MergedDictionaries.Add(next);
         _current = next;
-        _appliedLook = (theme.Kind, light, chosen);
+        _appliedLook = (theme.Key, light, chosen);
 
         ThemeChanged?.Invoke();
         Log.Info($"Tema {theme.Name} ({(light ? "claro" : "oscuro")}) aplicado en {watch.ElapsedMilliseconds} ms");
@@ -309,7 +329,7 @@ public static class ThemeManager
 
     private static ApplicationTheme? _uiTheme;
     private static Color? _uiAccent;
-    private static (StrataTheme, bool, Color) _appliedLook;
+    private static (string?, bool, Color) _appliedLook;
 
     private static void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {

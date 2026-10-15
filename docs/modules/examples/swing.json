@@ -1,0 +1,8 @@
+{
+  "type": "animation",
+  "name": "Swing",
+  "description": "Comes from further away and overshoots a little.",
+  "author": "Strata UI",
+  "enter": { "offset": 48, "scale": 0.9, "opacity": 0, "duration": 1.6, "easing": "back", "amplitude": 0.6 },
+  "exit": { "offset": 24, "scale": 0.95, "duration": 0.8, "easing": "cubic" }
+}

@@ -18,7 +18,7 @@ public static class WindowsTheming
 
     private static IntPtr _hook;
     private static WinEventProc? _callback; // referencia viva para que el GC no recoja el delegado
-    private static StrataTheme? _appliedSystemTheme;
+    private static string? _appliedSystemTheme;
 
     public static void Initialize()
     {
@@ -135,9 +135,9 @@ public static class WindowsTheming
     private static async Task ApplySystemModeAsync()
     {
         var theme = ThemeManager.Theme;
-        if (_appliedSystemTheme == theme.Kind)
+        if (_appliedSystemTheme == theme.Key)
             return;
-        _appliedSystemTheme = theme.Kind;
+        _appliedSystemTheme = theme.Key;
 
         if (theme.Light is bool light)
         {

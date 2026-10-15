@@ -1,14 +1,16 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using Strata.Shell.Services.Modules;
 
 namespace Strata.Shell.Services.Themes;
 
 /// <summary>
 /// Animaciones de entrada y salida de paneles, menú Inicio, avisos, OSD, menús, tooltips y el Hub, según lo elegido en
-/// Hub › Apariencia (<see cref="PanelAnimation"/> y <see cref="AnimationSpeed"/>).
+/// Hub › Tema (<see cref="PanelAnimation"/> y <see cref="AnimationSpeed"/>), o una animación
+/// importada (<see cref="AnimationModule"/>).
 /// </summary>
 public static class Motion
 {
@@ -89,6 +91,11 @@ public static class Motion
     /// </summary>
     public static void In(UIElement fade, FrameworkElement moving, TaskbarPosition from, double size = 1)
     {
+        if (Imported is { } imported)
+        {
+            CustomIn(fade, moving, from, size, imported.Enter);
+            return;
+        }
         var style = Settings.Current.PanelAnimation;
         var duration = Duration(closing: false) * Math.Max(0.6, size);
         if (style == PanelAnimation.None)
@@ -139,6 +146,11 @@ public static class Motion
     /// <summary>Salida: lo contrario de <see cref="In"/>; <paramref name="done"/> corre al terminar.</summary>
     public static void Out(UIElement fade, FrameworkElement moving, TaskbarPosition toward, Action done)
     {
+        if (Imported is { } imported)
+        {
+            CustomOut(fade, moving, toward, imported.Exit!, done);
+            return;
+        }
         var style = Settings.Current.PanelAnimation;
         if (style == PanelAnimation.None)
         {
@@ -184,6 +196,67 @@ public static class Motion
         _ = Task.Delay(duration + TimeSpan.FromMilliseconds(150)).ContinueWith(
             _ => Application.Current?.Dispatcher.BeginInvoke(Finish));
     }
+
+    /// <summary>La animación importada elegida (null: una de las incluidas).</summary>
+    private static AnimationModule? Imported =>
+        Settings.Current.AnimationModule is { } id ? ModuleStore.Get<AnimationModule>(ModuleKind.Animation, id) : null;
+
+    /// <summary>Entrada de una animación importada: se desvanece, se desliza y crece a la vez.</summary>
+    private static void CustomIn(UIElement fade, FrameworkElement moving, TaskbarPosition from, double size, MotionStep step)
+    {
+        var duration = Duration(closing: false) * Math.Max(0.6, size) * step.Duration;
+        fade.BeginAnimation(UIElement.OpacityProperty,
+            new DoubleAnimation(step.Opacity, 1, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        var ease = Ease(step, EasingMode.EaseOut);
+        var (property, offset) = Offset(from, step.Offset * size);
+        double start = 1 - (1 - step.Scale) * size;
+        var scale = new ScaleTransform(1, 1);
+        var slide = new TranslateTransform();
+        moving.RenderTransformOrigin = Origin(from);
+        moving.RenderTransform = new TransformGroup { Children = { scale, slide } };
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(start, 1, duration) { EasingFunction = ease });
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(start, 1, duration) { EasingFunction = ease });
+        slide.BeginAnimation(property, new DoubleAnimation(offset, 0, duration) { EasingFunction = ease });
+    }
+
+    private static void CustomOut(UIElement fade, FrameworkElement moving, TaskbarPosition toward, MotionStep step, Action done)
+    {
+        var duration = Duration(closing: true) * step.Duration;
+        var ease = Ease(step, EasingMode.EaseIn);
+        var (property, offset) = Offset(toward, step.Offset);
+        var scale = new ScaleTransform(1, 1);
+        var slide = new TranslateTransform();
+        moving.RenderTransformOrigin = Origin(toward);
+        moving.RenderTransform = new TransformGroup { Children = { scale, slide } };
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(step.Scale, duration) { EasingFunction = ease });
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(step.Scale, duration) { EasingFunction = ease });
+        slide.BeginAnimation(property, new DoubleAnimation(offset, duration) { EasingFunction = ease });
+
+        bool finished = false;
+        void Finish()
+        {
+            if (finished)
+                return;
+            finished = true;
+            done();
+        }
+        var fadeOut = new DoubleAnimation(step.Opacity, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        fadeOut.Completed += (_, _) => Finish();
+        fade.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        _ = Task.Delay(duration + TimeSpan.FromMilliseconds(150)).ContinueWith(
+            _ => Application.Current?.Dispatcher.BeginInvoke(Finish));
+    }
+
+    private static IEasingFunction? Ease(MotionStep step, EasingMode mode) => step.Easing switch
+    {
+        MotionEasing.Linear => null,
+        MotionEasing.Sine => new SineEase { EasingMode = mode },
+        MotionEasing.Quint => new QuinticEase { EasingMode = mode },
+        MotionEasing.Back => new BackEase { EasingMode = mode, Amplitude = step.Amplitude },
+        MotionEasing.Elastic => new ElasticEase { EasingMode = mode, Oscillations = 2, Springiness = Math.Max(1, 8 - step.Amplitude * 2) },
+        MotionEasing.Bounce => new BounceEase { EasingMode = mode, Bounces = 2, Bounciness = Math.Max(1.5, 4 - step.Amplitude) },
+        _ => new CubicEase { EasingMode = mode },
+    };
 
     /// <summary>Desplazamiento inicial: del lado de la barra hacia el interior de la pantalla.</summary>
     private static (DependencyProperty Property, double Offset) Offset(TaskbarPosition from, double distance) => from switch

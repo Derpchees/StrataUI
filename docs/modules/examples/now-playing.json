@@ -1,0 +1,15 @@
+{
+  "type": "widget",
+  "name": "Now playing",
+  "description": "The song and artist on a dark card. Hidden lines while nothing plays.",
+  "author": "Strata UI",
+  "background": "#99000000",
+  "cornerRadius": 14,
+  "padding": 16,
+  "shadow": false,
+  "lines": [
+    { "text": "♪ {song}", "size": 20, "weight": "semibold", "align": "left" },
+    { "text": "{artist}", "size": 14, "opacity": 0.75, "align": "left", "spacing": 2 },
+    { "text": "{time} · {battery}", "size": 12, "opacity": 0.6, "align": "left", "spacing": 8 }
+  ]
+}

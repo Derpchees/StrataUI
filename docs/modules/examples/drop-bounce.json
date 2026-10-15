@@ -1,0 +1,8 @@
+{
+  "type": "animation",
+  "name": "Drop and bounce",
+  "description": "Panels drop in from the taskbar and bounce into place.",
+  "author": "Strata UI",
+  "enter": { "offset": 70, "duration": 2.2, "easing": "bounce", "amplitude": 1 }
+  // No "exit": it reuses the entrance, shorter.
+}
