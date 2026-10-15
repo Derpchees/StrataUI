@@ -6,6 +6,8 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.0.0] - 2026-10-15
+
 ### Añadido
 - **"Anclar a Inicio de Strata UI" en el menú contextual moderno de Windows 11** (no solo en
   "Mostrar más opciones"): un paquete MSIX sparse firmado con un certificado propio de Strata UI y
