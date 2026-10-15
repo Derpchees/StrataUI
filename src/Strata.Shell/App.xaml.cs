@@ -95,6 +95,12 @@ public partial class App : Application
             Shutdown(Services.Cleanup.JunkCleaner.RunElevated(e.Args));
             return;
         }
+        // Ajustes del controlador de NVIDIA, en un proceso aparte (ver Services/Vendors).
+        if (e.Args.Length > 0 && e.Args[0] == Services.Vendors.NvidiaSettings.Arg)
+        {
+            Shutdown(Services.Vendors.NvidiaSettings.RunHelper(e.Args));
+            return;
+        }
         // Diálogo de abrir archivo o carpeta en un proceso aparte (ver Services/FilePicker).
         if (e.Args.Length > 0 && e.Args[0] == FilePicker.Arg)
         {

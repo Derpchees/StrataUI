@@ -45,7 +45,9 @@ public abstract class TweaksPage : Page
         };
         content.Children.Add(_status);
 
-        foreach (var tweak in TweakCatalog.All.Where(t => t.Category == category))
+        foreach (var element in ExtraContent())
+            content.Children.Add(element);
+        foreach (var tweak in TweakCatalog.All.Where(t => t.Category == category && t.IsAvailable))
             content.Children.Add(BuildCard(tweak));
 
         // CanContentScroll=false en la página evita que WPF-UI la envuelva en otro ScrollViewer
@@ -68,6 +70,9 @@ public abstract class TweaksPage : Page
         };
         Unloaded += (_, _) => TweakEngine.ExplorerRestartNeeded -= ShowExplorerBanner;
     }
+
+    /// <summary>Lo que una página agrega antes de los ajustes del catálogo.</summary>
+    protected virtual IEnumerable<UIElement> ExtraContent() => [];
 
     private CardControl BuildCard(Tweak tweak)
     {

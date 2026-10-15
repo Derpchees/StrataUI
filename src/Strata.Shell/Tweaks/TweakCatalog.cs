@@ -20,6 +20,23 @@ public static class TweakCatalog
     public const string Gaming = "gaming";
     public const string Browsers = "browsers";
     public const string Performance = "performance";
+    public const string Hardware = "hardware";
+
+    private const string ServicesKey = @"SYSTEM\CurrentControlSet\Services\";
+
+    /// <summary>El servicio está instalado (los ajustes de fabricante solo se muestran si existe).</summary>
+    private static bool ServiceExists(string name)
+    {
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(ServicesKey + name);
+            return key != null;
+        }
+        catch (Exception ex) when (ex is global::System.Security.SecurityException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
 
     private const string Desktop = @"Control Panel\Desktop";
     private const string SystemProfile = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
@@ -288,6 +305,22 @@ public static class TweakCatalog
         new("search-indexing", Performance, Loc.T("Desactivar la indexación de búsqueda"),
             Loc.T("Menos uso de disco en segundo plano. La búsqueda del Explorador se vuelve más lenta (la de Inicio de Strata UI no cambia). Se aplica al reiniciar."),
             [LM(@"SYSTEM\CurrentControlSet\Services\WSearch", "Start", 2, 4)]),
+
+        // ── Hardware: servicios de los fabricantes (solo si están instalados) ──
+        // Se desactivan en el registro (como el Administrador de servicios): rigen desde el próximo inicio.
+        new("nvidia-telemetry", Hardware, Loc.T("NVIDIA: desactivar la telemetría"),
+            Loc.T("El servicio que envía a NVIDIA datos de uso del controlador. Se aplica al reiniciar."),
+            [LM(ServicesKey + "NvTelemetryContainer", "Start", 2, 4)],
+            Available: () => ServiceExists("NvTelemetryContainer")),
+        new("amd-uep", Hardware, Loc.T("AMD: desactivar el Programa de experiencia del usuario"),
+            Loc.T("El servicio que envía a AMD datos de uso de AMD Software. Se aplica al reiniciar."),
+            [LM(ServicesKey + "AUEPLauncher", "Start", 2, 4)],
+            Available: () => ServiceExists("AUEPLauncher")),
+        new("intel-cip", Hardware, Loc.T("Intel: desactivar el Programa de mejora del equipo"),
+            Loc.T("Los servicios del Intel Computing Improvement Program, que envían datos de uso a Intel. Se aplica al reiniciar."),
+            [LM(ServicesKey + "ESRV_SVC_QUEENCREEK", "Start", 2, 4),
+             LM(ServicesKey + "SystemUsageReportSvc_QUEENCREEK", "Start", 2, 4)],
+            Available: () => ServiceExists("ESRV_SVC_QUEENCREEK") && ServiceExists("SystemUsageReportSvc_QUEENCREEK")),
 
         // ── Navegadores ────────────────────────────────────────────────────────
         new("brave-bloat", Browsers, Loc.T("Brave: quitar Rewards, Wallet, VPN y Leo"),

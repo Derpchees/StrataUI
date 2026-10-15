@@ -80,6 +80,9 @@
                         <ui:NavigationViewItem Content="{l:T 'Rendimiento'}" TargetPageType="{x:Type pages:PerformancePage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Flash24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>
+                        <ui:NavigationViewItem Content="{l:T 'Hardware'}" TargetPageType="{x:Type pages:HardwarePage}">
+                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="DeveloperBoard24" /></ui:NavigationViewItem.Icon>
+                        </ui:NavigationViewItem>
                         <ui:NavigationViewItem Content="{l:T 'Limpieza'}" TargetPageType="{x:Type pages:CleanupPage}">
                             <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Broom24" /></ui:NavigationViewItem.Icon>
                         </ui:NavigationViewItem>

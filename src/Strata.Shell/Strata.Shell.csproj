@@ -10,6 +10,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>StrataUI</AssemblyName>
     <RootNamespace>Strata.Shell</RootNamespace>
+    <!-- Estructuras grandes de NVAPI (Services/Vendors/NvidiaSettings) en la pila. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\strataui.ico</ApplicationIcon>
     <!-- El DPI lo declara el manifiesto (correcto para WPF); el aviso es solo para apps WinForms. -->

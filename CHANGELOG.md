@@ -7,6 +7,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Optimización › Hardware**: el procesador y las gráficas del equipo y, con una tarjeta NVIDIA, los
+  ajustes globales de su controlador (modo de energía, baja latencia, filtrado de texturas y caché de
+  sombreadores), con "Dejar como estaba". Además, los servicios de datos de uso de NVIDIA, AMD e
+  Intel, si están instalados.
 - **Limpieza con un clic** (Hub › Optimización › Limpieza): temporales, volcados e informes de
   errores, descargas de Windows Update, caché de Optimización de distribución y miniaturas; opcionales
   la caché de los navegadores, de sombreadores y los registros viejos. Muestra cuánto ocupa cada cosa,

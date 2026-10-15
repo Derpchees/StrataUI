@@ -41,8 +41,12 @@ public sealed record Tweak(
     string Description,
     RegSetting[] Settings,
     string[]? Options = null,
-    TweakRefresh Refresh = TweakRefresh.Broadcast)
+    TweakRefresh Refresh = TweakRefresh.Broadcast,
+    Func<bool>? Available = null)
 {
+    /// <summary>Se muestra en este equipo (los de fabricante, solo si está ese hardware o servicio).</summary>
+    public bool IsAvailable => Available?.Invoke() != false;
+
     public static readonly string[] Toggle = [Loc.T("Desactivado"), Loc.T("Activado")];
 
     public string[] Choices => Options ?? Toggle;

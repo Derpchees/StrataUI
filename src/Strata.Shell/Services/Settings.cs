@@ -119,6 +119,12 @@ public sealed class StrataSettings
     /// </summary>
     public Dictionary<string, Dictionary<BarItem, BarZone>> BarItemZones { get; set; } = new();
 
+    /// <summary>
+    /// Valores del perfil global de NVIDIA antes de cambiarlos desde Strata UI (id → valor; null = no
+    /// estaba cambiado). Ver Services/Vendors/NvidiaSettings.
+    /// </summary>
+    public Dictionary<uint, uint?> NvidiaOriginals { get; set; } = new();
+
     /// <summary>Categorías marcadas en Optimización › Limpieza (null: las que vienen marcadas).</summary>
     public List<string>? CleanupSelection { get; set; }
 

@@ -125,7 +125,7 @@ public sealed class TweakCatalogTests
         var pageCategories = new[]
         {
             TweakCatalog.Privacy, TweakCatalog.AI, TweakCatalog.System, TweakCatalog.Update, TweakCatalog.Appearance,
-            TweakCatalog.Explorer, TweakCatalog.Multitasking, TweakCatalog.Gaming, TweakCatalog.Browsers, TweakCatalog.Performance,
+            TweakCatalog.Explorer, TweakCatalog.Multitasking, TweakCatalog.Gaming, TweakCatalog.Browsers, TweakCatalog.Performance, TweakCatalog.Hardware,
         };
         Assert.All(TweakCatalog.All, t => Assert.Contains(t.Category, pageCategories));
     }
