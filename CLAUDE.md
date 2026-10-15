@@ -164,6 +164,9 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
    Generar también el instalador (`build-installer.ps1`). Las actualizaciones del Hub buscan
    publicaciones de GitHub en `Derpchees/StrataUI` (`UpdateService.Repository`) con la etiqueta
    `vX.Y.Z` y el `.exe` adjunto; publicarlas solo si el usuario lo pide (es hacer push).
+   **Notas de la publicación en inglés** (traducir las del CHANGELOG; Added / Changed / Fixed) y
+   en una sola lista con todo lo cambiado desde la última versión publicada, aunque haya versiones
+   intermedias sin publicación: nada de "también incluye lo de la X.Y.Z".
    Adjuntar también `artifacts\StrataUI.Optimization.dll` (lo deja `build-installer.ps1`, del
    mismo commit): sin él, el botón "Instalar" de Optimización falla en esa versión.
 5. Commits intermedios durante el trabajo están bien; la versión se cierra al terminar la tanda,
