@@ -6,6 +6,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+- Soltar un ícono de la bandeja sobre la flecha (^) lo pasa a los ocultos, como en Windows (además
+  de soltarlo dentro del panel, que se abre al pasar sobre la flecha).
+
 ### Corregido
 - **El menú de clic derecho de algunos íconos de la bandeja (WhatsApp) salía en otro monitor**
   cuando la bandeja está en un monitor a la izquierda o arriba del principal: esas apps leen mal las

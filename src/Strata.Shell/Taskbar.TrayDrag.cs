@@ -10,8 +10,8 @@ namespace Strata.Shell;
 
 /// <summary>
 /// Ordenar la bandeja arrastrando, como en Windows: dentro de los ocultos los reordena, y entre
-/// los ocultos y la barra ancla o desancla. Los cambios se ven mientras se arrastra y se guardan
-/// al soltar.
+/// los ocultos y la barra ancla o desancla (también soltándolo sobre la flecha). Los cambios se
+/// ven mientras se arrastra y se guardan al soltar.
 /// </summary>
 /// <remarks>
 /// La captura del mouse va a la ventana de la barra (no al ícono): los íconos se regeneran al
@@ -82,6 +82,10 @@ public partial class Taskbar
 
     private void EndTrayDrag()
     {
+        // Soltar sobre la flecha (^) lo manda al final de los ocultos, como en Windows.
+        if (_trayDrag is { IsPinned: true } dropped && GetCursorPos(out var cursor)
+            && ScreenRect(ChevronButton, 2).Contains(new Point(cursor.X, cursor.Y)))
+            TrayPromotion.MoveToHidden(dropped, TrayPromotion.HiddenIcons().Count, save: false);
         _trayDrag = null;
         Mouse.OverrideCursor = null;
         if (IsMouseCaptured)
