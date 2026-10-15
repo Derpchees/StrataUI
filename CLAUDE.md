@@ -16,9 +16,11 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   - C#: `Loc.T("Sin conexión")`; con datos, `Loc.F("Volumen: {0}%", percent)` (nada de `$"..."`).
     Siempre con el texto literal dentro de la llamada: la prueba solo ve `Loc.T("...")`, no
     `Loc.T(variable)` (un ayudante que recibe el texto debe recibirlo ya traducido).
-  - Agregar la traducción en `src/Strata.Shell/Localization/en.json`. La prueba
+  - Agregar la traducción en `src/Strata.Shell/Localization/en.json` (y `pt`, `fr`, `de`). La prueba
     `LocalizationTests` falla si falta alguna o si no coinciden los huecos `{0}`.
-  - Un idioma nuevo es otro `xx.json` más su código en `Loc.Translated`.
+  - Hay `en`, `pt`, `fr` y `de`: un texto nuevo lleva su traducción en los cuatro (la prueba
+    revisa cada idioma incluido). Un idioma nuevo es otro `xx.json` en esa carpeta (se descubre
+    solo); los del usuario van en `%LOCALAPPDATA%\StrataUI\Languages` y se mezclan encima.
 
 ## Conceptos de la arquitectura
 

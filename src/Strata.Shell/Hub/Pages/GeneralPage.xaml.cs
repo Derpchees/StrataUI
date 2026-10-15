@@ -16,6 +16,8 @@ public partial class GeneralPage : Page
         AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
         VersionText.Text = $"Strata UI v{App.Version}";
         DataPathText.Text = DataFolder;
+        foreach (var code in Services.Localization.Loc.Translated)
+            LanguageBox.Items.Add(new ComboBoxItem { Content = Services.Localization.Loc.NativeName(code), Tag = code });
         LanguageBox.SelectedItem = LanguageBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == Settings.Current.Language) ?? LanguageBox.Items[0];
         _loading = false;

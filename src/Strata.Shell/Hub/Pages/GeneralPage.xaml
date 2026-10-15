@@ -36,7 +36,7 @@
                     <ComboBox x:Name="LanguageBox" MinWidth="200" SelectionChanged="Language_Changed">
                         <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="auto" />
                         <ComboBoxItem Content="Español" Tag="es" />
-                        <ComboBoxItem Content="English" Tag="en" />
+                        <!-- Los demás idiomas (incluidos y propios) se agregan desde el código -->
                     </ComboBox>
                 </StackPanel>
             </ui:CardControl>

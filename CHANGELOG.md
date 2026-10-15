@@ -7,6 +7,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Portugués, francés y alemán**, además de inglés y español (Hub › General › Idioma). Se pueden
+  agregar idiomas propios con un `xx.json` en `%LOCALAPPDATA%\StrataUI\Languages` (aparecen solos en
+  la lista; lo que les falte se ve en inglés) y corregir uno incluido poniendo ahí solo los textos
+  que cambian.
 - **Más fluidez**: el resaltado de los botones de la barra, los paneles y el menú Inicio entra y sale
   con un fundido, al presionar el contenido se encoge un poco (como en Windows 11), los botones de
   las apps que se abren entran con una animación y los widgets aparecen con un fundido.

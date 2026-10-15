@@ -75,7 +75,7 @@ public sealed class WidgetsPage : Page
         foreach (var widget in widgets)
         {
             var header = new StackPanel();
-            header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Name(widget) });
+            header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = KindName(widget) });
             int monitor = screens.IndexOf(widget.Device ?? "") + 1;
             header.Children.Add(new TextBlock
             {
@@ -95,7 +95,7 @@ public sealed class WidgetsPage : Page
         }
     }
 
-    private static string Name(WidgetConfig widget) => widget.Kind switch
+    private static string KindName(WidgetConfig widget) => widget.Kind switch
     {
         WidgetKind.Visualizer => Loc.T("Visualizador de música"),
         _ => widget.ShowDate ? Loc.T("Reloj con fecha") : Loc.T("Reloj"),

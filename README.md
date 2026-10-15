@@ -46,7 +46,7 @@ and everything goes back to normal.
 | 🕒 **Widgets** | A digital clock (with or without the date) and a music visualizer on your desktop: drag them anywhere, they stay visible with Show desktop. |
 | 🎨 **Themes & colors** | System, Light, Dark, Transparency, Liquid Glass and Material, plus color schemes (Midnight OLED, Nord, Dracula, Catppuccin, Tokyo Night, Rosé Pine, Gruvbox). Accent from Windows, your own or taken from the wallpaper (Wallpaper Engine too); custom taskbar and flyout colors with opacity. Six animation styles and three speeds. |
 | ⚙️ **Optimization** | One-click junk cleanup (temp files, crash dumps, update caches… never the Recycle Bin), performance, preinstalled apps, privacy, AI features, Windows Update, Explorer and more, always with a backup so you can undo everything. |
-| 🌐 **Languages** | English and Spanish, following Windows or chosen in the Hub. |
+| 🌐 **Languages** | English, Spanish, Portuguese, French and German, following Windows or chosen in the Hub. Drop a `xx.json` into `%LOCALAPPDATA%\StrataUI\Languages` to add your own. |
 
 Right-click an empty spot on the bar for **Strata UI settings** (the Hub) or **Exit Strata UI**
 (brings back the Windows taskbar).

@@ -72,7 +72,8 @@ public sealed class ScreenPicker : UserControl
         controls.Children.Add(copy);
 
         var header = new StackPanel();
-        header.Children.Add(new TextBlock { Text = Loc.T("Monitor que estás personalizando") });
+        // Con el nombre largo del monitor queda poco ancho: el título se parte en líneas en vez de cortarse.
+        header.Children.Add(new TextBlock { Text = Loc.T("Monitor que estás personalizando"), TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.None });
         header.Children.Add(new TextBlock
         {
             Text = Loc.T("Estos ajustes son solo de ese monitor. El menú Inicio es igual en todos."),

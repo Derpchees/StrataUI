@@ -55,20 +55,37 @@ public sealed partial class LocalizationTests
         Assert.True(missing.Count == 0, "Sin traducción al inglés:\n" + string.Join("\n", missing));
     }
 
-    [Fact]
-    public void Translations_keep_the_placeholders()
+    /// <summary>Los idiomas incluidos en el programa (no los propios de la carpeta del usuario).</summary>
+    public static TheoryData<string> Bundled() =>
+        new(Directory.EnumerateFiles(Path.Combine(Source, "Localization"), "*.json").Select(f => Path.GetFileNameWithoutExtension(f)!));
+
+    [Theory]
+    [MemberData(nameof(Bundled))]
+    public void Bundled_languages_translate_every_text(string language)
+    {
+        var table = Loc.Load(language);
+        var missing = Keys().Where(k => !table.ContainsKey(k)).ToList();
+        Assert.True(missing.Count == 0, $"Sin traducción ({language}):\n" + string.Join("\n", missing));
+    }
+
+    [Theory]
+    [MemberData(nameof(Bundled))]
+    public void Translations_keep_the_placeholders(string language)
     {
         static string Holes(string s) => string.Join(",", Placeholder().Matches(s).Select(m => m.Groups[1].Value).Order());
-        var wrong = Loc.Load("en").Where(p => Holes(p.Key) != Holes(p.Value)).Select(p => p.Key).ToList();
-        Assert.True(wrong.Count == 0, "Huecos distintos:\n" + string.Join("\n", wrong));
+        var wrong = Loc.Load(language).Where(p => Holes(p.Key) != Holes(p.Value)).Select(p => p.Key).ToList();
+        Assert.True(wrong.Count == 0, $"Huecos distintos ({language}):\n" + string.Join("\n", wrong));
     }
 
     [Theory]
     [InlineData("auto", "es-MX", "es")]
     [InlineData("auto", "en-US", "en")]
-    [InlineData("auto", "de-DE", "en")]   // sin traducción: inglés
+    [InlineData("auto", "de-DE", "de")]
+    [InlineData("auto", "pt-BR", "pt")]
+    [InlineData("auto", "ja-JP", "en")]   // sin traducción: inglés
     [InlineData("es", "en-US", "es")]
     [InlineData("en", "es-ES", "en")]
+    [InlineData("fr", "en-US", "fr")]
     public void Language_follows_windows_unless_chosen(string setting, string windows, string expected) =>
         Assert.Equal(expected, Loc.Resolve(setting, CultureInfo.GetCultureInfo(windows)));
 }
