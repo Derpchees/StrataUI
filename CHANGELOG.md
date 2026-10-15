@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Corregido
+- **El menú de clic derecho de algunos íconos de la bandeja (WhatsApp) salía en otro monitor**
+  cuando la bandeja está en un monitor a la izquierda o arriba del principal: esas apps leen mal las
+  coordenadas negativas. Ahora Strata UI lleva el menú junto al ícono.
+- La posición de los íconos de la bandeja que se da a las apps (para ubicar sus menús y avisos)
+  llegaba como un rectángulo al revés.
+
 ### Cambiado
 - **WINX ahora se llama Strata UI.** El programa es `StrataUI.exe`, los datos viven en
   `%LOCALAPPDATA%\StrataUI` y las publicaciones en `github.com/Derpchees/StrataUI`.

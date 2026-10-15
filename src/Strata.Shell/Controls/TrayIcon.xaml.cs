@@ -63,21 +63,25 @@ public partial class TrayIcon : UserControl
             Icon?.IconMouseDown(MouseButton.Left, CursorParam, Forms.SystemInformation.DoubleClickTime);
         }
         Icon?.IconMouseUp(e.ChangedButton, CursorParam, Forms.SystemInformation.DoubleClickTime);
+        if (Icon is { } icon)
+            Services.TrayMenuFix.Watch(icon.HWnd);
     }
 
     private void OnMouseEnter(object sender, MouseEventArgs e)
     {
         if (Icon is not { } icon)
             return;
-        // Posición en pantalla (píxeles físicos) para que la app ubique su menú o tooltip.
+        // Posición en pantalla (píxeles físicos) para que la app ubique su menú o tooltip
+        // (Shell_NotifyIconGetRect). ManagedShell la guarda como origen y tamaño: Right y Bottom son
+        // el ancho y el alto, no la esquina (con la esquina, las apps recibían un rectángulo al revés).
         var topLeft = PointToScreen(new Point(0, 0));
         var bottomRight = PointToScreen(new Point(ActualWidth, ActualHeight));
         icon.Placement = new NativeMethods.Rect
         {
             Left = (int)topLeft.X,
             Top = (int)topLeft.Y,
-            Right = (int)bottomRight.X,
-            Bottom = (int)bottomRight.Y,
+            Right = (int)(bottomRight.X - topLeft.X),
+            Bottom = (int)(bottomRight.Y - topLeft.Y),
         };
         icon.IconMouseEnter(CursorParam);
     }
