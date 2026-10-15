@@ -32,8 +32,15 @@ dotnet publish (Join-Path $root 'src\Strata.Shell\Strata.Shell.csproj') -c Relea
     -p:PublishReadyToRun=true -p:DebugType=none -o $publish -nologo -v q
 if ($LASTEXITCODE -ne 0) { throw 'La publicación falló.' }
 
+# Menú contextual moderno: el servidor COM (junto a StrataUI.exe, mismo runtime) y su paquete firmado.
+dotnet publish (Join-Path $root 'src\Strata.ContextMenu\Strata.ContextMenu.csproj') -c Release -r win-x64 --self-contained true `
+    -p:PublishReadyToRun=true -p:DebugType=none -o $publish -nologo -v q
+if ($LASTEXITCODE -ne 0) { throw 'La publicación del menú contextual falló.' }
+& (Join-Path $PSScriptRoot 'build-context-menu.ps1') -OutDir $publish -Version $version
+$cert = Get-PfxCertificate (Join-Path $publish 'StrataUI.cer')
+
 Write-Host 'Generando el instalador...'
-& $iscc /Q "/DAppVersion=$version" "/DSourceDir=$publish" (Join-Path $root 'installer\StrataUI.iss')
+& $iscc /Q "/DAppVersion=$version" "/DSourceDir=$publish" "/DCertThumbprint=$($cert.Thumbprint)" (Join-Path $root 'installer\StrataUI.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Inno Setup falló.' }
 
 $setup = Join-Path $root "artifacts\StrataUI-Setup-$version.exe"

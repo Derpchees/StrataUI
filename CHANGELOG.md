@@ -7,6 +7,12 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **"Anclar a Inicio de Strata UI" en el menú contextual moderno de Windows 11** (no solo en
+  "Mostrar más opciones"): un paquete MSIX sparse firmado con un certificado propio de Strata UI y
+  un servidor COM pequeño (`StrataUI.ContextMenu.exe`). El instalador lo agrega con una tarea
+  (confía en el certificado, lo que puede pedir permiso de administrador) y lo quita al
+  desinstalar. Con el paquete, el mismo comando sale también en el menú clásico y en Nilesoft
+  Shell; sin él, sigue el verbo clásico de antes.
 - **Módulos importables**: temas, animaciones, widgets y aspectos del menú Inicio en archivos JSON
   declarativos (no pueden ejecutar nada), cada uno con su botón **Importar…** en su sección del Hub,
   su carpeta y "Quitar". Los temas importados aparecen en Tema › Importados (por monitor, con sus

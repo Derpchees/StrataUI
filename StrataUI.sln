@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strata.Tests", "tests\Strata.Tests\Strata.Tests.csproj", "{8E08F5FB-2F85-425A-9079-356C54A340F0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strata.ContextMenu", "src\Strata.ContextMenu\Strata.ContextMenu.csproj", "{1C2E32FF-734A-4508-8C4C-94D1D225F88B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,18 @@ Global
 		{8E08F5FB-2F85-425A-9079-356C54A340F0}.Release|x64.Build.0 = Release|Any CPU
 		{8E08F5FB-2F85-425A-9079-356C54A340F0}.Release|x86.ActiveCfg = Release|Any CPU
 		{8E08F5FB-2F85-425A-9079-356C54A340F0}.Release|x86.Build.0 = Release|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Debug|x64.Build.0 = Debug|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Debug|x86.Build.0 = Debug|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Release|x64.ActiveCfg = Release|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Release|x64.Build.0 = Release|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Release|x86.ActiveCfg = Release|Any CPU
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -52,5 +66,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{31BD0053-3A29-4B1C-ADB3-F4724C58C8A8} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{8E08F5FB-2F85-425A-9079-356C54A340F0} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{1C2E32FF-734A-4508-8C4C-94D1D225F88B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

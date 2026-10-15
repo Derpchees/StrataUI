@@ -5,32 +5,53 @@ using Strata.Shell.Services.Localization;
 namespace Strata.Shell.Services.StartMenu;
 
 /// <summary>
-/// "Anclar a Inicio de Strata UI" en el menú contextual del Explorador: un verbo del usuario
-/// (HKCU, sin administrador) para archivos, accesos directos y carpetas. Sale en el menú clásico
-/// ("Mostrar más opciones" en Windows 11) y en los que lo reemplazan, como Nilesoft Shell. Llama a
-/// <c>StrataUI.exe --pin-start "ruta"</c>, que se lo pasa a la instancia abierta.
+/// "Anclar a Inicio de Strata UI" en el menú contextual del Explorador, de dos formas:
+/// <list type="bullet">
+/// <item>Con el paquete sparse que registra el instalador (StrataUI.ContextMenu.exe, un
+/// IExplorerCommand): sale en el menú moderno de Windows 11, en el clásico y en Nilesoft Shell. Lee
+/// su título, si está activado y la ruta de Strata UI de <see cref="CommandKey"/>.</item>
+/// <item>Sin el paquete (Strata UI sin instalar), un verbo del usuario (HKCU, sin administrador) que
+/// sale en el menú clásico ("Mostrar más opciones") y en Nilesoft Shell. Con el paquete se quita,
+/// para no salir dos veces.</item>
+/// </list>
+/// Las dos terminan en <c>StrataUI.exe --pin-start "ruta"</c> o en el mismo pedido a la instancia abierta.
 /// </summary>
 public static class ExplorerMenu
 {
     public const string PinArg = "--pin-start";
 
     private const string VerbKey = @"Software\Classes\AllFilesystemObjects\shell\StrataUI.PinToStart";
+    private const string CommandKey = @"Software\StrataUI\ContextMenu";
+    private const string PackagesKey = @"Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\Repository\Packages";
     private const string PinEventName = @"Local\StrataUI.Shell.PinToStart";
 
     private static readonly string RequestsPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrataUI", "pin-requests.txt");
+
+    /// <summary>El paquete del menú moderno está registrado para este usuario.</summary>
+    public static bool PackageInstalled()
+    {
+        using var packages = Registry.CurrentUser.OpenSubKey(PackagesKey);
+        return packages?.GetSubKeyNames().Any(n => n.StartsWith("StrataUI.ContextMenu_", StringComparison.OrdinalIgnoreCase)) == true;
+    }
 
     /// <summary>Pone o quita el verbo según la opción (con la ruta del ejecutable actual).</summary>
     public static void Update()
     {
         try
         {
-            if (!Settings.Current.StartExplorerMenu)
+            string exe = Environment.ProcessPath ?? "";
+            using (var settings = Registry.CurrentUser.CreateSubKey(CommandKey))
+            {
+                settings.SetValue("Title", Loc.T("Anclar a Inicio de Strata UI"));
+                settings.SetValue("Enabled", Settings.Current.StartExplorerMenu ? "1" : "0");
+                settings.SetValue("Exe", exe);
+            }
+            if (!Settings.Current.StartExplorerMenu || PackageInstalled())
             {
                 Registry.CurrentUser.DeleteSubKeyTree(VerbKey, throwOnMissingSubKey: false);
                 return;
             }
-            string exe = Environment.ProcessPath ?? "";
             using var key = Registry.CurrentUser.CreateSubKey(VerbKey);
             key.SetValue("MUIVerb", Loc.T("Anclar a Inicio de Strata UI"));
             key.SetValue("Icon", $"\"{exe}\",0");

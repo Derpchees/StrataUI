@@ -64,6 +64,14 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   ventana del escritorio como dueña (así sigue a la vista con Win+D) y siempre al fondo; fondo con
   alfa 1 para que todo el rectángulo reciba el mouse. Posición como fracción del área de trabajo de
   su monitor. El visualizador usa `AudioSpectrum` (captura de bucle de WASAPI + FFT).
+- **Menú contextual del Explorador** (`Services/StartMenu/ExplorerMenu`): con el paquete sparse
+  (`installer/context-menu/AppxManifest.xml`, armado y firmado por `scripts/build-context-menu.ps1`
+  con el certificado autofirmado "CN=Strata UI" de `Cert:\CurrentUser\My`; makeappx/signtool salen
+  de NuGet) el comando es `src/Strata.ContextMenu` (servidor COM `IExplorerCommand` fuera de
+  proceso, lee título/activado/ruta de `HKCU\Software\StrataUI\ContextMenu`); sin paquete, verbo
+  clásico en HKCU. El texto de ese .exe lo escribe Strata UI ya traducido. Publisher, nombre del
+  paquete y CLSID deben coincidir entre el manifiesto del paquete, `app.manifest` y `Program.Clsid`.
+  Registrar el paquete en esta PC pide confiar en el certificado (UAC).
 - **Diálogos de abrir archivo o carpeta**: siempre con `Services/FilePicker` (proceso aparte
   `--pick`); el diálogo de Windows dentro del proceso de Strata UI lo tumbó (corrupción del montón).
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y

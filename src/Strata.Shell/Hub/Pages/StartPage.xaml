@@ -160,7 +160,7 @@
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Anclar a Inicio desde el clic derecho'}" />
                         <TextBlock Style="{StaticResource CardDescription}"
-                                   Text="{l:T 'Agrega «Anclar a Inicio de Strata UI» al menú de archivos, accesos directos y carpetas. En Windows 11 está en «Mostrar más opciones»; también sale en Nilesoft Shell.'}" />
+                                   Text="{l:T 'Agrega «Anclar a Inicio de Strata UI» al menú de archivos, accesos directos y carpetas: en el de Windows 11 (con Strata UI instalado), en «Mostrar más opciones» y en Nilesoft Shell.'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="ExplorerMenuSwitch" Click="Options_Changed" />

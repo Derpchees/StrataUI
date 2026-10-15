@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    "Anclar a Inicio de Strata UI" en el menú contextual moderno de Windows 11: servidor COM
+    fuera de proceso (IExplorerCommand) que el Explorador activa a través del paquete MSIX
+    "sparse" de installer/context-menu. Va aparte de StrataUI.exe para arrancar rápido y para que
+    la identidad del paquete (elemento msix del manifiesto) no la tome Strata UI.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>StrataUI.ContextMenu</AssemblyName>
+    <RootNamespace>Strata.ContextMenu</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\Strata.Shell\Assets\strataui.ico</ApplicationIcon>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+  </PropertyGroup>
+
+</Project>

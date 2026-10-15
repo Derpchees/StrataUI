@@ -823,7 +823,7 @@
   "Ilimitada": "Unlimited",
   "Anclar a Inicio de Strata UI": "Pin to Strata UI Start",
   "Anclar a Inicio desde el clic derecho": "Pin to Start from the right-click menu",
-  "Agrega «Anclar a Inicio de Strata UI» al menú de archivos, accesos directos y carpetas. En Windows 11 está en «Mostrar más opciones»; también sale en Nilesoft Shell.": "Adds “Pin to Strata UI Start” to the menu of files, shortcuts and folders. On Windows 11 it's under “Show more options”; it also shows up in Nilesoft Shell.",
+  "Agrega «Anclar a Inicio de Strata UI» al menú de archivos, accesos directos y carpetas: en el de Windows 11 (con Strata UI instalado), en «Mostrar más opciones» y en Nilesoft Shell.": "Adds “Pin to Strata UI Start” to the menu of files, shortcuts and folders: in the Windows 11 menu (with Strata UI installed), in “Show more options” and in Nilesoft Shell.",
   "Fondo de las barras (las que están totalmente transparentes no lo usan).": "Background of the bars (fully transparent bars don't use it).",
   "Paneles y menú Inicio": "Flyouts and Start menu",
   "Fondo de los paneles, el menú Inicio y el centro de notificaciones.": "Background of the flyouts, the Start menu and the notification center.",

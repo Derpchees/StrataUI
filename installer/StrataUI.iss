@@ -1,4 +1,4 @@
-; Instalador de Strata UI (Inno Setup 6). Se compila con scripts\build-installer.ps1, que publica la
+﻿; Instalador de Strata UI (Inno Setup 6). Se compila con scripts\build-installer.ps1, que publica la
 ; app y pasa la versión de Directory.Build.props:
 ;   ISCC.exe /DAppVersion=0.12.0 /DSourceDir=..\artifacts\publish installer\StrataUI.iss
 ;
@@ -10,6 +10,10 @@
 #endif
 #ifndef SourceDir
   #define SourceDir "..\artifacts\publish"
+#endif
+; Huella del certificado que firma StrataUI.ContextMenu.msix (la pasa scripts\build-installer.ps1).
+#ifndef CertThumbprint
+  #define CertThumbprint ""
 #endif
 
 [Setup]
@@ -64,10 +68,15 @@ es.LaunchStrata=Abrir Strata UI ahora
 en.LaunchStrata=Open Strata UI now
 es.Startup=Inicio:
 en.Startup=Startup:
+es.ContextMenu=Agregar «Anclar a Inicio de Strata UI» al menú contextual de Windows 11 (confía en el certificado de Strata UI; puede pedir permiso de administrador)
+en.ContextMenu=Add “Pin to Strata UI Start” to the Windows 11 context menu (trusts the Strata UI certificate; may ask for administrator permission)
+es.Integration=Integración:
+en.Integration=Integration:
 
 [Tasks]
 Name: "autostart"; Description: "{cm:AutoStart}"; GroupDescription: "{cm:Startup}"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "contextmenu"; Description: "{cm:ContextMenu}"; GroupDescription: "{cm:Integration}"
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -97,6 +106,13 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "WINX"; Flags: deletevalue
 
 [Run]
+; Menú contextual moderno (installer\context-menu): Windows solo acepta el paquete si su certificado
+; está en "Personas de confianza" del equipo, y escribir ahí pide administrador. Después se registra
+; el paquete para el usuario, con los archivos en la carpeta de la app. Va antes de abrir Strata UI:
+; al abrirse, si el paquete está, quita el verbo clásico para que no salga dos veces.
+Filename: "{sys}\certutil.exe"; Parameters: "-addstore TrustedPeople ""{app}\StrataUI.cer"""; Flags: runhidden; Tasks: contextmenu; Check: CertNeeded and IsAdminInstallMode
+Filename: "{sys}\certutil.exe"; Parameters: "-addstore TrustedPeople ""{app}\StrataUI.cer"""; Verb: runas; Flags: runhidden shellexec waituntilterminated; Tasks: contextmenu; Check: CertNeeded and not IsAdminInstallMode
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage; Add-AppxPackage -Path '{app}\StrataUI.ContextMenu.msix' -ExternalLocation '{app}'"""; Flags: runhidden runasoriginaluser; Tasks: contextmenu
 Filename: "{app}\StrataUI.exe"; Description: "{cm:LaunchStrata}"; Flags: nowait postinstall skipifsilent
 ; Actualización silenciosa desde el Hub: Strata UI se vuelve a abrir solo.
 Filename: "{app}\StrataUI.exe"; Flags: nowait; Check: WizardSilent
@@ -104,8 +120,21 @@ Filename: "{app}\StrataUI.exe"; Flags: nowait; Check: WizardSilent
 [UninstallRun]
 ; Cierra Strata UI limpiamente para que vuelva la barra de Windows antes de borrar los archivos.
 Filename: "{app}\StrataUI.exe"; Parameters: "--exit"; Flags: runhidden waituntilterminated; RunOnceId: "ExitStrata"
+; El paquete del menú contextual moderno (si se registró).
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage"""; Flags: runhidden waituntilterminated; RunOnceId: "RemoveContextMenu"
 
 [Code]
+// El certificado del paquete del menú contextual todavía no está en "Personas de confianza" del equipo.
+function CertNeeded: Boolean;
+var
+  Code: Integer;
+begin
+  Result := True;
+  if '{#CertThumbprint}' <> '' then
+    if Exec(ExpandConstant('{sys}\certutil.exe'), '-store TrustedPeople {#CertThumbprint}', '', SW_HIDE, ewWaitUntilTerminated, Code) then
+      Result := Code <> 0;
+end;
+
 procedure CloseApp(Exe: String);
 var
   Code: Integer;
@@ -144,6 +173,12 @@ begin
     RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'StrataUI');
     // "Anclar a Inicio de Strata UI" del menú del Explorador (lo pone la app: Services\StartMenu\ExplorerMenu.cs).
     RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\Classes\AllFilesystemObjects\shell\StrataUI.PinToStart');
+    RegDeleteKeyIncludingSubkeys(HKEY_CURRENT_USER, 'Software\StrataUI\ContextMenu');
+    RegDeleteKeyIfEmpty(HKEY_CURRENT_USER, 'Software\StrataUI');
+    // El certificado: solo con permiso de administrador (en una instalación por usuario se queda;
+    // es el público, sin clave privada).
+    if IsAdminInstallMode and ('{#CertThumbprint}' <> '') then
+      Exec(ExpandConstant('{sys}\certutil.exe'), '-delstore TrustedPeople {#CertThumbprint}', '', SW_HIDE, ewWaitUntilTerminated, Code);
     // Strata UI pasa la clave Run a una tarea programada (Services\AutoStart.cs): se borra también.
     Exec(ExpandConstant('{sys}\schtasks.exe'), ExpandConstant('/Delete /TN "StrataUI ({username})" /F'), '',
          SW_HIDE, ewWaitUntilTerminated, Code);
