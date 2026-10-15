@@ -73,6 +73,7 @@ public partial class Taskbar : AppBarWindow
         _taskView = CreateTaskView();
         WatchWindows();
         TaskList.ItemsSource = _taskView;
+        WatchPins();
 
         // El texto del tooltip del reloj se arma al abrirlo (fecha y notificaciones pendientes).
         ClockButton.ToolTip = " ";
@@ -201,6 +202,8 @@ public partial class Taskbar : AppBarWindow
         TaskScroller.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
         TaskScroller.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
         TaskList.ItemsPanel = Panel(typeof(StackPanel));
+        PinnedList.ItemsPanel = Panel(typeof(StackPanel));
+        AppsStack.Orientation = Orientation.Vertical;
 
         StatusPanel.Orientation = Orientation.Vertical;
         TrayArea.Orientation = Orientation.Vertical;
@@ -373,6 +376,7 @@ public partial class Taskbar : AppBarWindow
         {
             _appsMode = appsMode;
             _taskView.Refresh();
+            RefreshPinLeaders();
         }
         ApplyCombine(S.CombineTaskWindows);
         ApplyScreenPalette();
@@ -400,12 +404,12 @@ public partial class Taskbar : AppBarWindow
         if (IsVertical)
         {
             TaskArea.VerticalAlignment = split ? VerticalAlignment.Stretch : left ? VerticalAlignment.Top : VerticalAlignment.Center;
-            TaskList.VerticalAlignment = split ? VerticalAlignment.Center : VerticalAlignment.Top;
+            AppsStack.VerticalAlignment = split ? VerticalAlignment.Center : VerticalAlignment.Top;
         }
         else
         {
             TaskArea.HorizontalAlignment = split ? HorizontalAlignment.Stretch : left ? HorizontalAlignment.Left : HorizontalAlignment.Center;
-            TaskList.HorizontalAlignment = split ? HorizontalAlignment.Center : HorizontalAlignment.Left;
+            AppsStack.HorizontalAlignment = split ? HorizontalAlignment.Center : HorizontalAlignment.Left;
         }
     }
 
@@ -425,7 +429,7 @@ public partial class Taskbar : AppBarWindow
             TaskOrder.Instance.Seed(_shell.Tasks.GroupedWindows.OfType<ApplicationWindow>());
             list.CustomSort = TaskOrder.Instance;
         }
-        view.Filter = item => item is ApplicationWindow window && ShowsWindow(window) && LeadsGroup(window);
+        view.Filter = item => item is ApplicationWindow window && ShowsWindow(window) && !InPinnedButton(window) && LeadsGroup(window);
 
         if (view is ICollectionViewLiveShaping live && live.CanChangeLiveFiltering)
         {
@@ -436,7 +440,11 @@ public partial class Taskbar : AppBarWindow
         return view;
     }
 
-    public void RefreshTasks() => _taskView.Refresh();
+    public void RefreshTasks()
+    {
+        _taskView.Refresh();
+        RefreshPinLeaders();
+    }
 
     /// <summary>
     /// Si esta barra muestra la ventana, según el modo (como en Windows): en todas, en la principal y
@@ -570,6 +578,7 @@ public partial class Taskbar : AppBarWindow
     {
         StopContrast();
         UnwatchWindows();
+        UnwatchPins();
         Settings.Changed -= ApplySettings;
         App.Current.Audio.Changed -= UpdateVolume;
         Services.Brightness.BrightnessService.Changed -= ApplySettings;

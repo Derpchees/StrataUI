@@ -7,6 +7,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Anclar apps a la barra**: desde el clic derecho de una ventana abierta o del menú Inicio
+  ("Anclar a la barra de tareas"). Van delante de las ventanas y se ordenan arrastrándolas; abierta,
+  la app usa ese mismo botón para sus ventanas (Mayús+clic o "Abrir otra ventana" abre otra). La
+  primera vez se traen los anclados de la barra de Windows.
 - **Posición de cada elemento en la barra**: al principio, en el centro o al final (izquierda, centro
   o derecha; arriba, centro o abajo en las barras verticales). Se elige en Hub › Barra de tareas, con
   clic derecho › Posición en la barra, o arrastrándolo en la barra (al arrastrar se ven las zonas

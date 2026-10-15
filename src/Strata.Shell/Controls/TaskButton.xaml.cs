@@ -29,9 +29,11 @@ public partial class TaskButton : UserControl
                 old.PropertyChanged -= OnWindowChanged;
             if (IsLoaded && e.NewValue is INotifyPropertyChanged now)
                 now.PropertyChanged += OnWindowChanged;
+            SyncSlot();
             UpdateIcon();
             UpdateGroup();
         };
+        MainButton.ContextMenuOpening += (_, _) => UpdateMenu();
         Loaded += (_, _) =>
         {
             _bar = System.Windows.Window.GetWindow(this) as Taskbar;
@@ -52,6 +54,9 @@ public partial class TaskButton : UserControl
                 _bar.TasksChanged -= UpdateGroup;
             if (DataContext is INotifyPropertyChanged window)
                 window.PropertyChanged -= OnWindowChanged;
+            if (_watchedLeader != null)
+                _watchedLeader.PropertyChanged -= OnWindowChanged;
+            _watchedLeader = null;
             WebSites.IconsChanged -= UpdateIcon;
         };
     }
@@ -62,11 +67,81 @@ public partial class TaskButton : UserControl
     {
         if (e.PropertyName is nameof(ApplicationWindow.Icon) or nameof(ApplicationWindow.Title))
             Dispatcher.BeginInvoke(UpdateIcon);
+        else if (e.PropertyName == nameof(PinSlot.Leader))
+            Dispatcher.BeginInvoke(() =>
+            {
+                SyncSlot();
+                UpdateIcon();
+                UpdateGroup();
+            });
+    }
+
+    /// <summary>Botón de una app anclada (DataContext <see cref="PinSlot"/>); null en las ventanas sueltas.</summary>
+    public PinSlot? Slot => DataContext as PinSlot;
+
+    /// <summary>
+    /// Un anclado se ve como su primera ventana si está abierta (las plantillas leen su estado y su
+    /// título) y como lanzador si no: sin indicador y con el nombre de la app.
+    /// </summary>
+    private void SyncSlot()
+    {
+        if (Slot is not { } slot)
+        {
+            MainButton.ClearValue(DataContextProperty);
+            Indicator.ClearValue(VisibilityProperty);
+            return;
+        }
+        MainButton.DataContext = (object?)slot.Leader ?? slot;
+        Indicator.Visibility = slot.Leader is null ? Visibility.Collapsed : Visibility.Visible;
+        if (!ReferenceEquals(slot.Leader, _watchedLeader))
+        {
+            if (_watchedLeader != null)
+                _watchedLeader.PropertyChanged -= OnWindowChanged;
+            _watchedLeader = slot.Leader;
+            if (_watchedLeader != null)
+                _watchedLeader.PropertyChanged += OnWindowChanged;
+        }
+    }
+
+    private INotifyPropertyChanged? _watchedLeader;
+
+    /// <summary>Opciones del clic derecho según sea un anclado, una ventana o las dos cosas.</summary>
+    private void UpdateMenu()
+    {
+        bool running = Window != null;
+        string? pinId = Slot?.Id ?? (Window is { } window ? TaskbarPins.IdFor(window) : null);
+        bool pinned = pinId != null && TaskbarPins.IsPinned(pinId);
+        LaunchItem.Visibility = Slot != null ? Visibility.Visible : Visibility.Collapsed;
+        LaunchItem.Header = running ? Loc.T("Abrir otra ventana") : Loc.T("Abrir");
+        PinItem.Visibility = pinId != null ? Visibility.Visible : Visibility.Collapsed;
+        PinItem.Header = pinned ? Loc.T("Desanclar de la barra de tareas") : Loc.T("Anclar a la barra de tareas");
+        PinItem.Tag = pinId;
+        WindowSeparator.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+        CloseItem.Visibility = ForceCloseItem.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void Launch_Click(object sender, RoutedEventArgs e) => Slot?.Launch();
+
+    private void TogglePin_Click(object sender, RoutedEventArgs e)
+    {
+        if (PinItem.Tag is not string id)
+            return;
+        if (TaskbarPins.IsPinned(id))
+            TaskbarPins.Unpin(id);
+        else
+            TaskbarPins.Pin(id);
     }
 
     /// <summary>Ícono de la app o, si es una pestaña de un sitio conocido, el del sitio con el navegador en la esquina.</summary>
     private void UpdateIcon()
     {
+        if (Slot is { } slot)
+        {
+            // Anclado: el ícono de la app (el elegido en Inicio, si se cambió), abierta o no.
+            AppIcon.Source = slot.Icon ?? Window?.Icon;
+            BrowserBadge.Visibility = Visibility.Collapsed;
+            return;
+        }
         if (Window is not { } window)
             return;
         var site = TaskGroups.Site(window);
@@ -163,7 +238,7 @@ public partial class TaskButton : UserControl
         }
     }
 
-    private ApplicationWindow? Window => DataContext as ApplicationWindow;
+    private ApplicationWindow? Window => DataContext as ApplicationWindow ?? Slot?.Leader;
 
     /// <summary>Se empezó a arrastrar el botón (para ordenar las ventanas).</summary>
     public static event Action<TaskButton>? DragStarted;
@@ -196,6 +271,13 @@ public partial class TaskButton : UserControl
 
     private void Button_Click(object sender, RoutedEventArgs e)
     {
+        // Anclado cerrado (o Mayús+clic, como en Windows): abre la app.
+        if (Slot is { } slot && (Window is null || Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)))
+        {
+            TaskPreviewWindow.Dismiss();
+            slot.Launch();
+            return;
+        }
         if (Window is not { } window)
             return;
         // Varias ventanas agrupadas: el clic muestra todas para elegir (otro clic las oculta).

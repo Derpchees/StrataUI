@@ -143,6 +143,16 @@ public static class StartCommands
             await AppActions.UninstallAsync(app);
     });
 
+    public static ICommand ToggleTaskbarPin { get; } = new Relay(p =>
+    {
+        if (p is not StartApp app)
+            return;
+        if (app.IsPinnedToTaskbar)
+            TaskbarPins.Unpin(app.Id);
+        else
+            TaskbarPins.Pin(app.Id);
+    });
+
     /// <summary>Elige una imagen (o el ícono de un .exe, .dll o .ico) para la app.</summary>
     public static ICommand ChangeIcon { get; } = new Relay(async p =>
     {

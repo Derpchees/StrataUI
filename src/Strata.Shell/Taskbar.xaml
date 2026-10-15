@@ -64,6 +64,20 @@
                     <ScrollViewer x:Name="TaskScroller" HorizontalScrollBarVisibility="Hidden"
                                   VerticalScrollBarVisibility="Disabled" Focusable="False"
                                   PreviewMouseWheel="TaskScroller_PreviewMouseWheel">
+                        <!-- Anclados (ver Taskbar.Pins) y luego las demás ventanas abiertas -->
+                        <StackPanel x:Name="AppsStack" Orientation="Horizontal">
+                        <ItemsControl x:Name="PinnedList" Focusable="False" Visibility="Collapsed">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <controls:TaskButton />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <ItemsControl x:Name="TaskList" Focusable="False">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -76,6 +90,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        </StackPanel>
                     </ScrollViewer>
                 </DockPanel>
     

@@ -819,5 +819,8 @@
   "No se pudo leer una imagen de ese archivo.": "Couldn't read an image from that file.",
   "Forzar cierre": "End task",
   "Posición en la barra": "Position on the bar",
+  "Anclar a la barra de tareas": "Pin to taskbar",
+  "Desanclar de la barra de tareas": "Unpin from taskbar",
+  "Abrir otra ventana": "Open new window",
   "Termina la app sin esperar a que responda (se pierde lo que no se haya guardado)": "Ends the app without waiting for it to respond (anything unsaved is lost)"
 }

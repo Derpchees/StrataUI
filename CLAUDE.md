@@ -79,6 +79,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   la dejaba negra; el "gradiente transparente" pinta el acento de Windows o esconde todo). Cada zona toma `StrataForegroundBrush` claro u oscuro según
   lo que hay detrás, leído con la barra excluida de la captura un momento. Una zona nueva de la
   barra va en `ContrastZones()` y su texto debe usar `StrataForegroundBrush`.
+- **Anclados de la barra** (`Services/TaskbarPins`, `Taskbar.Pins.cs`): IDs como los de Inicio en
+  `Settings.TaskbarPins`; cada barra con ventanas tiene su lista `PinnedList` de `PinSlot` y el
+  `TaskButton` de un anclado usa su primera ventana abierta (`Leader`). Una ventana es del anclado
+  por su AppUserModelID o, si no tiene, por el ejecutable; esas ventanas no van en `TaskList`.
 - **Ventanas de la barra**: el orden es `TaskOrder` (vista con `CustomSort`); la vista previa es
   `Controls/TaskPreviewWindow` (miniaturas de DWM: ventana sin `AllowsTransparency`). Agrupar por
   app (`Taskbar.Groups.cs`): solo la primera ventana de cada grupo pasa el filtro de la vista;

@@ -119,6 +119,12 @@ public sealed class StrataSettings
     /// </summary>
     public Dictionary<string, Dictionary<BarItem, BarZone>> BarItemZones { get; set; } = new();
 
+    /// <summary>Apps ancladas a la barra, en orden (IDs del menú Inicio o rutas; ver Services/TaskbarPins).</summary>
+    public List<string> TaskbarPins { get; set; } = new();
+
+    /// <summary>Ya se trajeron los anclados de la barra de Windows (solo la primera vez).</summary>
+    public bool TaskbarPinsImported { get; set; }
+
     public int TaskbarHeight { get; set; } = 48;
     /// <summary>Un solo botón por app con todas sus ventanas (como "Combinar botones" de Windows).</summary>
     public bool CombineTaskWindows { get; set; }

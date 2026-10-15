@@ -21,6 +21,8 @@ public partial class Taskbar
 
     private void OnTaskDragStarted(TaskButton source)
     {
+        if (StartPinDrag(source))
+            return;
         if (source.DataContext is not ApplicationWindow window || !TaskList.IsAncestorOf(source))
             return;
         _taskDrag = window;

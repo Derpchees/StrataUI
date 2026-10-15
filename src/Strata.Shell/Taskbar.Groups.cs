@@ -40,6 +40,9 @@ public partial class Taskbar
     /// <summary>Ventanas del botón de <paramref name="window"/>: solo ella o, agrupando, todas las de su app.</summary>
     public IReadOnlyList<ApplicationWindow> GroupMembers(ApplicationWindow window)
     {
+        // Una app anclada junta siempre sus ventanas en su botón.
+        if (PinnedMembers(window) is { } pinned)
+            return pinned;
         if (!_combine)
             return [window];
         string key = TaskGroups.Key(window);
@@ -82,7 +85,8 @@ public partial class Taskbar
 
     private void OnWatchedWindowChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!_combine)
+        // Con anclados, el estado de una ventana cambia el indicador de su botón anclado.
+        if (!_combine && _pinSlots.Count == 0)
             return;
         // El título puede cambiar el sitio (y con él el grupo); el estado, el indicador del botón.
         if (e.PropertyName is nameof(ApplicationWindow.Title) or nameof(ApplicationWindow.AppUserModelID))
@@ -100,8 +104,9 @@ public partial class Taskbar
         Dispatcher.BeginInvoke(() =>
         {
             _groupRefreshPending = false;
-            if (_combine)
+            if (_combine || _pinSlots.Count > 0)
                 _taskView.Refresh();
+            RefreshPinLeaders();
             TasksChanged?.Invoke();
         }, DispatcherPriority.Background);
     }

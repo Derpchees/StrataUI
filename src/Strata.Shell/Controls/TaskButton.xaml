@@ -6,6 +6,9 @@
             Click="Button_Click">
         <Button.ContextMenu>
             <ContextMenu>
+                <MenuItem x:Name="LaunchItem" Header="{l:T 'Abrir'}" Click="Launch_Click" FontWeight="SemiBold" />
+                <MenuItem x:Name="PinItem" Header="{l:T 'Anclar a la barra de tareas'}" Click="TogglePin_Click" />
+                <Separator x:Name="WindowSeparator" />
                 <MenuItem x:Name="CloseItem" Header="{l:T 'Cerrar ventana'}" Click="CloseWindow_Click" />
                 <MenuItem x:Name="ForceCloseItem" Header="{l:T 'Forzar cierre'}" Click="ForceClose_Click"
                           ToolTip="{l:T 'Termina la app sin esperar a que responda (se pierde lo que no se haya guardado)'}" />

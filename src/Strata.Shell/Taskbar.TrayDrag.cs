@@ -43,6 +43,8 @@ public partial class Taskbar
         base.OnMouseMove(e);
         if (_trayDrag is { } icon)
             TrayDragMove(icon);
+        else if (_pinDrag is { } pin)
+            PinDragMove(pin);
         else if (_taskDrag is { } window)
             TaskDragMove(window);
         else if (_itemDrag is { } item)
@@ -55,6 +57,11 @@ public partial class Taskbar
         if (_trayDrag != null)
         {
             EndTrayDrag();
+            e.Handled = true;
+        }
+        else if (_pinDrag != null)
+        {
+            EndPinDrag();
             e.Handled = true;
         }
         else if (_taskDrag != null)
@@ -76,6 +83,8 @@ public partial class Taskbar
             EndTrayDrag();
         if (_taskDrag != null && ReferenceEquals(e.OriginalSource, this))
             EndTaskDrag();
+        if (_pinDrag != null && ReferenceEquals(e.OriginalSource, this))
+            EndPinDrag();
         if (_itemDrag != null && ReferenceEquals(e.OriginalSource, this))
             EndItemDrag();
     }

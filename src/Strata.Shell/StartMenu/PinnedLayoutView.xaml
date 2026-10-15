@@ -26,6 +26,18 @@
                                   Visibility="{Binding HasCustomIcon, Converter={StaticResource BoolToVis}}" />
                         <Separator />
                         <MenuItem Header="{l:T 'Desanclar de Inicio'}" Command="{x:Static start:StartCommands.TogglePin}" CommandParameter="{Binding}" />
+                        <MenuItem Command="{x:Static start:StartCommands.ToggleTaskbarPin}" CommandParameter="{Binding}">
+                            <MenuItem.Style>
+                                <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                    <Setter Property="Header" Value="{l:T 'Anclar a la barra de tareas'}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPinnedToTaskbar}" Value="True">
+                                            <Setter Property="Header" Value="{l:T 'Desanclar de la barra de tareas'}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </MenuItem.Style>
+                        </MenuItem>
                         <MenuItem Header="{l:T 'Desinstalar'}" Command="{x:Static start:StartCommands.Uninstall}" CommandParameter="{Binding}"
                                   Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVis}}" />
                     </ContextMenu>

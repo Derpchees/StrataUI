@@ -50,6 +50,10 @@ public sealed class StartApp : INotifyPropertyChanged
 
     internal void NotifyPinned() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinned)));
 
+    public bool IsPinnedToTaskbar => TaskbarPins.IsPinned(Id);
+
+    internal void NotifyTaskbarPinned() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinnedToTaskbar)));
+
     internal void NotifyIcon()
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
@@ -391,6 +395,8 @@ public static class StartMenuService
         if (items.Count > 20)
             PinLayout.EnsureLayout(() => DefaultPinIds(items));
         PinLayout.RebuildViews();
+        if (items.Count > 20)
+            TaskbarPins.OnCatalogLoaded();
     }
 
     /// <summary>

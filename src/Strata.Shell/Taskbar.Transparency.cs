@@ -200,6 +200,11 @@ public partial class Taskbar
     private IEnumerable<FrameworkElement> ContrastZones()
     {
         yield return StartButton;
+        for (int i = 0; i < PinnedList.Items.Count; i++)
+        {
+            if (PinnedList.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement pin)
+                yield return pin;
+        }
         for (int i = 0; i < TaskList.Items.Count; i++)
         {
             if (TaskList.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement task)
