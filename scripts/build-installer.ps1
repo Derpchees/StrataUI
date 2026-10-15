@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Publica Strata UI (autocontenido, sin depender de .NET instalado) y genera el instalador
     artifacts\StrataUI-Setup-X.Y.Z.exe con Inno Setup.
@@ -39,9 +39,20 @@ if ($LASTEXITCODE -ne 0) { throw 'La publicación del menú contextual falló.' 
 & (Join-Path $PSScriptRoot 'build-context-menu.ps1') -OutDir $publish -Version $version
 $cert = Get-PfxCertificate (Join-Path $publish 'StrataUI.cer')
 
+# Módulo de optimización: no va en el instalador. Se adjunta a la publicación de GitHub (vX.Y.Z) y el
+# Hub lo descarga (Services\OptimizationModule.cs). Tiene que ser del mismo commit que la app.
+$moduleBuild = Join-Path $root 'artifacts\module-build'
+if (Test-Path $moduleBuild) { Remove-Item $moduleBuild -Recurse -Force }
+dotnet build (Join-Path $root 'src\Strata.Optimization\Strata.Optimization.csproj') -c Release -o $moduleBuild -nologo -v q
+if ($LASTEXITCODE -ne 0) { throw 'La compilación del módulo de optimización falló.' }
+$module = Join-Path $root 'artifacts\StrataUI.Optimization.dll'
+Copy-Item (Join-Path $moduleBuild 'StrataUI.Optimization.dll') $module -Force
+Remove-Item $moduleBuild -Recurse -Force
+
 Write-Host 'Generando el instalador...'
 & $iscc /Q "/DAppVersion=$version" "/DSourceDir=$publish" "/DCertThumbprint=$($cert.Thumbprint)" (Join-Path $root 'installer\StrataUI.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Inno Setup falló.' }
 
 $setup = Join-Path $root "artifacts\StrataUI-Setup-$version.exe"
 Write-Host ("Listo: {0} ({1:N1} MB)" -f $setup, ((Get-Item $setup).Length / 1MB))
+Write-Host ("Módulo para adjuntar a la publicación: {0}" -f $module)

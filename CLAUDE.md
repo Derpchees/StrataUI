@@ -120,6 +120,15 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **Página nueva del Hub**: `Hub/Pages/XxxPage.xaml` con `<hub:PageHeader Icon=… Title=… Subtitle=…/>`
   al principio, entrada en `HubWindow.xaml` (grupo Personalización o Sistema) y, si conviene, un
   mosaico en `HomePage`. `--hub Xxx` la abre.
+- **Módulo de optimización** (`src/Strata.Optimization` → `StrataUI.Optimization.dll`): las páginas
+  del grupo Optimización no van en el instalador. `Services/OptimizationModule` lo descarga de la
+  publicación `vX.Y.Z` a `%LOCALAPPDATA%\StrataUI\Optimization` y solo lo acepta si su versión
+  completa (con el commit) es la de la app; `HubWindow.FillOptimization` agrega sus páginas
+  (`IHubModule`) o la entrada "Instalar". El motor (`Tweaks/`, limpieza, NVIDIA) sigue en la app y
+  los procesos elevados nunca cargan el módulo. Una página nueva de optimización va en el módulo y
+  en `OptimizationPages`; sus textos se traducen en los `.json` de la app. En desarrollo, compilar
+  la solución copia el módulo junto a `StrataUI.exe` (así se carga sin descargar; para ver la
+  entrada "Instalar", sacar esa copia).
 - **Consumo**: nada de temporizadores por barra; usar eventos (`SystemStatus.Changed`, el reloj
   compartido de `Taskbar`) y `MemoryTrim.Schedule(...)` después de crear muchos objetos de golpe.
 
@@ -155,6 +164,8 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
    Generar también el instalador (`build-installer.ps1`). Las actualizaciones del Hub buscan
    publicaciones de GitHub en `Derpchees/StrataUI` (`UpdateService.Repository`) con la etiqueta
    `vX.Y.Z` y el `.exe` adjunto; publicarlas solo si el usuario lo pide (es hacer push).
+   Adjuntar también `artifacts\StrataUI.Optimization.dll` (lo deja `build-installer.ps1`, del
+   mismo commit): sin él, el botón "Instalar" de Optimización falla en esa versión.
 5. Commits intermedios durante el trabajo están bien; la versión se cierra al terminar la tanda,
    antes de pasar a otra cosa.
 

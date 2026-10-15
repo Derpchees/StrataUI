@@ -892,5 +892,16 @@
   "Usar": "Usar",
   "Widget importado": "Widget importado",
   "Widgets en archivos .json: líneas de texto con la hora, la fecha, la canción que suena o la batería, con sus fuentes y colores.": "Widgets em arquivos .json: linhas de texto com a hora, a data, a música que está tocando ou a bateria, com suas fontes e cores.",
-  "por {0}": "por {0}"
+  "por {0}": "por {0}",
+  "Módulo de optimización": "Módulo de otimização",
+  "Rendimiento, privacidad, IA, limpieza, apps preinstaladas y más ajustes de Windows. Es un módulo aparte: no viene con Strata UI y se instala solo si lo quieres.": "Desempenho, privacidade, IA, limpeza, apps pré-instalados e mais ajustes do Windows. É um módulo à parte: não vem com o Strata UI e só é instalado se você quiser.",
+  "Se descarga de la publicación de Strata UI {0} en GitHub y se instala para tu usuario, sin permiso de administrador.": "É baixado da versão {0} do Strata UI no GitHub e instalado para o seu usuário, sem permissão de administrador.",
+  "Instalar": "Instalar",
+  "Reintentar": "Tentar novamente",
+  "Descargando…": "Baixando…",
+  "No se pudo cargar el módulo de optimización.": "Não foi possível carregar o módulo de otimização.",
+  "No se pudo descargar el módulo de optimización.": "Não foi possível baixar o módulo de otimização.",
+  "La versión {0} todavía no tiene el módulo publicado.": "A versão {0} ainda não tem o módulo publicado.",
+  "El módulo descargado no es de esta versión de Strata UI.": "O módulo baixado não é desta versão do Strata UI.",
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Instalado. Ao removê-lo, as alterações que ele já fez no Windows permanecem: para desfazê-las, use Otimização › Backup antes."
 }

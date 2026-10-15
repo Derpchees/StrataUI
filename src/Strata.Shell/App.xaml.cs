@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
@@ -213,6 +213,7 @@ public partial class App : Application
         Services.Notifications.WindowsBanners.Update();
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
+        OptimizationModule.StartupMaintenance();
         if (Settings.Current.SensorsAtStartup && Settings.Current.BarItems.Values.Any(items =>
                 items.Contains(BarItem.Fps) || items.Contains(BarItem.Cpu) || items.Contains(BarItem.Gpu)))
             _ = Sensors.StartAsync();

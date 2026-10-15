@@ -892,5 +892,16 @@
   "Usar": "Verwenden",
   "Widget importado": "Importiertes Widget",
   "Widgets en archivos .json: líneas de texto con la hora, la fecha, la canción que suena o la batería, con sus fuentes y colores.": "Widgets in .json-Dateien: Textzeilen mit Uhrzeit, Datum, dem laufenden Titel oder dem Akku, mit eigenen Schriften und Farben.",
-  "por {0}": "von {0}"
+  "por {0}": "von {0}",
+  "Módulo de optimización": "Optimierungsmodul",
+  "Rendimiento, privacidad, IA, limpieza, apps preinstaladas y más ajustes de Windows. Es un módulo aparte: no viene con Strata UI y se instala solo si lo quieres.": "Leistung, Datenschutz, KI, Bereinigung, vorinstallierte Apps und weitere Windows-Einstellungen. Es ist ein eigenes Modul: Es ist nicht in Strata UI enthalten und wird nur installiert, wenn du es möchtest.",
+  "Se descarga de la publicación de Strata UI {0} en GitHub y se instala para tu usuario, sin permiso de administrador.": "Es wird aus der Version {0} von Strata UI auf GitHub heruntergeladen und für deinen Benutzer installiert, ohne Administratorrechte.",
+  "Instalar": "Installieren",
+  "Reintentar": "Erneut versuchen",
+  "Descargando…": "Wird heruntergeladen…",
+  "No se pudo cargar el módulo de optimización.": "Das Optimierungsmodul konnte nicht geladen werden.",
+  "No se pudo descargar el módulo de optimización.": "Das Optimierungsmodul konnte nicht heruntergeladen werden.",
+  "La versión {0} todavía no tiene el módulo publicado.": "Für Version {0} ist das Modul noch nicht veröffentlicht.",
+  "El módulo descargado no es de esta versión de Strata UI.": "Das heruntergeladene Modul passt nicht zu dieser Version von Strata UI.",
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installiert. Beim Entfernen bleiben die bereits an Windows vorgenommenen Änderungen erhalten: Um sie rückgängig zu machen, nutze vorher Optimierung › Sicherung."
 }

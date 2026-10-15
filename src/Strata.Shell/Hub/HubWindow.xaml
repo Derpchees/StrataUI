@@ -86,50 +86,10 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <!-- Optimización: un grupo fijo como Personalización (sin plegar ni desplegar) -->
-                <ui:NavigationViewItemHeader Text="{l:T 'Optimización'}" Margin="0,12,0,0" />
-                        <ui:NavigationViewItem Content="{l:T 'Rendimiento'}" TargetPageType="{x:Type pages:PerformancePage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Flash24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Hardware'}" TargetPageType="{x:Type pages:HardwarePage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="DeveloperBoard24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Limpieza'}" TargetPageType="{x:Type pages:CleanupPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Broom24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Apps preinstaladas'}" TargetPageType="{x:Type pages:AppsPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Delete24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Privacidad'}" TargetPageType="{x:Type pages:PrivacyPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="ShieldLock24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Inteligencia artificial'}" TargetPageType="{x:Type pages:AIPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="BrainCircuit24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Sistema'}" TargetPageType="{x:Type pages:SystemTweaksPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Windows Update'}" TargetPageType="{x:Type pages:UpdatePage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="ArrowSync24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Apariencia de Windows'}" TargetPageType="{x:Type pages:WindowsAppearancePage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="DarkTheme24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Explorador'}" TargetPageType="{x:Type pages:ExplorerPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Folder24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Multitarea'}" TargetPageType="{x:Type pages:MultitaskingPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="SquareMultiple24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Juegos'}" TargetPageType="{x:Type pages:GamingPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Games24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Navegadores'}" TargetPageType="{x:Type pages:BrowsersPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="Globe24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
-                        <ui:NavigationViewItem Content="{l:T 'Respaldo'}" TargetPageType="{x:Type pages:BackupPage}">
-                            <ui:NavigationViewItem.Icon><ui:SymbolIcon Symbol="History24" /></ui:NavigationViewItem.Icon>
-                        </ui:NavigationViewItem>
+                <!-- Optimización: un grupo fijo como Personalización (sin plegar ni desplegar). Sus
+                     páginas vienen del módulo descargable; sin él, una entrada para instalarlo
+                     (HubWindow.FillOptimization). -->
+                <ui:NavigationViewItemHeader x:Name="OptimizationHeader" Text="{l:T 'Optimización'}" Margin="0,12,0,0" />
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem Content="{l:T 'Actualizaciones'}" TargetPageType="{x:Type pages:UpdatesPage}">

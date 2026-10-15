@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -28,6 +28,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Strata.Tests" />
+    <!-- El módulo de optimización (src/Strata.Optimization) usa los tipos internos de la app. -->
+    <InternalsVisibleTo Include="StrataUI.Optimization" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,8 +1,8 @@
 ﻿<Page x:Class="Strata.Shell.Hub.Pages.BackupPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
-      xmlns:hub="clr-namespace:Strata.Shell.Hub"
+      xmlns:l="clr-namespace:Strata.Shell.Services.Localization;assembly=StrataUI"
+      xmlns:hub="clr-namespace:Strata.Shell.Hub;assembly=StrataUI"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="{l:T 'Respaldo'}"
       ScrollViewer.CanContentScroll="False">

@@ -892,5 +892,16 @@
   "Usar": "Use",
   "Widget importado": "Imported widget",
   "Widgets en archivos .json: líneas de texto con la hora, la fecha, la canción que suena o la batería, con sus fuentes y colores.": "Widgets in .json files: lines of text with the time, date, the song that's playing or the battery, with their own fonts and colors.",
-  "por {0}": "by {0}"
+  "por {0}": "by {0}",
+  "Módulo de optimización": "Optimization module",
+  "Rendimiento, privacidad, IA, limpieza, apps preinstaladas y más ajustes de Windows. Es un módulo aparte: no viene con Strata UI y se instala solo si lo quieres.": "Performance, privacy, AI, cleanup, preinstalled apps and more Windows settings. It's a separate module: it doesn't come with Strata UI and is only installed if you want it.",
+  "Se descarga de la publicación de Strata UI {0} en GitHub y se instala para tu usuario, sin permiso de administrador.": "It's downloaded from the Strata UI {0} release on GitHub and installed for your user, without administrator permission.",
+  "Instalar": "Install",
+  "Reintentar": "Retry",
+  "Descargando…": "Downloading…",
+  "No se pudo cargar el módulo de optimización.": "Couldn't load the optimization module.",
+  "No se pudo descargar el módulo de optimización.": "Couldn't download the optimization module.",
+  "La versión {0} todavía no tiene el módulo publicado.": "Version {0} doesn't have the module published yet.",
+  "El módulo descargado no es de esta versión de Strata UI.": "The downloaded module isn't for this version of Strata UI.",
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installed. Removing it keeps the changes it already made to Windows: to undo them, use Optimization › Backup first."
 }

@@ -6,6 +6,25 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.1.0] - 2026-10-15
+
+### Cambiado
+- **Optimización es un módulo aparte** (`StrataUI.Optimization.dll`): ya no viene en el instalador.
+  Sin él, el grupo Optimización del Hub muestra una sola entrada con el botón **Instalar**, que lo
+  descarga de la publicación de GitHub de la misma versión (para el usuario, sin administrador) y
+  agrega sus páginas al momento. Se quita en Hub › General; al actualizar Strata UI, el módulo
+  instalado se actualiza solo. El motor (y el resto de funciones que lo usan) sigue en la app, y
+  los procesos elevados nunca cargan el módulo.
+- El instalador pasa una instalación de la carpeta `WINX` (de cuando se llamaba así) a `StrataUI`
+  y borra la vieja.
+
+### Corregido
+- Después de una actualización silenciosa desde el Hub en una instalación para todos los usuarios,
+  Strata UI se volvía a abrir como administrador (sin íconos de bandeja de las apps normales, y lo
+  que se abría desde él salía elevado).
+- Lecturas avanzadas: si Strata UI cambia de carpeta, la tarea programada se renueva (antes seguía
+  apuntando al ejecutable viejo).
+
 ## [2.0.0] - 2026-10-15
 
 ### Añadido

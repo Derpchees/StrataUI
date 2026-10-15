@@ -32,6 +32,9 @@ public static class UpdateService
         return client;
     });
 
+    /// <summary>Cliente de GitHub compartido (también baja el módulo de optimización).</summary>
+    internal static HttpClient Client => Http.Value;
+
     private static DispatcherTimer? _timer;
     private static Version? _notified;
 

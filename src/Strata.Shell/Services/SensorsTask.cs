@@ -73,7 +73,10 @@ public static class SensorsTask
                 || !SameFile(Path.Combine(Path.GetDirectoryName(ProtectedExe)!, "StrataUI.dll"),
                              Path.Combine(AppContext.BaseDirectory, "StrataUI.dll")))
                 return false;
-            return RunSchtasks($"/Query /TN \"{TaskName(UserSid)}\"") == 0;
+            // La tarea tiene que ejecutar ese mismo archivo: si Strata UI cambió de carpeta (por
+            // ejemplo de Archivos de programa\WINX a ...\StrataUI), apunta a uno que ya no existe.
+            return TaskCommand(UserSid) is { } command
+                   && Path.GetFullPath(command).Equals(Path.GetFullPath(ProtectedExe), StringComparison.OrdinalIgnoreCase);
         }
         catch (Exception ex) when (ex is IOException or System.ComponentModel.Win32Exception)
         {
@@ -283,6 +286,34 @@ public static class SensorsTask
             .Select(m => m.Groups[1].Value)
             .Distinct()
             .ToList();
+    }
+
+    /// <summary>El ejecutable de la tarea del usuario, o null si no existe (leerla no pide administrador).</summary>
+    private static string? TaskCommand(string sid)
+    {
+        var info = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "schtasks.exe"),
+                                        $"/Query /TN \"{TaskName(sid)}\" /XML")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        using var process = Process.Start(info)!;
+        string output = process.StandardOutput.ReadToEnd();
+        process.StandardError.ReadToEnd();
+        process.WaitForExit(15000);
+        if (!process.HasExited || process.ExitCode != 0)
+            return null;
+        try
+        {
+            return System.Xml.Linq.XDocument.Parse(output).Descendants()
+                .FirstOrDefault(e => e.Name.LocalName == "Command")?.Value.Trim().Trim('"');
+        }
+        catch (System.Xml.XmlException)
+        {
+            return null;
+        }
     }
 
     private static int RunSchtasks(string arguments)

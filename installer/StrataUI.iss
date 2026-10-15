@@ -25,10 +25,12 @@ AppPublisher=Derpchees
 AppPublisherURL=https://github.com/Derpchees/StrataUI
 AppSupportURL=https://github.com/Derpchees/StrataUI/issues
 AppUpdatesURL=https://github.com/Derpchees/StrataUI/releases
-DefaultDirName={autopf}\StrataUI
+; Al actualizar se usa la carpeta anterior, salvo la de cuando se llamaba WINX: esa pasa a
+; ...\StrataUI y la vieja se borra al terminar (ver InstallDir y CurStepChanged). La carpeta del
+; menú Inicio también pasa a la nueva (la vieja se borra en [InstallDelete]).
+DefaultDirName={code:InstallDir}
+UsePreviousAppDir=no
 DefaultGroupName=Strata UI
-; Antes se llamaba WINX: al actualizar, la carpeta de la app se conserva pero la del menú Inicio
-; pasa a la nueva (la vieja se borra en [InstallDelete]).
 UsePreviousGroup=no
 ; Asistente completo: bienvenida, carpeta (en la primera instalación; al actualizar se usa la
 ; misma), carpeta del menú Inicio, tareas y resumen.
@@ -113,9 +115,14 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 Filename: "{sys}\certutil.exe"; Parameters: "-addstore TrustedPeople ""{app}\StrataUI.cer"""; Flags: runhidden; Tasks: contextmenu; Check: CertNeeded and IsAdminInstallMode
 Filename: "{sys}\certutil.exe"; Parameters: "-addstore TrustedPeople ""{app}\StrataUI.cer"""; Verb: runas; Flags: runhidden shellexec waituntilterminated; Tasks: contextmenu; Check: CertNeeded and not IsAdminInstallMode
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage; Add-AppxPackage -Path '{app}\StrataUI.ContextMenu.msix' -ExternalLocation '{app}'"""; Flags: runhidden runasoriginaluser; Tasks: contextmenu
+; Si la app se mudó de la carpeta WINX y no se eligió el menú contextual, el paquete registrado antes
+; apunta a la carpeta borrada: se quita (Strata UI vuelve a poner el verbo clásico al abrirse).
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage"""; Flags: runhidden runasoriginaluser; Check: MovedFromLegacy and not WizardIsTaskSelected('contextmenu')
 Filename: "{app}\StrataUI.exe"; Description: "{cm:LaunchStrata}"; Flags: nowait postinstall skipifsilent
-; Actualización silenciosa desde el Hub: Strata UI se vuelve a abrir solo.
-Filename: "{app}\StrataUI.exe"; Flags: nowait; Check: WizardSilent
+; Actualización silenciosa desde el Hub: Strata UI se vuelve a abrir solo. Como el usuario y no con los
+; permisos del instalador (sin postinstall, Inno Setup lo abre elevado en una instalación para todos:
+; Windows bloquea entonces los íconos de bandeja y lo que se abre desde Strata UI sale elevado).
+Filename: "{app}\StrataUI.exe"; Flags: nowait runasoriginaluser; Check: WizardSilent
 
 [UninstallRun]
 ; Cierra Strata UI limpiamente para que vuelva la barra de Windows antes de borrar los archivos.
@@ -124,6 +131,37 @@ Filename: "{app}\StrataUI.exe"; Parameters: "--exit"; Flags: runhidden waituntil
 Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage"""; Flags: runhidden waituntilterminated; RunOnceId: "RemoveContextMenu"
 
 [Code]
+const
+  UninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{8C1B9E52-4D3A-4F0B-9B7E-6A2E1D5C7F31}_is1';
+
+var
+  // Carpeta de una instalación de cuando se llamaba WINX que se reemplaza por ...\StrataUI.
+  LegacyDir: String;
+
+// Carpeta de instalación: la anterior si hay una; si se llamaba WINX, su hermana StrataUI.
+function InstallDir(Param: String): String;
+var
+  Previous: String;
+begin
+  Result := ExpandConstant('{autopf}\StrataUI');
+  if RegQueryStringValue(HKA, UninstallKey, 'Inno Setup: App Path', Previous) and (Previous <> '') then
+  begin
+    Previous := RemoveBackslashUnlessRoot(Previous);
+    if CompareText(ExtractFileName(Previous), 'WINX') = 0 then
+    begin
+      LegacyDir := Previous;
+      Result := AddBackslash(ExtractFilePath(Previous)) + 'StrataUI';
+    end
+    else
+      Result := Previous;
+  end;
+end;
+
+function MovedFromLegacy: Boolean;
+begin
+  Result := (LegacyDir <> '') and (CompareText(LegacyDir, RemoveBackslashUnlessRoot(ExpandConstant('{app}'))) <> 0);
+end;
+
 // El certificado del paquete del menú contextual todavía no está en "Personas de confianza" del equipo.
 function CertNeeded: Boolean;
 var
@@ -135,13 +173,13 @@ begin
       Result := Code <> 0;
 end;
 
-procedure CloseApp(Exe: String);
+procedure CloseApp(Dir, Exe: String);
 var
   Code: Integer;
 begin
-  if FileExists(ExpandConstant('{app}\') + Exe) then
+  if (Dir <> '') and FileExists(AddBackslash(Dir) + Exe) then
   begin
-    Exec(ExpandConstant('{app}\') + Exe, '--exit', '', SW_HIDE, ewWaitUntilTerminated, Code);
+    Exec(AddBackslash(Dir) + Exe, '--exit', '', SW_HIDE, ewWaitUntilTerminated, Code);
     // --exit espera a que la instancia abierta termine; el margen es para que Windows suelte los archivos.
     Sleep(500);
   end;
@@ -149,10 +187,26 @@ end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  CloseApp('StrataUI.exe');
-  // Actualización desde cuando se llamaba WINX.
-  CloseApp('WINX.exe');
+  CloseApp(ExpandConstant('{app}'), 'StrataUI.exe');
+  // Actualización desde cuando se llamaba WINX (en su carpeta vieja o ya con el nombre nuevo).
+  CloseApp(ExpandConstant('{app}'), 'WINX.exe');
+  CloseApp(LegacyDir, 'StrataUI.exe');
+  CloseApp(LegacyDir, 'WINX.exe');
   Result := '';
+end;
+
+// Con la app ya en ...\StrataUI, la carpeta WINX sobra (su desinstalador también: el registro ya
+// apunta al nuevo). Solo si de verdad era la de la app.
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if (CurStep = ssPostInstall) and MovedFromLegacy and DirExists(LegacyDir)
+     and (FileExists(LegacyDir + '\StrataUI.exe') or FileExists(LegacyDir + '\WINX.exe')) then
+  begin
+    if DelTree(LegacyDir, True, True, True) then
+      Log('Carpeta anterior borrada: ' + LegacyDir)
+    else
+      Log('No se pudo borrar toda la carpeta anterior: ' + LegacyDir);
+  end;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

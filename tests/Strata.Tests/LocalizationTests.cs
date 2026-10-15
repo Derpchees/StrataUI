@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -28,8 +28,10 @@ public sealed partial class LocalizationTests
     [GeneratedRegex(@"\{(\d+)(:[^}]*)?\}")]
     private static partial Regex Placeholder();
 
+    // El módulo de optimización usa las traducciones de la app.
     private static IEnumerable<string> SourceFiles(string pattern) =>
-        Directory.EnumerateFiles(Source, pattern, SearchOption.AllDirectories)
+        new[] { Source, Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Optimization") }
+            .SelectMany(dir => Directory.EnumerateFiles(dir, pattern, SearchOption.AllDirectories))
                  .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
                           && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"));
 
