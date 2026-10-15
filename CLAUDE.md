@@ -36,6 +36,8 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   (`Hub/BarItemsEditor`) o arrastrando en la barra (`Taskbar.ItemDrag.cs`); al guardar se escriben
   las listas de todas las barras. Un elemento nuevo: valor en `BarItem`, botón en `Taskbar.xaml`,
   caso en `Taskbar.Element`, nombre/ícono en `BarLayout` y zona en `ContrastZones()`.
+  Cada elemento va en una zona de la barra (`Settings.BarItemZones`, `BarZone` inicio/centro/final;
+  `Controls/BarZonesPanel` las acomoda a lo largo de la barra junto con Inicio y las ventanas).
 - **Lecturas avanzadas** (`Services/Sensors`, `SensorsTask`): temperaturas (LibreHardwareMonitor +
   PawnIO), FPS (ETW) y liberar RAM en un proceso elevado `--sensors-task` lanzado por una tarea
   programada (UAC solo al crearla); la tarea ejecuta una copia en `%ProgramFiles%\StrataUI\Lecturas`,

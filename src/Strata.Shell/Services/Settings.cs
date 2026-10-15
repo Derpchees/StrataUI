@@ -58,6 +58,12 @@ public enum StartIconKind { Strata, Windows, WindowsMono, Circle, Dot, Grid, Sea
 /// </summary>
 public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock }
 
+/// <summary>
+/// Dónde va un elemento a lo largo de su barra: al final (derecha o abajo, lo de siempre), al
+/// principio (izquierda o arriba) o en el centro.
+/// </summary>
+public enum BarZone { End, Start, Center }
+
 /// <summary>Esquina de la pantalla donde aparecen los avisos.</summary>
 public enum NotificationCorner { BottomRight, BottomLeft, TopRight, TopLeft }
 
@@ -106,6 +112,12 @@ public sealed class StrataSettings
     /// barra sin entrada usa los de siempre (<see cref="BarLayout.Defaults"/>).
     /// </summary>
     public Dictionary<string, List<BarItem>> BarItems { get; set; } = new();
+
+    /// <summary>
+    /// Zona de la barra de cada elemento (misma clave que <see cref="BarItems"/>); sin entrada, al
+    /// final como siempre. Inicio va siempre con las ventanas.
+    /// </summary>
+    public Dictionary<string, Dictionary<BarItem, BarZone>> BarItemZones { get; set; } = new();
 
     public int TaskbarHeight { get; set; } = 48;
     /// <summary>Un solo botón por app con todas sus ventanas (como "Combinar botones" de Windows).</summary>

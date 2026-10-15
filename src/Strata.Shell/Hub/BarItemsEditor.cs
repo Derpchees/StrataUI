@@ -63,7 +63,7 @@ public sealed class BarItemsEditor : UserControl
 
     private static string BarsKey() =>
         ScreenPicker.Device + "#" +
-        string.Join(";", App.Current.Taskbars.Select(t => $"{t.BarId}:{t.Position}:{string.Join(",", t.Items)}"));
+        string.Join(";", App.Current.Taskbars.Select(t => $"{t.BarId}:{t.Position}:{string.Join(",", t.Items.Select(i => $"{i}/{t.ZoneOf(i)}"))}"));
 
     private void Build()
     {
@@ -126,10 +126,37 @@ public sealed class BarItemsEditor : UserControl
         label.Children.Add(new Wpf.Ui.Controls.SymbolIcon { Symbol = BarLayout.Icon(item), FontSize = 18, Margin = new Thickness(0, 0, 14, 0) });
         label.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = BarLayout.Name(item), VerticalAlignment = VerticalAlignment.Center });
 
+        var right = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        if (item != BarItem.Start && bar.Has(item))
+            right.Children.Add(ZonePicker(bar, item));
+        right.Children.Add(toggle);
+
         var row = new Grid { MinHeight = 40 };
         row.Children.Add(label);
-        row.Children.Add(toggle);
+        row.Children.Add(right);
         return row;
+    }
+
+    /// <summary>Dónde va el elemento a lo largo de la barra: izquierda, centro o derecha (arriba/abajo en vertical).</summary>
+    private static FrameworkElement ZonePicker(Taskbar bar, BarItem item)
+    {
+        BarZone[] zones = [BarZone.Start, BarZone.Center, BarZone.End];
+        var box = new ComboBox
+        {
+            MinWidth = 120,
+            Margin = new Thickness(0, 0, 16, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            ToolTip = Loc.T("Posición en la barra"),
+        };
+        foreach (var zone in zones)
+            box.Items.Add(BarLayout.ZoneName(zone, bar.IsVertical));
+        box.SelectedIndex = Array.IndexOf(zones, bar.ZoneOf(item));
+        box.SelectionChanged += (_, _) =>
+        {
+            if (box.SelectedIndex >= 0)
+                Settings.Update(s => BarLayout.SetZone(bar.BarId, item, zones[box.SelectedIndex], s));
+        };
+        return box;
     }
 
     /// <summary>

@@ -190,11 +190,9 @@ public partial class Taskbar : AppBarWindow
         if (!IsVertical)
             return;
 
-        MainGrid.ColumnDefinitions.Clear();
-        MainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        MainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        Grid.SetColumn(StatusPanel, 0);
-        Grid.SetRow(StatusPanel, 1);
+        MainGrid.Orientation = Orientation.Vertical;
+        StartZonePanel.Orientation = Orientation.Vertical;
+        CenterZonePanel.Orientation = Orientation.Vertical;
 
         TaskArea.HorizontalAlignment = HorizontalAlignment.Stretch;
         DockPanel.SetDock(StartButton, Dock.Top);
@@ -397,6 +395,8 @@ public partial class Taskbar : AppBarWindow
     private void ApplyAlignment(bool left, bool centerApps)
     {
         bool split = left && centerApps;
+        // Lo del centro se agrupa con las ventanas cuando van centradas (ver BarZonesPanel).
+        MainGrid.AppsCentered = !left;
         if (IsVertical)
         {
             TaskArea.VerticalAlignment = split ? VerticalAlignment.Stretch : left ? VerticalAlignment.Top : VerticalAlignment.Center;
@@ -618,6 +618,20 @@ public partial class Taskbar : AppBarWindow
 
     private readonly BarRole _defaultsRole;
     private List<BarItem> _items = new();
+    private List<BarZone> _zones = new();
+
+    /// <summary>Paneles de las zonas de la barra (inicio, centro y final, donde va "mostrar escritorio").</summary>
+    private IEnumerable<StackPanel> ZonePanels => [StartZonePanel, CenterZonePanel, StatusPanel];
+
+    private StackPanel ZonePanel(BarZone zone) => zone switch
+    {
+        BarZone.Start => StartZonePanel,
+        BarZone.Center => CenterZonePanel,
+        _ => StatusPanel,
+    };
+
+    /// <summary>Zona en que está un elemento de esta barra.</summary>
+    public BarZone ZoneOf(BarItem item) => _items.IndexOf(item) is var i and >= 0 ? _zones[i] : BarZone.End;
     private bool _metersOn;
 
     /// <summary>Elementos que lleva esta barra, en orden.</summary>
@@ -637,24 +651,31 @@ public partial class Taskbar : AppBarWindow
             items.Remove(BarItem.Tray);
         else if (!items.Contains(BarItem.Tray))
             items.Insert(items.Contains(BarItem.Start) ? 1 : 0, BarItem.Tray);
-        if (_items.SequenceEqual(items) && StatusPanel.Children.Count > 0)
+        var zones = items.Select(item => BarLayout.ZoneOf(BarId, item, Settings.Current)).ToList();
+        if (_items.SequenceEqual(items) && _zones.SequenceEqual(zones) && StatusPanel.Children.Count > 0)
             return;
         _items = items;
+        _zones = zones;
 
         StartButton.Visibility = Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
         TaskArea.Visibility = Role.ShowsApps || Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
         TaskScroller.Visibility = Role.ShowsApps ? Visibility.Visible : Visibility.Collapsed;
 
-        StatusPanel.Children.Clear();
-        foreach (var item in items)
+        // Cada elemento en su zona, en el orden de la lista; "mostrar escritorio" siempre al final.
+        foreach (var panel in ZonePanels)
+            panel.Children.Clear();
+        for (int i = 0; i < items.Count; i++)
         {
-            if (Element(item) is { } element)
-                StatusPanel.Children.Add(element);
+            if (Element(items[i]) is { } element)
+                ZonePanel(zones[i]).Children.Add(element);
         }
-        bool any = StatusPanel.Children.Count > 0;
+        bool any = ZonePanels.Any(panel => panel.Children.Count > 0);
         if (any)
             StatusPanel.Children.Add(ShowDesktopArea);
-        StatusPanel.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
+        foreach (var panel in ZonePanels)
+            panel.Visibility = panel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (_showingDropZones)
+            ShowDropZones(true); // se está arrastrando un elemento: las zonas vacías siguen a la vista
 
         bool meters = Has(BarItem.Cpu) || Has(BarItem.Gpu) || Has(BarItem.Ram) || Has(BarItem.Fps);
         // Temperaturas y FPS: con el permiso ya dado, las lecturas empiezan solas (sin preguntar).

@@ -47,15 +47,14 @@
                     CornerRadius="{DynamicResource StrataTaskbarCornerRadius}"
                     Visibility="{DynamicResource StrataGlassVisibility}" />
             <!-- En barras verticales (izquierda/derecha) las columnas pasan a filas: ver ApplyOrientation -->
-            <Grid x:Name="MainGrid">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-    
+            <!-- Zonas a lo largo de la barra: inicio, Inicio con las ventanas, centro y final. Cada
+                 elemento va en la zona elegida (Hub o clic derecho); ver Controls/BarZonesPanel -->
+            <controls:BarZonesPanel x:Name="MainGrid">
+                <StackPanel x:Name="StartZonePanel" controls:BarZonesPanel.Zone="Start" Orientation="Horizontal" Visibility="Collapsed" />
+
                 <!-- Inicio + ventanas abiertas; alineación configurable desde el Hub -->
                 <!-- DockPanel (no StackPanel) para que la lista reciba un ancho limitado y pueda desplazarse -->
-                <DockPanel x:Name="TaskArea" Grid.Column="0" HorizontalAlignment="Center" LastChildFill="True">
+                <DockPanel x:Name="TaskArea" controls:BarZonesPanel.Zone="Apps" HorizontalAlignment="Center" LastChildFill="True">
                     <!-- El ícono se elige en Hub › Menú Inicio (ver Controls/StartIcons) -->
                     <Button x:Name="StartButton" DockPanel.Dock="Left" Style="{StaticResource TaskbarButton}" Width="44"
                             Padding="0" ToolTip="{l:T 'Inicio'}" Click="StartButton_Click" />
@@ -80,8 +79,11 @@
                     </ScrollViewer>
                 </DockPanel>
     
-                <!-- Bandeja, estado del sistema, reloj y "mostrar escritorio" -->
-                <StackPanel x:Name="StatusPanel" Grid.Column="1" Orientation="Horizontal">
+                <StackPanel x:Name="CenterZonePanel" controls:BarZonesPanel.Zone="Center" Orientation="Horizontal" Visibility="Collapsed" />
+
+                <!-- Zona del final: bandeja, estado del sistema, reloj y "mostrar escritorio" (los
+                     elementos aquí declarados se reparten por zonas en ApplyLayout) -->
+                <StackPanel x:Name="StatusPanel" controls:BarZonesPanel.Zone="End" Orientation="Horizontal">
                     <!-- Multimedia: carátula, canción, artista y álbum (clic: abre la app; clic central: pausa)
                          y, si se eligió en el Hub, los controles en la barra -->
                     <StackPanel x:Name="MediaModule" Orientation="Horizontal" Visibility="Collapsed">
@@ -269,7 +271,7 @@
                                 Background="{DynamicResource StrataTaskbarBorderBrush}" />
                     </Border>
                 </StackPanel>
-            </Grid>
+            </controls:BarZonesPanel>
         </Grid>
     </Border>
 </appbar:AppBarWindow>

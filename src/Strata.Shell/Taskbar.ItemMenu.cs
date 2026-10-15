@@ -14,7 +14,11 @@ namespace Strata.Shell;
 /// </summary>
 public partial class Taskbar
 {
-    private void WatchItemMenu() => StatusPanel.ContextMenuOpening += OnItemMenuOpening;
+    private void WatchItemMenu()
+    {
+        foreach (var panel in ZonePanels)
+            panel.ContextMenuOpening += OnItemMenuOpening;
+    }
 
     private void OnItemMenuOpening(object sender, ContextMenuEventArgs e)
     {
@@ -41,11 +45,19 @@ public partial class Taskbar
         if (item is BarItem.Cpu or BarItem.Gpu or BarItem.Ram)
             menu.Items.Add(Entry(Loc.T("Administrador de tareas"), ManagedShell.Common.Helpers.ShellHelper.StartTaskManager));
         menu.Items.Add(Entry(Loc.T("Opciones en Strata UI"), () => App.Current.OpenHub(HubPage(item))));
-        if (item != BarItem.Tray)
+        menu.Items.Add(new Separator());
+        // Posición a lo largo de la barra: izquierda/centro/derecha (arriba/centro/abajo en vertical).
+        var position = new MenuItem { Header = Loc.T("Posición en la barra") };
+        foreach (var zone in new[] { BarZone.Start, BarZone.Center, BarZone.End })
         {
-            menu.Items.Add(new Separator());
-            menu.Items.Add(Entry(Loc.T("Quitar de esta barra"), () => RemoveItem(item)));
+            var entry = Entry(BarLayout.ZoneName(zone, IsVertical), () => Settings.Update(s => BarLayout.SetZone(BarId, item, zone, s)));
+            entry.IsCheckable = true; // para que se vea la marca en la zona actual
+            entry.IsChecked = ZoneOf(item) == zone;
+            position.Items.Add(entry);
         }
+        menu.Items.Add(position);
+        if (item != BarItem.Tray)
+            menu.Items.Add(Entry(Loc.T("Quitar de esta barra"), () => RemoveItem(item)));
         return menu;
     }
 

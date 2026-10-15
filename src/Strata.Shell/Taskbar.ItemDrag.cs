@@ -30,7 +30,8 @@ public partial class Taskbar
 
     private void WatchItemDrag()
     {
-        StatusPanel.PreviewMouseLeftButtonDown += OnItemMouseDown;
+        foreach (var panel in ZonePanels)
+            panel.PreviewMouseLeftButtonDown += OnItemMouseDown;
         StartButton.PreviewMouseLeftButtonDown += OnItemMouseDown;
         PreviewMouseMove += OnItemPreviewMove;
         PreviewMouseLeftButtonUp += (_, _) => _itemPressed = null;
@@ -51,7 +52,7 @@ public partial class Taskbar
                 return null;
             if (ReferenceEquals(current, StartButton))
                 return BarItem.Start;
-            if (current is FrameworkElement element && ReferenceEquals(element.Parent, StatusPanel))
+            if (current is FrameworkElement element && element.Parent is System.Windows.Controls.StackPanel parent && ZonePanels.Contains(parent))
                 return ItemOf(element);
         }
         return null;
@@ -85,6 +86,9 @@ public partial class Taskbar
         }
         Mouse.OverrideCursor = Cursors.SizeAll;
         SetDragging(item, true);
+        if (item != BarItem.Start)
+            foreach (var bar in App.Current.Taskbars)
+                bar.ShowDropZones(true);
     }
 
     private void ItemDragMove(BarItem item)
@@ -107,15 +111,19 @@ public partial class Taskbar
         }
         else
         {
-            index = target.IndexAt(point, item);
+            (index, var zone) = target.IndexAt(point, item);
             if (index < 0)
                 return;
+            // Pasar a otra zona (inicio, centro, final) cambia la del elemento en esa barra.
+            if (zone != target.ZoneOf(item) || !ReferenceEquals(target, owner))
+                BarLayout.SetZone(target.BarId, item, zone, Settings.Current);
         }
 
         int current = ReferenceEquals(target, owner) ? targetItems.IndexOf(item) : -1;
         if (current >= 0)
         {
-            if (index == current || index == current + 1)
+            bool sameZone = BarLayout.ZoneOf(target.BarId, item, Settings.Current) == target.ZoneOf(item);
+            if (sameZone && (index == current || index == current + 1))
                 return; // ya está ahí
             targetItems.RemoveAt(current);
             if (index > current)
@@ -137,25 +145,63 @@ public partial class Taskbar
     }
 
     /// <summary>
-    /// Posición en la lista de elementos donde caería lo arrastrado: antes del primero que quede
-    /// después del puntero (a la derecha, o abajo en las barras verticales). -1 si el puntero no
-    /// está sobre el área de estado (con ella vacía vale toda la barra).
+    /// Posición en la lista de elementos donde caería lo arrastrado y en qué zona: antes del primero
+    /// de esa zona que quede después del puntero (a la derecha, o abajo en las barras verticales).
+    /// -1 si el puntero no está sobre ninguna zona (sin ninguna visible vale toda la barra, al final).
     /// </summary>
-    private int IndexAt(Point screen, BarItem moving)
+    private (int Index, BarZone Zone) IndexAt(Point screen, BarItem moving)
     {
-        bool overStatus = StatusPanel.IsVisible ? ScreenRect(StatusPanel, 12).Contains(screen) : ScreenRect(BarBorder, 0).Contains(screen);
-        if (!overStatus)
-            return -1;
+        BarZone? zone = null;
+        foreach (var candidate in new[] { BarZone.Start, BarZone.Center, BarZone.End })
+        {
+            if (ScreenRect(ZonePanel(candidate), 12).Contains(screen))
+                zone = candidate;
+        }
+        if (zone is null && !ZonePanels.Any(p => p.IsVisible) && ScreenRect(BarBorder, 0).Contains(screen))
+            zone = BarZone.End;
+        if (zone is not { } target)
+            return (-1, BarZone.End);
+        int last = -1;
         for (int i = 0; i < _items.Count; i++)
         {
-            if (_items[i] == moving || Element(_items[i]) is not { IsVisible: true } element)
+            if (_items[i] == moving || _zones[i] != target || Element(_items[i]) is not { IsVisible: true } element)
                 continue;
             var rect = ScreenRect(element, 0);
             double center = IsVertical ? rect.Top + rect.Height / 2 : rect.Left + rect.Width / 2;
             if ((IsVertical ? screen.Y : screen.X) < center)
-                return i;
+                return (i, target);
+            last = i;
         }
-        return _items.Count;
+        // Después del último de esa zona (o al final de la lista si la zona está vacía).
+        return (last >= 0 ? last + 1 : _items.Count, target);
+    }
+
+    /// <summary>
+    /// Mientras se arrastra un elemento, las zonas vacías se ven como un espacio donde soltarlo
+    /// (si no, no habría dónde llevarlo al centro o al principio).
+    /// </summary>
+    private bool _showingDropZones;
+
+    private void ShowDropZones(bool show)
+    {
+        _showingDropZones = show;
+        foreach (var panel in new[] { StartZonePanel, CenterZonePanel })
+        {
+            if (show && panel.Children.Count == 0)
+            {
+                panel.Visibility = Visibility.Visible;
+                panel.MinWidth = IsVertical ? 0 : 44;
+                panel.MinHeight = IsVertical ? 44 : 0;
+                panel.Background = (System.Windows.Media.Brush)FindResource("StrataHoverBrush");
+            }
+            else
+            {
+                panel.ClearValue(MinWidthProperty);
+                panel.ClearValue(MinHeightProperty);
+                panel.ClearValue(BackgroundProperty);
+                panel.Visibility = panel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
     }
 
     /// <summary>El elemento que se arrastra se ve tenue en la barra donde está.</summary>
@@ -171,6 +217,8 @@ public partial class Taskbar
         if (_itemDrag is not { } item)
             return;
         _itemDrag = null;
+        foreach (var bar in App.Current.Taskbars)
+            bar.ShowDropZones(false);
         _itemOwner?.SetDragging(item, false);
         SetDragging(item, false);
         _itemOwner = null;

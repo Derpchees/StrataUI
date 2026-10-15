@@ -47,6 +47,32 @@ public static class BarLayout
         return items;
     }
 
+    /// <summary>Zona de un elemento en una barra (al final si no se eligió otra).</summary>
+    public static BarZone ZoneOf(string barId, BarItem item, StrataSettings s) =>
+        item != BarItem.Start && s.BarItemZones.TryGetValue(barId, out var zones) && zones.TryGetValue(item, out var zone)
+            ? zone : BarZone.End;
+
+    /// <summary>Cambia la zona de un elemento (sin guardar).</summary>
+    public static void SetZone(string barId, BarItem item, BarZone zone, StrataSettings s)
+    {
+        if (!s.BarItemZones.TryGetValue(barId, out var zones))
+            s.BarItemZones[barId] = zones = new();
+        if (zone == BarZone.End)
+            zones.Remove(item);
+        else
+            zones[item] = zone;
+        if (zones.Count == 0)
+            s.BarItemZones.Remove(barId);
+    }
+
+    /// <summary>Nombre de una zona según la orientación de la barra.</summary>
+    public static string ZoneName(BarZone zone, bool vertical) => zone switch
+    {
+        BarZone.Start => vertical ? Loc.T("Arriba") : Loc.T("Izquierda"),
+        BarZone.Center => Loc.T("Centro"),
+        _ => vertical ? Loc.T("Abajo") : Loc.T("Derecha"),
+    };
+
     /// <summary>Elementos de una barra: los elegidos en el Hub o, si no hay, los de siempre.</summary>
     public static List<BarItem> ItemsFor(string barId, BarRole role, StrataSettings s) =>
         s.BarItems.TryGetValue(barId, out var chosen) ? chosen.Distinct().ToList() : Defaults(role, s);

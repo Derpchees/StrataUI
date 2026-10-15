@@ -7,6 +7,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Posición de cada elemento en la barra**: al principio, en el centro o al final (izquierda, centro
+  o derecha; arriba, centro o abajo en las barras verticales). Se elige en Hub › Barra de tareas, con
+  clic derecho › Posición en la barra, o arrastrándolo en la barra (al arrastrar se ven las zonas
+  vacías). Lo del centro queda al medio de la barra, o junto a las ventanas si van centradas.
 - El tooltip de los medidores de CPU y GPU dice el modelo del procesador y de la tarjeta gráfica
   (las dos, si el equipo tiene integrada y dedicada).
 - **Forzar cierre** en el clic derecho de las apps de la barra (como "Finalizar tarea" de Windows).
