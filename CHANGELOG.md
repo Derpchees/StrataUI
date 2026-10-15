@@ -7,6 +7,11 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Esquemas de color**: Medianoche (negro OLED), Nord, Dracula, Catppuccin Mocha y Latte, Tokyo
+  Night, Rosé Pine y Gruvbox, con sus colores y su acento (si se deja el de Windows).
+- **Hub › Colores** (nueva página, separada de Tema): el acento, **colores propios para la barra y
+  para los paneles y el menú Inicio** (muestras, código y opacidad; el texto se pone claro u oscuro
+  solo para que se lea) y el fondo de pantalla. La página Apariencia pasa a llamarse **Tema**.
 - **"Anclar a Inicio de Strata UI" en el clic derecho del Explorador** (archivos, accesos directos y
   carpetas): en el menú clásico ("Mostrar más opciones" en Windows 11) y en Nilesoft Shell. Se puede
   quitar en Hub › Menú Inicio.

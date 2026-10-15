@@ -357,6 +357,12 @@ public partial class Taskbar : AppBarWindow
         _screenPalette = palette;
         if (palette != null)
             Resources.MergedDictionaries.Add(palette);
+        // Con un color propio de barra, su texto (claro u oscuro) va solo en la barra, no en sus paneles.
+        if (ThemeManager.CustomBarColor != null
+            && ((palette ?? Application.Current.Resources)["StrataBarForegroundBrush"]) is System.Windows.Media.Brush barText)
+            Resources["StrataForegroundBrush"] = barText;
+        else
+            Resources.Remove("StrataForegroundBrush");
         if (look != _appliedLook && _appliedLook != default)
             Dispatcher.BeginInvoke(ApplyBackdrop, DispatcherPriority.ApplicationIdle);
         _appliedLook = look;

@@ -59,9 +59,14 @@
                         <ui:SymbolIcon Symbol="Alert24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Apariencia'}" TargetPageType="{x:Type pages:AppearancePage}">
+                <ui:NavigationViewItem Content="{l:T 'Tema'}" TargetPageType="{x:Type pages:AppearancePage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PaintBrush24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{l:T 'Colores'}" TargetPageType="{x:Type pages:ColorsPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Color24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{l:T 'Control multimedia'}" TargetPageType="{x:Type pages:MediaPage}">

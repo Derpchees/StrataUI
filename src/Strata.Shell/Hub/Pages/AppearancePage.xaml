@@ -4,18 +4,21 @@
       xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
       xmlns:hub="clr-namespace:Strata.Shell.Hub"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      Title="{l:T 'Apariencia'}"
+      Title="{l:T 'Tema'}"
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <hub:PageHeader Icon="PaintBrush24" Title="{l:T 'Apariencia'}" Subtitle="{l:T 'Tema, color de acento y fondo de pantalla de Strata UI.'}" />
+            <hub:PageHeader Icon="PaintBrush24" Title="{l:T 'Tema'}" Subtitle="{l:T 'Estilo de la barra, los paneles y el Hub, y sus animaciones. Los colores están en Colores.'}" />
             <hub:ScreenPicker />
 
             <!-- ── De este monitor ───────────────────────────────────────────── -->
             <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,4" Text="{l:T 'Tema'}" />
             <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
                        Text="{l:T 'De la barra de este monitor y de los paneles y el menú Inicio que se abren desde ella. El del principal de Strata UI también lo usa el Hub.'}" />
+            <TextBlock Style="{StaticResource CardTitle}" Margin="2,0,0,8" Text="{l:T 'Estilos'}" />
             <WrapPanel x:Name="ThemeGallery" Margin="0,0,0,8" />
+            <TextBlock Style="{StaticResource CardTitle}" Margin="2,4,0,8" Text="{l:T 'Esquemas de color'}" />
+            <WrapPanel x:Name="SchemeGallery" Margin="0,0,0,8" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Eye24" /></ui:CardControl.Icon>
@@ -88,59 +91,6 @@
                 </ComboBox>
             </ui:CardControl>
 
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Color de acento'}" />
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Color24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Origen del color'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Con Aplicar el tema a Windows, Windows también usa el color del fondo o el propio.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <StackPanel Orientation="Horizontal">
-                    <Border x:Name="AccentPreview" Width="28" Height="28" CornerRadius="14" Margin="0,0,12,0"
-                            Background="{DynamicResource StrataAccentBrush}" VerticalAlignment="Center" />
-                    <ComboBox x:Name="AccentSourceBox" MinWidth="200" SelectionChanged="AccentSource_Changed">
-                        <ComboBoxItem Content="{l:T 'El de Windows'}" Tag="Windows" />
-                        <ComboBoxItem x:Name="WallpaperAccentItem" Content="{l:T 'Del fondo de pantalla'}" Tag="Wallpaper" />
-                        <ComboBoxItem Content="{l:T 'Elegido por mí'}" Tag="Custom" />
-                    </ComboBox>
-                </StackPanel>
-            </ui:CardControl>
-
-            <!-- Wallpaper Engine cambia el acento de Windows con cada fondo: las dos cosas se pisarían -->
-            <ui:InfoBar x:Name="WallpaperEngineBar" Margin="0,0,0,4" Severity="Warning" IsClosable="False" IsOpen="False"
-                        Title="{l:T 'Wallpaper Engine está cambiando el color de Windows'}"
-                        Message="{l:T 'Mientras tenga activado Ajustar el color de Windows (Configuración › General), Strata UI no saca el color del fondo ni cambia el acento de Windows. Desactívalo ahí y esta opción vuelve sola.'}" />
-
-            <Border x:Name="SwatchPanel" Margin="0,0,0,4" Padding="16" CornerRadius="8"
-                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
-                <WrapPanel x:Name="Swatches" />
-            </Border>
-
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Fondo de pantalla'}" />
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Header>
-                    <StackPanel Orientation="Horizontal">
-                        <Border Width="160" Height="90" CornerRadius="6" ClipToBounds="True" Margin="0,0,16,0"
-                                Background="{DynamicResource ControlFillColorDefaultBrush}">
-                            <Image x:Name="WallpaperPreview" Stretch="UniformToFill" />
-                        </Border>
-                        <StackPanel VerticalAlignment="Center" MaxWidth="360">
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Imagen del escritorio'}" />
-                            <TextBlock x:Name="WallpaperPath" Style="{StaticResource CardDescription}" TextTrimming="CharacterEllipsis" />
-                        </StackPanel>
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <StackPanel Orientation="Horizontal">
-                    <ui:Button x:Name="RestoreWallpaperButton" Content="{l:T 'Restaurar original'}" Margin="0,0,8,0"
-                               Click="RestoreWallpaper_Click" />
-                    <ui:Button Content="{l:T 'Elegir imagen…'}" Appearance="Primary" Click="ChooseWallpaper_Click" />
-                </StackPanel>
-            </ui:CardControl>
         </StackPanel>
     </ScrollViewer>
 </Page>

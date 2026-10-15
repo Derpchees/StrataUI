@@ -98,6 +98,9 @@ public abstract class FlyoutWindow : FluentWindow
         // Colores del monitor de la barra desde la que se abre, si no son los generales.
         if (ThemeManager.PaletteFor(_device) is { } palette)
             _root.Resources.MergedDictionaries.Add(palette);
+        // Color propio de los paneles claro sobre un tema oscuro (o al revés): textos y controles a juego.
+        if (ThemeManager.PanelContrastFor(_device) is { } contrast)
+            _root.Resources.MergedDictionaries.Add(contrast);
         if (ThemeManager.UseLiveGlassFor(_device) && !FillWorkArea)
         {
             // Vidrio líquido real: más esmerilado que la barra para que el texto se lea bien.

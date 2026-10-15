@@ -56,20 +56,67 @@ public static class ThemeManager
         int height = Settings.Current.For(device).TaskbarHeight;
         if ((theme.Kind, light, height) == (Theme.Kind, IsLight, Settings.Current.For(MainDevice).TaskbarHeight))
             return null;
-        var accent = Readable(Accent, light);
-        return Palette.Build(theme, light, accent, height, UseLiveGlassFor(device), light == IsLight ? _shownAccent : null);
+        var accent = Readable(AccentFor(theme), light);
+        return Palette.Build(theme, light, accent, height, UseLiveGlassFor(device), light == IsLight ? _shownAccent : null,
+                             CustomBarColor, CustomPanelColor);
     }
 
     private static Color? _shownAccent;
 
     /// <summary>
+    /// Con un color propio de paneles que pide texto oscuro en un tema oscuro (o claro en uno claro),
+    /// los textos y controles de WPF-UI del panel (que siguen el modo del tema) se ajustan a ese color.
+    /// Null si no hace falta. Solo para los paneles: el Hub sigue con los colores del tema.
+    /// </summary>
+    public static ResourceDictionary? PanelContrastFor(string? device)
+    {
+        if (CustomPanelColor is not { } panel)
+            return null;
+        bool light = IsLightFor(device);
+        var text = Palette.TextOn(panel, light);
+        bool darkText = Luminance(text) < 0.5;
+        if (darkText == light)
+            return null; // el modo del tema ya da texto legible
+        SolidColorBrush Brush(byte alpha) => new(Color.FromArgb(alpha, text.R, text.G, text.B));
+        var dict = new ResourceDictionary
+        {
+            ["TextFillColorPrimaryBrush"] = Brush(0xFF),
+            ["TextFillColorSecondaryBrush"] = Brush(0xC0),
+            ["TextFillColorTertiaryBrush"] = Brush(0x8A),
+            ["TextControlForeground"] = Brush(0xFF),
+            ["TextControlForegroundPointerOver"] = Brush(0xFF),
+            ["TextControlForegroundFocused"] = Brush(0xFF),
+            ["TextControlPlaceholderForeground"] = Brush(0x9A),
+            ["ButtonForeground"] = Brush(0xFF),
+            ["ButtonForegroundPointerOver"] = Brush(0xFF),
+            ["ButtonForegroundPressed"] = Brush(0xC0),
+        };
+        foreach (var (key, alpha) in new (string, byte)[]
+                 {
+                     ("TextControlBackground", 0x0F), ("TextControlBackgroundPointerOver", 0x16), ("TextControlBackgroundFocused", 0x0A),
+                     ("ButtonBackground", 0x0F), ("ButtonBackgroundPointerOver", 0x18), ("ButtonBackgroundPressed", 0x0A),
+                     ("ControlFillColorDefaultBrush", 0x0F), ("ControlFillColorSecondaryBrush", 0x18), ("ControlFillColorTertiaryBrush", 0x0A),
+                     ("SubtleFillColorSecondaryBrush", 0x0F), ("CardBackgroundFillColorDefaultBrush", 0x08),
+                 })
+            dict[key] = Brush(alpha);
+        return dict;
+    }
+
+    /// <summary>Colores propios de Hub › Colores (null = los del tema).</summary>
+    public static Color? CustomBarColor => TryParseColor(Settings.Current.CustomBarColor);
+    public static Color? CustomPanelColor => TryParseColor(Settings.Current.CustomPanelColor);
+
+    /// <summary>
     /// Acento elegido: el del fondo de pantalla, uno propio o el de Windows. El del fondo queda en
     /// pausa mientras Wallpaper Engine ajusta el color de Windows (los dos se pisarían).
     /// </summary>
-    public static Color Accent =>
+    public static Color Accent => AccentFor(Theme);
+
+    /// <summary>Acento con un tema dado: el del fondo o el propio si se eligieron; si no, el del esquema o el de Windows.</summary>
+    public static Color AccentFor(ThemeInfo theme) =>
         (UsesWallpaperAccent ? WallpaperAccent.Current : null)
         ?? TryParseColor(Settings.Current.AccentColor)
-        ?? GetWindowsAccentColor();
+        ?? (theme.Scheme?.Accent is { } schemeAccent ? Palette.Hex(schemeAccent) : GetWindowsAccentColor());
 
     /// <summary>El acento sale del fondo (opción activa y sin Wallpaper Engine ajustando el color).</summary>
     public static bool UsesWallpaperAccent =>
@@ -77,7 +124,7 @@ public static class ThemeManager
 
     /// <summary>El acento es el de Windows (nada que llevarle a Windows).</summary>
     public static bool FollowsWindowsAccent =>
-        !UsesWallpaperAccent && TryParseColor(Settings.Current.AccentColor) is null;
+        !UsesWallpaperAccent && TryParseColor(Settings.Current.AccentColor) is null && Theme.Scheme?.Accent is null;
 
     /// <summary>Material para ventanas FluentWindow (Hub, paneles) según el tema.</summary>
     public static WindowBackdropType WindowBackdrop => Theme.Backdrop switch
@@ -87,7 +134,7 @@ public static class ThemeManager
         _ => WindowBackdropType.None,
     };
 
-    private static (StrataTheme, string?, int, bool, bool) _appliedKey;
+    private static (StrataTheme, string?, int, bool, bool, string?, string?) _appliedKey;
     private static HwndSource? _colorWatcher;
 
     public static void Initialize()
@@ -124,11 +171,11 @@ public static class ThemeManager
     }
 
     /// <summary>Lo que cambia los recursos generales: el tema y la barra del monitor principal, el acento y el vidrio.</summary>
-    private static (StrataTheme, string?, int, bool, bool) AppliedKey()
+    private static (StrataTheme, string?, int, bool, bool, string?, string?) AppliedKey()
     {
         var s = Settings.Current;
         var main = s.For(MainDevice);
-        return (main.Theme, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper);
+        return (main.Theme, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper, s.CustomBarColor, s.CustomPanelColor);
     }
 
     /// <summary>Reaplica si cambió lo que se ve (claro/oscuro o el acento efectivo).</summary>
@@ -248,7 +295,8 @@ public static class ThemeManager
         // botones principales, selección), no un cálculo aparte con otro tono.
         Color? shown = (resources["AccentFillColorDefaultBrush"] as SolidColorBrush)?.Color;
         _shownAccent = shown;
-        var next = Palette.Build(theme, light, accent, Settings.Current.For(MainDevice).TaskbarHeight, UseLiveGlass, shown);
+        var next = Palette.Build(theme, light, accent, Settings.Current.For(MainDevice).TaskbarHeight, UseLiveGlass, shown,
+                                 CustomBarColor, CustomPanelColor);
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);
         resources.MergedDictionaries.Add(next);

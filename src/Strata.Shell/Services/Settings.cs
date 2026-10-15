@@ -20,7 +20,12 @@ public enum TaskbarPosition { Bottom, Top, Left, Right }
 /// </summary>
 public enum SecondBarContent { None, Apps, Status, Full }
 
-public enum StrataTheme { System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material }
+public enum StrataTheme
+{
+    System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material,
+    // Esquemas de color (ver Themes/ThemeCatalog)
+    Midnight, Nord, Dracula, CatppuccinMocha, CatppuccinLatte, TokyoNight, RosePine, Gruvbox,
+}
 
 public enum StartMenuStyle { Windows11, List, Fullscreen, Compact, Spotlight, Icons, Profile }
 
@@ -225,6 +230,10 @@ public sealed class StrataSettings
     public string? AccentColor { get; set; }
     /// <summary>Acento sacado del fondo de pantalla (tiene prioridad sobre <see cref="AccentColor"/>).</summary>
     public bool AccentFromWallpaper { get; set; }
+    /// <summary>Color propio de la barra con su opacidad ("#AARRGGBB"); null = el del tema.</summary>
+    public string? CustomBarColor { get; set; }
+    /// <summary>Color propio de los paneles y el menú Inicio ("#AARRGGBB"); null = el del tema.</summary>
+    public string? CustomPanelColor { get; set; }
     /// <summary>
     /// Acento de Windows antes de que Strata UI le pusiera el suyo ("Aplicar el tema a Windows"):
     /// [color de Inicio, color de acento] en ABGR; se devuelve al desactivarlo. Null: no lo cambió.
