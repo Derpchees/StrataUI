@@ -816,5 +816,7 @@
   "Anclar carpeta…": "Pin folder…",
   "Ícono para {0}": "Icon for {0}",
   "Imágenes e íconos": "Images and icons",
-  "No se pudo leer una imagen de ese archivo.": "Couldn't read an image from that file."
+  "No se pudo leer una imagen de ese archivo.": "Couldn't read an image from that file.",
+  "Forzar cierre": "End task",
+  "Termina la app sin esperar a que responda (se pierde lo que no se haya guardado)": "Ends the app without waiting for it to respond (anything unsaved is lost)"
 }

@@ -222,4 +222,15 @@ public partial class TaskButton : UserControl
         foreach (var window in Members())
             window.Close();
     }
+
+    /// <summary>Como "Finalizar tarea" de Windows: termina los procesos de las ventanas del botón.</summary>
+    private void ForceClose_Click(object sender, RoutedEventArgs e)
+    {
+        foreach (var window in Members())
+        {
+            // El Explorador es también el escritorio: sus ventanas solo se cierran.
+            if (TaskActions.ForceClose(window.Handle) == false)
+                window.Close();
+        }
+    }
 }

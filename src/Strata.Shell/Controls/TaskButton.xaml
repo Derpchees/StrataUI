@@ -7,6 +7,8 @@
         <Button.ContextMenu>
             <ContextMenu>
                 <MenuItem x:Name="CloseItem" Header="{l:T 'Cerrar ventana'}" Click="CloseWindow_Click" />
+                <MenuItem x:Name="ForceCloseItem" Header="{l:T 'Forzar cierre'}" Click="ForceClose_Click"
+                          ToolTip="{l:T 'Termina la app sin esperar a que responda (se pierde lo que no se haya guardado)'}" />
             </ContextMenu>
         </Button.ContextMenu>
         <Grid x:Name="Root" Width="44">
