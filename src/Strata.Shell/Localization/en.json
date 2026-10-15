@@ -913,5 +913,19 @@
   "Color de acento, colores propios para la barra y los paneles, y fondo de pantalla.": "Accent color, your own colors for the taskbar and flyouts, and wallpaper.",
   "Los esquemas de color (Nord, Dracula…) traen su propio acento si aquí se deja el de Windows. Con Aplicar el tema a Windows, Windows también usa el color del fondo o el propio.": "Color schemes (Nord, Dracula…) bring their own accent if Windows' is selected here. With Apply the theme to Windows, Windows also uses the wallpaper color or your own.",
   "Colores propios": "Your own colors",
-  "Encima del tema de cada monitor. El texto se pone claro u oscuro solo, según el color, para que siempre se lea.": "On top of each monitor's theme. Text turns light or dark by itself, depending on the color, so it's always readable."
+  "Encima del tema de cada monitor. El texto se pone claro u oscuro solo, según el color, para que siempre se lea.": "On top of each monitor's theme. Text turns light or dark by itself, depending on the color, so it's always readable.",
+  "Chico": "Small",
+  "Mediano": "Medium",
+  "Mostrar la fecha": "Show the date",
+  "Bloquear posición": "Lock position",
+  "Widgets en Strata UI": "Widgets in Strata UI",
+  "Widgets": "Widgets",
+  "Relojes y un visualizador de música sobre el fondo de pantalla. Arrástralos para moverlos; clic derecho para su tamaño y opciones.": "Clocks and a music visualizer on top of your wallpaper. Drag them to move them; right-click for size and options.",
+  "Agregar": "Add",
+  "Reloj con fecha": "Clock with date",
+  "Visualizador de música": "Music visualizer",
+  "En el escritorio": "On the desktop",
+  "Todavía no hay widgets.": "There are no widgets yet.",
+  "Monitor principal": "Main monitor",
+  "posición bloqueada": "position locked"
 }

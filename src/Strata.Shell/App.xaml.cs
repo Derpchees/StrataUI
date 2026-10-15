@@ -218,6 +218,7 @@ public partial class App : Application
             _ = Sensors.StartAsync();
         _ = Task.Run(AutoStart.Migrate);
         Services.StartMenu.ExplorerMenu.Listen();
+        Services.Widgets.WidgetManager.Initialize();
         _explorerMenu = Settings.Current.StartExplorerMenu;
         Services.StartMenu.ExplorerMenu.Update();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
@@ -613,6 +614,7 @@ public partial class App : Application
         _openHubWait?.Unregister(null);
         _openHubEvent?.Dispose();
         Services.StartMenu.ExplorerMenu.Stop();
+        Services.Widgets.WidgetManager.Shutdown();
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
         _mutex = null;

@@ -497,9 +497,10 @@ public partial class Taskbar : AppBarWindow
     // muestran): sin segundos, Strata UI despierta una vez por minuto en lugar de cada segundo.
 
     private static DispatcherTimer? _sharedClock;
-    private static event Action? ClockTick;
+    /// <summary>Cambio de minuto (o de segundo): también lo usan los widgets de reloj.</summary>
+    internal static event Action? ClockTick;
 
-    private static void StartSharedClock()
+    internal static void StartSharedClock()
     {
         if (_sharedClock != null)
             return;

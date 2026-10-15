@@ -80,6 +80,12 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
+                <ui:NavigationViewItem Content="{l:T 'Widgets'}" TargetPageType="{x:Type pages:WidgetsPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Apps24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
                 <!-- Optimización: un grupo fijo como Personalización (sin plegar ni desplegar) -->
                 <ui:NavigationViewItemHeader Text="{l:T 'Optimización'}" Margin="0,12,0,0" />
                         <ui:NavigationViewItem Content="{l:T 'Rendimiento'}" TargetPageType="{x:Type pages:PerformancePage}">

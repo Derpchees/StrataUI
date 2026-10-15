@@ -58,6 +58,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **Controlador de NVIDIA** (`Services/Vendors/NvidiaSettings`): NVAPI DRS en un proceso aparte
   (`--nvidia get|set`, escribir pide UAC); IDs de funciones y de ajustes verificados con
   `NvAPI_DRS_GetSettingNameFromId`. Los ajustes de fabricante del catálogo usan `Tweak.Available`.
+- **Widgets** (`Services/Widgets/WidgetManager`, `Widgets/`): una `WidgetWindow` por widget, con la
+  ventana del escritorio como dueña (así sigue a la vista con Win+D) y siempre al fondo; fondo con
+  alfa 1 para que todo el rectángulo reciba el mouse. Posición como fracción del área de trabajo de
+  su monitor. El visualizador usa `AudioSpectrum` (captura de bucle de WASAPI + FFT).
 - **Diálogos de abrir archivo o carpeta**: siempre con `Services/FilePicker` (proceso aparte
   `--pick`); el diálogo de Windows dentro del proceso de Strata UI lo tumbó (corrupción del montón).
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y

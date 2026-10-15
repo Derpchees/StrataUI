@@ -63,6 +63,28 @@ public enum StartIconKind { Strata, Windows, WindowsMono, Circle, Dot, Grid, Sea
 /// </summary>
 public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock }
 
+/// <summary>Widgets de escritorio (ver Services/Widgets).</summary>
+public enum WidgetKind { Clock, Visualizer }
+
+/// <summary>
+/// Un widget del escritorio: su monitor y su posición como fracción del espacio libre del área de
+/// trabajo (0 = arriba/izquierda, 1 = abajo/derecha), así sigue en su lugar si cambia la resolución.
+/// </summary>
+public sealed class WidgetConfig
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public WidgetKind Kind { get; set; }
+    public string? Device { get; set; }
+    public double X { get; set; } = 0.5;
+    public double Y { get; set; } = 0.25;
+    /// <summary>Tamaño: 0,75 chico, 1 mediano, 1,5 grande.</summary>
+    public double Scale { get; set; } = 1;
+    /// <summary>Reloj: la fecha debajo de la hora.</summary>
+    public bool ShowDate { get; set; } = true;
+    /// <summary>No se mueve al arrastrarlo.</summary>
+    public bool Locked { get; set; }
+}
+
 /// <summary>
 /// Dónde va un elemento a lo largo de su barra: al final (derecha o abajo, lo de siempre), al
 /// principio (izquierda o arriba) o en el centro.
@@ -132,6 +154,9 @@ public sealed class StrataSettings
 
     /// <summary>Categorías marcadas en Optimización › Limpieza (null: las que vienen marcadas).</summary>
     public List<string>? CleanupSelection { get; set; }
+
+    /// <summary>Widgets del escritorio (reloj, visualizador de música).</summary>
+    public List<WidgetConfig> Widgets { get; set; } = new();
 
     /// <summary>Apps ancladas a la barra, en orden (IDs del menú Inicio o rutas; ver Services/TaskbarPins).</summary>
     public List<string> TaskbarPins { get; set; } = new();

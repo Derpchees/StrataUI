@@ -7,6 +7,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Widgets de escritorio** (Hub › Widgets): reloj digital con o sin fecha y **visualizador de
+  música** (barras con el acento que siguen lo que suena, con la canción debajo). Viven sobre el
+  fondo, siguen a la vista con "Mostrar escritorio", se mueven arrastrándolos y su clic derecho da
+  tamaño, fecha, bloquear posición y quitar. El visualizador solo se redibuja mientras hay sonido.
 - **Esquemas de color**: Medianoche (negro OLED), Nord, Dracula, Catppuccin Mocha y Latte, Tokyo
   Night, Rosé Pine y Gruvbox, con sus colores y su acento (si se deja el de Windows).
 - **Hub › Colores** (nueva página, separada de Tema): el acento, **colores propios para la barra y
