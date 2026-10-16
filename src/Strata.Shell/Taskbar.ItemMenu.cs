@@ -94,6 +94,7 @@ public partial class Taskbar
         BarItem.Brightness => [(Loc.T("Configuración de pantalla"), "ms-settings:display")],
         BarItem.Volume => [(Loc.T("Configuración de sonido"), "ms-settings:sound")],
         BarItem.Battery => [(Loc.T("Configuración de energía y batería"), "ms-settings:powersleep")],
+        BarItem.Notifications => [(Loc.T("Configuración de notificaciones"), "ms-settings:notifications")],
         BarItem.Clock => [(Loc.T("Configuración de fecha y hora"), "ms-settings:dateandtime"),
                           (Loc.T("Configuración de notificaciones"), "ms-settings:notifications")],
         BarItem.Media => [(Loc.T("Configuración de sonido"), "ms-settings:sound")],

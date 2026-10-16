@@ -90,13 +90,6 @@
             </StackPanel>
             <ui:ToggleSwitch x:Name="DndSwitch" Grid.Column="2" Click="Dnd_Click" />
         </Grid>
-
-        <Separator Margin="0,8" Opacity="0.4" />
-
-        <!-- Calendario, como en Windows -->
-        <TextBlock x:Name="TodayText" Style="{StaticResource FlyoutText}" FontWeight="SemiBold" Margin="4,0,0,4" />
-        <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center">
-            <Calendar x:Name="MonthCalendar" IsTodayHighlighted="True" Focusable="False" />
-        </Viewbox>
+        <!-- El calendario va aparte, en el reloj (CalendarFlyout) -->
     </StackPanel>
 </flyouts:FlyoutWindow>

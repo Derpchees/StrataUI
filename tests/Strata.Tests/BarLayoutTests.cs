@@ -15,8 +15,24 @@ public class BarLayoutTests
         var items = BarLayout.Defaults(Main, new StrataSettings { ShowBatteryModule = true });
         Assert.Equal(
             [BarItem.Start, BarItem.Media, BarItem.Tray, BarItem.Network, BarItem.Bluetooth, BarItem.Brightness,
-             BarItem.Volume, BarItem.Battery, BarItem.Clock],
+             BarItem.Volume, BarItem.Battery, BarItem.Clock, BarItem.Notifications],
             items);
+    }
+
+    [Fact]
+    public void Bars_chosen_by_hand_get_the_bell_next_to_the_clock_once()
+    {
+        var s = new StrataSettings();
+        s.BarItems["A|1"] = [BarItem.Start, BarItem.Clock, BarItem.Volume];
+        s.BarItems["B|1"] = [BarItem.Start];
+        Assert.True(BarLayout.AddNotificationBell(s));
+        Assert.Equal([BarItem.Start, BarItem.Clock, BarItem.Notifications, BarItem.Volume], s.BarItems["A|1"]);
+        Assert.Equal([BarItem.Start], s.BarItems["B|1"]);
+
+        // Si después se quita, no vuelve.
+        s.BarItems["A|1"].Remove(BarItem.Notifications);
+        Assert.False(BarLayout.AddNotificationBell(s));
+        Assert.DoesNotContain(BarItem.Notifications, s.BarItems["A|1"]);
     }
 
     [Fact]

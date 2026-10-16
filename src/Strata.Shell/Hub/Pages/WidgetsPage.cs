@@ -26,7 +26,7 @@ public sealed class WidgetsPage : Page
         {
             Icon = SymbolRegular.Apps24,
             Title = Loc.T("Widgets"),
-            Subtitle = Loc.T("Relojes y un visualizador de música sobre el fondo de pantalla. Arrástralos para moverlos; clic derecho para su tamaño y opciones."),
+            Subtitle = Loc.T("Relojes, un visualizador de música y medidores de CPU, GPU y FPS sobre el fondo de pantalla. Arrástralos para moverlos; clic derecho para su tamaño y opciones."),
         });
 
         content.Children.Add(new TextBlock { Style = (Style)FindResource("HubSectionTitle"), Text = Loc.T("Agregar") });
@@ -34,6 +34,9 @@ public sealed class WidgetsPage : Page
         add.Children.Add(AddButton(SymbolRegular.Clock24, Loc.T("Reloj"), () => WidgetManager.Add(WidgetKind.Clock, showDate: false)));
         add.Children.Add(AddButton(SymbolRegular.CalendarClock24, Loc.T("Reloj con fecha"), () => WidgetManager.Add(WidgetKind.Clock, showDate: true)));
         add.Children.Add(AddButton(SymbolRegular.MusicNote224, Loc.T("Visualizador de música"), () => WidgetManager.Add(WidgetKind.Visualizer)));
+        add.Children.Add(AddButton(SymbolRegular.DeveloperBoard24, Loc.T("Medidor de CPU"), () => WidgetManager.Add(WidgetKind.Cpu)));
+        add.Children.Add(AddButton(SymbolRegular.Gauge24, Loc.T("Medidor de GPU"), () => WidgetManager.Add(WidgetKind.Gpu)));
+        add.Children.Add(AddButton(SymbolRegular.Games24, Loc.T("Contador de FPS"), () => WidgetManager.Add(WidgetKind.Fps)));
         content.Children.Add(add);
         content.Children.Add(new ModulesSection(ModuleKind.Widget,
             Loc.T("Widgets en archivos .json: líneas de texto con la hora, la fecha, la canción que suena o la batería, con sus fuentes y colores."),
@@ -104,6 +107,9 @@ public sealed class WidgetsPage : Page
                     {
                         WidgetKind.Visualizer => SymbolRegular.MusicNote224,
                         WidgetKind.Custom => SymbolRegular.PuzzlePiece24,
+                        WidgetKind.Cpu => SymbolRegular.DeveloperBoard24,
+                        WidgetKind.Gpu => SymbolRegular.Gauge24,
+                        WidgetKind.Fps => SymbolRegular.Games24,
                         _ => SymbolRegular.Clock24,
                     },
                 },
@@ -114,6 +120,9 @@ public sealed class WidgetsPage : Page
     private static string KindName(WidgetConfig widget) => widget.Kind switch
     {
         WidgetKind.Visualizer => Loc.T("Visualizador de música"),
+        WidgetKind.Cpu => Loc.T("Medidor de CPU"),
+        WidgetKind.Gpu => Loc.T("Medidor de GPU"),
+        WidgetKind.Fps => Loc.T("Contador de FPS"),
         WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, widget.Module)?.Name ?? Loc.T("Widget importado"),
         _ => widget.ShowDate ? Loc.T("Reloj con fecha") : Loc.T("Reloj"),
     };

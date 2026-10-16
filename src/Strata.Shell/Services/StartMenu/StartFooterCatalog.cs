@@ -9,6 +9,12 @@ public sealed record StartFooterButton(string Id, string Label, SymbolRegular Ic
 {
     /// <summary>"Energía" abre un menú con todas las opciones en lugar de ejecutar una acción.</summary>
     public bool IsPowerMenu => Run is null;
+
+    /// <summary>
+    /// Punto naranja en el botón de energía cuando hay actualizaciones esperando un reinicio (como en
+    /// Windows): su menú tiene "Actualizar y apagar" y "Actualizar y reiniciar". Se mira al armar el menú.
+    /// </summary>
+    public bool ShowUpdateBadge => IsPowerMenu && StartMenuService.UpdatesPending;
 }
 
 /// <summary>Todos los botones que se pueden poner en el pie del menú Inicio (orden de la lista en el Hub).</summary>

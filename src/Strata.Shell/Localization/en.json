@@ -910,5 +910,15 @@
   "Mostrar contraseña": "Show password",
   "Ocultar contraseña": "Hide password",
   "Actualizar y apagar": "Update and shut down",
-  "Actualizar y reiniciar": "Update and restart"
+  "Actualizar y reiniciar": "Update and restart",
+  "Medidor de CPU": "CPU meter",
+  "Medidor de GPU": "GPU meter",
+  "Activa las lecturas avanzadas": "Turn on advanced readings",
+  "Sin juego en pantalla": "No game on screen",
+  "Relojes, un visualizador de música y medidores de CPU, GPU y FPS sobre el fondo de pantalla. Arrástralos para moverlos; clic derecho para su tamaño y opciones.": "Clocks, a music visualizer and CPU, GPU and FPS meters on your wallpaper. Drag them to move them; right-click for size and options.",
+  "Reloj y calendario": "Clock and calendar",
+  "Calendario": "Calendar",
+  "Volver a hoy": "Back to today",
+  "Mes anterior": "Previous month",
+  "Mes siguiente": "Next month"
 }

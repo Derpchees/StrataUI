@@ -20,7 +20,7 @@ public sealed class BarItemsEditor : UserControl
     private static readonly BarItem[] ListOrder =
     [
         BarItem.Start, BarItem.Tray, BarItem.Media, BarItem.Network, BarItem.Bluetooth, BarItem.Volume, BarItem.Brightness,
-        BarItem.Battery, BarItem.Cpu, BarItem.Gpu, BarItem.Ram, BarItem.Fps, BarItem.FreeRam, BarItem.Clock,
+        BarItem.Battery, BarItem.Cpu, BarItem.Gpu, BarItem.Ram, BarItem.Fps, BarItem.FreeRam, BarItem.Clock, BarItem.Notifications,
     ];
 
     private readonly StackPanel _list = new();

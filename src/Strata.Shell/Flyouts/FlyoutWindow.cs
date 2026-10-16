@@ -288,9 +288,30 @@ public abstract class FlyoutWindow : FluentWindow
     {
         var center = anchor.PointToScreen(new Point(anchor.ActualWidth / 2, 0));
         var work = Forms.Screen.FromPoint(new System.Drawing.Point((int)center.X, (int)center.Y)).WorkingArea;
-        double scale = VisualTreeHelper.GetDpi(this).DpiScaleY;
-        MaxHeight = work.Height / scale - 2 * GapPx - TopOverflow;
+        // La escala del monitor donde se abre, no la de la ventana: se crea en otro (el principal) y
+        // con monitores a distinta escala (100 % y 125 %) el alto máximo salía de más y el panel (el
+        // de notificaciones, que crece con ellas) se salía de la pantalla.
+        double scale = MonitorScale((int)center.X, (int)center.Y) ?? VisualTreeHelper.GetDpi(this).DpiScaleY;
+        MaxHeight = Math.Max(120, work.Height / scale - 2 * GapPx - TopOverflow);
     }
+
+    /// <summary>Escala (1 = 96 ppp) del monitor que contiene ese punto de la pantalla.</summary>
+    private static double? MonitorScale(int x, int y)
+    {
+        var monitor = MonitorFromPoint(new NativePoint { X = x, Y = y }, MonitorDefaultToNearest);
+        return monitor != IntPtr.Zero && GetDpiForMonitor(monitor, 0, out uint dpi, out _) == 0 && dpi > 0 ? dpi / 96.0 : null;
+    }
+
+    private const uint MonitorDefaultToNearest = 2;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint { public int X, Y; }
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr MonitorFromPoint(NativePoint point, uint flags);
+
+    [DllImport("shcore.dll")]
+    private static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint dpiX, out uint dpiY);
 
     private void PositionAbove(FrameworkElement anchor)
     {

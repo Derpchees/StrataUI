@@ -910,5 +910,15 @@
   "Mostrar contraseña": "Afficher le mot de passe",
   "Ocultar contraseña": "Masquer le mot de passe",
   "Actualizar y apagar": "Mettre à jour et arrêter",
-  "Actualizar y reiniciar": "Mettre à jour et redémarrer"
+  "Actualizar y reiniciar": "Mettre à jour et redémarrer",
+  "Medidor de CPU": "Jauge du processeur",
+  "Medidor de GPU": "Jauge du GPU",
+  "Activa las lecturas avanzadas": "Activez les mesures avancées",
+  "Sin juego en pantalla": "Aucun jeu à l’écran",
+  "Relojes, un visualizador de música y medidores de CPU, GPU y FPS sobre el fondo de pantalla. Arrástralos para moverlos; clic derecho para su tamaño y opciones.": "Horloges, un visualiseur de musique et des jauges de processeur, de GPU et d’IPS sur le fond d’écran. Faites-les glisser pour les déplacer ; clic droit pour la taille et les options.",
+  "Reloj y calendario": "Horloge et calendrier",
+  "Calendario": "Calendrier",
+  "Volver a hoy": "Revenir à aujourd’hui",
+  "Mes anterior": "Mois précédent",
+  "Mes siguiente": "Mois suivant"
 }

@@ -277,13 +277,22 @@
                                 <TextBlock x:Name="TimeText" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource StrataForegroundBrush}" />
                                 <TextBlock x:Name="DateText" HorizontalAlignment="Right" FontSize="12" Foreground="{DynamicResource StrataForegroundBrush}" />
                             </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Campana: solo las notificaciones (el reloj abre el calendario) -->
+                    <Button x:Name="NotificationsButton" Style="{StaticResource StatusButton}"
+                            ToolTip="{l:T 'Notificaciones'}" Click="NotificationsButton_Click">
+                        <Grid>
+                            <TextBlock Style="{StaticResource IconText}" Text="&#xEA8F;" />
                             <!-- Notificaciones pendientes en el centro de Strata UI -->
-                            <Border x:Name="NotificationBadge" Visibility="Collapsed" Margin="8,0,0,0" MinWidth="18" Height="18"
-                                    CornerRadius="9" Padding="5,0" VerticalAlignment="Center" Background="{DynamicResource StrataAccentBrush}">
-                                <TextBlock x:Name="NotificationCount" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"
+                            <Border x:Name="NotificationBadge" Visibility="Collapsed" Margin="0,-7,-9,0" MinWidth="15" Height="15"
+                                    CornerRadius="7.5" Padding="3,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Background="{DynamicResource StrataAccentBrush}">
+                                <TextBlock x:Name="NotificationCount" FontSize="9.5" FontWeight="SemiBold" HorizontalAlignment="Center"
                                            VerticalAlignment="Center" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
                             </Border>
-                        </StackPanel>
+                        </Grid>
                     </Button>
     
                     <Border x:Name="ShowDesktopArea" Width="12" Background="Transparent" ToolTip="{l:T 'Mostrar escritorio'}"

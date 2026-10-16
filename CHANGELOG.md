@@ -6,6 +6,27 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.4.0] - 2026-10-16
+
+### Añadido
+- **Widgets de CPU, GPU y FPS**: medidores grandes para el escritorio, un arco de 270° del color de
+  acento con brillo que se mueve con suavidad, el número en el centro y la temperatura (o el juego
+  que se mide, en el de FPS; su arco llega al máximo con la frecuencia del monitor).
+- **Campana de notificaciones en la barra** (con el número de pendientes): abre el centro solo con
+  las notificaciones y "No molestar". Las barras que ya tenían reloj la reciben a su lado.
+- **Punto naranja en el botón de energía de Inicio** cuando hay actualizaciones esperando un
+  reinicio (y entonces su menú tiene "Actualizar y apagar" y "Actualizar y reiniciar").
+
+### Cambiado
+- **El reloj abre el calendario**, en un panel propio con el estilo de los demás (antes traía el
+  calendario con el aspecto de Windows 7, debajo de las notificaciones). Las flechas o la rueda
+  cambian de mes; clic en el mes vuelve a hoy.
+
+### Corregido
+- **El panel de notificaciones se salía de la pantalla** con monitores a distinta escala (100 % y
+  125 %): su alto máximo se calculaba con la escala del monitor donde se creaba la ventana y no con
+  la del monitor donde se abre.
+
 ## [2.3.2] - 2026-10-16
 
 ### Corregido

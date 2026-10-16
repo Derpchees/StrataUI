@@ -6,7 +6,7 @@ using Strata.Shell.Services.Notifications;
 
 namespace Strata.Shell.Flyouts;
 
-/// <summary>Centro de notificaciones de Strata UI: notificaciones, "No molestar" y calendario.</summary>
+/// <summary>Centro de notificaciones de Strata UI (la campana): solo notificaciones y "No molestar".</summary>
 public partial class NotificationFlyout : FlyoutWindow
 {
     public NotificationFlyout()
@@ -14,7 +14,6 @@ public partial class NotificationFlyout : FlyoutWindow
         InitializeComponent();
         NotificationList.ItemsSource = NotificationService.Items;
         DndSwitch.IsChecked = Settings.Current.NotificationDoNotDisturb;
-        TodayText.Text = DateTime.Now.ToString("D");
         NotificationService.Changed += Refresh;
         Closed += (_, _) => NotificationService.Changed -= Refresh;
         Refresh();

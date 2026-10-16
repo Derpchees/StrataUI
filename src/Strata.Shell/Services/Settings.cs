@@ -61,10 +61,10 @@ public enum StartIconKind { Strata, Windows, WindowsMono, Circle, Dot, Grid, Sea
 /// Lo que puede llevar una barra además de las ventanas abiertas. Cada barra tiene su lista, en
 /// orden (Hub › Elementos de la barra); Inicio va siempre delante de las ventanas.
 /// </summary>
-public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock }
+public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock, Notifications }
 
 /// <summary>Widgets de escritorio (ver Services/Widgets).</summary>
-public enum WidgetKind { Clock, Visualizer, Custom }
+public enum WidgetKind { Clock, Visualizer, Custom, Cpu, Gpu, Fps }
 
 /// <summary>
 /// Un widget del escritorio: su monitor y su posición como fracción del espacio libre del área de
@@ -141,6 +141,9 @@ public sealed class StrataSettings
     /// barra sin entrada usa los de siempre (<see cref="BarLayout.Defaults"/>).
     /// </summary>
     public Dictionary<string, List<BarItem>> BarItems { get; set; } = new();
+
+    /// <summary>Ya se agregó la campana de notificaciones junto al reloj de las barras de antes (una sola vez).</summary>
+    public bool NotificationBellAdded { get; set; }
 
     /// <summary>
     /// Zona de la barra de cada elemento (misma clave que <see cref="BarItems"/>); sin entrada, al

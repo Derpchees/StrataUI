@@ -282,6 +282,8 @@ public partial class App : Application
             Log.Info("Monitores: " + _monitors);
             Settings.Update(_ => { });
         }
+        if (BarLayout.AddNotificationBell(Settings.Current))
+            Settings.Save();
 
         var screens = AppBarScreen.FromAllScreens();
         _screenCount = screens.Count;
@@ -486,9 +488,11 @@ public partial class App : Application
     /// <summary>Barra junto a la que aparecen los avisos en pantalla (volumen, brillo, Bloq Mayús…).</summary>
     public Taskbar? OsdTaskbar => StatusTaskbar ?? AppsTaskbar;
 
-    /// <summary>Barra con el reloj (Win+N): la del monitor principal si lo lleva.</summary>
+    /// <summary>Barra con la campana o el reloj (Win+N): la del monitor principal si la lleva.</summary>
     private Taskbar? StatusTaskbar =>
-        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Clock))
+        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Notifications))
+        ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Notifications))
+        ?? _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Clock))
         ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Clock))
         ?? _taskbars.FirstOrDefault(t => t.IsMain);
 

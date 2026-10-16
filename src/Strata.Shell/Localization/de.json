@@ -910,5 +910,15 @@
   "Mostrar contraseña": "Kennwort anzeigen",
   "Ocultar contraseña": "Kennwort ausblenden",
   "Actualizar y apagar": "Aktualisieren und herunterfahren",
-  "Actualizar y reiniciar": "Aktualisieren und neu starten"
+  "Actualizar y reiniciar": "Aktualisieren und neu starten",
+  "Medidor de CPU": "CPU-Anzeige",
+  "Medidor de GPU": "GPU-Anzeige",
+  "Activa las lecturas avanzadas": "Erweiterte Messwerte aktivieren",
+  "Sin juego en pantalla": "Kein Spiel auf dem Bildschirm",
+  "Relojes, un visualizador de música y medidores de CPU, GPU y FPS sobre el fondo de pantalla. Arrástralos para moverlos; clic derecho para su tamaño y opciones.": "Uhren, ein Musikvisualisierer und Anzeigen für CPU, GPU und FPS auf dem Hintergrundbild. Zum Verschieben ziehen; Rechtsklick für Größe und Optionen.",
+  "Reloj y calendario": "Uhr und Kalender",
+  "Calendario": "Kalender",
+  "Volver a hoy": "Zurück zu heute",
+  "Mes anterior": "Vorheriger Monat",
+  "Mes siguiente": "Nächster Monat"
 }

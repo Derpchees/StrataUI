@@ -44,7 +44,23 @@ public static class BarLayout
         if (s.ShowBatteryModule)
             items.Add(BarItem.Battery);
         items.Add(BarItem.Clock);
+        items.Add(BarItem.Notifications);
         return items;
+    }
+
+    /// <summary>
+    /// La campana de notificaciones llegó después que el reloj (que antes abría las notificaciones):
+    /// las barras con reloj elegidas a mano la reciben a su lado, una sola vez. True si cambió algo.
+    /// </summary>
+    public static bool AddNotificationBell(StrataSettings s)
+    {
+        if (s.NotificationBellAdded)
+            return false;
+        s.NotificationBellAdded = true;
+        foreach (var items in s.BarItems.Values)
+            if (items.IndexOf(BarItem.Clock) is var clock and >= 0 && !items.Contains(BarItem.Notifications))
+                items.Insert(clock + 1, BarItem.Notifications);
+        return true;
     }
 
     /// <summary>Zona de un elemento en una barra (al final si no se eligió otra).</summary>
@@ -107,7 +123,8 @@ public static class BarLayout
         BarItem.Ram => Loc.T("Memoria RAM"),
         BarItem.Fps => Loc.T("Contador de FPS"),
         BarItem.FreeRam => Loc.T("Liberar RAM"),
-        BarItem.Clock => Loc.T("Reloj y notificaciones"),
+        BarItem.Clock => Loc.T("Reloj y calendario"),
+        BarItem.Notifications => Loc.T("Notificaciones"),
         _ => item.ToString(),
     };
 
@@ -128,6 +145,7 @@ public static class BarLayout
         BarItem.Fps => Wpf.Ui.Controls.SymbolRegular.Games24,
         BarItem.FreeRam => Wpf.Ui.Controls.SymbolRegular.Broom24,
         BarItem.Clock => Wpf.Ui.Controls.SymbolRegular.Clock24,
+        BarItem.Notifications => Wpf.Ui.Controls.SymbolRegular.Alert24,
         _ => Wpf.Ui.Controls.SymbolRegular.Circle24,
     };
 }

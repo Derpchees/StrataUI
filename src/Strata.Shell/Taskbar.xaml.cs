@@ -242,8 +242,6 @@ public partial class Taskbar : AppBarWindow
         }
         ClockButton.Padding = new Thickness(2, 6, 2, 6);
         ClockContent.Orientation = Orientation.Vertical;
-        NotificationBadge.Margin = new Thickness(0, 4, 0, 0);
-        NotificationBadge.HorizontalAlignment = HorizontalAlignment.Center;
         TimeText.HorizontalAlignment = DateText.HorizontalAlignment = HorizontalAlignment.Center;
         TimeText.FontSize = DateText.FontSize = 11;
 
@@ -757,6 +755,7 @@ public partial class Taskbar : AppBarWindow
         BarItem.Fps => FpsButton,
         BarItem.FreeRam => FreeRamButton,
         BarItem.Clock => ClockButton,
+        BarItem.Notifications => NotificationsButton,
         _ => null, // Inicio va con las ventanas
     };
 
@@ -869,13 +868,20 @@ public partial class Taskbar : AppBarWindow
     private void StartButton_Click(object sender, RoutedEventArgs e) =>
         StartMenu.StartMenuLauncher.Toggle(StartButton);
 
-    private void ClockButton_Click(object sender, RoutedEventArgs e) => ToggleNotificationCenter();
+    /// <summary>El reloj abre el calendario; las notificaciones van en la campana.</summary>
+    private void ClockButton_Click(object sender, RoutedEventArgs e) =>
+        Flyouts.FlyoutManager.Toggle<Flyouts.CalendarFlyout>(ClockButton);
 
-    /// <summary>Centro de notificaciones de Strata UI junto al reloj (o el de Windows si está desactivado).</summary>
+    private void NotificationsButton_Click(object sender, RoutedEventArgs e) => ToggleNotificationCenter();
+
+    /// <summary>
+    /// Centro de notificaciones de Strata UI junto a la campana (o al reloj, si esta barra no la lleva),
+    /// o el de Windows si está desactivado.
+    /// </summary>
     public void ToggleNotificationCenter()
     {
         if (Settings.Current.NotificationsEnabled)
-            Flyouts.FlyoutManager.Toggle<Flyouts.NotificationFlyout>(ClockButton);
+            Flyouts.FlyoutManager.Toggle<Flyouts.NotificationFlyout>(Has(BarItem.Notifications) ? NotificationsButton : ClockButton);
         else
             ShellHelper.ShowNotificationCenter();
     }
@@ -885,6 +891,7 @@ public partial class Taskbar : AppBarWindow
         int count = Services.Notifications.NotificationService.Items.Count;
         NotificationBadge.Visibility = count > 0 && Settings.Current.NotificationsEnabled ? Visibility.Visible : Visibility.Collapsed;
         NotificationCount.Text = count > 99 ? "99+" : count.ToString();
+        NotificationsButton.ToolTip = count > 0 ? Loc.F("{0} notificaciones", count) : Loc.T("Notificaciones");
     }
 
     private static string ClockToolTip()

@@ -220,6 +220,7 @@ public partial class Taskbar
         yield return BrightnessButton;
         yield return VolumeButton;
         yield return BatteryButton;
+        yield return NotificationsButton;
         yield return CpuButton;
         yield return GpuButton;
         yield return RamButton;
