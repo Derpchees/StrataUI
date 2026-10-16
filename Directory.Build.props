@@ -1,7 +1,7 @@
 ﻿<Project>
   <!-- Versión única de toda la solución. Actualízala junto con CHANGELOG.md y el tag de git (vX.Y.Z). -->
   <PropertyGroup>
-    <Version>2.3.1</Version>
+    <Version>2.3.2</Version>
     <Product>Strata UI</Product>
     <Company>Strata UI</Company>
     <Copyright>© 2026 Strata UI</Copyright>

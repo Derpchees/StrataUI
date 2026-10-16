@@ -54,6 +54,16 @@ public sealed class NightLightTests
     }
 
     [Fact]
+    public void Default_settings_match_a_real_pc_except_the_time()
+    {
+        var real = Convert.FromHexString("434201000A0201002A069ADB9AD2062A2B0E1943420100CA140E1500CA1E0E0700CF28DC4CCA3200CA3C0000000000");
+        var created = NightLight.DefaultSettings(DateTimeOffset.FromUnixTimeSeconds(1_791_224_347));
+        Assert.Equal(real.Length, created.Length);
+        Assert.Equal(real[15..], created[15..]);
+        Assert.Equal(1_791_224_347, NightLight.ReadVarint(created, 10));
+    }
+
+    [Fact]
     public void Writes_the_time_as_a_varint()
     {
         Assert.Equal(Convert.FromHexString("9BD48FD606"), NightLight.Varint(1_791_224_347));

@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.3.2] - 2026-10-16
+
+### Corregido
+- Luz nocturna en un equipo donde nunca se usó: además del estado se crean sus ajustes (intensidad y
+  horario, con los de fábrica), que Windows necesita para aplicarla; y si el valor guardado tiene un
+  formato desconocido (otra versión de Windows), se reemplaza por uno válido en vez de no hacer nada.
+
 ## [2.3.1] - 2026-10-16
 
 ### Corregido

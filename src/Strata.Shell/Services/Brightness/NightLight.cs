@@ -33,9 +33,15 @@ public static class NightLight
     {
         try
         {
-            var data = Read() ?? Initial(DateTimeOffset.UtcNow);
-            if (With(data, on, DateTimeOffset.UtcNow.ToUnixTimeSeconds()) is not { } changed)
+            var now = DateTimeOffset.UtcNow;
+            // Sin valor (nunca se usó) o con uno de formato desconocido (otra versión de Windows): se
+            // empieza de uno válido, apagada. Antes, con un formato desconocido, no se cambiaba nada.
+            var data = Read() is { } current && IsEnabled(current) != null ? current : Initial(now);
+            if (With(data, on, now.ToUnixTimeSeconds()) is not { } changed)
                 return false;
+            // Sin la intensidad y el horario, Windows puede ignorar el estado: se crean con los de
+            // siempre si no están.
+            EnsureSettings(now);
             using var key = Registry.CurrentUser.CreateSubKey(StateKey, writable: true);
             if (key is null)
                 return false;
@@ -53,6 +59,36 @@ public static class NightLight
     /// <summary>Abre Configuración › Pantalla › Luz nocturna (intensidad y horario).</summary>
     public static void OpenSettings() =>
         Process.Start(new ProcessStartInfo("ms-settings:nightlight") { UseShellExecute = true });
+
+    private const string SettingsKey =
+        @"Software\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\" +
+        @"default$windows.data.bluelightreduction.settings\windows.data.bluelightreduction.settings";
+
+    /// <summary>Crea los ajustes de la luz nocturna (intensidad y horario) si Windows todavía no los tiene.</summary>
+    private static void EnsureSettings(DateTimeOffset now)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(SettingsKey, writable: true);
+        if (key?.GetValue("Data") is byte[] { Length: > 0 })
+            return;
+        key?.SetValue("Data", DefaultSettings(now), RegistryValueKind.Binary);
+        Log.Info("Luz nocturna: se crearon sus ajustes (nunca se había usado en este equipo)");
+    }
+
+    /// <summary>
+    /// Ajustes que escribe Windows con los valores de fábrica (los de un equipo real, 47 bytes):
+    /// intensidad media ("CF 28 DC 4C") y sin horario. Solo cambia la hora del cambio (bytes 10–14).
+    /// </summary>
+    internal static byte[] DefaultSettings(DateTimeOffset now)
+    {
+        var data = new List<byte> { 0x43, 0x42, 0x01, 0x00, 0x0A, 0x02, 0x01, 0x00, 0x2A, 0x06 };
+        data.AddRange(Varint(now.ToUnixTimeSeconds()));
+        data.AddRange(new byte[]
+        {
+            0x2A, 0x2B, 0x0E, 0x19, 0x43, 0x42, 0x01, 0x00, 0xCA, 0x14, 0x0E, 0x15, 0x00, 0xCA, 0x1E, 0x0E,
+            0x07, 0x00, 0xCF, 0x28, 0xDC, 0x4C, 0xCA, 0x32, 0x00, 0xCA, 0x3C, 0x00, 0x00, 0x00, 0x00, 0x00,
+        });
+        return data.ToArray();
+    }
 
     private static byte[]? Read()
     {
