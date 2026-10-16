@@ -6,6 +6,18 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.4.2] - 2026-10-16
+
+### Cambiado
+- **Sonido de notificación propio**: un solo tono corto y redondo (Do5, como de vibráfono), en vez
+  del de Windows, que es muy suave.
+
+### Corregido
+- **El sonido de las notificaciones no se oía** en laptops: la tarjeta de sonido se duerme para
+  ahorrar energía y lo primero que le llega se pierde (en un sonido corto, todo). Ahora va precedido
+  de un ruido inaudible que la despierta, y se reproduce con MediaPlayer (PlaySound devolvía éxito
+  sin que se oyera nada).
+
 ## [2.4.1] - 2026-10-16
 
 ### Añadido
