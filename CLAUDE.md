@@ -77,6 +77,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   clásico en HKCU. El texto de ese .exe lo escribe Strata UI ya traducido. Publisher, nombre del
   paquete y CLSID deben coincidir entre el manifiesto del paquete, `app.manifest` y `Program.Clsid`.
   Registrar el paquete en esta PC pide confiar en el certificado (UAC).
+- **Catálogo del menú Inicio**: `shell:AppsFolder` (lo mismo que "Todas las apps" de Windows) más
+  `Services/StartMenu/ExtraApps` (juegos de Steam, Epic y GOG y accesos directos del escritorio a
+  programas o juegos), leído en segundo plano; solo se agrega lo que no tiene ya una app con ese
+  nombre. Una fuente nueva va en `ExtraApps.Scan` y su carpeta en `WatchedFolders`.
 - **Diálogos de abrir archivo o carpeta**: siempre con `Services/FilePicker` (proceso aparte
   `--pick`); el diálogo de Windows dentro del proceso de Strata UI lo tumbó (corrupción del montón).
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y
