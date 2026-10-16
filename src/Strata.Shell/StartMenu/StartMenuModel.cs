@@ -220,6 +220,8 @@ public static class StartCommands
             case "Sleep": StartMenuService.Sleep(); break;
             case "Restart": StartMenuService.Restart(); break;
             case "PowerOff": StartMenuService.PowerOff(); break;
+            case "UpdateRestart": StartMenuService.UpdateAndRestart(); break;
+            case "UpdatePowerOff": StartMenuService.UpdateAndPowerOff(); break;
         }
     });
 

@@ -29,6 +29,19 @@ public static class TaskbarPins
         Commit();
     }
 
+    /// <summary>
+    /// Se soltó una app arrastrada desde el menú Inicio: si quedó sobre una barra con anclados, se
+    /// ancla a la barra. Devuelve true si se ancló (o ya lo estaba).
+    /// </summary>
+    public static bool DropOnTaskbar(string id)
+    {
+        if (!App.Current.Taskbars.Any(bar => bar.AcceptsPinDrop()))
+            return false;
+        Pin(id);
+        Log.Info($"Anclada a la barra arrastrándola desde Inicio: {id}");
+        return true;
+    }
+
     public static void Unpin(string id)
     {
         if (Settings.Current.TaskbarPins.RemoveAll(p => p.Equals(id, StringComparison.OrdinalIgnoreCase)) > 0)

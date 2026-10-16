@@ -19,6 +19,18 @@ public partial class Taskbar
     /// <summary>Esta barra muestra los anclados (las que llevan ventanas).</summary>
     private bool ShowsPins => Role.ShowsApps;
 
+    /// <summary>
+    /// El puntero está sobre esta barra y la barra lleva anclados: ahí se puede soltar una app del menú
+    /// Inicio para anclarla.
+    /// </summary>
+    public bool AcceptsPinDrop()
+    {
+        if (!ShowsPins || !IsVisible)
+            return false;
+        GetCursorPos(out var cursor);
+        return ScreenRect(BarBorder, 0).Contains(new Point(cursor.X, cursor.Y));
+    }
+
     private void WatchPins()
     {
         PinnedList.ItemsSource = _pinSlots;

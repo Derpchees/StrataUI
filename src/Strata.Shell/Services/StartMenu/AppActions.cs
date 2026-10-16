@@ -21,6 +21,11 @@ public static class AppActions
     {
         if (IsPackaged(app))
             return null;
+        // Juego de Steam, Epic o GOG: su ejecutable principal (el del ícono).
+        if (app.ExtraData is { } extra)
+            return extra.IconSource.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && File.Exists(extra.IconSource)
+                ? extra.IconSource
+                : null;
         if (app.IsFile && !app.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
             return File.Exists(app.Id) ? app.Id : null;
         var path = ReadString(app.IsFile ? app.Id : "shell:AppsFolder\\" + app.Id, LinkTargetParsingPath);

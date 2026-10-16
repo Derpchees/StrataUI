@@ -17,6 +17,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   otro; en su lugar queda tenue.
 - **Contraseña de Wi-Fi como en el teléfono**: el último carácter escrito se ve un momento y un ojo
   muestra la contraseña entera para revisarla.
+- **Anclar a la barra arrastrando desde Inicio**: una app de los anclados, de la lista de apps o de
+  la búsqueda, soltada sobre la barra, queda anclada ahí.
+- **El menú Inicio encuentra más de lo instalado**: además del catálogo de Windows (tienda e
+  instaladores), los juegos de Steam, Epic y GOG aunque no tengan acceso directo en Inicio, y los
+  accesos directos del escritorio a programas o juegos. Se actualiza al instalar o quitar un juego.
+- **"Actualizar y apagar" y "Actualizar y reiniciar"** en el menú de energía de Inicio y en Win+X,
+  como en Windows: aparecen cuando hay actualizaciones esperando un reinicio y las instalan.
 - La flecha de los íconos ocultos de la bandeja gira: abierta apunta hacia donde se abre su panel y
   cerrada, al lado contrario (en los cuatro bordes).
 

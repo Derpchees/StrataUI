@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Strata.Shell.Flyouts;
 using Strata.Shell.Services;
+using Strata.Shell.Services.StartMenu;
 
 namespace Strata.Shell.StartMenu;
 
@@ -27,6 +28,7 @@ public abstract class StartMenuBase : FlyoutWindow
                 AddResizeGrips();
             SearchInput?.Focus();
         };
+        WatchAppDrag();
         PreviewTextInput += (_, e) =>
         {
             // Empezar a escribir con el foco en otro control lleva el texto al buscador.
@@ -77,6 +79,86 @@ public abstract class StartMenuBase : FlyoutWindow
     protected void OnShowAllApps(object sender, RoutedEventArgs e) => Model.ShowAllApps = true;
 
     protected void OnBackToHome(object sender, RoutedEventArgs e) => Model.ShowAllApps = false;
+
+    // ── Arrastrar una app a la barra ────────────────────────────────────────
+    // Desde la lista de apps o los resultados de búsqueda (los anclados tienen su propio arrastre en
+    // PinnedLayoutView): la app va con el puntero y, soltada sobre una barra, se ancla ahí.
+
+    private StartApp? _pressedApp;
+    private FrameworkElement? _pressedElement;
+    private Point _pressPoint;
+    private bool _appDragging;
+
+    private void WatchAppDrag()
+    {
+        PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            _pressedApp = null;
+            // Un Run de un texto no es Visual: su padre se busca en el árbol lógico.
+            static DependencyObject? Parent(DependencyObject node) =>
+                node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node);
+            for (var node = e.OriginalSource as DependencyObject; node != null && !ReferenceEquals(node, this); node = Parent(node))
+            {
+                if (node is PinnedLayoutView)
+                    return;
+                if (node is FrameworkElement { DataContext: StartApp app } element and (Button or ListBoxItem or ContentPresenter))
+                {
+                    _pressedApp = app;
+                    _pressedElement = element;
+                    _pressPoint = e.GetPosition(this);
+                    return;
+                }
+            }
+        };
+        PreviewMouseMove += (_, e) =>
+        {
+            if (_appDragging)
+            {
+                Controls.DragGhost.Move();
+                return;
+            }
+            if (_pressedApp is null || e.LeftButton != MouseButtonState.Pressed)
+                return;
+            var delta = e.GetPosition(this) - _pressPoint;
+            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
+                return;
+            // La captura la toma el menú: así el botón no se "pulsa" al soltar.
+            if (!CaptureMouse())
+                return;
+            _appDragging = true;
+            if (_pressedElement != null)
+                Controls.DragGhost.Begin(_pressedElement);
+        };
+        PreviewMouseLeftButtonUp += (_, e) =>
+        {
+            if (!_appDragging)
+            {
+                _pressedApp = null;
+                return;
+            }
+            var app = _pressedApp;
+            EndAppDrag();
+            if (app != null)
+                TaskbarPins.DropOnTaskbar(app.Id);
+            e.Handled = true;
+        };
+        LostMouseCapture += (_, e) =>
+        {
+            if (_appDragging && ReferenceEquals(e.OriginalSource, this))
+                EndAppDrag();
+        };
+    }
+
+    private void EndAppDrag()
+    {
+        _appDragging = false;
+        _pressedApp = null;
+        _pressedElement = null;
+        Controls.DragGhost.End();
+        if (IsMouseCaptured)
+            ReleaseMouseCapture();
+    }
 
     // ── Tamaño ──────────────────────────────────────────────────────────────
 

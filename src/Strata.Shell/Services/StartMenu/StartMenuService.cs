@@ -15,6 +15,13 @@ public sealed class StartApp : INotifyPropertyChanged
 {
     private readonly ShellItem _item;
     private readonly string? _path;
+    private readonly ExtraApp? _extra;
+
+    /// <summary>App de fuera de shell:AppsFolder (juego de Steam, Epic, GOG o acceso directo del escritorio).</summary>
+    internal StartApp(ShellItem iconItem, ExtraApp extra) : this(iconItem)
+    {
+        _extra = extra;
+    }
 
     /// <param name="path">Ruta del archivo, acceso directo o carpeta anclado (null en las apps del catálogo).</param>
     internal StartApp(ShellItem item, string? path = null)
@@ -30,8 +37,8 @@ public sealed class StartApp : INotifyPropertyChanged
     }
 
     /// <summary>Identificador estable: AppUserModelID, ruta del acceso directo o del archivo anclado.</summary>
-    public string Id => _path ?? _item.FileName ?? _item.Path;
-    public string Name => _item.DisplayName ?? Id;
+    public string Id => _extra?.Id ?? _path ?? _item.FileName ?? _item.Path;
+    public string Name => _extra?.Name ?? _item.DisplayName ?? Id;
     /// <summary>El ícono elegido con "Cambiar ícono" o, si no hay, el de Windows.</summary>
     public ImageSource? Icon => CustomIcons.Get(Id) ?? _item.LargeIcon;
     public string Group => GroupOf(Name);
@@ -44,7 +51,11 @@ public sealed class StartApp : INotifyPropertyChanged
     // Para el menú contextual (se consultan al abrirlo).
     public bool CanOpenLocation => AppActions.CanOpenLocation(this);
     public bool CanRunAsAdmin => AppActions.CanRunAsAdmin(this);
-    public bool CanUninstall => !IsFile;
+    public bool CanUninstall => !IsFile && _extra is null;
+
+    /// <summary>No viene de shell:AppsFolder (ver <see cref="ExtraApps"/>).</summary>
+    public bool IsExtra => _extra != null;
+    internal ExtraApp? ExtraData => _extra;
     public bool HasCustomIcon => CustomIcons.Has(Id);
 
     internal void NotifyPinned() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinned)));
@@ -66,7 +77,9 @@ public sealed class StartApp : INotifyPropertyChanged
     {
         try
         {
-            Process.Start(IsFile
+            Process.Start(_extra is { } extra
+                ? new ProcessStartInfo(extra.Launch) { UseShellExecute = true, WorkingDirectory = extra.WorkingDirectory ?? "" }
+                : IsFile
                 ? new ProcessStartInfo(Id) { UseShellExecute = true }
                 : new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{Id}") { UseShellExecute = true });
         }
@@ -186,6 +199,7 @@ public static class StartMenuService
                 app.NotifyIcon();
         };
         WatchStartFolders();
+        ScanExtras();
     }
 
     public static void Shutdown()
@@ -214,14 +228,20 @@ public static class StartMenuService
 
     private static void WatchStartFolders()
     {
+        // También las bibliotecas de Steam y Epic y el escritorio: instalar o quitar un juego, o un
+        // acceso directo de programa, cambia la lista.
+        var extra = ExtraApps.WatchedFolders()
+            .Concat(new[] { Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.CommonDesktopDirectory }
+                        .Select(Environment.GetFolderPath))
+            .Where(Directory.Exists).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var root in new[] { Environment.SpecialFolder.Programs, Environment.SpecialFolder.CommonPrograms }
-                     .Select(Environment.GetFolderPath).Where(Directory.Exists))
+                     .Select(Environment.GetFolderPath).Where(Directory.Exists).Concat(extra))
         {
             try
             {
                 var watcher = new FileSystemWatcher(root)
                 {
-                    IncludeSubdirectories = true,
+                    IncludeSubdirectories = !extra.Contains(root),
                     NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
                 };
                 FileSystemEventHandler changed = (_, _) => Application.Current?.Dispatcher.BeginInvoke(Refresh);
@@ -261,6 +281,7 @@ public static class StartMenuService
     private static void OnRefreshTick(object? sender, EventArgs e)
     {
         _refreshTimer!.Stop();
+        ScanExtras();
         _pendingFolder?.Dispose();
         _swapTimer ??= CreateSwapTimer();
         _pendingFolder = OpenAppsFolder(() =>
@@ -367,6 +388,47 @@ public static class StartMenuService
         resources["StartLargeTileWidth"] = large * 2.6;
     }
 
+    // ── Apps de fuera del catálogo de Windows (ver ExtraApps) ───────────────
+
+    private static List<ExtraApp> _extraFound = new();
+    private static readonly Dictionary<string, StartApp> _extraApps = new(StringComparer.OrdinalIgnoreCase);
+    private static bool _scanning;
+
+    /// <summary>Busca juegos y accesos directos en segundo plano y vuelve a armar la lista con ellos.</summary>
+    private static async void ScanExtras()
+    {
+        if (_scanning)
+            return;
+        _scanning = true;
+        try
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            _extraFound = await Task.Run(ExtraApps.Scan);
+            Log.Info($"Apps de fuera del catálogo ({watch.ElapsedMilliseconds} ms): " + string.Join(" | ", _extraFound.Select(a => a.Name)));
+            Rebuild();
+        }
+        finally
+        {
+            _scanning = false;
+        }
+    }
+
+    /// <summary>La misma entrada mientras no cambie (así no se vuelve a leer su ícono).</summary>
+    private static StartApp? ExtraStartApp(ExtraApp extra)
+    {
+        if (_extraApps.TryGetValue(extra.Id, out var known) && known.ExtraData == extra)
+            return known;
+        try
+        {
+            return _extraApps[extra.Id] = new StartApp(new ShellItem(extra.IconSource), extra);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo leer el ícono de {extra.Name}", ex);
+            return null;
+        }
+    }
+
     private static void Rebuild()
     {
         if (_appsFolder is null)
@@ -380,11 +442,17 @@ public static class StartMenuService
     {
         if (_appsFolder is null)
             return;
-        var items = _appsFolder.Files.ToList()
+        var catalog = _appsFolder.Files.ToList()
             .Select(f => new StartApp(f))
             .Where(a => !IsNoise(a.Name))
-            .OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
+        // Lo que no está en el catálogo de Windows (juegos de Steam, Epic y GOG, accesos directos del
+        // escritorio), salvo que ya haya una app con ese nombre.
+        var names = catalog.Select(a => a.Name).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
+        foreach (var extra in _extraFound)
+            if (names.Add(extra.Name) && ExtraStartApp(extra) is { } app)
+                catalog.Add(app);
+        var items = catalog.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
 
         Apps.Clear();
         foreach (var app in items)
@@ -552,6 +620,99 @@ public static class StartMenuService
 
     private static void Shutdown(string args) =>
         Process.Start(new ProcessStartInfo("shutdown.exe", args) { CreateNoWindow = true, UseShellExecute = false });
+
+    /// <summary>
+    /// Hay actualizaciones de Windows esperando un reinicio: el menú de energía ofrece "Actualizar y
+    /// apagar" y "Actualizar y reiniciar", como el de Windows (que lee las mismas marcas).
+    /// </summary>
+    public static bool UpdatesPending
+    {
+        get
+        {
+            try
+            {
+                using var orchestrator = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\WindowsUpdate\Orchestrator");
+                if (orchestrator?.GetValue("ShutdownFlyoutOptions") is int options && options != 0)
+                    return true;
+                using var required = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired");
+                using var pending = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                    @"SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending");
+                return required != null || pending != null;
+            }
+            catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+    }
+
+    /// <summary>Instala las actualizaciones pendientes y apaga (como "Actualizar y apagar" de Windows).</summary>
+    public static void UpdateAndPowerOff() => InstallUpdatesAnd(ShutdownPowerOff);
+
+    /// <summary>Instala las actualizaciones pendientes y reinicia.</summary>
+    public static void UpdateAndRestart() => InstallUpdatesAnd(ShutdownRestart);
+
+    /// <summary>
+    /// InitiateShutdown con SHUTDOWN_INSTALL_UPDATES: Windows instala lo pendiente antes de apagar o
+    /// reiniciar. Necesita el privilegio de apagado del proceso, que se activa antes.
+    /// </summary>
+    private static void InstallUpdatesAnd(uint action)
+    {
+        EnableShutdownPrivilege();
+        uint error = InitiateShutdown(null, null, 0, action | ShutdownInstallUpdates | ShutdownForceOthers,
+                                      ReasonMajorOperatingSystem | ReasonMinorUpgrade | ReasonFlagPlanned);
+        if (error != 0)
+        {
+            Log.Info($"InitiateShutdown con actualizaciones falló ({error}); se apaga sin ellas");
+            Shutdown(action == ShutdownRestart ? "/r /t 0" : "/s /t 0");
+        }
+    }
+
+    private static void EnableShutdownPrivilege()
+    {
+        if (!OpenProcessToken(Process.GetCurrentProcess().Handle, TokenAdjustPrivileges | TokenQuery, out var token))
+            return;
+        try
+        {
+            if (!LookupPrivilegeValue(null, "SeShutdownPrivilege", out long luid))
+                return;
+            var privileges = new TokenPrivileges { Count = 1, Luid = luid, Attributes = SePrivilegeEnabled };
+            AdjustTokenPrivileges(token, false, ref privileges, 0, IntPtr.Zero, IntPtr.Zero);
+        }
+        finally
+        {
+            CloseHandle(token);
+        }
+    }
+
+    private const uint ShutdownForceOthers = 0x1, ShutdownRestart = 0x4, ShutdownPowerOff = 0x8, ShutdownInstallUpdates = 0x40;
+    private const uint ReasonMajorOperatingSystem = 0x00020000, ReasonMinorUpgrade = 0x3, ReasonFlagPlanned = 0x80000000;
+    private const uint TokenAdjustPrivileges = 0x20, TokenQuery = 0x8, SePrivilegeEnabled = 0x2;
+
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    private struct TokenPrivileges
+    {
+        public uint Count;
+        public long Luid;
+        public uint Attributes;
+    }
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+    private static extern uint InitiateShutdown(string? machine, string? message, uint grace, uint flags, uint reason);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+
+    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern bool LookupPrivilegeValue(string? system, string name, out long luid);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool AdjustTokenPrivileges(IntPtr token, bool disableAll, ref TokenPrivileges state, uint length,
+                                                     IntPtr previous, IntPtr returnLength);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
 
     [DllImport("powrprof.dll")]
     private static extern bool SetSuspendState(bool hibernate, bool force, bool disableWakeEvent);

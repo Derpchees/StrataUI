@@ -29,6 +29,10 @@ public partial class StartFooter : UserControl
         if (button.IsPowerMenu)
         {
             var menu = (ContextMenu)FindResource("PowerMenu");
+            var updates = StartMenuService.UpdatesPending ? Visibility.Visible : Visibility.Collapsed;
+            foreach (var item in menu.Items.OfType<MenuItem>())
+                if (item.CommandParameter is "UpdateRestart" or "UpdatePowerOff")
+                    item.Visibility = updates;
             menu.PlacementTarget = source;
             menu.IsOpen = true;
             return;

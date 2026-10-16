@@ -16,8 +16,15 @@
             <MenuItem Header="{l:T 'Suspender'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="Sleep">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="WeatherMoon24" /></MenuItem.Icon>
             </MenuItem>
+            <!-- Solo con actualizaciones esperando un reinicio (StartFooter.FooterButton_Click) -->
+            <MenuItem Header="{l:T 'Actualizar y reiniciar'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="UpdateRestart">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="ArrowSync24" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="{l:T 'Reiniciar'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="Restart">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="ArrowClockwise24" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{l:T 'Actualizar y apagar'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="UpdatePowerOff">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="ArrowSync24" /></MenuItem.Icon>
             </MenuItem>
             <MenuItem Header="{l:T 'Apagar'}" Command="{x:Static start:StartCommands.Power}" CommandParameter="PowerOff">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="Power24" /></MenuItem.Icon>

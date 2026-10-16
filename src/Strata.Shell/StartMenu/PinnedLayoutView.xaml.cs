@@ -19,7 +19,11 @@ namespace Strata.Shell.StartMenu;
 public partial class PinnedLayoutView : UserControl
 {
     /// <summary>Lo que se arrastra: un elemento del diseño o una app que sale de una carpeta.</summary>
-    private sealed record PinDrag(string? EntryId, string? AppId, string? FromFolderId);
+    private sealed record PinDrag(string? EntryId, string? AppId, string? FromFolderId)
+    {
+        /// <summary>La app que se arrastra (para anclarla a la barra si se suelta encima).</summary>
+        public string? App { get; init; } = AppId;
+    }
 
     private Point _dragStart;
     private object? _dragSource;
@@ -68,7 +72,7 @@ public partial class PinnedLayoutView : UserControl
             PinFolderView folder => folder.Preview.FirstOrDefault(),
             _ => null,
         };
-        BeginDrag(new PinDrag(entryId, null, null), icon, e.GetPosition(this));
+        BeginDrag(new PinDrag(entryId, null, null) { App = (tile.DataContext as StartApp)?.Id }, icon, e.GetPosition(this));
         tile.Opacity = 0.4;
     }
 
@@ -139,6 +143,12 @@ public partial class PinnedLayoutView : UserControl
     private void EndDrag(Point position)
     {
         var drag = _drag!;
+        // Soltada sobre la barra de tareas: se ancla ahí (y en Inicio queda donde estaba).
+        if (drag.App is { } app && Services.TaskbarPins.DropOnTaskbar(app))
+        {
+            CancelDrag();
+            return;
+        }
         var tile = TileAt(position);
         var section = SectionAt(position);
         var cell = tile is null ? CellAt(position) : null;

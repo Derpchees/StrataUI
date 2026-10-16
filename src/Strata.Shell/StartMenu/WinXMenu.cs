@@ -38,8 +38,18 @@ public static class WinXMenu
         var power = new MenuItem { Header = Loc.T("Apagar o cerrar sesión") };
         Add(power, Loc.T("Cerrar sesión"), StartMenuService.SignOut);
         Add(power, Loc.T("Suspender"), StartMenuService.Sleep);
+        // Como en Windows: solo con actualizaciones esperando un reinicio (se mira al abrir el submenú).
+        var updateOff = Item(Loc.T("Actualizar y apagar"), StartMenuService.UpdateAndPowerOff);
+        var updateRestart = Item(Loc.T("Actualizar y reiniciar"), StartMenuService.UpdateAndRestart);
+        power.Items.Add(updateOff);
         Add(power, Loc.T("Apagar"), StartMenuService.PowerOff);
+        power.Items.Add(updateRestart);
         Add(power, Loc.T("Reiniciar"), StartMenuService.Restart);
+        power.SubmenuOpened += (_, _) =>
+        {
+            var visibility = StartMenuService.UpdatesPending ? Visibility.Visible : Visibility.Collapsed;
+            updateOff.Visibility = updateRestart.Visibility = visibility;
+        };
         menu.Items.Add(power);
         Add(menu, Loc.T("Escritorio"), ShowDesktop);
         return menu;
@@ -66,11 +76,13 @@ public static class WinXMenu
         }
     }
 
-    private static void Add(ItemsControl parent, string header, Action action)
+    private static void Add(ItemsControl parent, string header, Action action) => parent.Items.Add(Item(header, action));
+
+    private static MenuItem Item(string header, Action action)
     {
         var item = new MenuItem { Header = header };
         item.Click += (_, _) => action();
-        parent.Items.Add(item);
+        return item;
     }
 
     private static void Open(string target, bool elevated = false)
