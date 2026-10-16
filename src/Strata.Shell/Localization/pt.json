@@ -920,5 +920,7 @@
   "Calendario": "Calendário",
   "Volver a hoy": "Voltar para hoje",
   "Mes anterior": "Mês anterior",
-  "Mes siguiente": "Próximo mês"
+  "Mes siguiente": "Próximo mês",
+  "Sonido de notificación": "Som de notificação",
+  "El sonido de notificación de Windows con cada aviso (se cambia en Configuración › Sonido).": "O som de notificação do Windows a cada aviso (altere em Configurações › Som)."
 }

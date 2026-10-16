@@ -242,6 +242,8 @@ public sealed class StrataSettings
     public bool NotificationsEnabled { get; set; } = true;
     /// <summary>Avisos emergentes cuando llega una notificación.</summary>
     public bool NotificationBanners { get; set; } = true;
+    /// <summary>Sonido de notificación de Windows con cada aviso emergente.</summary>
+    public bool NotificationSounds { get; set; } = true;
     /// <summary>Monitor de los avisos (nombre de dispositivo); null = el principal de Strata UI.</summary>
     public string? NotificationScreen { get; set; }
     public NotificationCorner NotificationCorner { get; set; } = NotificationCorner.BottomRight;

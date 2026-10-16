@@ -100,6 +100,17 @@
                 </ui:CardControl>
 
                 <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Speaker224" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Sonido de notificación'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'El sonido de notificación de Windows con cada aviso (se cambia en Configuración › Sonido).'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="SoundsSwitch" Click="Sounds_Click" />
+                </ui:CardControl>
+
+                <ui:CardControl Style="{StaticResource HubCard}">
                     <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlertSnooze24" /></ui:CardControl.Icon>
                     <ui:CardControl.Header>
                         <StackPanel>

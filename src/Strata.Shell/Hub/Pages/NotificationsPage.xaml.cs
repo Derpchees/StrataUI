@@ -21,6 +21,7 @@ public partial class NotificationsPage : Page
         var s = Settings.Current;
         EnabledSwitch.IsChecked = s.NotificationsEnabled;
         BannersSwitch.IsChecked = s.NotificationBanners;
+        SoundsSwitch.IsChecked = s.NotificationSounds;
         DndSwitch.IsChecked = s.NotificationDoNotDisturb;
         DurationBox.SelectedItem = DurationBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == s.NotificationSeconds.ToString()) ?? DurationBox.Items[1];
@@ -94,6 +95,9 @@ public partial class NotificationsPage : Page
 
     private void Banners_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.NotificationBanners = BannersSwitch.IsChecked == true);
+
+    private void Sounds_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.NotificationSounds = SoundsSwitch.IsChecked == true);
 
     private void Dnd_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.NotificationDoNotDisturb = DndSwitch.IsChecked == true);

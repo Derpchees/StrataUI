@@ -6,6 +6,12 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.4.1] - 2026-10-16
+
+### Añadido
+- **Sonido en las notificaciones**: cada aviso emergente suena con el sonido de notificación de
+  Windows (el del esquema de sonidos, con su volumen). Se apaga en Hub › Notificaciones.
+
 ## [2.4.0] - 2026-10-16
 
 ### Añadido

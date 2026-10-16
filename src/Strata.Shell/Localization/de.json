@@ -920,5 +920,7 @@
   "Calendario": "Kalender",
   "Volver a hoy": "Zurück zu heute",
   "Mes anterior": "Vorheriger Monat",
-  "Mes siguiente": "Nächster Monat"
+  "Mes siguiente": "Nächster Monat",
+  "Sonido de notificación": "Benachrichtigungston",
+  "El sonido de notificación de Windows con cada aviso (se cambia en Configuración › Sonido).": "Der Windows-Benachrichtigungston bei jeder Benachrichtigung (änderbar unter Einstellungen › Sound)."
 }

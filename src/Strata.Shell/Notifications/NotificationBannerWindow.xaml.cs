@@ -49,7 +49,22 @@ public partial class NotificationBannerWindow : Window
     {
         _instance ??= new NotificationBannerWindow();
         _instance.Add(item);
+        if (Settings.Current.NotificationSounds)
+            PlayNotificationSound();
     }
+
+    /// <summary>
+    /// El sonido de notificación del esquema de sonidos de Windows (el que eligió el usuario, con su
+    /// volumen; si lo quitó, nada). Windows no lo toca: con el centro de Strata UI sus avisos están
+    /// apagados y con ellos su sonido.
+    /// </summary>
+    private static void PlayNotificationSound() =>
+        PlaySound("Notification.Default", IntPtr.Zero, SndAlias | SndAsync | SndNoDefault | SndSystem);
+
+    private const uint SndAsync = 0x1, SndNoDefault = 0x2, SndAlias = 0x10000, SndSystem = 0x200000;
+
+    [System.Runtime.InteropServices.DllImport("winmm.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern bool PlaySound(string sound, IntPtr module, uint flags);
 
     public static void CloseAll()
     {

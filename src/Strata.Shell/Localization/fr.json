@@ -920,5 +920,7 @@
   "Calendario": "Calendrier",
   "Volver a hoy": "Revenir à aujourd’hui",
   "Mes anterior": "Mois précédent",
-  "Mes siguiente": "Mois suivant"
+  "Mes siguiente": "Mois suivant",
+  "Sonido de notificación": "Son de notification",
+  "El sonido de notificación de Windows con cada aviso (se cambia en Configuración › Sonido).": "Le son de notification de Windows à chaque notification (modifiable dans Paramètres › Son)."
 }
