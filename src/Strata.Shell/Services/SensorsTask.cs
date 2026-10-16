@@ -48,7 +48,7 @@ public static class SensorsTask
     /// Strata UI ya está en Archivos de programa (instalado para todos los usuarios): esa carpeta solo la
     /// cambian administradores, así que la tarea puede usarlo tal cual.
     /// </summary>
-    private static bool InstalledProtected =>
+    internal static bool InstalledProtected =>
         IsUnder(AppContext.BaseDirectory, Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles))
         && !IsUnder(AppContext.BaseDirectory, CopyFolder);
 
@@ -116,6 +116,9 @@ public static class SensorsTask
     /// </summary>
     public static int RunInstall(string[] args)
     {
+        // Sin SID, el usuario que ejecuta (el instalador, elevado con la misma cuenta, la deja lista).
+        if (args.Length == 1)
+            args = [args[0], UserSid];
         if (args.Length != 2 || !Sid.IsMatch(args[1]))
             return 2;
         string sid = args[1];

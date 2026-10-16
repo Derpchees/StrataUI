@@ -9,7 +9,6 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="Grid24" Title="{l:T 'Menú Inicio'}" Subtitle="{l:T 'Estilo del menú, apps ancladas y botones.'}" />
-            <ContentControl x:Name="ModulesHost" Margin="0,0,0,8" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Grid24" /></ui:CardControl.Icon>

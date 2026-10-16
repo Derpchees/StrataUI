@@ -32,40 +32,6 @@ public partial class StartPage : Page
         BuildIconGallery();
         _loading = false;
 
-        var modules = new ModulesSection(ModuleKind.StartMenu,
-            Loc.T("Aspectos del menú en archivos .json: estilo, íconos, secciones, botones del pie, ícono de Inicio y tamaño."),
-            module =>
-            {
-                var apply = new Wpf.Ui.Controls.Button { Content = Loc.T("Aplicar") };
-                apply.Click += (_, _) =>
-                {
-                    Settings.Update(((StartMenuModule)module).ApplyTo);
-                    LoadSettings();
-                };
-                return apply;
-            });
-        var export = new Wpf.Ui.Controls.Button
-        {
-            Content = Loc.T("Exportar el actual"),
-            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowExportLtr24 },
-            ToolTip = Loc.T("Guarda el menú como está para compartirlo"),
-        };
-        export.Click += (_, _) =>
-        {
-            try
-            {
-                var name = Loc.F("Mi menú Inicio {0:yyyy-MM-dd HH-mm}", DateTime.Now);
-                var path = ModuleStore.Save(ModuleKind.StartMenu, StartMenuModule.From(Settings.Current, name));
-                modules.ShowStatus(Loc.F("Guardado como \"{0}\".", name));
-                ModuleStore.OpenFolder(ModuleKind.StartMenu, path);
-            }
-            catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
-            {
-                modules.ShowStatus(ex.Message);
-            }
-        };
-        modules.AddButton(export);
-        ModulesHost.Content = modules;
     }
 
     /// <summary>Los controles con la configuración actual (al abrir o al aplicar un aspecto importado).</summary>

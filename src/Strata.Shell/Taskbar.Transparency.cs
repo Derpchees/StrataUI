@@ -10,7 +10,8 @@ using Strata.Shell.Services.Themes.Glass;
 namespace Strata.Shell;
 
 /// <summary>
-/// Barra totalmente transparente: sin fondo, borde ni desenfoque. Para que se lea sobre cualquier
+/// Barra totalmente transparente (tema Transparente total, o el estilo de la barra de ese monitor):
+/// sin fondo, borde ni desenfoque. Para que se lea sobre cualquier
 /// fondo, cada parte (Inicio, cada ventana, multimedia, cada módulo, el reloj) toma texto e íconos
 /// claros u oscuros según lo que tenga detrás; si el fondo es claro de un lado y oscuro del otro,
 /// cada lado se ve distinto.
@@ -41,7 +42,7 @@ public partial class Taskbar
     /// <summary>Aplica (o quita) el modo transparente. True si la barra quedó transparente.</summary>
     private bool ApplyTransparency()
     {
-        bool wanted = S.TaskbarFullyTransparent && !_closed;
+        bool wanted = ThemeManager.ClearBarFor(Device) && !_closed;
         bool changed = wanted != _transparent;
         _transparent = wanted;
         UpdateContrastRefresh();

@@ -36,17 +36,17 @@ and everything goes back to normal.
 
 | | |
 |---|---|
-| 🧭 **Taskbar** | One or two bars per monitor, on any edge, with any size and alignment. Pinned apps, live window previews, drag to reorder (what you drag follows your pointer), group by app, end task, web apps (YouTube, WhatsApp Web…) with their own icon, and a fully transparent mode whose text adapts to the wallpaper. |
+| 🧭 **Taskbar** | One or two bars per monitor, on any edge, with any size and alignment, and each with its own style: the theme's, fully transparent (text adapts to the wallpaper) or a color of your own. Pinned apps, live window previews, drag to reorder (what you drag follows your pointer), group by app with stacks you can see in any theme, click an open app to minimize it, end task, and web apps (YouTube, WhatsApp Web…) with their own icon. |
 | 🧩 **Bar items** | Choose what each bar shows, in which order and where: start, center or end of the bar (Start, tray, network, Bluetooth, brightness, volume, battery, clock, media, performance meters). Drag them on the bar itself or set them in the Hub, even from one bar to another. |
 | 🚀 **Start menu** | 7 styles (Windows 11, Profile, List, Full screen, Compact, Search only, Icons), resizable. Pinned apps with folders, sections and free placement; pin files, shortcuts and folders (also from the Windows 11 right-click menu); custom icons for any app. Finds Store apps, installed programs and Steam, Epic and GOG games; drag any app onto the taskbar to pin it. Update and shut down / restart when updates are pending. Opens on the monitor your mouse is on. |
-| 🔔 **Notifications** | Its own notification center behind a bell on the taskbar (Win+N), banners on the monitor and corner you choose, Do not disturb, a calendar on the clock, and icons and pictures for every notification (web apps included). |
+| 🔔 **Notifications** | Its own notification center behind a bell on the taskbar (Win+N), banners on the monitor and corner you choose, Do not disturb, a calendar on the clock, and icons and pictures for every notification (web apps included). Its own notification sound (or one you import), and Windows' per-app sounds muted so you only hear one. |
 | 🔊 **Flyouts** | Sound (output, input, per-app volume, device options), network and Wi-Fi (with a show-password eye), Bluetooth, brightness for every monitor (DDC/CI) with Windows Night light, and battery. |
 | 🎵 **Media** | Album art, title and artist on the bar for any app that reports media (Spotify, browsers, Media Player…), with optional controls. |
 | 📊 **Performance** | CPU, GPU and RAM usage, temperatures and an FPS counter (frame generation aware: DLSS FG, FSR FG, Lossless Scaling…), plus one-click RAM cleanup. |
-| 🕒 **Widgets** | A digital clock (with or without the date), a music visualizer and big CPU, GPU and FPS gauges on your desktop: drag them anywhere, they stay visible with Show desktop. |
-| 🎨 **Themes & colors** | System, Light, Dark, Transparency, Liquid Glass and Material, plus color schemes (Midnight OLED, Nord, Dracula, Catppuccin, Tokyo Night, Rosé Pine, Gruvbox). Accent from Windows, your own or taken from the wallpaper (Wallpaper Engine too); custom taskbar and flyout colors with opacity. Six animation styles and three speeds, applied to flyouts, the Start menu, notifications and taskbar buttons. Per-monitor settings follow each monitor even when Windows renames it. |
-| ⚙️ **Optimization** | One-click junk cleanup (temp files, crash dumps, update caches… never the Recycle Bin), performance, preinstalled apps, privacy, AI features, Windows Update, Explorer and more, always with a backup so you can undo everything. It's an optional module: install it from the Hub with one click. |
-| 🧱 **Modules** | Import themes, animations, desktop widgets and Start menu looks shared as small JSON files (declarative, they can't run code), or export your Start menu to share it. See [the module format](docs/modules/README.md). |
+| 🕒 **Widgets** | A digital clock (with or without the date), a music visualizer and big CPU, GPU and FPS readouts on your desktop: drag them anywhere, they stay visible with Show desktop. |
+| 🎨 **Themes & colors** | System, Light, Dark, Transparency, Liquid Glass, Material and Fully transparent, plus color schemes (Midnight OLED, Nord, Dracula, Catppuccin, Tokyo Night, Rosé Pine, Gruvbox) that tint any of them. Accent from Windows, your own or taken from the wallpaper (Wallpaper Engine too); custom panel colors with opacity. Six animation styles and three speeds for flyouts, the Start menu, notifications, menus, the tray, window previews and taskbar buttons, and Windows' own window animations follow your choice. One theme for every monitor. |
+| ⚙️ **Optimization** | One-click junk cleanup (temp files, crash dumps, update caches… never the Recycle Bin), performance, preinstalled apps, privacy, AI features, Windows Update, Explorer and more, always with a backup so you can undo everything. It's an optional module: install it from the Hub with one click. Installed for all users, it applies changes without UAC prompts. |
+| 🧱 **Modules** | Import themes, animations, desktop widgets, Start menu looks (small declarative JSON files that can't run code) and notification sounds from one place in the Hub. Export and import all your Strata UI settings as a .zip. See [the module format](docs/modules/README.md). |
 | 🌐 **Languages** | English, Spanish, Portuguese, French and German, following Windows or chosen in the Hub. Drop a `xx.json` into `%LOCALAPPDATA%\StrataUI\Languages` to add your own. |
 
 Right-click an empty spot on the bar for **Strata UI settings** (the Hub) or **Exit Strata UI**
@@ -68,7 +68,7 @@ dotnet test tests\Strata.Tests -c Release  # tests (xUnit)
 | Argument | What it does |
 |---|---|
 | *(none)* | Starts Strata UI; if it's already running, opens the Hub. |
-| `--hub <page>` | Opens the Hub on a page: `Home`, `Taskbar`, `Start`, `Tray`, `Notifications`, `Appearance`, `Updates`, `Privacy`, `Backup`… |
+| `--hub <page>` | Opens the Hub on a page: `Dashboard`, `Taskbar`, `Tray`, `Flyouts`, `Start`, `Notifications`, `Appearance`, `Import`, `General`, `Updates`, `Privacy`, `Backup`… |
 | `--exit` | Cleanly closes the running instance (and waits for it). |
 | `--restore-taskbar` | Emergency: shows the Windows taskbar again if Strata UI didn't close properly. |
 

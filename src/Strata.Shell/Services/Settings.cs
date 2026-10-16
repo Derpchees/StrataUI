@@ -20,10 +20,13 @@ public enum TaskbarPosition { Bottom, Top, Left, Right }
 /// </summary>
 public enum SecondBarContent { None, Apps, Status, Full }
 
+/// <summary>Estilo de la barra de un monitor: el del tema, sin fondo o con un color propio.</summary>
+public enum BarStyle { Theme, Clear, Color }
+
 public enum StrataTheme
 {
-    System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material,
-    // Esquemas de color (ver Themes/ThemeCatalog)
+    System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material, Clear,
+    // Esquemas de color (ver Themes/ThemeCatalog). Siempre al final: ver Settings.IsScheme.
     Midnight, Nord, Dracula, CatppuccinMocha, CatppuccinLatte, TokyoNight, RosePine, Gruvbox,
 }
 
@@ -179,7 +182,7 @@ public sealed class StrataSettings
 
     public int TaskbarHeight { get; set; } = 48;
     /// <summary>Un solo botón por app con todas sus ventanas (como "Combinar botones" de Windows).</summary>
-    public bool CombineTaskWindows { get; set; }
+    public bool CombineTaskWindows { get; set; } = true;
     /// <summary>Vista previa en vivo de la ventana al pasar el mouse por su botón.</summary>
     public bool ShowTaskPreviews { get; set; } = true;
     public bool ShowSeconds { get; set; }
@@ -244,6 +247,10 @@ public sealed class StrataSettings
     public bool NotificationBanners { get; set; } = true;
     /// <summary>Sonido de notificación de Windows con cada aviso emergente.</summary>
     public bool NotificationSounds { get; set; } = true;
+    /// <summary>Apaga el sonido que Windows pone a las notificaciones de cada app: suena solo el de Strata UI.</summary>
+    public bool MuteWindowsNotificationSounds { get; set; } = true;
+    /// <summary>Sonido importado para las notificaciones (nombre en Modules\Sounds); null = el de Strata UI.</summary>
+    public string? NotificationSoundFile { get; set; }
     /// <summary>Monitor de los avisos (nombre de dispositivo); null = el principal de Strata UI.</summary>
     public string? NotificationScreen { get; set; }
     public NotificationCorner NotificationCorner { get; set; } = NotificationCorner.BottomRight;
@@ -256,6 +263,8 @@ public sealed class StrataSettings
     /// apagara sus avisos emergentes; se devuelve al salir o al desactivar el centro de Strata UI.
     /// </summary>
     public Dictionary<string, int?> WindowsBannerBackup { get; set; } = new();
+    /// <summary>Valor original de "SoundFile" de cada app (null: no existía) antes de silenciarla.</summary>
+    public Dictionary<string, string?> WindowsSoundBackup { get; set; } = new();
 
     // Actualizaciones
     public bool AutoCheckUpdates { get; set; } = true;
@@ -266,6 +275,8 @@ public sealed class StrataSettings
 
     // Apariencia
     public StrataTheme Theme { get; set; } = StrataTheme.System;
+    /// <summary>Esquema de color (Nord, Dracula…) que tiñe el estilo de todos los monitores; null = sus colores.</summary>
+    public StrataTheme? ColorScheme { get; set; }
     /// <summary>Tema importado (ID del módulo); tiene prioridad sobre <see cref="Theme"/>.</summary>
     public string? ThemeModule { get; set; }
     /// <summary>Color "#RRGGBB"; null = usar el acento de Windows.</summary>
@@ -281,12 +292,17 @@ public sealed class StrataSettings
     /// [color de Inicio, color de acento] en ABGR; se devuelve al desactivarlo. Null: no lo cambió.
     /// </summary>
     public uint[]? WindowsAccentBackup { get; set; }
+    /// <summary>
+    /// Animaciones de Windows antes de que Strata UI las siguiera (ver Themes.WindowsAnimations):
+    /// [ventanas, menús, minimizar y maximizar]. Null: no las cambió.
+    /// </summary>
+    public bool[]? WindowsAnimationBackup { get; set; }
     /// <summary>Liquid Glass con refracción real (captura del fondo + shader). Oculta la barra y
     /// los paneles de las capturas de pantalla; desactivado usa el desenfoque de Windows.</summary>
     public bool LiveGlass { get; set; } = true;
     /// <summary>Llevar el tema a Windows: modo claro/oscuro y fondo de las ventanas del Explorador.</summary>
     public bool ApplyThemeToWindows { get; set; }
-    /// <summary>Barra sin fondo, borde ni desenfoque: solo se ven los íconos y el texto.</summary>
+    /// <summary>De versiones anteriores: ahora es el tema Transparente total (ver Settings.Migrate).</summary>
     public bool TaskbarFullyTransparent { get; set; }
     public PanelAnimation PanelAnimation { get; set; } = PanelAnimation.Slide;
     public AnimationSpeed AnimationSpeed { get; set; } = AnimationSpeed.Normal;
@@ -349,7 +365,7 @@ public sealed class ScreenSettings
     public TaskbarAlignment TaskbarAlignment { get; set; } = TaskbarAlignment.Windows;
     public bool TaskbarCenterApps { get; set; }
     public bool ShowTaskPreviews { get; set; } = true;
-    public bool CombineTaskWindows { get; set; }
+    public bool CombineTaskWindows { get; set; } = true;
     public int TaskbarHeight { get; set; } = 48;
     public bool TaskbarFullyTransparent { get; set; }
     public bool ShowSeconds { get; set; }
@@ -357,10 +373,15 @@ public sealed class ScreenSettings
     public bool ShowTemperatures { get; set; } = true;
     public bool ShowBatteryPercent { get; set; }
 
-    // Apariencia de la barra y de los paneles que se abren desde ella
+    // Tema: ya no es por monitor (son los generales); quedan para leer los ajustes de antes.
     public StrataTheme Theme { get; set; } = StrataTheme.System;
     /// <summary>Tema importado (ID del módulo); tiene prioridad sobre <see cref="Theme"/>.</summary>
     public string? ThemeModule { get; set; }
+
+    // Estilo de la barra de este monitor, sobre el tema de todos
+    public BarStyle BarStyle { get; set; } = BarStyle.Theme;
+    /// <summary>Color de la barra con <see cref="BarStyle.Color"/> ("#AARRGGBB").</summary>
+    public string? BarColor { get; set; }
 
     // Multimedia
     public bool ShowMediaControls { get; set; } = true;
@@ -434,12 +455,64 @@ public static class Settings
         }
     }
 
+    /// <summary>
+    /// Ajustes de versiones anteriores: "Barra totalmente transparente" era un interruptor (ahora es el
+    /// tema Transparente total), los esquemas de color eran temas (ahora tiñen el estilo), el tema era
+    /// por monitor (ahora es uno) y el color propio de la barra era uno (ahora es de cada barra).
+    /// </summary>
+    internal static StrataSettings Migrate(StrataSettings s)
+    {
+        if (s.TaskbarFullyTransparent)
+            (s.Theme, s.TaskbarFullyTransparent) = (StrataTheme.Clear, false);
+        foreach (var screen in s.Screens.Values.Where(sc => sc.TaskbarFullyTransparent))
+            (screen.Theme, screen.TaskbarFullyTransparent) = (StrataTheme.Clear, false);
+        // Los esquemas de color eran temas: ahora tiñen un estilo. Sus colores son opacos, así que
+        // sobre Sistema se ven igual que antes.
+        // (Sin ThemeCatalog: esto corre al cargar la configuración y sus textos ya la leen.)
+        if (IsScheme(s.Theme))
+            (s.ColorScheme, s.Theme) = (s.Theme, StrataTheme.System);
+        foreach (var screen in s.Screens.Values.Where(sc => IsScheme(sc.Theme)))
+            (s.ColorScheme, screen.Theme) = (screen.Theme, StrataTheme.System);
+        // El tema era por monitor y ahora es uno solo (los generales): si los generales quedaron en el
+        // de fábrica, se toma el del primer monitor que tenía uno elegido.
+        if (s.Theme == StrataTheme.System && s.ThemeModule is null
+            && s.Screens.OrderBy(p => p.Key).Select(p => p.Value)
+                .FirstOrDefault(sc => sc.Theme != StrataTheme.System || sc.ThemeModule != null) is { } chosen)
+            (s.Theme, s.ThemeModule) = (chosen.Theme, chosen.ThemeModule);
+        foreach (var screen in s.Screens.Values)
+            (screen.Theme, screen.ThemeModule) = (s.Theme, s.ThemeModule);
+        // El color propio de la barra era uno para todas: ahora es el estilo de cada barra.
+        if (s.CustomBarColor is { } barColor && s.Screens.Count > 0)
+        {
+            foreach (var screen in s.Screens.Values.Where(sc => sc.BarStyle == BarStyle.Theme))
+                (screen.BarStyle, screen.BarColor) = (BarStyle.Color, barColor);
+            s.CustomBarColor = null;
+        }
+        return s;
+    }
+
+    /// <summary>Los esquemas de color van al final de <see cref="StrataTheme"/>, desde Medianoche.</summary>
+    private static bool IsScheme(StrataTheme theme) => theme >= StrataTheme.Midnight;
+
+    internal static string Serialize(StrataSettings settings) => JsonSerializer.Serialize(settings, Json);
+
+    /// <summary>Lee un settings.json (lanza JsonException si no es válido).</summary>
+    internal static StrataSettings Deserialize(string json) =>
+        Migrate(JsonSerializer.Deserialize<StrataSettings>(json, Json) ?? throw new JsonException("settings.json vacío"));
+
+    /// <summary>Cambia toda la configuración (importar) y la guarda; quien llama reinicia Strata UI.</summary>
+    internal static void Replace(StrataSettings settings)
+    {
+        Current = settings;
+        Save();
+    }
+
     private static StrataSettings Load()
     {
         try
         {
             if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize<StrataSettings>(File.ReadAllText(FilePath), Json) ?? new();
+                return Migrate(JsonSerializer.Deserialize<StrataSettings>(File.ReadAllText(FilePath), Json) ?? new());
         }
         catch (Exception ex) when (ex is IOException or JsonException)
         {

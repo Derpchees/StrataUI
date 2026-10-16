@@ -9,8 +9,7 @@ using TextBlock = System.Windows.Controls.TextBlock;
 namespace Strata.Shell.Hub;
 
 /// <summary>
-/// Sección "Importados" de una página del Hub: botones para importar módulos de ese tipo, abrir su
-/// carpeta y ver el formato, el resultado de la última importación y (si se pide) la lista de los
+/// Sección "Importados" de una página del Hub: el botón para importar módulos de ese tipo, el resultado de la última importación y (si se pide) la lista de los
 /// importados con su acción ("Aplicar", "Agregar"…) y "Quitar".
 /// </summary>
 public sealed class ModulesSection : StackPanel
@@ -46,25 +45,8 @@ public sealed class ModulesSection : StackPanel
             Content = Loc.T("Importar…"),
             Icon = new SymbolIcon { Symbol = SymbolRegular.ArrowImport24 },
             Appearance = ControlAppearance.Primary,
-            Margin = new Thickness(8, 0, 0, 0),
         };
         import.Click += async (_, _) => await ImportAsync();
-        var folder = new Wpf.Ui.Controls.Button
-        {
-            Icon = new SymbolIcon { Symbol = SymbolRegular.Folder24 },
-            ToolTip = Loc.T("Abrir la carpeta de módulos"),
-            Margin = new Thickness(8, 0, 0, 0),
-        };
-        folder.Click += (_, _) => ModuleStore.OpenFolder(_kind);
-        var help = new Wpf.Ui.Controls.Button
-        {
-            Icon = new SymbolIcon { Symbol = SymbolRegular.QuestionCircle24 },
-            ToolTip = Loc.T("Cómo se hace un módulo (en GitHub)"),
-            Margin = new Thickness(8, 0, 0, 0),
-        };
-        help.Click += (_, _) => OpenFormat();
-        _buttons.Children.Add(help);
-        _buttons.Children.Add(folder);
         _buttons.Children.Add(import);
 
         Children.Add(new CardControl
@@ -84,14 +66,6 @@ public sealed class ModulesSection : StackPanel
             Build();
         };
         Unloaded += (_, _) => ModuleStore.Changed -= OnChanged;
-    }
-
-    /// <summary>Otro botón junto a Importar (p. ej. "Exportar el actual").</summary>
-    public void AddButton(FrameworkElement button)
-    {
-        if (button is FrameworkElement element)
-            element.Margin = new Thickness(8, 0, 0, 0);
-        _buttons.Children.Insert(0, button);
     }
 
     /// <summary>Mensaje bajo la tarjeta (resultado de importar o exportar).</summary>

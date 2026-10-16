@@ -5,6 +5,7 @@
                  xmlns:controls="clr-namespace:Strata.Shell.Controls"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  xmlns:pages="clr-namespace:Strata.Shell.Hub.Pages"
+                 xmlns:hub="clr-namespace:Strata.Shell.Hub"
                  Title="Strata UI"
                  Icon="pack://application:,,,/Assets/strataui.ico"
                  Width="1040" Height="720" MinWidth="780" MinHeight="520"
@@ -30,48 +31,16 @@
                            IsPaneToggleVisible="False"
                            OpenPaneLength="250">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="{l:T 'Resumen'}" TargetPageType="{x:Type pages:HomePage}">
+                <ui:NavigationViewItem Content="{l:T 'Dashboard'}" TargetPageType="{x:Type pages:HomePage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Home24" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <!-- Igual en todos los monitores: fuera de Personalización -->
-                <ui:NavigationViewItem Content="{l:T 'Menú Inicio'}" TargetPageType="{x:Type pages:StartPage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Grid24" />
+                        <ui:SymbolIcon Symbol="Board24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <!-- Cada página de Personalización edita los ajustes del monitor elegido arriba (Hub/ScreenPicker) -->
-                <ui:NavigationViewItemHeader Text="{l:T 'Personalización por monitor'}" Margin="0,12,0,0" />
-                <ui:NavigationViewItem Content="{l:T 'Barra de tareas'}" TargetPageType="{x:Type pages:TaskbarPage}">
+                <!-- Las entradas con varias páginas las muestran en pestañas (Hub/TabbedPage) -->
+                <ui:NavigationViewItem Content="{l:T 'Barra de tareas'}" TargetPageType="{x:Type hub:TaskbarHubPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PanelBottom20" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Bandeja del sistema'}" TargetPageType="{x:Type pages:TrayPage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="ChevronUp24" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Notificaciones'}" TargetPageType="{x:Type pages:NotificationsPage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Alert24" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Tema'}" TargetPageType="{x:Type pages:AppearancePage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="PaintBrush24" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Colores'}" TargetPageType="{x:Type pages:ColorsPage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Color24" />
-                    </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Control multimedia'}" TargetPageType="{x:Type pages:MediaPage}">
-                    <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="MusicNote224" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{l:T 'Paneles'}" TargetPageType="{x:Type pages:FlyoutsPage}">
@@ -79,25 +48,39 @@
                         <ui:SymbolIcon Symbol="PanelRight24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-
+                <ui:NavigationViewItem Content="{l:T 'Menú Inicio'}" TargetPageType="{x:Type pages:StartPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Grid24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{l:T 'Notificaciones'}" TargetPageType="{x:Type pages:NotificationsPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Alert24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{l:T 'Tema y colores'}" TargetPageType="{x:Type hub:AppearanceHubPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="PaintBrush24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{l:T 'Widgets'}" TargetPageType="{x:Type pages:WidgetsPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Apps24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <!-- Optimización: un grupo fijo como Personalización (sin plegar ni desplegar). Sus
-                     páginas vienen del módulo descargable; sin él, una entrada para instalarlo
-                     (HubWindow.FillOptimization). -->
-                <ui:NavigationViewItemHeader x:Name="OptimizationHeader" Text="{l:T 'Optimización'}" Margin="0,12,0,0" />
-            </ui:NavigationView.MenuItems>
-            <ui:NavigationView.FooterMenuItems>
-                <ui:NavigationViewItem Content="{l:T 'Actualizaciones'}" TargetPageType="{x:Type pages:UpdatesPage}">
+                <!-- Módulos: Importar (temas, animaciones, widgets, menús de Inicio y sonidos) y una entrada
+                     por módulo descargable, con sus páginas dentro o la página para instalarlo
+                     (HubWindow.FillModules). -->
+                <ui:NavigationViewItemHeader x:Name="ModulesHeader" Text="{l:T 'Módulos'}" Margin="0,12,0,0" />
+                <ui:NavigationViewItem x:Name="ImportItem" Content="{l:T 'Importar'}" TargetPageType="{x:Type pages:ImportPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="ArrowDownload24" />
+                        <ui:SymbolIcon Symbol="ArrowImport24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'General'}" TargetPageType="{x:Type pages:GeneralPage}">
+            </ui:NavigationView.MenuItems>
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="{l:T 'General'}" TargetPageType="{x:Type hub:SettingsHubPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />
                     </ui:NavigationViewItem.Icon>

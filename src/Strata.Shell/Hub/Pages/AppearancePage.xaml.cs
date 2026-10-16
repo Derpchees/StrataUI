@@ -9,8 +9,7 @@ using Strata.Shell.Services.Localization;
 namespace Strata.Shell.Hub.Pages;
 
 /// <summary>
-/// Hub › Tema: la galería (estilos y esquemas de color) del monitor elegido, la barra transparente,
-/// el vidrio, llevar el tema a Windows y las animaciones, con los temas y animaciones importados.
+/// Hub › Tema: la galería (estilos y esquemas de color) del monitor elegido, el vidrio, llevar el tema a Windows y las animaciones, con los temas y animaciones importados.
 /// Los colores están en <see cref="ColorsPage"/>.
 /// </summary>
 public partial class AppearancePage : Page
@@ -24,18 +23,10 @@ public partial class AppearancePage : Page
         var s = Settings.Current;
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
         LiveGlassSwitch.IsChecked = s.LiveGlass;
-        TransparentSwitch.IsChecked = Settings.Current.For(ScreenPicker.Device).TaskbarFullyTransparent;
         BuildAnimationChoices();
         Select(SpeedBox, s.AnimationSpeed.ToString());
         _loading = false;
         BuildThemeGallery();
-
-        ThemeModulesHost.Content = new ModulesSection(ModuleKind.Theme,
-            Loc.T("Temas en archivos .json: un estilo y, si quieres, sus propios colores. Aparecen en Importados; clic derecho en uno para quitarlo."),
-            showList: false);
-        AnimationModulesHost.Content = new ModulesSection(ModuleKind.Animation,
-            Loc.T("Animaciones en archivos .json: desde dónde llegan, cuánto crecen y con qué rebote. Aparecen en Estilo."),
-            module => UseButton(() => SelectAnimation(Imported + module.Id)));
 
         ThemeManager.ThemeChanged += BuildThemeGallery;
         ScreenPicker.Changed += OnScreenChanged;
@@ -48,6 +39,22 @@ public partial class AppearancePage : Page
         };
     }
 
+    /// <summary>
+    /// Pone ese tema en todos los monitores (los que se conecten después lo toman de los generales):
+    /// lo individual de cada monitor es su barra y sus widgets.
+    /// </summary>
+    internal static void UseTheme(ThemeInfo theme) => Settings.Update(s =>
+    {
+        s.ThemeModule = theme.ModuleId;
+        if (theme.ModuleId is null)
+            s.Theme = theme.Kind;
+        foreach (var screen in s.Screens.Values)
+        {
+            screen.ThemeModule = s.ThemeModule;
+            screen.Theme = s.Theme;
+        }
+    });
+
     /// <summary>Prefijo de la etiqueta de lo importado (en la galería y en la lista de animaciones).</summary>
     private const string Imported = "module:";
 
@@ -59,25 +66,30 @@ public partial class AppearancePage : Page
             BuildAnimationChoices();
     });
 
-    private static FrameworkElement UseButton(Action use)
-    {
-        var button = new Wpf.Ui.Controls.Button { Content = Loc.T("Usar") };
-        button.Click += (_, _) => use();
-        return button;
-    }
-
-    /// <summary>Otro monitor elegido: su tema y su barra transparente.</summary>
+    /// <summary>Otro monitor elegido: su tema.</summary>
     private void OnScreenChanged()
     {
         _loading = true;
-        TransparentSwitch.IsChecked = Settings.Current.For(ScreenPicker.Device).TaskbarFullyTransparent;
-        UpdateGallerySelection(ThemeManager.ThemeFor(ScreenPicker.Device).Key);
+        UpdateGallerySelection(CurrentStyleKey(), CurrentSchemeKey());
         _loading = false;
     }
 
-    // ── Galería de temas ───────────────────────────────────────────────────
+    // ── Galería: estilos y esquemas de color, que se combinan ──────────────
 
-    /// <summary>Las miniaturas llevan el acento: se rehacen cuando cambia.</summary>
+    private const string SchemeTag = "scheme:";
+
+    /// <summary>El estilo elegido (de la lista o importado), sin el esquema que lo tiñe.</summary>
+    private static ThemeInfo CurrentStyle()
+    {
+        var s = Settings.Current;
+        return ModuleStore.Get<ThemeModule>(ModuleKind.Theme, s.ThemeModule)?.ToTheme() ?? ThemeCatalog.Get(s.Theme);
+    }
+
+    private static string CurrentStyleKey() => CurrentStyle().Key;
+
+    private static string CurrentSchemeKey() => SchemeTag + (Settings.Current.ColorScheme?.ToString() ?? "none");
+
+    /// <summary>Las miniaturas llevan el acento y el estilo o esquema actual: se rehacen cuando cambian.</summary>
     private void BuildThemeGallery()
     {
         ThemeGallery.Children.Clear();
@@ -85,34 +97,19 @@ public partial class AppearancePage : Page
         ImportedGallery.Children.Clear();
         var modules = ModuleStore.All<ThemeModule>(ModuleKind.Theme);
         ImportedTitle.Visibility = modules.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        string current = ThemeManager.ThemeFor(ScreenPicker.Device).Key;
-        foreach (var theme in ThemeCatalog.All.Concat(modules.Select(m => m.ToTheme())))
+        var style = CurrentStyle();
+        string styleKey = style.Key, schemeKey = CurrentSchemeKey();
+        var scheme = Settings.Current.ColorScheme;
+
+        // Estilos (cada uno con el esquema elegido, como quedaría) e importados.
+        foreach (var theme in ThemeCatalog.All.Where(t => !t.IsScheme).Concat(modules.Select(m => m.ToTheme())))
         {
-            bool selected = theme.Key == current;
-            var card = new Button
-            {
-                Width = 168,
-                Margin = new Thickness(0, 0, 10, 10),
-                Padding = new Thickness(0),
-                Cursor = System.Windows.Input.Cursors.Hand,
-                ToolTip = theme.Description,
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                Content = BuildThemeCard(theme, selected),
-                Template = FlatTemplate(),
-            };
-            System.Windows.Automation.AutomationProperties.SetName(card, Loc.F("Tema {0}", theme.Name));
-            card.Tag = theme.Key;
+            var card = GalleryCard(ThemeCatalog.Combine(theme, scheme), theme.Name, theme.Description, theme.Key, theme.Key == styleKey);
             card.Click += (_, _) =>
             {
-                // Primero se marca la selección (respuesta inmediata) y después se aplica el tema.
-                UpdateGallerySelection(theme.Key);
-                Dispatcher.BeginInvoke(() => Settings.UpdateScreen(ScreenPicker.Device, s =>
-                {
-                    s.ThemeModule = theme.ModuleId;
-                    if (theme.ModuleId is null)
-                        s.Theme = theme.Kind;
-                }), System.Windows.Threading.DispatcherPriority.Background);
+                // Primero se marca la selección (respuesta inmediata) y después se aplica.
+                UpdateGallerySelection(theme.Key, schemeKey);
+                Dispatcher.BeginInvoke(() => UseTheme(theme), System.Windows.Threading.DispatcherPriority.Background);
             };
             if (theme.ModuleId is { } id)
             {
@@ -122,18 +119,56 @@ public partial class AppearancePage : Page
                 ImportedGallery.Children.Add(card);
             }
             else
-                (theme.Scheme is null ? ThemeGallery : SchemeGallery).Children.Add(card);
+                ThemeGallery.Children.Add(card);
+        }
+
+        // Esquemas sobre el estilo elegido; el primero, sin esquema (los colores del estilo).
+        var choices = new List<(StrataTheme? Kind, string Name, string Description)>
+            { (null, Loc.T("Colores del estilo"), Loc.T("Sin esquema: los colores propios del estilo.")) };
+        choices.AddRange(ThemeCatalog.All.Where(t => t.IsScheme).Select(t => ((StrataTheme?)t.Kind, t.Name, t.Description)));
+        foreach (var (kind, name, description) in choices)
+        {
+            string tag = SchemeTag + (kind?.ToString() ?? "none");
+            var card = GalleryCard(ThemeCatalog.Combine(style, kind), name, description, tag, tag == schemeKey);
+            // Los importados traen sus propios colores: el esquema no los tiñe.
+            card.IsEnabled = style.ModuleId is null;
+            card.Click += (_, _) =>
+            {
+                UpdateGallerySelection(styleKey, tag);
+                Dispatcher.BeginInvoke(() => Settings.Update(s => s.ColorScheme = kind),
+                                       System.Windows.Threading.DispatcherPriority.Background);
+            };
+            SchemeGallery.Children.Add(card);
         }
     }
 
-    private void UpdateGallerySelection(string selected)
+    private Button GalleryCard(ThemeInfo preview, string name, string description, string tag, bool selected)
+    {
+        var card = new Button
+        {
+            Width = 168,
+            Margin = new Thickness(0, 0, 10, 10),
+            Padding = new Thickness(0),
+            Cursor = System.Windows.Input.Cursors.Hand,
+            ToolTip = description,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Content = BuildThemeCard(preview, name, selected),
+            Template = FlatTemplate(),
+            Tag = tag,
+        };
+        System.Windows.Automation.AutomationProperties.SetName(card, Loc.F("Tema {0}", name));
+        return card;
+    }
+
+    private void UpdateGallerySelection(string styleKey, string schemeKey)
     {
         foreach (Button card in ThemeGallery.Children.OfType<Button>().Concat(SchemeGallery.Children.OfType<Button>())
                      .Concat(ImportedGallery.Children.OfType<Button>()))
         {
             if (card.Content is not Border frame)
                 continue;
-            bool isSelected = (string)card.Tag == selected;
+            bool isSelected = (string)card.Tag == styleKey || (string)card.Tag == schemeKey;
             frame.BorderThickness = new Thickness(isSelected ? 2 : 1);
             frame.BorderBrush = isSelected
                 ? (TryFindResource("AccentFillColorDefaultBrush") as Brush) ?? Brushes.DodgerBlue
@@ -142,7 +177,7 @@ public partial class AppearancePage : Page
     }
 
     /// <summary>Miniatura: fondo de colores, una ventana y una barra con los colores reales del tema.</summary>
-    private FrameworkElement BuildThemeCard(ThemeInfo theme, bool selected)
+    private FrameworkElement BuildThemeCard(ThemeInfo theme, string name, bool selected)
     {
         bool light = theme.Light ?? ThemeManager.WindowsUsesLightTheme();
         var palette = Palette.Build(theme, light, ThemeManager.Readable(ThemeManager.AccentFor(theme), light));
@@ -173,7 +208,8 @@ public partial class AppearancePage : Page
         var taskbar = new Border
         {
             Height = 18, VerticalAlignment = VerticalAlignment.Bottom,
-            Background = Opaque(Res("StrataTaskbarBackgroundBrush"), light, theme),
+            // Transparente total: la barra sin fondo, solo su ícono sobre el fondo de pantalla.
+            Background = theme.ClearBar ? Brushes.Transparent : Opaque(Res("StrataTaskbarBackgroundBrush"), light, theme),
             Child = new Border
             {
                 Width = 10, Height = 10, CornerRadius = new CornerRadius(theme.Radius / 3),
@@ -185,7 +221,7 @@ public partial class AppearancePage : Page
             preview.Children.Add(new Border { Background = Res("StrataGlassHighlightBrush"), Opacity = 0.6, IsHitTestVisible = false });
 
         var label = new StackPanel { Margin = new Thickness(10, 8, 10, 10) };
-        label.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = theme.Name });
+        label.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = name });
 
         var stack = new StackPanel();
         stack.Children.Add(new Border { CornerRadius = new CornerRadius(6, 6, 0, 0), ClipToBounds = true, Child = preview });
@@ -221,9 +257,6 @@ public partial class AppearancePage : Page
 
     private void LiveGlass_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.LiveGlass = LiveGlassSwitch.IsChecked == true);
-
-    private void Transparent_Click(object sender, RoutedEventArgs e) =>
-        Settings.UpdateScreen(ScreenPicker.Device, s => s.TaskbarFullyTransparent = TransparentSwitch.IsChecked == true);
 
     private static void Select(ComboBox box, string tag) =>
         box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) ?? box.Items[0];

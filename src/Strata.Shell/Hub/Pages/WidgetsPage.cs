@@ -37,15 +37,10 @@ public sealed class WidgetsPage : Page
         add.Children.Add(AddButton(SymbolRegular.DeveloperBoard24, Loc.T("Medidor de CPU"), () => WidgetManager.Add(WidgetKind.Cpu)));
         add.Children.Add(AddButton(SymbolRegular.Gauge24, Loc.T("Medidor de GPU"), () => WidgetManager.Add(WidgetKind.Gpu)));
         add.Children.Add(AddButton(SymbolRegular.Games24, Loc.T("Contador de FPS"), () => WidgetManager.Add(WidgetKind.Fps)));
+        // Los importados (Hub › Importar), junto a los incluidos.
+        foreach (var module in ModuleStore.All<ModuleBase>(ModuleKind.Widget))
+            add.Children.Add(AddButton(SymbolRegular.PuzzlePiece24, module.Name, () => WidgetManager.Add(WidgetKind.Custom, module: module.Id)));
         content.Children.Add(add);
-        content.Children.Add(new ModulesSection(ModuleKind.Widget,
-            Loc.T("Widgets en archivos .json: líneas de texto con la hora, la fecha, la canción que suena o la batería, con sus fuentes y colores."),
-            module =>
-            {
-                var button = new Wpf.Ui.Controls.Button { Content = Loc.T("Agregar"), Icon = new SymbolIcon { Symbol = SymbolRegular.Add24 } };
-                button.Click += (_, _) => WidgetManager.Add(WidgetKind.Custom, module: module.Id);
-                return button;
-            }));
 
         content.Children.Add(new TextBlock { Style = (Style)FindResource("HubSectionTitle"), Text = Loc.T("En el escritorio") });
         content.Children.Add(_list);

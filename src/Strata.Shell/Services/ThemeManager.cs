@@ -41,8 +41,11 @@ public static class ThemeManager
 
     public static ThemeInfo ThemeFor(string? device)
     {
-        var screen = Settings.Current.For(device);
-        return ModuleStore.Get<ThemeModule>(ModuleKind.Theme, screen.ThemeModule)?.ToTheme() ?? ThemeCatalog.Get(screen.Theme);
+        // Uno para todos los monitores (lo individual de cada uno es su barra y sus widgets): el de
+        // los ajustes generales, sea cual sea el monitor.
+        var s = Settings.Current;
+        return ModuleStore.Get<ThemeModule>(ModuleKind.Theme, s.ThemeModule)?.ToTheme()
+               ?? ThemeCatalog.Combine(ThemeCatalog.Get(s.Theme), s.ColorScheme);
     }
 
     public static bool IsLightFor(string? device) => ThemeFor(device).Light ?? WindowsUsesLightTheme();
@@ -59,11 +62,12 @@ public static class ThemeManager
         var theme = ThemeFor(device);
         bool light = IsLightFor(device);
         int height = Settings.Current.For(device).TaskbarHeight;
-        if ((theme.Key, light, height) == (Theme.Key, IsLight, Settings.Current.For(MainDevice).TaskbarHeight))
+        var barColor = BarColorFor(device);
+        if ((theme.Key, light, height, barColor) == (Theme.Key, IsLight, Settings.Current.For(MainDevice).TaskbarHeight, BarColorFor(MainDevice)))
             return null;
         var accent = Readable(AccentFor(theme), light);
         return Palette.Build(theme, light, accent, height, UseLiveGlassFor(device), light == IsLight ? _shownAccent : null,
-                             CustomBarColor, CustomPanelColor);
+                             barColor, CustomPanelColor);
     }
 
     private static Color? _shownAccent;
@@ -107,9 +111,20 @@ public static class ThemeManager
         return dict;
     }
 
-    /// <summary>Colores propios de Hub › Colores (null = los del tema).</summary>
-    public static Color? CustomBarColor => TryParseColor(Settings.Current.CustomBarColor);
+    /// <summary>Color propio de los paneles (Hub › Colores; null = el del tema).</summary>
     public static Color? CustomPanelColor => TryParseColor(Settings.Current.CustomPanelColor);
+
+    /// <summary>Color propio de la barra de ese monitor (su estilo es "Color propio"); null = el del tema.</summary>
+    public static Color? BarColorFor(string? device) =>
+        Settings.Current.For(device) is { BarStyle: BarStyle.Color } screen ? TryParseColor(screen.BarColor) : null;
+
+    /// <summary>La barra de ese monitor va sin fondo: la eligió así o sigue al tema Transparente total.</summary>
+    public static bool ClearBarFor(string? device) => Settings.Current.For(device).BarStyle switch
+    {
+        BarStyle.Clear => true,
+        BarStyle.Color => false,
+        _ => ThemeFor(device).ClearBar,
+    };
 
     /// <summary>
     /// Acento elegido: el del fondo de pantalla, uno propio o el de Windows. El del fondo queda en
@@ -195,7 +210,8 @@ public static class ThemeManager
     {
         var s = Settings.Current;
         var main = s.For(MainDevice);
-        return (ThemeFor(MainDevice).Key, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper, s.CustomBarColor, s.CustomPanelColor);
+        return (ThemeFor(MainDevice).Key, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper,
+                BarColorFor(MainDevice)?.ToString(), s.CustomPanelColor);
     }
 
     /// <summary>Reaplica si cambió lo que se ve (claro/oscuro o el acento efectivo).</summary>
@@ -316,7 +332,7 @@ public static class ThemeManager
         Color? shown = (resources["AccentFillColorDefaultBrush"] as SolidColorBrush)?.Color;
         _shownAccent = shown;
         var next = Palette.Build(theme, light, accent, Settings.Current.For(MainDevice).TaskbarHeight, UseLiveGlass, shown,
-                                 CustomBarColor, CustomPanelColor);
+                                 BarColorFor(MainDevice), CustomPanelColor);
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);
         resources.MergedDictionaries.Add(next);

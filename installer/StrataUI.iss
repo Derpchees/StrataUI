@@ -58,6 +58,7 @@ MinVersion=10.0.22000
 ; Strata UI se cierra por su cuenta (ver PrepareToInstall): así devuelve la barra de Windows.
 CloseApplications=no
 RestartApplications=no
+SetupLogging=yes
 
 [Languages]
 Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -82,6 +83,7 @@ Name: "contextmenu"; Description: "{cm:ContextMenu}"; GroupDescription: "{cm:Int
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "Integration.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 ; Restos de una versión anterior que ya no forman parte de la app.
@@ -114,10 +116,10 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 ; al abrirse, si el paquete está, quita el verbo clásico para que no salga dos veces.
 Filename: "{sys}\certutil.exe"; Parameters: "-addstore TrustedPeople ""{app}\StrataUI.cer"""; Flags: runhidden; Tasks: contextmenu; Check: CertNeeded and IsAdminInstallMode
 Filename: "{sys}\certutil.exe"; Parameters: "-addstore TrustedPeople ""{app}\StrataUI.cer"""; Verb: runas; Flags: runhidden shellexec waituntilterminated; Tasks: contextmenu; Check: CertNeeded and not IsAdminInstallMode
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage; Add-AppxPackage -Path '{app}\StrataUI.ContextMenu.msix' -ExternalLocation '{app}'"""; Flags: runhidden runasoriginaluser; Tasks: contextmenu
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\Integration.ps1"" -Action Register"; Flags: runhidden runasoriginaluser; Tasks: contextmenu
 ; Si la app se mudó de la carpeta WINX y no se eligió el menú contextual, el paquete registrado antes
 ; apunta a la carpeta borrada: se quita (Strata UI vuelve a poner el verbo clásico al abrirse).
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage"""; Flags: runhidden runasoriginaluser; Check: MovedFromLegacy and not WizardIsTaskSelected('contextmenu')
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\Integration.ps1"" -Action Remove"; Flags: runhidden runasoriginaluser; Check: MovedFromLegacy and not WizardIsTaskSelected('contextmenu')
 Filename: "{app}\StrataUI.exe"; Description: "{cm:LaunchStrata}"; Flags: nowait postinstall skipifsilent
 ; Actualización silenciosa desde el Hub: Strata UI se vuelve a abrir solo. Como el usuario y no con los
 ; permisos del instalador (sin postinstall, Inno Setup lo abre elevado en una instalación para todos:
@@ -128,7 +130,7 @@ Filename: "{app}\StrataUI.exe"; Flags: nowait runasoriginaluser; Check: WizardSi
 ; Cierra Strata UI limpiamente para que vuelva la barra de Windows antes de borrar los archivos.
 Filename: "{app}\StrataUI.exe"; Parameters: "--exit"; Flags: runhidden waituntilterminated; RunOnceId: "ExitStrata"
 ; El paquete del menú contextual moderno (si se registró).
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -Command ""Get-AppxPackage StrataUI.ContextMenu | Remove-AppxPackage"""; Flags: runhidden waituntilterminated; RunOnceId: "RemoveContextMenu"
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File ""{app}\Integration.ps1"" -Action Remove"; Flags: runhidden waituntilterminated; RunOnceId: "RemoveContextMenu"
 
 [Code]
 const
@@ -186,12 +188,18 @@ begin
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  Code: Integer;
 begin
   CloseApp(ExpandConstant('{app}'), 'StrataUI.exe');
   // Actualización desde cuando se llamaba WINX (en su carpeta vieja o ya con el nombre nuevo).
   CloseApp(ExpandConstant('{app}'), 'WINX.exe');
   CloseApp(LegacyDir, 'StrataUI.exe');
   CloseApp(LegacyDir, 'WINX.exe');
+  // El proceso elevado de las lecturas avanzadas se cierra solo poco después que Strata UI; por si
+  // quedó trabado leyendo el hardware, se termina (si no, sus archivos no se pueden reemplazar).
+  if IsAdminInstallMode then
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM StrataUI.exe', '', SW_HIDE, ewWaitUntilTerminated, Code);
   Result := '';
 end;
 
@@ -203,11 +211,17 @@ var
 begin
   // La tarea de inicio automático pudo crearla un Strata UI elevado: Strata UI sin elevar no puede
   // cambiarla, así que si la app cambió de carpeta la tarea seguiría apuntando a la vieja. Con
-  // administrador, el instalador la apunta a la nueva (si no existe, schtasks solo falla).
+  // administrador, el instalador la apunta a la nueva, con una espera limitada y sin pedir contraseña.
   if (CurStep = ssPostInstall) and IsAdminInstallMode then
-    Exec(ExpandConstant('{sys}\schtasks.exe'),
-         ExpandConstant('/Change /TN "StrataUI ({username})" /TR "\"{app}\StrataUI.exe\""'), '',
+  begin
+    Exec(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+         ExpandConstant('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{app}\Integration.ps1" -Action UpdateTask'), '',
          SW_HIDE, ewWaitUntilTerminated, Code);
+    // El permiso de administrador de Strata UI (lecturas avanzadas y las acciones de la lista fija
+    // de Tweaks\ElevatedBroker): con el instalador ya elevado se deja listo, sin UAC después.
+    Exec(ExpandConstant('{app}\StrataUI.exe'), '--install-sensors-task', '', SW_HIDE, ewWaitUntilTerminated, Code);
+    Log('Tarea de permisos de administrador: código ' + IntToStr(Code));
+  end;
   if (CurStep = ssPostInstall) and MovedFromLegacy and DirExists(LegacyDir)
      and (FileExists(LegacyDir + '\StrataUI.exe') or FileExists(LegacyDir + '\WINX.exe')) then
   begin

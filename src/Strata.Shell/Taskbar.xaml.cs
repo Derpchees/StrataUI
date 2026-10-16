@@ -344,7 +344,7 @@ public partial class Taskbar : AppBarWindow
     }
 
     private ResourceDictionary? _screenPalette;
-    private (string?, bool, int) _appliedLook;
+    private (string?, bool, int, BarStyle, string?) _appliedLook;
 
     /// <summary>
     /// Si su monitor tiene otro tema (o tamaño) que el general, la barra usa sus propios colores;
@@ -352,7 +352,7 @@ public partial class Taskbar : AppBarWindow
     /// </summary>
     private void ApplyScreenPalette()
     {
-        var look = (BarTheme.Key, ThemeManager.IsLightFor(Device), S.TaskbarHeight);
+        var look = (BarTheme.Key, ThemeManager.IsLightFor(Device), S.TaskbarHeight, S.BarStyle, S.BarColor);
         var palette = ThemeManager.PaletteFor(Device);
         if (_screenPalette != null)
             Resources.MergedDictionaries.Remove(_screenPalette);
@@ -360,7 +360,7 @@ public partial class Taskbar : AppBarWindow
         if (palette != null)
             Resources.MergedDictionaries.Add(palette);
         // Con un color propio de barra, su texto (claro u oscuro) va solo en la barra, no en sus paneles.
-        if (ThemeManager.CustomBarColor != null
+        if (ThemeManager.BarColorFor(Device) != null
             && ((palette ?? Application.Current.Resources)["StrataBarForegroundBrush"]) is System.Windows.Media.Brush barText)
             Resources["StrataForegroundBrush"] = barText;
         else

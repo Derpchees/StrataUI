@@ -13,8 +13,8 @@ namespace Strata.Shell.Services.Notifications;
 ///   inaudible que la despierta (con silencio digital no alcanzaba: hay controladores que no lo
 ///   cuentan como actividad).
 /// - El de Windows es suave: se lleva su pico al máximo sin saturar.
-/// El resultado se guarda una vez como .wav en la carpeta de datos y se reproduce con MediaPlayer
-/// (en la PC real PlaySound devolvía éxito y no se oía nada).
+/// El resultado se guarda una vez como .wav en la carpeta de datos y se reproduce con WASAPI (en la
+/// PC real PlaySound devolvía éxito y no se oía nada, y luego MediaPlayer tampoco sonaba).
 /// </summary>
 public static class NotificationSound
 {
@@ -22,18 +22,20 @@ public static class NotificationSound
     private const float WakeNoise = 0.001f;   // -60 dB: no se oye
     private const float TargetPeak = 0.95f;
 
-    private static MediaPlayer? _player;
-    private static string? _playerFile;
+    private static WasapiOut? _output;
+    private static WaveFileReader? _reader;
 
     private static string Folder => Path.Combine(Path.GetDirectoryName(Settings.FilePath)!, "Sounds");
 
-    public static void Play()
+    /// <summary>El sonido elegido (importado o el de Strata UI); con <paramref name="source"/>, ese (vista previa).</summary>
+    public static void Play(string? source = null)
     {
+        source ??= SoundLibrary.Current;
         Task.Run(() =>
         {
             try
             {
-                var prepared = PrepareChime();
+                var prepared = source is null ? PrepareChime() : Prepare(source);
                 Application.Current?.Dispatcher.BeginInvoke(() => PlayFile(prepared));
             }
             catch (Exception ex)
@@ -43,24 +45,51 @@ public static class NotificationSound
         });
     }
 
+    /// <summary>
+    /// Directo al dispositivo de salida con WASAPI (modo compartido, como cualquier app): MediaPlayer
+    /// de WPF dejó de sonar dentro de Strata UI sin avisar de ningún error, y así cada falla queda en
+    /// el registro.
+    /// </summary>
     private static void PlayFile(string file)
     {
         try
         {
-            _player ??= new MediaPlayer { Volume = 1 };
-            if (_playerFile != file)
+            Stop();
+            _reader = new WaveFileReader(file);
+            _output = new WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, useEventSync: true, latency: 100);
+            var output = _output;
+            output.PlaybackStopped += (_, e) =>
             {
-                _player.Open(new Uri(file));
-                _playerFile = file;
-            }
-            _player.Stop();
-            _player.Position = TimeSpan.Zero;
-            _player.Play();
+                if (e.Exception != null)
+                    Log.Error("El sonido de notificación se cortó", e.Exception);
+                if (ReferenceEquals(output, _output))
+                    Stop();
+            };
+            _output.Init(_reader);
+            _output.Play();
+            Log.Info("Sonido de notificación: " + Path.GetFileName(file));
         }
         catch (Exception ex)
         {
             Log.Error("No se pudo reproducir el sonido de notificación", ex);
+            Stop();
         }
+    }
+
+    private static void Stop()
+    {
+        var output = _output;
+        _output = null;
+        try
+        {
+            output?.Stop();
+            output?.Dispose();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.Runtime.InteropServices.COMException)
+        {
+        }
+        _reader?.Dispose();
+        _reader = null;
     }
 
     // ── Sonido propio ───────────────────────────────────────────────────────
@@ -148,7 +177,10 @@ public static class NotificationSound
         foreach (var old in Directory.EnumerateFiles(Folder, "*.wav"))
             File.Delete(old);
 
-        using var reader = new WaveFileReader(source);
+        // .wav directo; .mp3, .m4a y .wma con Media Foundation (el de Windows).
+        using WaveStream reader = Path.GetExtension(source).Equals(".wav", StringComparison.OrdinalIgnoreCase)
+            ? new WaveFileReader(source)
+            : new MediaFoundationReader(source);
         var input = reader.ToSampleProvider();
         var format = input.WaveFormat;
         var samples = new List<float>();

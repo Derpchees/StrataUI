@@ -59,7 +59,41 @@ public partial class TaskbarPage : Page
         DateSwitch.IsChecked = s.ShowDate;
         TemperaturesSwitch.IsChecked = s.ShowTemperatures;
         BatteryPercentSwitch.IsChecked = s.ShowBatteryPercent;
+        Select(BarStyleBox, s.BarStyle.ToString());
+        BuildBarColor();
         BuildMonitorPanel();
+    }
+
+    /// <summary>El editor del color propio de la barra de este monitor (solo con ese estilo).</summary>
+    private void BuildBarColor()
+    {
+        string device = Device;
+        BarColorHost.Content = Settings.Current.For(device).BarStyle != BarStyle.Color ? null
+            : ColorsPage.CustomColorCard(this, Loc.T("Color de la barra"), Loc.T("Con su opacidad: a menos, más se ve el material del tema detrás."),
+                Wpf.Ui.Controls.SymbolRegular.Color24,
+                () => Settings.Current.For(device).BarColor,
+                (st, value) =>
+                {
+                    if (!st.Screens.TryGetValue(device, out var screen))
+                        st.Screens[device] = screen = st.DefaultScreen();
+                    screen.BarColor = value;
+                },
+                toggle: false);
+    }
+
+    private void BarStyle_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || BarStyleBox.SelectedItem is not ComboBoxItem { Tag: string tag })
+            return;
+        var style = Enum.Parse<BarStyle>(tag);
+        Settings.UpdateScreen(Device, s =>
+        {
+            s.BarStyle = style;
+            // Al elegir color propio por primera vez, uno oscuro y algo transparente para empezar.
+            if (style == BarStyle.Color && s.BarColor is null)
+                s.BarColor = "#E61C1C1C";
+        });
+        BuildBarColor();
     }
 
     private static void Select(ComboBox box, string tag) =>

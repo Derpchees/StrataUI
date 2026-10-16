@@ -46,6 +46,13 @@ public sealed class PageHeader : Grid
         text.Children.Add(_subtitle);
         SetColumn(text, 1);
         Children.Add(text);
+
+        // Dentro de una pestaña ya está la cabecera de su entrada.
+        Loaded += (_, _) =>
+        {
+            if (TabbedPage.IsEmbedded(this))
+                Visibility = Visibility.Collapsed;
+        };
     }
 
     public SymbolRegular Icon

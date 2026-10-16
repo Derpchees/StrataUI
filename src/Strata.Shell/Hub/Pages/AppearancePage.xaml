@@ -8,35 +8,22 @@
       ScrollViewer.CanContentScroll="False">
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
-            <hub:PageHeader Icon="PaintBrush24" Title="{l:T 'Tema'}" Subtitle="{l:T 'Estilo de la barra, los paneles y el Hub, y sus animaciones. Los colores están en Colores.'}" />
+            <hub:PageHeader Icon="PaintBrush24" Title="{l:T 'Tema'}" Subtitle="{l:T 'Estilo de la barra, los paneles y el Hub, y sus animaciones.'}" />
             <hub:ScreenPicker />
 
-            <!-- ── De este monitor ───────────────────────────────────────────── -->
             <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,4" Text="{l:T 'Tema'}" />
             <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
-                       Text="{l:T 'De la barra de este monitor y de los paneles y el menú Inicio que se abren desde ella. El del principal de Strata UI también lo usa el Hub.'}" />
+                       Text="{l:T 'De la barra, los paneles, el menú Inicio y el Hub, en todos los monitores.'}" />
             <TextBlock Style="{StaticResource CardTitle}" Margin="2,0,0,8" Text="{l:T 'Estilos'}" />
             <WrapPanel x:Name="ThemeGallery" Margin="0,0,0,8" />
             <TextBlock Style="{StaticResource CardTitle}" Margin="2,4,0,8" Text="{l:T 'Esquemas de color'}" />
             <WrapPanel x:Name="SchemeGallery" Margin="0,0,0,8" />
             <TextBlock x:Name="ImportedTitle" Style="{StaticResource CardTitle}" Margin="2,4,0,8" Text="{l:T 'Importados'}" Visibility="Collapsed" />
             <WrapPanel x:Name="ImportedGallery" Margin="0,0,0,8" />
-            <ContentControl x:Name="ThemeModulesHost" Margin="0,0,0,8" />
 
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Eye24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Barra totalmente transparente'}" />
-                        <TextBlock Style="{StaticResource CardDescription}"
-                                   Text="{l:T 'Sin fondo, borde ni desenfoque: solo se ven los íconos y el texto. Cada parte de la barra se pone clara u oscura según el fondo que tenga detrás.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="TransparentSwitch" Click="Transparent_Click" />
-            </ui:CardControl>
 
-            <!-- ── Para todos los monitores ──────────────────────────────────── -->
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Para todos los monitores'}" />
+            <!-- ── Efectos ───────────────────────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Efectos'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Drop24" /></ui:CardControl.Icon>
@@ -94,7 +81,6 @@
                 </ComboBox>
             </ui:CardControl>
 
-            <ContentControl x:Name="AnimationModulesHost" Margin="0,4,0,0" />
 
         </StackPanel>
     </ScrollViewer>

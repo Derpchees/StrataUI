@@ -28,6 +28,24 @@
             <!-- ── Barra ─────────────────────────────────────────────────────── -->
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Barra'}" />
 
+            <!-- Estilo de la barra de este monitor, sobre el tema de todos (Tema y colores) -->
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="PaintBrush24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Estilo de la barra'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Solo la de este monitor: con el tema de todos, sin fondo (solo íconos y texto) o con un color propio.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="BarStyleBox" MinWidth="200" SelectionChanged="BarStyle_Changed">
+                    <ComboBoxItem Content="{l:T 'Igual que el tema'}" Tag="Theme" />
+                    <ComboBoxItem Content="{l:T 'Transparente total'}" Tag="Clear" />
+                    <ComboBoxItem Content="{l:T 'Color propio'}" Tag="Color" />
+                </ComboBox>
+            </ui:CardControl>
+            <ContentControl x:Name="BarColorHost" />
+
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlignCenterHorizontal24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>

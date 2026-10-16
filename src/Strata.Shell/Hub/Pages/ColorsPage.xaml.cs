@@ -45,9 +45,8 @@ public partial class ColorsPage : Page
         _loading = false;
         BuildSwatches();
         UpdateSwatches();
-        CustomColors.Children.Add(CustomColorCard(Loc.T("Barra de tareas"), Loc.T("Fondo de las barras (las que están totalmente transparentes no lo usan)."), SymbolRegular.PanelBottom20,
-            () => Settings.Current.CustomBarColor, (st, value) => st.CustomBarColor = value));
-        CustomColors.Children.Add(CustomColorCard(Loc.T("Paneles y menú Inicio"), Loc.T("Fondo de los paneles, el menú Inicio y el centro de notificaciones."),
+        // El color de cada barra está en Barra de tareas (es de cada monitor).
+        CustomColors.Children.Add(CustomColorCard(this, Loc.T("Paneles y menú Inicio"), Loc.T("Fondo de los paneles, el menú Inicio y el centro de notificaciones."),
             SymbolRegular.PanelRight24, () => Settings.Current.CustomPanelColor, (st, value) => st.CustomPanelColor = value));
         UpdateWallpaper();
 
@@ -95,7 +94,7 @@ public partial class ColorsPage : Page
         var current = s.AccentFromWallpaper ? null : s.AccentColor;
         SwatchPanel.Visibility = current != null ? Visibility.Visible : Visibility.Collapsed;
         foreach (System.Windows.Controls.Button swatch in Swatches.Children)
-            Mark(swatch, string.Equals((string)swatch.Tag, current, StringComparison.OrdinalIgnoreCase));
+            Mark(this, swatch, string.Equals((string)swatch.Tag, current, StringComparison.OrdinalIgnoreCase));
     }
 
     private void AccentSource_Changed(object sender, SelectionChangedEventArgs e)
@@ -119,31 +118,38 @@ public partial class ColorsPage : Page
 
     /// <summary>
     /// Tarjeta de un color propio: interruptor y, si está activo, muestras, código y opacidad. Se
-    /// guarda como "#AARRGGBB" (null = el del tema).
+    /// guarda como "#AARRGGBB" (null = el del tema). Sin <paramref name="toggle"/>, el editor siempre a
+    /// la vista (lo muestra u oculta quien lo usa, como el estilo de cada barra en Barra de tareas).
     /// </summary>
-    private FrameworkElement CustomColorCard(string title, string description, SymbolRegular icon,
-                                             Func<string?> read, Action<StrataSettings, string?> write)
+    internal static FrameworkElement CustomColorCard(FrameworkElement host, string title, string description, SymbolRegular icon,
+                                                     Func<string?> read, Action<StrataSettings, string?> write, bool toggle = true)
     {
         var header = new StackPanel();
-        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = title });
-        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), Text = description, TextWrapping = TextWrapping.Wrap });
-        var toggle = new ToggleSwitch { IsChecked = read() != null };
-        var card = new CardControl { Style = (Style)FindResource("HubCard"), Header = header, Content = toggle, Icon = new SymbolIcon { Symbol = icon } };
+        header.Children.Add(new TextBlock { Style = (Style)host.FindResource("CardTitle"), Text = title });
+        header.Children.Add(new TextBlock { Style = (Style)host.FindResource("CardDescription"), Text = description, TextWrapping = TextWrapping.Wrap });
+        var toggleSwitch = new ToggleSwitch { IsChecked = read() != null };
+        var card = new CardControl
+        {
+            Style = (Style)host.FindResource("HubCard"),
+            Header = header,
+            Content = toggle ? toggleSwitch : null,
+            Icon = new SymbolIcon { Symbol = icon },
+        };
 
         var editor = new StackPanel();
         var swatches = new WrapPanel { Margin = new Thickness(0, 0, 0, 10) };
         var hexBox = new System.Windows.Controls.TextBox { Width = 110, Margin = new Thickness(0, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center };
         var opacity = new Slider { Minimum = 20, Maximum = 100, Width = 200, VerticalAlignment = VerticalAlignment.Center,
                                    IsSnapToTickEnabled = true, TickFrequency = 5 };
-        var opacityText = new TextBlock { Style = (Style)FindResource("CardDescription"), Width = 48, VerticalAlignment = VerticalAlignment.Center,
+        var opacityText = new TextBlock { Style = (Style)host.FindResource("CardDescription"), Width = 48, VerticalAlignment = VerticalAlignment.Center,
                                           Margin = new Thickness(8, 0, 0, 0) };
         var preview = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(6), Margin = new Thickness(0, 0, 12, 0),
-                                   BorderThickness = new Thickness(1), BorderBrush = (Brush)FindResource("CardStrokeColorDefaultBrush") };
+                                   BorderThickness = new Thickness(1), BorderBrush = (Brush)host.FindResource("CardStrokeColorDefaultBrush") };
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(preview);
-        row.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), Text = Loc.T("Código"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
+        row.Children.Add(new TextBlock { Style = (Style)host.FindResource("CardDescription"), Text = Loc.T("Código"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
         row.Children.Add(hexBox);
-        row.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), Text = Loc.T("Opacidad"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
+        row.Children.Add(new TextBlock { Style = (Style)host.FindResource("CardDescription"), Text = Loc.T("Opacidad"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
         row.Children.Add(opacity);
         row.Children.Add(opacityText);
         editor.Children.Add(swatches);
@@ -154,7 +160,7 @@ public partial class ColorsPage : Page
             Margin = new Thickness(0, 0, 0, 8),
             Padding = new Thickness(16),
             CornerRadius = new CornerRadius(8),
-            Background = (Brush)FindResource("CardBackgroundFillColorDefaultBrush"),
+            Background = (Brush)host.FindResource("CardBackgroundFillColorDefaultBrush"),
         };
 
         bool syncing = false;
@@ -163,13 +169,13 @@ public partial class ColorsPage : Page
         {
             syncing = true;
             var color = Current();
-            editorPanel.Visibility = read() != null ? Visibility.Visible : Visibility.Collapsed;
+            editorPanel.Visibility = !toggle || read() != null ? Visibility.Visible : Visibility.Collapsed;
             hexBox.Text = $"#{color.R:X2}{color.G:X2}{color.B:X2}";
             opacity.Value = Math.Round(color.A / 255.0 * 100);
             opacityText.Text = $"{opacity.Value:0} %";
             preview.Background = new SolidColorBrush(color);
             foreach (System.Windows.Controls.Button swatch in swatches.Children)
-                Mark(swatch, string.Equals((string)swatch.Tag, hexBox.Text, StringComparison.OrdinalIgnoreCase));
+                Mark(host, swatch, string.Equals((string)swatch.Tag, hexBox.Text, StringComparison.OrdinalIgnoreCase));
             syncing = false;
         }
         void Save(Color rgb, double percent)
@@ -190,9 +196,9 @@ public partial class ColorsPage : Page
             swatch.Click += (_, _) => Save(color, opacity.Value);
             swatches.Children.Add(swatch);
         }
-        toggle.Click += (_, _) =>
+        toggleSwitch.Click += (_, _) =>
         {
-            if (toggle.IsChecked == true)
+            if (toggleSwitch.IsChecked == true)
                 Save(Current(), Current().A / 255.0 * 100);
             else
             {
@@ -255,10 +261,10 @@ public partial class ColorsPage : Page
         Cursor = System.Windows.Input.Cursors.Hand,
     };
 
-    private void Mark(System.Windows.Controls.Button swatch, bool selected)
+    private static void Mark(FrameworkElement host, System.Windows.Controls.Button swatch, bool selected)
     {
         swatch.BorderThickness = new Thickness(selected ? 3 : 0);
-        swatch.BorderBrush = (Brush)FindResource("TextFillColorPrimaryBrush");
+        swatch.BorderBrush = (Brush)host.FindResource("TextFillColorPrimaryBrush");
     }
 
     // ── Fondo de pantalla ───────────────────────────────────────────────────

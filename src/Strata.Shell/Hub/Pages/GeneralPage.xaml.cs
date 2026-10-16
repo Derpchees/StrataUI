@@ -3,6 +3,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Strata.Shell.Services;
+using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Hub.Pages;
 
@@ -65,6 +66,64 @@ public partial class GeneralPage : Page
         Directory.CreateDirectory(DataFolder);
         Process.Start(new ProcessStartInfo(DataFolder) { UseShellExecute = true });
     }
+
+    // ── Tu configuración ────────────────────────────────────────────────────
+
+    private async void Export_Click(object sender, RoutedEventArgs e)
+    {
+        var folders = await FilePicker.PickFoldersAsync(Loc.T("Carpeta donde guardar la configuración"));
+        if (folders.Length == 0)
+            return;
+        try
+        {
+            var path = SettingsTransfer.Export(folders[0]);
+            ShowTransfer(Loc.F("Guardada en {0}", path));
+            SettingsTransfer.Reveal(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Error("No se pudo exportar la configuración", ex);
+            ShowTransfer(Loc.F("No se pudo exportar: {0}", ex.Message));
+        }
+    }
+
+    private async void Import_Click(object sender, RoutedEventArgs e)
+    {
+        var files = await FilePicker.PickFilesAsync(Loc.T("Importar configuración"),
+            Loc.T("Configuración de Strata UI (*.zip, *.json)") + "|*.zip;*.json");
+        if (files.Length == 0)
+            return;
+        try
+        {
+            SettingsTransfer.Import(files[0]);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Error("No se pudo importar la configuración", ex);
+            ShowTransfer(ex is InvalidDataException
+                ? Loc.T("Ese archivo no es una configuración de Strata UI.")
+                : Loc.F("No se pudo importar: {0}", ex.Message));
+            return;
+        }
+        // Barras, menú, tema y servicios leen los ajustes al arrancar.
+        App.Current.ExitShell(restart: true);
+    }
+
+    private void ShowTransfer(string text)
+    {
+        TransferStatus.Text = text;
+        TransferStatus.Visibility = Visibility.Visible;
+    }
+
+    // ── Módulos ─────────────────────────────────────────────────────────────
+
+    private void OpenModules_Click(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(Services.Modules.ModuleStore.Root);
+        Process.Start(new ProcessStartInfo(Services.Modules.ModuleStore.Root) { UseShellExecute = true });
+    }
+
+    private void ModuleFormat_Click(object sender, RoutedEventArgs e) => ModulesSection.OpenFormat();
 
     private void Restart_Click(object sender, RoutedEventArgs e) => App.Current.ExitShell(restart: true);
 

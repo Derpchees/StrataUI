@@ -148,7 +148,10 @@ public partial class TaskPreviewWindow : Window
 
     private void Present(FrameworkElement anchor, IReadOnlyList<ApplicationWindow> windows)
     {
-        bool appearing = !IsVisible;
+        // Si se estaba yendo, vuelve: la salida en curso ya no la oculta.
+        bool appearing = !IsVisible || _leaving;
+        _leaving = false;
+        _shown++;
         _anchor = anchor;
         new WindowInteropHelper(this).EnsureHandle();
         Entries.Orientation = Edge is TaskbarPosition.Left or TaskbarPosition.Right ? Orientation.Vertical : Orientation.Horizontal;
@@ -162,7 +165,7 @@ public partial class TaskPreviewWindow : Window
         }
         if (appearing)
         {
-            Opacity = 0;
+            Card.Opacity = 0;
             Show();
         }
         Place();
@@ -170,7 +173,7 @@ public partial class TaskPreviewWindow : Window
         {
             UpdateThumbs();
             if (appearing)
-                Motion.In(this, Card, Edge);
+                Motion.In(Card, Card, Edge);
         }, DispatcherPriority.Loaded);
     }
 
@@ -307,13 +310,27 @@ public partial class TaskPreviewWindow : Window
         Entries.Children.Clear();
     }
 
+    // Salida animada en curso, y cuántas veces se mostró (una salida vieja no oculta una vista nueva).
+    private bool _leaving;
+    private int _shown;
+
     private void HidePreview()
     {
-        if (!IsVisible)
+        if (!IsVisible || _leaving)
             return;
+        // Las miniaturas las dibuja DWM encima de la ventana (no se desvanecen con ella): se quitan
+        // primero y la tarjeta sale con la animación elegida.
         Clear();
         _anchor = null;
-        Hide();
+        _leaving = true;
+        int shown = _shown;
+        Motion.Out(Card, Card, Edge, () =>
+        {
+            if (!_leaving || shown != _shown)
+                return;
+            _leaving = false;
+            Hide();
+        });
     }
 
     // ── Posición: junto al botón, del lado de la pantalla ───────────────────

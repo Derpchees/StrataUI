@@ -33,10 +33,18 @@ public sealed record ThemeInfo(
     double Radius = 5,
     double PanelRadius = 8,
     ColorScheme? Scheme = null,
-    string? ModuleId = null)
+    string? ModuleId = null,
+    bool ClearBar = false,
+    StrataTheme? SchemeKind = null)
 {
-    /// <summary>Identifica el tema (el de la lista o uno importado) para saber si cambió.</summary>
-    public string Key => ModuleId is null ? Kind.ToString() : "module:" + ModuleId;
+    /// <summary>
+    /// Identifica el tema (el de la lista o uno importado, con su esquema de color si lo tiñe uno)
+    /// para saber si cambió.
+    /// </summary>
+    public string Key => (ModuleId is null ? Kind.ToString() : "module:" + ModuleId) + (SchemeKind is { } k ? "+" + k : "");
+
+    /// <summary>Es un esquema de color (Nord, Dracula…), que tiñe un estilo, y no un estilo.</summary>
+    public bool IsScheme => Scheme != null && SchemeKind is null && ModuleId is null;
 }
 
 public static class ThemeCatalog
@@ -56,6 +64,11 @@ public static class ThemeCatalog
             false, Backdrop.Blur, Glass: true, Floating: true, Radius: 14, PanelRadius: 22),
         new(StrataTheme.Material, "Material", Loc.T("Material Design: superficies tonales con tu acento."), null, Backdrop.Solid,
             Tonal: true, Radius: 14, PanelRadius: 16),
+        // Solo la barra va sin fondo (Taskbar.Transparency); los paneles, el menú Inicio y los menús
+        // llevan el vidrio esmerilado de Transparencia, que se lee sobre cualquier fondo.
+        new(StrataTheme.Clear, Loc.T("Transparente total"),
+            Loc.T("Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles y menús llevan vidrio esmerilado para que se lean."),
+            null, Backdrop.Acrylic, Radius: 6, ClearBar: true),
 
         // ── Esquemas de color ──────────────────────────────────────────────────
         new(StrataTheme.Midnight, Loc.T("Medianoche"), Loc.T("Negro puro para pantallas OLED, con tu acento."), false, Backdrop.Solid, Radius: 8, PanelRadius: 12,
@@ -77,4 +90,13 @@ public static class ThemeCatalog
     ];
 
     public static ThemeInfo Get(StrataTheme kind) => All.FirstOrDefault(t => t.Kind == kind) ?? All[0];
+
+    /// <summary>
+    /// El estilo con los colores de un esquema encima (null: el estilo tal cual). El esquema pone
+    /// colores y claro/oscuro; el estilo, el material (Mica, vidrio, transparencia…) y las formas.
+    /// </summary>
+    public static ThemeInfo Combine(ThemeInfo style, StrataTheme? scheme) =>
+        scheme is { } kind && style.Scheme is null && Get(kind) is { IsScheme: true } colors
+            ? style with { Scheme = colors.Scheme, Light = colors.Light, SchemeKind = kind }
+            : style;
 }

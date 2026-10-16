@@ -111,6 +111,17 @@
                 </ui:CardControl>
 
                 <ui:CardControl Style="{StaticResource HubCard}">
+                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="SpeakerMute24" /></ui:CardControl.Icon>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Solo el sonido de Strata UI'}" />
+                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Silencia el sonido que Windows pone a las notificaciones de cada app (WhatsApp, navegadores…). El que tocan las páginas web se quita en cada sitio.'}" />
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch x:Name="MuteWindowsSoundsSwitch" Click="MuteWindowsSounds_Click" />
+                </ui:CardControl>
+
+                <ui:CardControl Style="{StaticResource HubCard}">
                     <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlertSnooze24" /></ui:CardControl.Icon>
                     <ui:CardControl.Header>
                         <StackPanel>

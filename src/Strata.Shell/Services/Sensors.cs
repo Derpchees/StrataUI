@@ -27,6 +27,9 @@ public static class Sensors
     private static Dictionary<int, FrameRate> _presents = new();
     private static Dictionary<int, string> _kinds = new();
     private static TaskCompletionSource<bool>? _freed;
+    // Acciones de administrador pedidas al proceso elevado (ver Tweaks/ElevatedBroker), por número.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, TaskCompletionSource<int>> _runs = new();
+    private static int _lastRun;
 
     public static bool Running { get; private set; }
     public static bool Starting { get; private set; }
@@ -279,6 +282,43 @@ public static class Sensors
         return await Task.WhenAny(_freed.Task, Task.Delay(TimeSpan.FromSeconds(60))) == _freed.Task;
     }
 
+    /// <summary>
+    /// Ejecuta una acción de administrador con el proceso elevado, sin UAC (lo inicia si el permiso ya
+    /// está dado). Null si no se pudo usar (Strata UI no está en Archivos de programa, el permiso no
+    /// está dado o la acción no está en la lista): quien la pidió la lanza con UAC.
+    /// </summary>
+    public static Task<int?> RunElevatedAsync(string[] args) =>
+        System.Windows.Application.Current is { } app
+            ? app.Dispatcher.InvokeAsync(() => RunElevatedCoreAsync(args)).Task.Unwrap()
+            : Task.FromResult<int?>(null);
+
+    private static async Task<int?> RunElevatedCoreAsync(string[] args)
+    {
+        if (!SensorsTask.InstalledProtected || !Tweaks.ElevatedBroker.IsAllowed(args))
+            return null;
+        if (!Running && (!await Task.Run(SensorsTask.IsReady) || !await StartAsync()))
+            return null;
+        if (_writer is null)
+            return null;
+        int id = Interlocked.Increment(ref _lastRun);
+        var done = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _runs[id] = done;
+        try
+        {
+            await _writer.WriteLineAsync($"run {id} {Tweaks.ElevatedBroker.Encode(args)}");
+            int code = await done.Task;
+            return code == Tweaks.ElevatedBroker.Rejected ? null : code;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        finally
+        {
+            _runs.TryRemove(id, out _);
+        }
+    }
+
     private static async Task ReadLoopAsync(NamedPipeServerStream pipe)
     {
         try
@@ -287,6 +327,15 @@ public static class Sensors
             bool first = true;
             while (await reader.ReadLineAsync() is { } line)
             {
+                if (line.StartsWith("ran ", StringComparison.Ordinal))
+                {
+                    // "ran número código": terminó una acción de administrador.
+                    var bits = line.Split(' ');
+                    if (bits.Length == 3 && int.TryParse(bits[1], out int id) && int.TryParse(bits[2], out int code)
+                        && _runs.TryGetValue(id, out var run))
+                        run.TrySetResult(code);
+                    continue;
+                }
                 if (first)
                     Log.Info("Lecturas avanzadas: primera lectura recibida: " + line);
                 first = false;
@@ -378,6 +427,9 @@ public static class Sensors
         CpuTemperature = GpuTemperature = null;
         _presents = new();
         _freed?.TrySetResult(false);
+        // Se cortó el proceso elevado con acciones en curso: fallan (no se repiten con UAC).
+        foreach (var run in _runs.Values)
+            run.TrySetResult(1);
         Changed?.Invoke();
     }
 
@@ -385,8 +437,9 @@ public static class Sensors
 
     /// <summary>
     /// StrataUI.exe --sensors-task (lo inicia la tarea de <see cref="SensorsTask"/>): se conecta a la
-    /// tubería del usuario, comprueba que quien la abrió sea Strata UI y solo manda lecturas y atiende
-    /// "free". Termina cuando ese Strata UI se cierra.
+    /// tubería del usuario, comprueba que quien la abrió sea Strata UI, manda lecturas y atiende "free"
+    /// y, si es el Strata UI de su misma carpeta protegida, "run" (acciones de administrador de la
+    /// lista fija de Tweaks/ElevatedBroker). Termina cuando ese Strata UI se cierra.
     /// </summary>
     public static int RunHelper(string[] args)
     {
@@ -416,6 +469,27 @@ public static class Sensors
         {
             return 2;
         }
+        // Las acciones de administrador (Tweaks/ElevatedBroker) solo para el Strata UI de esta misma
+        // carpeta protegida: otro programa que se llame StrataUI.exe recibe lecturas, nada más.
+        bool trusted;
+        try
+        {
+            trusted = SensorsTask.InstalledProtected
+                      && string.Equals(parent.MainModule?.FileName, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            trusted = false;
+        }
+        // Se cierra poco después que Strata UI aunque un hilo esté trabado leyendo el hardware: si no,
+        // el proceso quedaba vivo (y el instalador no podía reemplazar sus archivos).
+        new Thread(() =>
+        {
+            parent.WaitForExit();
+            Thread.Sleep(3000);
+            Log.Info("Lecturas avanzadas: Strata UI se cerró; el proceso elevado termina");
+            Process.GetCurrentProcess().Kill();
+        }) { IsBackground = true }.Start();
         var writer = new StreamWriter(pipe) { AutoFlush = true };
         var writeLock = new object();
         void Send(string line)
@@ -462,6 +536,25 @@ public static class Sensors
                     {
                         FreeMemory.Run();
                         Send("freed");
+                    }
+                    else if (command.StartsWith("run ", StringComparison.Ordinal))
+                    {
+                        // "run número pedido": una acción de la lista fija, en su propio hilo (la limpieza
+                        // puede tardar y las lecturas siguen).
+                        var bits = command.Split(' ');
+                        if (bits.Length == 3 && int.TryParse(bits[1], out int id))
+                            ThreadPool.QueueUserWorkItem(_ =>
+                            {
+                                int code = trusted ? Tweaks.ElevatedBroker.Run(bits[2]) : Tweaks.ElevatedBroker.Rejected;
+                                try
+                                {
+                                    Send($"ran {id} {code}");
+                                }
+                                catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+                                {
+                                    // Strata UI se cerró mientras tanto: no hay a quién avisar.
+                                }
+                            });
                     }
                 }
             }
@@ -543,10 +636,12 @@ public static class Sensors
                         // Aparte: si la placa falla, la CPU y la GPU se siguen leyendo.
                         try
                         {
-                            hardware.Update();
+                            if (!Update(hardware))
+                                continue;
                             foreach (var chip in hardware.SubHardware)
                             {
-                                chip.Update();
+                                if (!Update(chip))
+                                    continue;
                                 board ??= chip.Sensors.FirstOrDefault(s => s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature
                                                                           && s.Name.Equals("CPU", StringComparison.OrdinalIgnoreCase)
                                                                           && s.Value is > 0 and < 150)?.Value;
@@ -558,7 +653,8 @@ public static class Sensors
                         }
                         continue;
                     }
-                    hardware.Update();
+                    if (!Update(hardware))
+                        continue;
                     var temps = hardware.Sensors
                         .Where(s => s.SensorType == LibreHardwareMonitor.Hardware.SensorType.Temperature && s.Value is > 0)
                         .ToList();
@@ -586,6 +682,30 @@ public static class Sensors
             if (gpu is null && integrated)
                 gpu = cpu;
             return (board ?? cpu, gpu);
+        }
+
+        // Piezas lentas: en algunas laptops el controlador de la placa (o del equipo) tarda segundos en
+        // responder y, mientras, frena a todo el sistema (menús que tardaban 8 s en aparecer). Después
+        // de dos lecturas lentas, esa pieza deja de leerse en esta sesión.
+        private const int SlowMs = 1500;
+        private readonly Dictionary<string, int> _slowReads = new();
+        private readonly HashSet<string> _skipped = new();
+
+        /// <summary>Lee una pieza si no quedó descartada por lenta; false si se la salta.</summary>
+        private bool Update(LibreHardwareMonitor.Hardware.IHardware hardware)
+        {
+            string id = hardware.Identifier.ToString();
+            if (_skipped.Contains(id))
+                return false;
+            var watch = Stopwatch.StartNew();
+            hardware.Update();
+            if (watch.ElapsedMilliseconds > SlowMs)
+            {
+                int slow = _slowReads[id] = _slowReads.GetValueOrDefault(id) + 1;
+                if (slow >= 2 && _skipped.Add(id))
+                    Log.Info($"Lecturas avanzadas: {hardware.Name} tarda {watch.ElapsedMilliseconds} ms en leerse; se deja de leer");
+            }
+            return true;
         }
 
         private readonly HashSet<string> _reported = new();

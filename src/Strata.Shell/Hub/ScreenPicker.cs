@@ -9,7 +9,7 @@ namespace Strata.Shell.Hub;
 /// <summary>
 /// Elige el monitor que editan las páginas de Personalización por monitor. La elección es la misma
 /// en todas las páginas (se recuerda mientras el Hub está abierto) y por defecto es el principal de
-/// Strata UI. "Copiar a todos" pone los ajustes de este monitor en los demás.
+/// Strata UI.
 /// </summary>
 public sealed class ScreenPicker : UserControl
 {
@@ -57,42 +57,34 @@ public sealed class ScreenPicker : UserControl
             }
         };
 
-        var copy = new Wpf.Ui.Controls.Button
+        // Una línea: "Ajustes de [monitor]". Con un solo monitor no hace falta elegir.
+        var label = new TextBlock
         {
-            Content = Loc.T("Copiar a todos"),
-            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.CopySelect20 },
-            Margin = new Thickness(8, 0, 0, 0),
-            ToolTip = Loc.T("Pone los ajustes de este monitor en todos los demás"),
-            Visibility = screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed,
+            Text = Loc.T("Ajustes de"),
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0),
         };
-        copy.Click += (_, _) => CopyToAll();
-
-        var controls = new StackPanel { Orientation = Orientation.Horizontal };
-        controls.Children.Add(_box);
-        controls.Children.Add(copy);
-
-        var header = new StackPanel();
-        // Con el nombre largo del monitor queda poco ancho: el título se parte en líneas en vez de cortarse.
-        header.Children.Add(new TextBlock { Text = Loc.T("Monitor que estás personalizando"), TextWrapping = TextWrapping.Wrap, TextTrimming = TextTrimming.None });
-        header.Children.Add(new TextBlock
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        row.Children.Add(new Wpf.Ui.Controls.SymbolIcon
         {
-            Text = Loc.T("Estos ajustes son solo de ese monitor. El menú Inicio es igual en todos."),
-            FontSize = 12,
-            TextWrapping = TextWrapping.Wrap,
+            Symbol = Wpf.Ui.Controls.SymbolRegular.Desktop24,
+            FontSize = 18,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0),
         });
-        header.Loaded += (_, _) =>
-        {
-            ((TextBlock)header.Children[0]).Style = (Style)FindResource("CardTitle");
-            ((TextBlock)header.Children[1]).Style = (Style)FindResource("CardDescription");
-        };
+        row.Children.Add(label);
+        row.Children.Add(_box);
+        row.Loaded += (_, _) => label.Style = (Style)FindResource("CardTitle");
 
-        Content = new Wpf.Ui.Controls.CardControl
+        Content = row;
+        Margin = new Thickness(0, 0, 0, 8);
+        ToolTip = Loc.T("Estos ajustes son solo de ese monitor. El menú Inicio es igual en todos.");
+        Visibility = screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+        Loaded += (_, _) =>
         {
-            Margin = new Thickness(0, 0, 0, 8),
-            Padding = new Thickness(18, 14, 18, 14),
-            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Desktop24 },
-            Header = header,
-            Content = controls,
+            // Dentro de una pestaña, el de su entrada vale para todas.
+            if (TabbedPage.IsEmbedded(this))
+                Visibility = Visibility.Collapsed;
         };
         // Si se eligió en otra página, este también se pone al día.
         Changed += Sync;
@@ -101,16 +93,4 @@ public sealed class ScreenPicker : UserControl
 
     private void Sync() =>
         _box.SelectedItem = _box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == Device) ?? _box.SelectedItem;
-
-    /// <summary>Los ajustes y los elementos de las barras de este monitor, en todos los demás.</summary>
-    private static void CopyToAll()
-    {
-        string from = Device;
-        Settings.Update(s =>
-        {
-            var source = s.For(from);
-            foreach (var screen in Forms.Screen.AllScreens.Where(sc => sc.DeviceName != from))
-                s.Screens[screen.DeviceName] = source.Clone();
-        });
-    }
 }

@@ -59,6 +59,7 @@ public partial class App : Application
         {
             NativeTaskbar.Restore();
             Services.Notifications.WindowsBanners.Restore();
+            Services.Themes.WindowsAnimations.Restore();
             Shutdown();
             return;
         }
@@ -67,6 +68,11 @@ public partial class App : Application
         if (e.Args.Length > 0 && e.Args[0] is "--apply-tweak" or "--restore-tweaks" or "--restore-point")
         {
             Shutdown(Tweaks.TweakEngine.RunElevatedCommand(e.Args));
+            return;
+        }
+        if (e.Args.Length > 0 && e.Args[0] == Tweaks.ElevatedBroker.RemoveAppxArg)
+        {
+            Shutdown(Tweaks.AppxManager.RunElevatedRemove(e.Args));
             return;
         }
         if (e.Args.Length > 0 && e.Args[0] == Services.Audio.AudioDeviceOptions.ElevatedArg)
@@ -211,6 +217,7 @@ public partial class App : Application
         Services.Notifications.NotificationService.Arrived += OnNotificationArrived;
         Services.Notifications.NotificationService.Update();
         Services.Notifications.WindowsBanners.Update();
+        Services.Themes.WindowsAnimations.Update();
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
         OptimizationModule.StartupMaintenance();
@@ -272,7 +279,24 @@ public partial class App : Application
     /// <summary>Monitores y nombres con que se armaron las barras (para notar si Windows los renombró).</summary>
     private string _monitors = "";
 
+    // Abriendo las barras: guardar los monitores avisa de un cambio de ajustes y OnSettingsChanged, con
+    // _barLayout aún del arreglo anterior, abriría otro juego de barras encima de este.
+    private bool _openingTaskbars;
+
     private void OpenTaskbars()
+    {
+        _openingTaskbars = true;
+        try
+        {
+            OpenTaskbarsCore();
+        }
+        finally
+        {
+            _openingTaskbars = false;
+        }
+    }
+
+    private void OpenTaskbarsCore()
     {
         // Antes de leer nada por monitor: si Windows cambió los nombres, los ajustes siguen a su monitor.
         var present = MonitorKeys.Present();
@@ -367,7 +391,7 @@ public partial class App : Application
                + "|" + s.TaskbarMainScreen
                // La barra transparente también se aplica recreándolas: cambiar en vivo de Acrylic a
                // transparente deja negra la parte transparente (DWM no suelta el material anterior).
-               + "|" + string.Join(";", ScreenDevices().Select(d => d + "=" + s.For(d).TaskbarFullyTransparent))
+               + "|" + string.Join(";", ScreenDevices().Select(d => d + "=" + ThemeManager.ClearBarFor(d)))
                + "|" + BarLayout.TrayKey(s);
     }
 
@@ -506,11 +530,14 @@ public partial class App : Application
         }
         Services.Notifications.NotificationService.Update();
         if (!_exiting)
+        {
             Services.Notifications.WindowsBanners.Update();
+            Services.Themes.WindowsAnimations.Update();
+        }
         Services.Updates.UpdateService.UpdateSchedule();
         if (_exiting)
             return;
-        if (BarLayoutKey() != _barLayout)
+        if (!_openingTaskbars && BarLayoutKey() != _barLayout)
         {
             // Cambiar de borde implica registrar la barra de nuevo ante Windows: se recrean.
             Log.Info("Cambió la posición de las barras; recreando");
@@ -613,6 +640,7 @@ public partial class App : Application
         Services.StartMenu.WinKeyHook.Update(false, false);
         Services.Notifications.NotificationService.Shutdown();
         Services.Notifications.WindowsBanners.Restore();
+        Services.Themes.WindowsAnimations.Restore();
         Notifications.NotificationBannerWindow.CloseAll();
         Notifications.Osd.Shutdown();
         Controls.TaskPreviewWindow.CloseAll();
@@ -670,5 +698,6 @@ public partial class App : Application
         }
         NativeTaskbar.Restore();
         Services.Notifications.WindowsBanners.Restore();
+        Services.Themes.WindowsAnimations.Restore();
     }
 }

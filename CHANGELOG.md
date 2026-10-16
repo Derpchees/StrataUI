@@ -6,6 +6,95 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.5.0] - 2026-10-16
+
+### Añadido
+- **Exportar e importar la configuración** (Hub › General): un .zip con tus ajustes y los módulos
+  importados, para respaldarlos o llevarlos a otro equipo. Al importar se conserva lo propio de
+  este equipo (monitores y los valores de Windows que Strata UI devuelve al cerrarse).
+- **Dashboard** en lugar de Resumen: uso de CPU, RAM y GPU en vivo, No molestar, sonido e inicio
+  con Windows a un clic, Liberar RAM, Reiniciar y Salir, y accesos a cada sección.
+- **Solo el sonido de Strata UI** (Hub › Notificaciones, activado por defecto): mientras Strata UI
+  está abierto, apaga el sonido que Windows pone a las notificaciones de cada app (WhatsApp,
+  navegadores…), así suena solo el tono de Strata UI. Al cerrarlo se devuelve el de cada app. El
+  sonido que tocan las páginas web (el de WhatsApp Web, por ejemplo) se quita en cada sitio.
+- **Estilo de la barra por monitor** (Barra de tareas › Barra): cada barra puede ir con el tema de
+  todos, totalmente transparente o con un color propio (con su opacidad). El color propio de la
+  barra que había en Colores pasa a cada barra.
+- **Sin UAC después de instalar** (instalación para todos los usuarios): el instalador deja listo el
+  proceso con permiso de administrador de las lecturas avanzadas, y ese proceso aplica por Strata
+  UI las optimizaciones, deshacerlas, la limpieza, el punto de restauración, quitar apps para todos
+  los usuarios y los ajustes de audio y de NVIDIA. Solo una lista fija de acciones con sus valores
+  comprobados (nunca comandos libres) y solo para el Strata UI de Archivos de programa; lo demás, o
+  en una instalación por usuario, sigue pidiendo UAC.
+
+### Cambiado
+- **Hub reorganizado**: Barra de tareas junta la barra, la bandeja del sistema, multimedia y los
+  paneles en pestañas; Tema y colores van juntos; Actualizaciones pasa a General. El grupo
+  Optimización ahora es **Módulos**, con una entrada por módulo y sus páginas dentro. El selector de
+  monitor ocupa una línea y solo aparece con más de un monitor.
+- Menú Inicio y las demás páginas con módulos importables ya no tienen los botones de exportar,
+  carpeta y ayuda; la carpeta y el formato de los módulos están en General › Módulos.
+- **Módulos › Importar**: un solo lugar para importar temas, animaciones, widgets, menús de Inicio
+  y **sonidos de notificación** (.wav, .mp3, .m4a, .wma; nuevo), con su lista para usarlos o
+  quitarlos. Las demás páginas ya no tienen su propio bloque de importar.
+- **Paneles** tiene su propia entrada en el Hub.
+- **El tema es de todos los monitores**: al elegirlo se aplica en todos (antes solo en el elegido).
+- **Ventanas apiladas que se ven en cualquier tema**: agrupar las ventanas de cada app viene
+  activado, y las tarjetas de atrás llevan el color del texto de la barra (antes, el tono tenue del
+  botón, que en temas oscuros o en la barra transparente casi no se veía); con tres ventanas o más
+  asoman dos.
+- **Esquemas de color combinables**: Nord, Dracula, Catppuccin… ya no reemplazan al estilo, lo
+  tiñen. Se elige un estilo (Mica, Transparencia, Liquid Glass, Material, Transparente total…) y un
+  esquema por separado; sobre vidrio y transparencia los colores quedan translúcidos para que se
+  siga viendo el efecto. Quien usaba un esquema lo conserva sobre el estilo Sistema.
+- **Animaciones en todo**: las vistas previas de las ventanas también se van con la animación
+  elegida, y los menús, tooltips y la bandeja oculta la muestran con más recorrido (antes casi no se
+  notaba). Los menús contextuales, la bandeja oculta y las carpetas del menú Inicio también se
+  cierran con ella (WPF los cierra de golpe: sale una imagen de cómo se veían). Abrir, cerrar y minimizar ventanas y sus menús los anima Windows: con "Sin animación" se
+  apagan y con cualquier otra se encienden; al cerrar Strata UI vuelven como estaban.
+- **Transparente total ahora es un tema** (antes un interruptor): solo la barra va sin fondo; los
+  paneles, el menú Inicio y los menús llevan vidrio esmerilado para que se lean. Quien lo tenía
+  activado pasa a este tema en ese monitor.
+- Sin "Copiar a todos" en el selector de monitor: cada barra y sus widgets siguen con sus propios
+  ajustes.
+- **Widgets de CPU, GPU y FPS sin el arco**: solo el número grande, el nombre y la temperatura (o
+  el juego).
+
+### Seguridad
+- El proceso elevado de las lecturas avanzadas solo atiende al Strata UI de su misma carpeta (antes
+  bastaba con que el proceso se llamara StrataUI). Al deshacer optimizaciones con permiso de
+  administrador solo se restauran claves del catálogo de ajustes: el respaldo está en una carpeta del
+  usuario y otro programa podría haberle agregado otras.
+- Quitar apps para todos los usuarios ya no lanza un script de PowerShell elevado: lo hace Strata
+  UI, que solo acepta nombres de paquete.
+
+### Corregido
+- **El esquema de color solo se veía en el Hub**: cada monitor seguía con el estilo que tenía de
+  cuando el tema era por monitor (por ejemplo, Transparente total en uno), y sobre los materiales
+  translúcidos el esquema quedaba tan aclarado que no se reconocía. El tema ahora es uno solo para
+  todos los monitores y el esquema se nota sobre cualquier estilo.
+- **No sonaba el sonido de las notificaciones** (ni la vista previa en Importar): MediaPlayer de
+  WPF dejaba de sonar dentro de Strata UI sin avisar. Ahora suena con WASAPI y cada reproducción, o
+  su error, queda en el registro.
+- **Clic en una app abierta para minimizarla**: a veces la traía al frente, porque al soltar el
+  clic ya no figuraba como activa; ahora cuenta cómo estaba al presionar.
+- **Con "Desvanecer", los paneles y el menú Inicio parecían aparecer de golpe**: su contenido se
+  desvanecía, pero el vidrio de Windows detrás no puede, y aparecía de una vez. Ahora además asoman
+  desde la barra con un recorrido corto. Las vistas previas de las ventanas se desvanecen enteras.
+- **Equipo trabado con las lecturas avanzadas**: en algunas laptops leer una pieza del hardware
+  (la placa, el controlador del equipo) tarda segundos y frena a todo el sistema (menús que
+  tardaban 8 s en aparecer). Una pieza que tarda más de 1,5 s dos veces deja de leerse. El proceso
+  elevado ahora se cierra a los 3 s de cerrar Strata UI aunque esté trabado, y el instalador lo
+  termina si quedó vivo (antes la actualización fallaba con "archivo en uso").
+- **Barras duplicadas al conectar un monitor**: cada monitor quedaba con dos barras, una encima
+  de la otra. Guardar los monitores nuevos avisaba de un cambio de ajustes que, mientras se abrían
+  las barras, abría otro juego completo.
+- El registro opcional del menú contextual tiene un límite de 60 segundos y se ejecuta sin
+  preguntas interactivas, para que Windows AppX no deje el instalador detenido al final.
+  Los errores quedan en `logs/installer-integration.log`; también se limita la actualización
+  de la tarea de inicio automático, sin preguntas de contraseña de `schtasks`.
+
 ## [2.4.2] - 2026-10-16
 
 ### Cambiado

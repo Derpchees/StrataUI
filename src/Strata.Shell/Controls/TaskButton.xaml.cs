@@ -197,7 +197,9 @@ public partial class TaskButton : UserControl
     {
         var members = Members();
         bool grouped = members.Count > 1;
+        _layers = Math.Min(members.Count - 1, 2);
         StackEdge.Visibility = grouped ? Visibility.Visible : Visibility.Collapsed;
+        StackEdge2.Visibility = _layers == 2 ? Visibility.Visible : Visibility.Collapsed;
         CloseItem.Header = grouped ? Loc.T("Cerrar todas las ventanas") : Loc.T("Cerrar ventana");
         if (!grouped)
         {
@@ -214,8 +216,11 @@ public partial class TaskButton : UserControl
         // La placa siempre a la vista (más tenue si ninguna está activa), dejando sitio al borde de atrás.
         ActiveBackground.Visibility = Visibility.Visible;
         ActiveBackground.Opacity = active ? 1 : 0.5;
-        StackEdge.Opacity = ActiveBackground.Opacity * 0.6;
-        ActiveBackground.Margin = _vertical ? new Thickness(0, 0, 0, StackOffset) : new Thickness(0, 0, StackOffset, 0);
+        // Del color del texto: bien visible, la de más atrás un poco más tenue.
+        StackEdge.Opacity = active ? 0.45 : 0.32;
+        StackEdge2.Opacity = StackEdge.Opacity * 0.6;
+        double offset = StackOffset * _layers;
+        ActiveBackground.Margin = _vertical ? new Thickness(0, 0, 0, offset) : new Thickness(0, 0, offset, 0);
         IconHost.Margin = ActiveBackground.Margin; // centrado sobre la placa
         UpdateStackShape();
         Indicator.Width = active || flashing ? 16 : 6;
@@ -227,10 +232,12 @@ public partial class TaskButton : UserControl
 
     private const double StackOffset = 4;
     private bool _vertical;
+    // Tarjetas que asoman detrás de la placa: 1 con dos ventanas, 2 con tres o más.
+    private int _layers;
 
     /// <summary>
-    /// La tarjeta de atrás: del mismo tamaño que la placa, corrida hacia el lado (abajo en vertical) y
-    /// un poco más baja; solo se dibuja lo que asoma, pegado a la placa, para que se lea como una pila.
+    /// Las tarjetas de atrás: del tamaño de la placa, cada una corrida hacia el lado (abajo en vertical)
+    /// y un poco más baja que la de adelante; solo se dibuja lo que asoma, para que se lea como una pila.
     /// </summary>
     private void UpdateStackShape()
     {
@@ -238,13 +245,21 @@ public partial class TaskButton : UserControl
         if (StackEdge.Visibility != Visibility.Visible || w <= 0 || h <= 0)
             return;
         double r = ActiveBackground.CornerRadius.TopLeft;
-        const double inset = 5;
-        var front = _vertical ? new Rect(0, 0, w, h - StackOffset) : new Rect(0, 0, w - StackOffset, h);
-        var back = _vertical
-            ? new Rect(inset, StackOffset, w - 2 * inset, h - StackOffset)
-            : new Rect(StackOffset, inset, w - StackOffset, h - 2 * inset);
-        StackEdge.Data = new System.Windows.Media.CombinedGeometry(System.Windows.Media.GeometryCombineMode.Exclude,
-            new System.Windows.Media.RectangleGeometry(back, r, r), new System.Windows.Media.RectangleGeometry(front, r, r));
+        const double inset = 4;
+        double front = StackOffset * _layers;
+        Rect Card(int layer)
+        {
+            double shift = StackOffset * layer, squeeze = inset * layer;
+            return _vertical
+                ? new Rect(squeeze, shift, w - 2 * squeeze, h - front)
+                : new Rect(shift, squeeze, w - front, h - 2 * squeeze);
+        }
+        System.Windows.Media.Geometry Edge(int layer) => new System.Windows.Media.CombinedGeometry(
+            System.Windows.Media.GeometryCombineMode.Exclude,
+            new System.Windows.Media.RectangleGeometry(Card(layer), r, r),
+            new System.Windows.Media.RectangleGeometry(Card(layer - 1), r, r));
+        StackEdge.Data = Edge(1);
+        StackEdge2.Data = _layers == 2 ? Edge(2) : null;
     }
 
     /// <summary>
@@ -277,12 +292,20 @@ public partial class TaskButton : UserControl
     public static event Action<TaskButton>? DragStarted;
 
     private Point? _pressedAt;
+    // La ventana estaba al frente al presionar: al soltar puede que ya no (el clic en la barra le
+    // quita el primer plano) y el botón la traería al frente en vez de minimizarla.
+    private bool _activeAtPress;
 
     protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseLeftButtonDown(e);
         _pressedAt = e.GetPosition(this);
+        _activeAtPress = Window is { IsMinimized: false } window
+                         && (window.State == ApplicationWindow.WindowState.Active || window.Handle == GetForegroundWindow());
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 
     protected override void OnPreviewMouseMove(MouseEventArgs e)
     {
@@ -326,7 +349,9 @@ public partial class TaskButton : UserControl
         TaskPreviewWindow.Dismiss();
 
         // Como en Windows: clic en la ventana activa la minimiza; en otra, la trae al frente.
-        if (window.State == ApplicationWindow.WindowState.Active && !window.IsMinimized)
+        bool active = _activeAtPress || window.State == ApplicationWindow.WindowState.Active && !window.IsMinimized;
+        _activeAtPress = false;
+        if (active)
             window.Minimize();
         else
             window.BringToFront();

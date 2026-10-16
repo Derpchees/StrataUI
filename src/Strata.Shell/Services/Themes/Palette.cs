@@ -31,9 +31,14 @@ public static class Palette
 
         if (theme.Scheme is { } scheme)
         {
-            // Esquema de color (Nord, Dracula…): sus colores tal cual, opacos.
-            background = Hex(scheme.Bar);
-            flyout = Hex(scheme.Panel);
+            // Esquema de color (Nord, Dracula…) sobre el estilo elegido: opacos en los estilos sólidos y
+            // Mica; sobre vidrio o transparencia, translúcidos para que se siga viendo el efecto.
+            // (Con menos, el material de Windows lo aclaraba tanto que el esquema no se reconocía.)
+            (byte barAlpha, byte panelAlpha) = theme.Glass ? (liveGlass ? ((byte)0x80, (byte)0x99) : ((byte)0xB3, (byte)0xCC))
+                : theme.Backdrop == Backdrop.Acrylic ? ((byte)0xE6, (byte)0xD9)
+                : ((byte)0xFF, (byte)0xFF);
+            background = WithAlpha(Hex(scheme.Bar), barAlpha);
+            flyout = WithAlpha(Hex(scheme.Panel), panelAlpha);
             border = Hex(scheme.Border);
             flyoutBorder = Hex(scheme.Border);
             foreground = Hex(scheme.Text);
@@ -192,7 +197,8 @@ public static class Palette
             popup = WithAlpha(panel, 0xF8);
             popupBorder = Hex(scheme.Border);
             selected = WithAlpha(accent, 0x40);
-            appBackground = Hex(scheme.Bar);
+            // El de la barra, con la transparencia que le dio el estilo.
+            appBackground = barColor;
         }
         else if (theme.Tonal)
         {

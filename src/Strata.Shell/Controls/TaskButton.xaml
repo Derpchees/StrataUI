@@ -15,8 +15,11 @@
             </ContextMenu>
         </Button.ContextMenu>
         <Grid x:Name="Root" Width="44">
-            <!-- Varias ventanas agrupadas: el borde de otra "tarjeta" asoma detrás, como en Windows (ver UpdateGroup) -->
-            <Path x:Name="StackEdge" Visibility="Collapsed" Fill="{DynamicResource StrataActiveTaskBrush}" />
+            <!-- Varias ventanas agrupadas: el borde de otras "tarjetas" asoma detrás (una con 2 ventanas,
+                 dos con 3 o más; ver UpdateGroup). Del color del texto de la barra, que contrasta con
+                 ella en cualquier tema (y en la barra transparente sigue al fondo de cada botón). -->
+            <Path x:Name="StackEdge2" Visibility="Collapsed" Fill="{DynamicResource StrataForegroundBrush}" />
+            <Path x:Name="StackEdge" Visibility="Collapsed" Fill="{DynamicResource StrataForegroundBrush}" />
             <Border x:Name="ActiveBackground" CornerRadius="{DynamicResource StrataCornerRadius}" Background="{DynamicResource StrataActiveTaskBrush}">
                 <Border.Style>
                     <Style TargetType="Border">

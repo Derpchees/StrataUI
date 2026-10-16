@@ -21,6 +21,7 @@ public static class Motion
     public static void Initialize()
     {
         EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
+        EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.ClosedEvent, new RoutedEventHandler(OnMenuClosed));
         EventManager.RegisterClassHandler(typeof(ToolTip), ToolTip.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
     }
 
@@ -28,8 +29,99 @@ public static class Motion
     {
         if (sender is not FrameworkElement element || !ReferenceEquals(e.OriginalSource, sender))
             return;
-        In(element, element, FromPointer(element), element is ToolTip ? 0.35 : 0.5);
+        var from = FromPointer(element);
+        // Con recorrido casi de panel: a la mitad, el zoom o el rebote de un menú apenas se notaban.
+        In(element, element, from, element is ToolTip ? 0.5 : 0.85);
+        if (element is ContextMenu)
+            Remember(element, from);
     }
+
+    private static void OnMenuClosed(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && ReferenceEquals(e.OriginalSource, sender))
+            LeaveAsGhost(element);
+    }
+
+    // ── Salida de lo que WPF cierra de golpe (menús y popups) ────────────────
+
+    private sealed record Shown(Rect Bounds, TaskbarPosition From);
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FrameworkElement, Shown> Opened = new();
+
+    /// <summary>Dónde quedó en pantalla (en DIP) al abrirse, para su salida.</summary>
+    private static void Remember(FrameworkElement element, TaskbarPosition from) =>
+        element.Dispatcher.BeginInvoke(() =>
+        {
+            if (PresentationSource.FromVisual(element) is { CompositionTarget: { } target } && element.ActualWidth > 0)
+            {
+                var corner = target.TransformFromDevice.Transform(element.PointToScreen(new Point(0, 0)));
+                Opened.AddOrUpdate(element, new Shown(new Rect(corner, new Size(element.ActualWidth, element.ActualHeight)), from));
+            }
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+
+    /// <summary>
+    /// Un menú o popup se cierra sin esperar (WPF no deja retrasarlo): queda una imagen de cómo se
+    /// veía, en una ventana que no recibe clics ni el foco, y esa imagen sale con la animación elegida.
+    /// </summary>
+    private static void LeaveAsGhost(FrameworkElement element)
+    {
+        if (!Opened.TryGetValue(element, out var shown))
+            return;
+        Opened.Remove(element);
+        if (Settings.Current.PanelAnimation == PanelAnimation.None && Imported is null)
+            return;
+        try
+        {
+            var size = shown.Bounds.Size;
+            var dpi = VisualTreeHelper.GetDpi(element);
+            var drawing = new DrawingVisual();
+            using (var context = drawing.RenderOpen())
+                context.DrawRectangle(new VisualBrush(element) { Stretch = Stretch.None }, null, new Rect(size));
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                Math.Max(1, (int)Math.Ceiling(size.Width * dpi.DpiScaleX)), Math.Max(1, (int)Math.Ceiling(size.Height * dpi.DpiScaleY)),
+                dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
+            bitmap.Render(drawing);
+            bitmap.Freeze();
+
+            var image = new System.Windows.Controls.Image { Source = bitmap, Width = size.Width, Height = size.Height, IsHitTestVisible = false };
+            var ghost = new Window
+            {
+                WindowStyle = WindowStyle.None,
+                AllowsTransparency = true,
+                Background = Brushes.Transparent,
+                ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false,
+                ShowActivated = false,
+                Topmost = true,
+                Left = shown.Bounds.X,
+                Top = shown.Bounds.Y,
+                Width = size.Width,
+                Height = size.Height,
+                Content = image,
+            };
+            ghost.SourceInitialized += (_, _) => ClickThrough(ghost);
+            ghost.Show();
+            Out(image, image, shown.From, () => ghost.Close());
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo animar el cierre del menú", ex);
+        }
+    }
+
+    /// <summary>La ventana de la salida no recibe clics, ni el foco, ni aparece en Alt+Tab.</summary>
+    private static void ClickThrough(Window window)
+    {
+        const int ExStyle = -20, Transparent = 0x20, ToolWindow = 0x80, NoActivate = 0x08000000;
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(window).Handle;
+        SetWindowLong(hwnd, ExStyle, GetWindowLong(hwnd, ExStyle) | Transparent | ToolWindow | NoActivate);
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLong(IntPtr hwnd, int index);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetWindowLongW")]
+    private static extern int SetWindowLong(IntPtr hwnd, int index, int value);
 
     /// <summary>
     /// Gira un ícono (la flecha de la bandeja) hasta <paramref name="angle"/> con la velocidad elegida;
@@ -53,14 +145,22 @@ public static class Motion
         rotate.BeginAnimation(RotateTransform.AngleProperty, turn);
     }
 
-    /// <summary>Un popup propio (bandeja oculta, carpeta del menú Inicio) se anima al abrirse.</summary>
+    /// <summary>Un popup propio (bandeja oculta, carpeta del menú Inicio) se anima al abrirse y al cerrarse.</summary>
     public static void Attach(Popup popup, Func<TaskbarPosition> from)
     {
         popup.PopupAnimation = PopupAnimation.None;
         popup.Opened += (_, _) =>
         {
+            if (popup.Child is not FrameworkElement child)
+                return;
+            var side = from();
+            In(child, child, side, 0.9);
+            Remember(child, side);
+        };
+        popup.Closed += (_, _) =>
+        {
             if (popup.Child is FrameworkElement child)
-                In(child, child, from(), 0.6);
+                LeaveAsGhost(child);
         };
     }
 
@@ -254,7 +354,10 @@ public static class Motion
                 }
             default:
                 moving.RenderTransform = Transform.Identity;
-                window?.Invoke(0, 0);
+                // Desvanecer una ventana entera (panel, menú Inicio): su fondo de DWM no se puede
+                // desvanecer, así que además asoma desde la barra con un recorrido corto.
+                if (window != null)
+                    Slide(moving, window, from, 16 * size * travel, 0, duration, ease);
                 break;
         }
     }
@@ -318,6 +421,11 @@ public static class Motion
                         Slide(moving, window, toward, 0, 10, duration, ease);
                     break;
                 }
+            default:
+                // Desvanecer una ventana entera: vuelve hacia la barra un poco (ver In).
+                if (window != null)
+                    Slide(moving, window, toward, 0, 10 * travel, duration, ease);
+                break;
         }
         fade.BeginAnimation(UIElement.OpacityProperty, fadeOut);
         // Por si la animación no llega a correr (ventana oculta, sin render): no quedarse a medias.

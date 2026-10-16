@@ -20,7 +20,7 @@ public static class AppxManager
             "ConvertTo-Json -Compress -InputObject @(Get-AppxPackage | " +
             "Where-Object { -not $_.IsFramework -and -not $_.NonRemovable -and $_.SignatureKind -ne 'System' } | " +
             "Select-Object Name, PackageFullName)";
-        var json = await RunPowerShellAsync(script, elevated: false);
+        var json = await RunPowerShellAsync(script);
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "[]" : json);
         return doc.RootElement.EnumerateArray()
             .Select(e => new AppPackage(e.GetProperty("Name").GetString()!, e.GetProperty("PackageFullName").GetString()!))
@@ -34,32 +34,58 @@ public static class AppxManager
     /// Quita las apps del usuario actual; con <paramref name="allUsers"/> también de los demás
     /// usuarios y de la imagen (para cuentas nuevas), lo que requiere administrador.
     /// </summary>
-    public static Task RemoveAsync(IEnumerable<string> names, bool allUsers)
+    public static async Task RemoveAsync(IEnumerable<string> names, bool allUsers)
     {
-        var list = string.Join(",", names.Select(n => $"'{n.Replace("'", "''")}'"));
-        var script = allUsers
-            ? $"foreach ($n in @({list})) {{ " +
-              "Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue; " +
-              "Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq $n | " +
-              "Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Out-Null }"
-            : $"foreach ($n in @({list})) {{ Get-AppxPackage -Name $n | Remove-AppxPackage -ErrorAction SilentlyContinue }}";
-        return RunPowerShellAsync(script, elevated: allUsers);
+        if (!allUsers)
+        {
+            await RunPowerShellAsync(UserScript(names));
+            return;
+        }
+        // Con administrador: Strata UI mismo (--remove-appx), que solo acepta nombres de paquete; así
+        // también lo puede hacer el proceso elevado sin UAC (ver ElevatedBroker).
+        int code = await Elevation.RunSelfAsync([ElevatedBroker.RemoveAppxArg, .. names]);
+        if (code == Elevation.Cancelled)
+            throw new OperationCanceledException();
     }
 
-    private static async Task<string> RunPowerShellAsync(string script, bool elevated)
+    private static string Quoted(IEnumerable<string> names) => string.Join(",", names.Select(n => $"'{n.Replace("'", "''")}'"));
+
+    private static string UserScript(IEnumerable<string> names) =>
+        $"foreach ($n in @({Quoted(names)})) {{ Get-AppxPackage -Name $n | Remove-AppxPackage -ErrorAction SilentlyContinue }}";
+
+    /// <summary>
+    /// StrataUI.exe --remove-appx nombre… (elevado): quita esas apps de todos los usuarios y de la imagen
+    /// (para cuentas nuevas). Solo nombres de paquete (letras, números, puntos, guiones).
+    /// </summary>
+    public static int RunElevatedRemove(string[] args)
+    {
+        var names = args.Skip(1).ToList();
+        if (names.Count == 0 || !names.All(ElevatedBroker.IsPackageName))
+            return 2;
+        string script = $"foreach ($n in @({Quoted(names)})) {{ " +
+                        "Get-AppxPackage -AllUsers -Name $n | Remove-AppxPackage -AllUsers -ErrorAction SilentlyContinue; " +
+                        "Get-AppxProvisionedPackage -Online | Where-Object DisplayName -eq $n | " +
+                        "Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Out-Null }";
+        try
+        {
+            // Fuera del hilo de la UI: esperarlo ahí con la tarea en curso lo dejaría trabado.
+            Task.Run(() => RunPowerShellAsync(script)).GetAwaiter().GetResult();
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            Services.Log.Error("No se pudieron quitar las apps para todos los usuarios", ex);
+            return 1;
+        }
+    }
+
+    /// <summary>PowerShell en este proceso (elevado solo si Strata UI ya lo está: ver RunElevatedRemove).</summary>
+    private static async Task<string> RunPowerShellAsync(string script)
     {
         // -EncodedCommand evita cualquier problema de comillas al pasar el script.
         var encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(
             "[Console]::OutputEncoding=[Text.Encoding]::UTF8;" + script));
         string[] args = ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded];
-
-        if (elevated)
-        {
-            int code = await Elevation.RunAsync("powershell.exe", args);
-            if (code == Elevation.Cancelled)
-                throw new OperationCanceledException();
-            return "";
-        }
 
         var info = new ProcessStartInfo("powershell.exe")
         {

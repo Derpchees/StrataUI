@@ -41,18 +41,36 @@
                 </StackPanel>
             </ui:CardControl>
 
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Strata UI" />
+            <!-- ── Tu configuración: llevarla a otro equipo o guardarla ───────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Tu configuración'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Info24" /></ui:CardControl.Icon>
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowExportLtr24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock x:Name="VersionText" Style="{StaticResource CardTitle}" />
-                        <TextBlock x:Name="DataPathText" Style="{StaticResource CardDescription}" />
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Exportar configuración'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Guarda en un .zip tus ajustes y los módulos importados (temas, animaciones, widgets…), para respaldarlos o llevarlos a otro equipo.'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
-                <ui:Button Content="{l:T 'Abrir carpeta de datos'}" Click="OpenData_Click" />
+                <ui:Button Content="{l:T 'Exportar…'}" Icon="{ui:SymbolIcon ArrowExportLtr24}" Click="Export_Click" />
             </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowImport24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Importar configuración'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Reemplaza tus ajustes por los de un archivo exportado y reinicia Strata UI. Lo propio de este equipo (monitores y respaldos de Windows) se conserva.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="{l:T 'Importar…'}" Icon="{ui:SymbolIcon ArrowImport24}" Click="Import_Click" />
+            </ui:CardControl>
+            <TextBlock x:Name="TransferStatus" Style="{StaticResource CardDescription}" Margin="2,4,0,0" Visibility="Collapsed" />
+
+            <!-- ── Módulos ───────────────────────────────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Módulos'}" />
 
             <ui:CardControl x:Name="OptimizationCard" Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Flash24" /></ui:CardControl.Icon>
@@ -64,6 +82,34 @@
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:Button Content="{l:T 'Quitar'}" Click="RemoveOptimization_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="PuzzlePiece24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Crear tus propios módulos'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Temas, animaciones, widgets y aspectos del menú Inicio en archivos .json. Se importan en la página de cada uno.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button Content="{l:T 'Abrir carpeta'}" Margin="0,0,8,0" Click="OpenModules_Click" />
+                    <ui:Button Content="{l:T 'Ver el formato'}" Icon="{ui:SymbolIcon Open24}" Click="ModuleFormat_Click" />
+                </StackPanel>
+            </ui:CardControl>
+
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="Strata UI" />
+
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Info24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock x:Name="VersionText" Style="{StaticResource CardTitle}" />
+                        <TextBlock x:Name="DataPathText" Style="{StaticResource CardDescription}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Content="{l:T 'Abrir carpeta de datos'}" Click="OpenData_Click" />
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">

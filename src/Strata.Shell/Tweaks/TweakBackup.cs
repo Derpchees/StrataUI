@@ -73,6 +73,14 @@ public sealed class TweakBackup
         var failed = new List<string>();
         foreach (var (key, entry) in Data.Values.Where(v => NeedsAdmin(v.Value) == admin).ToList())
         {
+            // Con permiso de administrador solo claves del catálogo: el respaldo está en una carpeta del
+            // usuario y cualquier programa podría escribir ahí otra clave (o un OwnerKey ajeno que borrar).
+            if (admin && !InCatalog(entry))
+            {
+                Log.Info($"Respaldo: se ignora {key} (no es un ajuste de Strata UI)");
+                failed.Add(key);
+                continue;
+            }
             try
             {
                 if (entry.Existed && entry.Data != null)
@@ -95,6 +103,14 @@ public sealed class TweakBackup
         Save();
         return failed;
     }
+
+    /// <summary>La entrada es de un ajuste del catálogo, con su misma clave a borrar.</summary>
+    internal static bool InCatalog(Entry entry) =>
+        TweakCatalog.All.SelectMany(t => t.Settings).Any(s =>
+            s.Hive == entry.Hive
+            && string.Equals(s.Path, entry.Path, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(s.Name, entry.Name, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(s.OwnerKey, entry.OwnerKey, StringComparison.OrdinalIgnoreCase));
 
     private static string Encode(RegistryValueKind kind, object data) => kind switch
     {

@@ -16,8 +16,16 @@ public static class Elevation
         new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
 
     /// <summary>Ejecuta StrataUI.exe elevado con los argumentos dados y devuelve su código de salida.</summary>
-    public static Task<int> RunSelfAsync(params string[] args) =>
-        RunAsync(Environment.ProcessPath!, args);
+    /// <remarks>
+    /// Instalado para todos los usuarios, lo de la lista fija lo ejecuta el proceso elevado de las
+    /// lecturas avanzadas sin UAC (<see cref="ElevatedBroker"/>); lo demás, o si no se puede, con UAC.
+    /// </remarks>
+    public static async Task<int> RunSelfAsync(params string[] args)
+    {
+        if (!IsAdmin && await Services.Sensors.RunElevatedAsync(args) is { } code)
+            return code;
+        return await RunAsync(Environment.ProcessPath!, args);
+    }
 
     public static async Task<int> RunAsync(string fileName, IEnumerable<string> args)
     {

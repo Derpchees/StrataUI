@@ -15,7 +15,8 @@ namespace Strata.Shell.Hub;
 public partial class HubWindow : FluentWindow
 {
     private Type _startPage = typeof(HomePage);
-    private readonly List<NavigationViewItem> _optimizationItems = new();
+    private NavigationViewItem? _optimizationItem;
+    private object? _currentPage;
 
     public HubWindow()
     {
@@ -25,11 +26,12 @@ public partial class HubWindow : FluentWindow
         Closed += (_, _) => ThemeManager.ThemeChanged -= ApplyBackdrop;
         // Las animaciones del Hub son las elegidas en Apariencia, no la transición fija de WPF-UI.
         Nav.Transition = Wpf.Ui.Animations.Transition.None;
-        FillOptimization();
+        FillModules();
         OptimizationModule.Changed += OnOptimizationChanged;
         Closed += (_, _) => OptimizationModule.Changed -= OnOptimizationChanged;
         Nav.Navigated += (_, e) =>
         {
+            _currentPage = e.Page;
             if (e.Page is FrameworkElement page)
             {
                 Motion.In(page, page, TaskbarPosition.Bottom, 0.6);
@@ -47,43 +49,51 @@ public partial class HubWindow : FluentWindow
     }
 
     /// <summary>
-    /// Las entradas del grupo Optimización: las páginas del módulo o, si no está instalado (o no se
-    /// pudo cargar), la que permite instalarlo.
+    /// La entrada del módulo de optimización en Módulos: sus páginas dentro (se despliegan) o, si no
+    /// está instalado (o no se pudo cargar), la página para instalarlo.
     /// </summary>
-    private void FillOptimization()
+    private void FillModules()
     {
-        foreach (var item in _optimizationItems)
-            Nav.MenuItems.Remove(item);
-        _optimizationItems.Clear();
-        IReadOnlyList<HubModulePage> pages = OptimizationModule.Load()?.Pages
-            ?? [new HubModulePage(Loc.T("Instalar"), Wpf.Ui.Controls.SymbolRegular.ArrowDownload24, typeof(OptimizationSetupPage))];
-        int index = Nav.MenuItems.IndexOf(OptimizationHeader) + 1;
-        foreach (var page in pages)
+        if (_optimizationItem != null)
+            Nav.MenuItems.Remove(_optimizationItem);
+        _optimizationItem = new NavigationViewItem
         {
-            var item = new NavigationViewItem
-            {
-                Content = page.Title,
-                Icon = new SymbolIcon { Symbol = page.Icon },
-                TargetPageType = page.PageType,
-            };
-            Nav.MenuItems.Insert(index++, item);
-            _optimizationItems.Add(item);
+            Content = Loc.T("Optimización"),
+            Icon = new SymbolIcon { Symbol = SymbolRegular.Flash24 },
+        };
+        if (OptimizationModule.Load() is { } module)
+        {
+            foreach (var page in module.Pages)
+                _optimizationItem.MenuItems.Add(new NavigationViewItem
+                {
+                    Content = page.Title,
+                    Icon = new SymbolIcon { Symbol = page.Icon },
+                    TargetPageType = page.PageType,
+                });
         }
+        else
+        {
+            _optimizationItem.TargetPageType = typeof(OptimizationSetupPage);
+        }
+        Nav.MenuItems.Insert(Nav.MenuItems.IndexOf(ImportItem) + 1, _optimizationItem);
     }
 
     /// <summary>
-    /// Se instaló o se quitó el módulo: cambian las entradas. Al instalarlo se abre su primera página
-    /// (cuando la navegación ya registró las entradas nuevas, para que quede marcada).
+    /// Se instaló o se quitó el módulo: cambia su entrada. Al instalarlo se despliega y se abre su
+    /// primera página (cuando la navegación ya registró las entradas nuevas, para que quede marcada).
     /// </summary>
     private void OnOptimizationChanged() => Dispatcher.BeginInvoke(() =>
     {
-        bool showsModule = _optimizationItems.Any(i => i.TargetPageType != typeof(OptimizationSetupPage));
+        bool showsModule = _optimizationItem?.MenuItems.Count > 0;
         bool installed = OptimizationModule.Load() != null;
         if (OptimizationModule.IsDownloading || showsModule == installed)
             return;
-        FillOptimization();
-        if (installed && _optimizationItems.FirstOrDefault()?.TargetPageType is { } first)
+        FillModules();
+        if (installed && _optimizationItem?.MenuItems.OfType<NavigationViewItem>().FirstOrDefault()?.TargetPageType is { } first)
+        {
+            _optimizationItem.IsExpanded = true;
             Dispatcher.BeginInvoke(() => Nav.Navigate(first), System.Windows.Threading.DispatcherPriority.Loaded);
+        }
     });
 
     private void ApplyBackdrop() => WindowBackdropType = ThemeManager.WindowBackdrop;
@@ -102,22 +112,33 @@ public partial class HubWindow : FluentWindow
     }
 
     /// <summary>
-    /// Navega a una página por nombre: "Privacy", "PrivacyPage", "Apps"… Las del módulo de
-    /// optimización, si no está instalado, llevan a la página para instalarlo.
+    /// Navega a una página por nombre: "Privacy", "PrivacyPage", "Tray", "Dashboard"… Las que van en
+    /// pestañas abren su entrada en esa pestaña. Las del módulo de optimización, si no está instalado,
+    /// llevan a la página para instalarlo.
     /// </summary>
     public void NavigateTo(string page)
     {
+        if (page.Equals("Dashboard", StringComparison.OrdinalIgnoreCase))
+            page = nameof(HomePage);
         var assemblies = new List<System.Reflection.Assembly> { typeof(TaskbarPage).Assembly };
         if (OptimizationModule.Load() is { } module)
             assemblies.Add(module.GetType().Assembly);
         var type = assemblies.SelectMany(a => a.GetTypes()).FirstOrDefault(t =>
-            t.Namespace == typeof(TaskbarPage).Namespace && !t.IsAbstract && typeof(System.Windows.Controls.Page).IsAssignableFrom(t) &&
+            t.Namespace is "Strata.Shell.Hub.Pages" or "Strata.Shell.Hub" && !t.IsAbstract && typeof(System.Windows.Controls.Page).IsAssignableFrom(t) &&
             (t.Name.Equals(page, StringComparison.OrdinalIgnoreCase) ||
              t.Name.Equals(page + "Page", StringComparison.OrdinalIgnoreCase)));
         if (type is null && !OptimizationModule.IsInstalled)
             type = typeof(OptimizationSetupPage);
         if (type is null)
             return;
+        if (TabbedPage.Hosts.TryGetValue(type, out var host))
+        {
+            // Ya abierta: solo cambia de pestaña. Si no, la entrada abre en esa pestaña al crearse.
+            if (IsLoaded && _currentPage?.GetType() == host && ((TabbedPage)_currentPage).Select(type))
+                return;
+            TabbedPage.Request(type);
+            type = host;
+        }
         _startPage = type;
         if (IsLoaded)
             Nav.Navigate(type);
