@@ -5,6 +5,7 @@ using System.Windows.Input;
 using ManagedShell.WindowsTasks;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Localization;
+using Strata.Shell.Services.Themes;
 using Strata.Shell.Services.WebApps;
 
 namespace Strata.Shell.Controls;
@@ -64,28 +65,35 @@ public partial class TaskButton : UserControl
 
     private Taskbar? _bar;
 
-    /// <summary>Ventanas que ya tuvieron botón: la lista se regenera seguido y solo las nuevas se animan.</summary>
-    private static readonly HashSet<IntPtr> Seen = new();
+    /// <summary>
+    /// Cuándo tuvo botón cada ventana por primera vez. La lista se regenera seguido (al agrupar, justo
+    /// después de que llega una ventana nueva): el botón que reemplaza al recién creado también se
+    /// anima si la ventana llegó hace poco; después, ya no.
+    /// </summary>
+    private static readonly Dictionary<IntPtr, DateTime> FirstSeen = new();
     private static readonly DateTime StartedAt = DateTime.UtcNow;
 
     /// <summary>
-    /// Una ventana recién abierta entra con un fundido y creciendo un poco (no al arrancar Strata UI,
-    /// cuando aparecen todas juntas, ni con las animaciones apagadas).
+    /// Una ventana recién abierta entra con la animación elegida, desde el borde de la barra (no al
+    /// arrancar Strata UI, cuando aparecen todas juntas). Al cerrarse, la barra hace la salida
+    /// (<see cref="Taskbar"/>, con una imagen del botón).
     /// </summary>
     private void AnimateIfNew()
     {
-        if (Window is not { } window || !Seen.Add(window.Handle))
+        if (Window is not { } window)
             return;
-        if (DateTime.UtcNow - StartedAt < TimeSpan.FromSeconds(3) || Settings.Current.PanelAnimation == PanelAnimation.None)
+        var now = DateTime.UtcNow;
+        if (!FirstSeen.TryGetValue(window.Handle, out var first))
+        {
+            FirstSeen[window.Handle] = first = now;
+            // Las ventanas cerradas no se borran solas: se limpian de vez en cuando.
+            if (FirstSeen.Count > 500)
+                foreach (var old in FirstSeen.Where(p => now - p.Value > TimeSpan.FromMinutes(5)).Select(p => p.Key).ToList())
+                    FirstSeen.Remove(old);
+        }
+        if (now - first > TimeSpan.FromMilliseconds(400) || now - StartedAt < TimeSpan.FromSeconds(3))
             return;
-        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
-        var duration = TimeSpan.FromMilliseconds(220);
-        var scale = new System.Windows.Media.ScaleTransform(0.6, 0.6);
-        IconHost.RenderTransformOrigin = new Point(0.5, 0.5);
-        IconHost.RenderTransform = scale;
-        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, new System.Windows.Media.Animation.DoubleAnimation(0.6, 1, duration) { EasingFunction = ease });
-        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, new System.Windows.Media.Animation.DoubleAnimation(0.6, 1, duration) { EasingFunction = ease });
-        Root.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration));
+        Motion.In(Root, IconHost, _bar?.Position ?? TaskbarPosition.Bottom, 0.8);
     }
 
     private void OnWindowChanged(object? sender, PropertyChangedEventArgs e)

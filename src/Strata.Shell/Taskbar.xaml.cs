@@ -71,6 +71,7 @@ public partial class Taskbar : AppBarWindow
         _appsMode = WindowsTaskbarPrefs.AppsMode(Settings.Current);
         _combine = S.CombineTaskWindows;
         _taskView = CreateTaskView();
+        WatchClosingWindows(_taskView); // antes de ItemsSource: ver Taskbar.TaskExit.cs
         WatchWindows();
         TaskList.ItemsSource = _taskView;
         WatchPins();

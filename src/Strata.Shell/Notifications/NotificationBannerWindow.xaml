@@ -10,6 +10,13 @@
         FontFamily="{StaticResource UiFont}">
     <!-- Avisos apilados; el más nuevo queda junto a la esquina -->
     <ItemsControl x:Name="BannerList" Margin="8">
+        <!-- Cada aviso nuevo empieza invisible: su animación de entrada corre un momento después
+             (prioridad Loaded) y antes se alcanzaba a dibujar entero un cuadro, con un parpadeo. -->
+        <ItemsControl.ItemContainerStyle>
+            <Style TargetType="ContentPresenter">
+                <Setter Property="Opacity" Value="0" />
+            </Style>
+        </ItemsControl.ItemContainerStyle>
         <ItemsControl.ItemTemplate>
             <DataTemplate>
                 <Border x:Name="Card" Margin="0,4" CornerRadius="{DynamicResource StrataLargeCornerRadius}"

@@ -189,10 +189,21 @@ public abstract class FlyoutWindow : FluentWindow
     /// <summary>Borde de la barra desde la que se abrió (el panel aparece pegado a ella).</summary>
     protected TaskbarPosition BarPosition { get; private set; } = TaskbarPosition.Bottom;
 
+    /// <summary>La barra desde la que se abrió: el panel entra y sale por detrás de ella.</summary>
+    private IntPtr _bar;
+
+    /// <summary>Lugar final (píxeles físicos) y desplazamiento de la animación (DIP) respecto de él.</summary>
+    private int _baseX, _baseY;
+    private double _offsetX, _offsetY;
+    private bool _placed;
+
     public void ShowAt(FrameworkElement anchor)
     {
         if (Window.GetWindow(anchor) is Taskbar bar)
+        {
             BarPosition = bar.Position;
+            _bar = new WindowInteropHelper(bar).Handle;
+        }
         if (FillWorkArea)
             SizeToContent = SizeToContent.Manual;
         Show();
@@ -218,7 +229,27 @@ public abstract class FlyoutWindow : FluentWindow
             Dispatcher.BeginInvoke(Close);
             return;
         }
-        Services.Themes.Motion.Out(this, Moving(), BarPosition, () => Dispatcher.BeginInvoke(Close));
+        Services.Themes.Motion.Out(this, Moving(), BarPosition, () => Dispatcher.BeginInvoke(Close), MoveBy);
+    }
+
+    /// <summary>Corre la ventana entera respecto de su lugar final (lo usa la animación).</summary>
+    private void MoveBy(double x, double y)
+    {
+        _offsetX = x;
+        _offsetY = y;
+        if (_placed)
+            MoveTo(_baseX, _baseY);
+    }
+
+    private void MoveTo(int x, int y)
+    {
+        _baseX = x;
+        _baseY = y;
+        _placed = true;
+        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+        SetWindowPos(new WindowInteropHelper(this).Handle, IntPtr.Zero,
+                     x + (int)Math.Round(_offsetX * scale), y + (int)Math.Round(_offsetY * scale), 0, 0,
+                     SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
     /// <summary>
@@ -263,9 +294,7 @@ public abstract class FlyoutWindow : FluentWindow
         if (Placement == FlyoutPlacement.ScreenCenter)
         {
             // Tipo Spotlight: centrado en el monitor con la parte superior fija (crece hacia abajo).
-            int cx = work.Left + (work.Width - width) / 2;
-            int cy = work.Top + work.Height / 5;
-            SetWindowPos(hwnd, IntPtr.Zero, cx, cy, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+            MoveTo(work.Left + (work.Width - width) / 2, work.Top + work.Height / 5);
             return;
         }
 
@@ -298,13 +327,23 @@ public abstract class FlyoutWindow : FluentWindow
             x = Math.Clamp(preferred, work.Left + gap, work.Right - width - gap);
             y = BarPosition == TaskbarPosition.Top ? top : work.Bottom - height - gap;
         }
-        SetWindowPos(hwnd, IntPtr.Zero, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        MoveTo(x, y);
     }
 
-    /// <summary>Entra desde la barra: desde abajo si está abajo, desde la izquierda si está a la izquierda…</summary>
-    private void AnimateIn() => Services.Themes.Motion.In(this, Moving(), BarPosition);
+    /// <summary>
+    /// Entra desde la barra: desde abajo si está abajo, desde la izquierda si está a la izquierda…
+    /// La ventana entera (con su fondo de DWM) sale de detrás de la barra, como en Windows: se
+    /// coloca justo debajo de ella en el orden de las ventanas (las dos siguen siempre encima).
+    /// </summary>
+    private void AnimateIn()
+    {
+        if (_bar != IntPtr.Zero)
+            SetWindowPos(new WindowInteropHelper(this).Handle, _bar, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
+        Services.Themes.Motion.In(this, Moving(), BarPosition, window: MoveBy);
+    }
 
     private const uint SWP_NOSIZE = 0x0001;
+    private const uint SWP_NOMOVE = 0x0002;
     private const uint SWP_NOZORDER = 0x0004;
     private const uint SWP_NOACTIVATE = 0x0010;
 

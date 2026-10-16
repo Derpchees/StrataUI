@@ -17,8 +17,17 @@ public partial class StartMenuProfile : StartMenuBase
     {
         InitializeComponent();
         Greeting.Text = GreetingFor(DateTime.Now);
-        // La foto va en su propia ventana: se muestra cuando el menú ya está en su sitio.
-        ContentRendered += (_, _) =>
+        // La foto va en su propia ventana. Se crea al cargar el menú (invisible) para que ya esté
+        // dibujada cuando el menú aparezca, y acompaña su entrada desde que el menú va por un tercio
+        // de su fundido: la ventana del menú se ve uno o dos cuadros después que la de la foto, y
+        // con ContentRendered la foto llegaba cuando el menú ya estaba en su sitio.
+        System.ComponentModel.DependencyPropertyDescriptor.FromProperty(OpacityProperty, typeof(Window))
+            .AddValueChanged(this, (_, _) =>
+            {
+                if (Opacity >= 0.35)
+                    _avatar?.Reveal();
+            });
+        Loaded += (_, _) =>
         {
             _avatar ??= new ProfileAvatarWindow(this) { Owner = this };
             _avatar.Show();

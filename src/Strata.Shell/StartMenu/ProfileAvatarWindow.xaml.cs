@@ -24,7 +24,7 @@ public partial class ProfileAvatarWindow : Window
         _menu = menu;
         DataContext = menu.DataContext;
         Topmost = true;
-        SetBinding(OpacityProperty, new Binding(nameof(Opacity)) { Source = menu });
+        Opacity = 0; // hasta que el menú se dibuje (Reveal): su primer cuadro tarda más que el de la foto
 
         SourceInitialized += (_, _) =>
         {
@@ -37,6 +37,16 @@ public partial class ProfileAvatarWindow : Window
         menu.SizeChanged += (_, _) => Dispatcher.BeginInvoke(Follow, System.Windows.Threading.DispatcherPriority.Render);
         menu.Closed += (_, _) => Close();
     }
+
+    /// <summary>El menú ya se ve: la foto sigue su opacidad (entra y sale con él).</summary>
+    public void Reveal()
+    {
+        if (!_revealed)
+            SetBinding(OpacityProperty, new Binding(nameof(Opacity)) { Source = _menu });
+        _revealed = true;
+    }
+
+    private bool _revealed;
 
     /// <summary>Centra la foto sobre el borde superior del menú (mitad fuera, mitad dentro).</summary>
     public void Follow()

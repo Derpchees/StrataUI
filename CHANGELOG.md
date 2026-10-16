@@ -6,6 +6,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.2.0] - 2026-10-16
+
+### Cambiado
+- **Paneles y menú Inicio se animan enteros**: la ventana completa (con su fondo) sale de detrás de
+  la barra y vuelve a ella al cerrarse, como en Windows. Antes solo se movía el contenido dentro de
+  un fondo quieto, y casi todo el recorrido pasaba mientras el panel todavía era transparente (el
+  primer cuadro de una ventana nueva tarda; ahora la animación avanza con los cuadros que se ven).
+- La foto del menú Inicio "Perfil" entra y sale junto con el menú (aparecía de golpe al final).
+- **Botones de la barra al abrir y cerrar una app**: entran con la animación y la velocidad elegidas
+  (antes era fija y, con las ventanas agrupadas, casi nunca se veía) y al cerrarse la app el botón
+  sale con la misma animación en vez de desaparecer.
+- Los avisos llegan desde el borde de la pantalla con un recorrido largo, sin el parpadeo del primer
+  cuadro (se dibujaban enteros un instante antes de empezar a aparecer).
+
 ## [2.1.0] - 2026-10-15
 
 ### Cambiado

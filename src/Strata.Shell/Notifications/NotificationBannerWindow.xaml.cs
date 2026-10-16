@@ -108,7 +108,7 @@ public partial class NotificationBannerWindow : Window
         timer.Stop();
         // Sale hacia el borde con la animación elegida; después se quita de la lista.
         if (IsVisible && BannerList.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement banner)
-            Services.Themes.Motion.Out(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right, () => Discard(item));
+            Services.Themes.Motion.Out(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right, () => Discard(item), travel: 4);
         else
             Discard(item);
     }
@@ -126,8 +126,9 @@ public partial class NotificationBannerWindow : Window
         Opacity = 1;
         if (BannerList.ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement banner)
             return;
-        // Entra desde el borde de la pantalla más cercano, con la animación elegida en el Hub.
-        Services.Themes.Motion.In(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right);
+        // Entra desde el borde de la pantalla más cercano, con la animación elegida en el Hub y un
+        // recorrido largo (como los de Windows; con el de un panel casi no se notaba).
+        Services.Themes.Motion.In(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right, travel: 4);
     }
 
     // ── Posición ────────────────────────────────────────────────────────────
