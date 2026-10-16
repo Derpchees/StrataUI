@@ -25,14 +25,18 @@ public static class NightLight
     /// <summary>Encendida, apagada o null si no se pudo leer.</summary>
     public static bool? IsOn => Read() is { } data ? IsEnabled(data) : null;
 
-    /// <summary>Enciende o apaga la luz nocturna. Devuelve false si no se pudo.</summary>
+    /// <summary>
+    /// Enciende o apaga la luz nocturna. Si nunca se usó en este equipo (Windows todavía no creó el
+    /// valor), se crea apagada y se cambia desde ahí. Devuelve false si no se pudo.
+    /// </summary>
     public static bool Set(bool on)
     {
         try
         {
-            if (Read() is not { } data || With(data, on, DateTimeOffset.UtcNow.ToUnixTimeSeconds()) is not { } changed)
+            var data = Read() ?? Initial(DateTimeOffset.UtcNow);
+            if (With(data, on, DateTimeOffset.UtcNow.ToUnixTimeSeconds()) is not { } changed)
                 return false;
-            using var key = Registry.CurrentUser.OpenSubKey(StateKey, writable: true);
+            using var key = Registry.CurrentUser.CreateSubKey(StateKey, writable: true);
             if (key is null)
                 return false;
             key.SetValue("Data", changed, RegistryValueKind.Binary);
@@ -54,6 +58,20 @@ public static class NightLight
     {
         using var key = Registry.CurrentUser.OpenSubKey(StateKey);
         return key?.GetValue("Data") as byte[];
+    }
+
+    /// <summary>
+    /// El valor que Windows escribe con la luz nocturna apagada (el de un equipo real, 41 bytes): la hora
+    /// del cambio (segundos Unix) arriba y, abajo, tras "C6 14", la de la última transición (FILETIME).
+    /// </summary>
+    internal static byte[] Initial(DateTimeOffset now)
+    {
+        var data = new List<byte> { 0x43, 0x42, 0x01, 0x00, 0x0A, 0x02, 0x01, 0x00, 0x2A, 0x06 };
+        data.AddRange(Varint(now.ToUnixTimeSeconds()));
+        data.AddRange(new byte[] { 0x2A, 0x2B, 0x0E, Off, 0x43, 0x42, 0x01, 0x00, 0xD0, 0x0A, 0x02, 0xC6, 0x14 });
+        data.AddRange(Varint(now.UtcDateTime.ToFileTimeUtc()));
+        data.AddRange(new byte[] { 0x00, 0x00, 0x00, 0x00 });
+        return data.ToArray();
     }
 
     /// <summary>Estado del valor: encendida, apagada o null si no tiene el formato conocido.</summary>

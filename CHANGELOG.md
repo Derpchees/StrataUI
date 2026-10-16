@@ -6,6 +6,15 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.3.1] - 2026-10-16
+
+### Corregido
+- **El panel de brillo no aparecía en PCs de escritorio** (monitores sin DDC/CI o mientras se
+  detectaban): el botón se ocultaba sin monitores con brillo. Ahora siempre está, para la luz
+  nocturna, y el panel avisa si no se puede cambiar el brillo.
+- La luz nocturna no se podía usar en un equipo donde nunca se había activado (Windows todavía no
+  había creado su valor): ahora se crea al encenderla desde el panel.
+
 ## [2.3.0] - 2026-10-16
 
 ### Añadido

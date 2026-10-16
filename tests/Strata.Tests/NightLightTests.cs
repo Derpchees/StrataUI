@@ -40,6 +40,20 @@ public sealed class NightLightTests
     }
 
     [Fact]
+    public void Creates_the_value_on_a_pc_that_never_used_night_light()
+    {
+        var initial = NightLight.Initial(DateTimeOffset.FromUnixTimeSeconds(1_791_224_347));
+        Assert.Equal(41, initial.Length);
+        Assert.False(NightLight.IsEnabled(initial));
+        Assert.Equal(1_791_224_347, NightLight.ReadVarint(initial, 10));
+
+        // Encendida queda igual que la de un equipo real, salvo las dos horas.
+        var on = NightLight.With(initial, on: true, 1_791_224_347)!;
+        static byte[] WithoutTimes(byte[] data) => [.. data[..10], .. data[15..30], .. data[39..]];
+        Assert.Equal(WithoutTimes(Enabled), WithoutTimes(on));
+    }
+
+    [Fact]
     public void Writes_the_time_as_a_varint()
     {
         Assert.Equal(Convert.FromHexString("9BD48FD606"), NightLight.Varint(1_791_224_347));

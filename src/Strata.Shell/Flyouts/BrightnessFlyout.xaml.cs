@@ -53,12 +53,14 @@ public partial class BrightnessFlyout : FlyoutWindow
             UpdateLayoutState();
     }
 
-    /// <summary>Luz nocturna: solo si Windows tiene su valor (en escritorios remotos puede no estar).</summary>
+    /// <summary>
+    /// Luz nocturna, siempre: aunque no se pueda cambiar el brillo de ningún monitor, y aunque nunca se
+    /// haya usado en este equipo (Windows todavía no creó su valor: <see cref="NightLight.Set"/> lo crea).
+    /// </summary>
     private void ShowNightLight()
     {
-        bool? on = NightLight.IsOn;
-        NightLightRow.Visibility = on is null ? Visibility.Collapsed : Visibility.Visible;
-        NightLightSwitch.IsChecked = on == true;
+        NightLightRow.Visibility = Visibility.Visible;
+        NightLightSwitch.IsChecked = NightLight.IsOn == true;
     }
 
     /// <summary>

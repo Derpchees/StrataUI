@@ -393,7 +393,9 @@ public partial class Taskbar : AppBarWindow
         Resize();
         ApplyLayout();
         DateText.Visibility = S.ShowDate ? Visibility.Visible : Visibility.Collapsed;
-        BrightnessButton.Visibility = Services.Brightness.BrightnessService.Available ? Visibility.Visible : Visibility.Collapsed;
+        // Siempre (si está entre los elementos de la barra): el panel también tiene la luz nocturna, y
+        // en una PC de escritorio sin DDC/CI (o mientras se detectan los monitores) quedaba sin botón.
+        BrightnessButton.Visibility = Visibility.Visible;
         RescheduleClock();
         UpdateClock();
         UpdateStatus();
