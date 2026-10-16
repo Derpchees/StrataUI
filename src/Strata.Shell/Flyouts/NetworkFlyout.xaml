@@ -4,6 +4,7 @@
                       xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
                       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                       xmlns:flyouts="clr-namespace:Strata.Shell.Flyouts"
+                      xmlns:controls="clr-namespace:Strata.Shell.Controls"
                       Title="{l:T 'Red'}" Width="380">
     <StackPanel Margin="14,16,14,14">
         <TextBlock Style="{StaticResource FlyoutTitle}" Margin="4,0,0,0" Text="{l:T 'Red'}" />
@@ -67,8 +68,9 @@
                         </Button>
                         <!-- Panel de conexión al seleccionar una red -->
                         <StackPanel Margin="40,2,10,10" Visibility="{Binding ExpandedVisibility}">
-                            <PasswordBox Margin="0,0,0,8" Visibility="{Binding PasswordVisibility}"
-                                         Loaded="PasswordBox_Loaded" KeyDown="PasswordBox_KeyDown" />
+                            <!-- Puntos, el último carácter un momento y un ojo para verla (Controls/RevealPasswordBox) -->
+                            <controls:RevealPasswordBox Margin="0,0,0,8" Visibility="{Binding PasswordVisibility}"
+                                                        Loaded="PasswordBox_Loaded" KeyDown="PasswordBox_KeyDown" />
                             <TextBlock Style="{StaticResource FlyoutHint}" Margin="0,0,0,8" Text="{Binding Message}"
                                        Visibility="{Binding MessageVisibility}" />
                             <ui:Button HorizontalAlignment="Right" Appearance="Primary" MinWidth="110"

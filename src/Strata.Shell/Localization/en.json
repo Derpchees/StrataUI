@@ -903,5 +903,10 @@
   "No se pudo descargar el módulo de optimización.": "Couldn't download the optimization module.",
   "La versión {0} todavía no tiene el módulo publicado.": "Version {0} doesn't have the module published yet.",
   "El módulo descargado no es de esta versión de Strata UI.": "The downloaded module isn't for this version of Strata UI.",
-  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installed. Removing it keeps the changes it already made to Windows: to undo them, use Optimization › Backup first."
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installed. Removing it keeps the changes it already made to Windows: to undo them, use Optimization › Backup first.",
+  "Luz nocturna": "Night light",
+  "Colores más cálidos para descansar la vista.": "Warmer colors to rest your eyes.",
+  "Intensidad y horario": "Strength and schedule",
+  "Mostrar contraseña": "Show password",
+  "Ocultar contraseña": "Hide password"
 }

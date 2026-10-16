@@ -32,11 +32,21 @@ public partial class Taskbar
             return;
         }
         Mouse.OverrideCursor = Cursors.SizeAll;
+        Controls.DragGhost.Begin(source);
+        _taskDragButton = source;
+        source.Opacity = 0.55;
     }
+
+    /// <summary>El botón que se arrastra, tenue en su lugar mientras la imagen va con el puntero.</summary>
+    private FrameworkElement? _taskDragButton;
 
     private void EndTaskDrag()
     {
         _taskDrag = null;
+        Controls.DragGhost.End();
+        if (_taskDragButton != null)
+            _taskDragButton.Opacity = 1;
+        _taskDragButton = null;
         Mouse.OverrideCursor = null;
         if (IsMouseCaptured)
             ReleaseMouseCapture();
@@ -44,6 +54,7 @@ public partial class Taskbar
 
     private void TaskDragMove(ApplicationWindow moving)
     {
+        Controls.DragGhost.Move();
         GetCursorPos(out var cursor);
         var point = new Point(cursor.X, cursor.Y);
         var windows = TaskList.Items.OfType<ApplicationWindow>().ToList();

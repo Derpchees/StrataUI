@@ -1,12 +1,10 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Services.Modules;
 using Strata.Shell.Services.Widgets;
 using Wpf.Ui.Controls;
-using PageHeader = Strata.Shell.Hub.PageHeader;
 using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace Strata.Shell.Hub.Pages;

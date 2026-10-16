@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 using ManagedShell.WindowsTasks;
 using Strata.Shell.Controls;
 using Strata.Shell.Services;
@@ -84,11 +83,15 @@ public partial class Taskbar
             return true;
         }
         System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.SizeAll;
+        Controls.DragGhost.Begin(source);
+        _taskDragButton = source;
+        source.Opacity = 0.55;
         return true;
     }
 
     private void PinDragMove(string id)
     {
+        Controls.DragGhost.Move();
         GetCursorPos(out var cursor);
         var point = new Point(cursor.X, cursor.Y);
         int from = _pinSlots.ToList().FindIndex(s => s.Id == id);
@@ -105,6 +108,10 @@ public partial class Taskbar
     private void EndPinDrag()
     {
         _pinDrag = null;
+        Controls.DragGhost.End();
+        if (_taskDragButton != null)
+            _taskDragButton.Opacity = 1;
+        _taskDragButton = null;
         System.Windows.Input.Mouse.OverrideCursor = null;
         if (IsMouseCaptured)
             ReleaseMouseCapture();

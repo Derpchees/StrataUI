@@ -31,6 +31,28 @@ public static class Motion
         In(element, element, FromPointer(element), element is ToolTip ? 0.35 : 0.5);
     }
 
+    /// <summary>
+    /// Gira un ícono (la flecha de la bandeja) hasta <paramref name="angle"/> con la velocidad elegida;
+    /// sin animación (o con las animaciones apagadas), de una vez.
+    /// </summary>
+    public static void Turn(RotateTransform rotate, double angle, bool animate = true)
+    {
+        if (!animate || Settings.Current.PanelAnimation == PanelAnimation.None && Imported is null)
+        {
+            rotate.BeginAnimation(RotateTransform.AngleProperty, null);
+            rotate.Angle = angle;
+            return;
+        }
+        var turn = new DoubleAnimation(angle, Duration(closing: false))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut },
+            FillBehavior = FillBehavior.Stop,
+        };
+        // Al terminar queda el valor final como propio (sin que la animación lo retenga).
+        turn.Completed += (_, _) => rotate.Angle = angle;
+        rotate.BeginAnimation(RotateTransform.AngleProperty, turn);
+    }
+
     /// <summary>Un popup propio (bandeja oculta, carpeta del menú Inicio) se anima al abrirse.</summary>
     public static void Attach(Popup popup, Func<TaskbarPosition> from)
     {
@@ -136,6 +158,41 @@ public static class Motion
     }
 
     /// <summary>
+    /// Escala de <paramref name="from"/> a <paramref name="to"/>. <paramref name="framed"/>: con el reloj
+    /// de cuadros dibujados (<see cref="Drive"/>), para ventanas nuevas cuyo primer cuadro tarda (si no,
+    /// el crecimiento terminaba antes de que se vieran).
+    /// </summary>
+    private static void Grow(ScaleTransform scale, double from, double to, TimeSpan duration, IEasingFunction? ease, bool framed)
+    {
+        if (framed)
+        {
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            Drive(duration, ease, from, to, v =>
+            {
+                scale.ScaleX = v;
+                scale.ScaleY = v;
+            });
+            return;
+        }
+        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(from, to, duration) { EasingFunction = ease });
+        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(from, to, duration) { EasingFunction = ease });
+    }
+
+    /// <summary>Fundido de entrada; <paramref name="framed"/> como en <see cref="Grow"/>.</summary>
+    private static void FadeIn(UIElement fade, double from, TimeSpan duration, bool framed)
+    {
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        if (framed)
+        {
+            fade.BeginAnimation(UIElement.OpacityProperty, null);
+            Drive(duration, ease, from, 1, v => fade.Opacity = v);
+        }
+        else
+            fade.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(from, 1, duration) { EasingFunction = ease });
+    }
+
+    /// <summary>
     /// Entrada: <paramref name="fade"/> (la ventana o el elemento) se desvanece y
     /// <paramref name="moving"/> se desliza o crece. <paramref name="from"/> es el lado desde el
     /// que llega (la barra, la esquina de los avisos). <paramref name="size"/> acorta recorrido y
@@ -164,13 +221,7 @@ public static class Motion
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         // Una ventana entera aparece rápido y el resto del tiempo se ve deslizarse (si el fundido
         // dura lo mismo, casi todo el recorrido pasa mientras todavía es transparente).
-        if (window != null)
-        {
-            fade.BeginAnimation(UIElement.OpacityProperty, null);
-            Drive(duration * 0.5, ease, 0, 1, v => fade.Opacity = v);
-        }
-        else
-            fade.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        FadeIn(fade, 0, window != null ? duration * 0.5 : duration, framed: window != null);
 
         switch (style)
         {
@@ -195,8 +246,7 @@ public static class Motion
                         ? new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.45 }
                         : ease;
                     var span = style == PanelAnimation.Pop ? duration * 1.5 : duration;
-                    scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(start, 1, span) { EasingFunction = grow });
-                    scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(start, 1, span) { EasingFunction = grow });
+                    Grow(scale, start, 1, span, grow, framed: window != null);
                     // La ventana acompaña con un recorrido corto: el fondo de DWM no puede crecer.
                     if (window != null)
                         Slide(moving, window, from, 12 * size, 0, span, ease);
@@ -284,15 +334,15 @@ public static class Motion
                                  WindowMover? window, double travel)
     {
         var duration = Duration(closing: false) * Math.Max(0.6, size) * step.Duration;
-        fade.BeginAnimation(UIElement.OpacityProperty,
-            new DoubleAnimation(step.Opacity, 1, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        // Una ventana entera (panel, menú Inicio) con el reloj de cuadros dibujados, como las incluidas.
+        bool framed = window != null;
+        FadeIn(fade, step.Opacity, duration, framed);
         var ease = Ease(step, EasingMode.EaseOut);
         double start = 1 - (1 - step.Scale) * size;
         var scale = new ScaleTransform(1, 1);
         moving.RenderTransformOrigin = Origin(from);
         moving.RenderTransform = scale;
-        scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(start, 1, duration) { EasingFunction = ease });
-        scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(start, 1, duration) { EasingFunction = ease });
+        Grow(scale, start, 1, duration, ease, framed);
         if (window != null)
             Slide(moving, window, from, step.Offset * size * travel, 0, duration, ease);
         else

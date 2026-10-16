@@ -247,4 +247,30 @@ public static class StartMenuLauncher
             default: FlyoutManager.Toggle<StartMenuWin11>(anchor); break;
         }
     }
+
+    /// <summary>
+    /// Arma una vez el estilo elegido fuera de la pantalla (ver <see cref="FlyoutWindow.WarmUp"/>): la
+    /// primera apertura después de iniciar tardaba casi un segundo en verse.
+    /// </summary>
+    public static void WarmUp()
+    {
+        try
+        {
+            FlyoutWindow menu = Settings.Current.StartStyle switch
+            {
+                StartMenuStyle.List => new StartMenuList(),
+                StartMenuStyle.Fullscreen => new StartMenuFullscreen(),
+                StartMenuStyle.Compact => new StartMenuCompact(),
+                StartMenuStyle.Spotlight => new StartMenuSpotlight(),
+                StartMenuStyle.Icons => new StartMenuIcons(),
+                StartMenuStyle.Profile => new StartMenuProfile(),
+                _ => new StartMenuWin11(),
+            };
+            menu.WarmUp();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo preparar el menú Inicio", ex);
+        }
+    }
 }

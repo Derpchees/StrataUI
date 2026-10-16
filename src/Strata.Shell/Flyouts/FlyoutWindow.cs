@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Themes;
 using Wpf.Ui.Controls;
@@ -177,6 +176,29 @@ public abstract class FlyoutWindow : FluentWindow
         return layer;
     }
 
+    /// <summary>
+    /// Justo antes de mostrarse, con el borde de la barra ya conocido: lo que cambia el tamaño va aquí y
+    /// no en Loaded (ahí el panel ya se midió y se mostraba, y se medía y se movía otra vez mientras entraba).
+    /// </summary>
+    protected virtual void BeforeShow() { }
+
+    /// <summary>
+    /// Crea el panel fuera de la pantalla, deja que se dibuje una vez y lo cierra: la primera apertura de
+    /// verdad (después de iniciar Windows) ya no paga la carga de estilos, plantillas e íconos.
+    /// </summary>
+    public void WarmUp()
+    {
+        ShowActivated = false;
+        Left = Top = -32000;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        ContentRendered += (_, _) =>
+        {
+            Log.Info($"{GetType().Name} preparado en {watch.ElapsedMilliseconds} ms");
+            Dispatcher.BeginInvoke(Close, System.Windows.Threading.DispatcherPriority.Background);
+        };
+        Show();
+    }
+
     /// <summary>True mientras el panel espera algo que le quita el foco (p. ej. el diálogo de UAC).</summary>
     protected virtual bool StayOpenWhenDeactivated => false;
 
@@ -206,6 +228,7 @@ public abstract class FlyoutWindow : FluentWindow
         }
         if (FillWorkArea)
             SizeToContent = SizeToContent.Manual;
+        BeforeShow();
         Show();
         if (!FillWorkArea)
             LimitHeightToScreen(anchor);
@@ -339,7 +362,12 @@ public abstract class FlyoutWindow : FluentWindow
     {
         if (_bar != IntPtr.Zero)
             SetWindowPos(new WindowInteropHelper(this).Handle, _bar, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE);
-        Services.Themes.Motion.In(this, Moving(), BarPosition, window: MoveBy);
+        // Si se cierra mientras entra, la salida manda: la entrada deja de mover la ventana.
+        Services.Themes.Motion.In(this, Moving(), BarPosition, window: (x, y) =>
+        {
+            if (!_closing)
+                MoveBy(x, y);
+        });
     }
 
     private const uint SWP_NOSIZE = 0x0001;

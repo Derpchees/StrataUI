@@ -49,5 +49,27 @@
         <ui:ProgressRing x:Name="Loading" IsIndeterminate="True" Width="24" Height="24" Margin="0,8" Visibility="Collapsed" />
         <TextBlock x:Name="EmptyText" Style="{StaticResource FlyoutHint}" Margin="4,0,8,4" TextWrapping="Wrap" Visibility="Collapsed"
                    Text="{l:T 'Ningún monitor permite cambiar el brillo desde Windows. En los externos, activa DDC/CI en el menú del monitor.'}" />
+
+        <!-- Luz nocturna de Windows (Services/Brightness/NightLight) -->
+        <Grid x:Name="NightLightRow" Margin="0,8,8,0" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <ui:SymbolIcon Symbol="WeatherMoon24" FontSize="18" Margin="6,0,6,0" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Margin="8,0" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource FlyoutTitle}" FontSize="14" Text="{l:T 'Luz nocturna'}" />
+                <TextBlock Style="{StaticResource FlyoutHint}" TextWrapping="Wrap"
+                           Text="{l:T 'Colores más cálidos para descansar la vista.'}" />
+                <TextBlock Margin="0,2,0,0">
+                    <Hyperlink Click="NightLightSettings_Click" Foreground="{DynamicResource StrataAccentBrush}">
+                        <Run Text="{l:T 'Intensidad y horario'}" />
+                    </Hyperlink>
+                </TextBlock>
+            </StackPanel>
+            <ui:ToggleSwitch x:Name="NightLightSwitch" Grid.Column="2" VerticalAlignment="Center"
+                             Click="NightLight_Click" AutomationProperties.Name="{l:T 'Luz nocturna'}" />
+        </Grid>
     </StackPanel>
 </flyouts:FlyoutWindow>

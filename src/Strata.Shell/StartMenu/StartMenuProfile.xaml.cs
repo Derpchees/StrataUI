@@ -21,12 +21,15 @@ public partial class StartMenuProfile : StartMenuBase
         // dibujada cuando el menú aparezca, y acompaña su entrada desde que el menú va por un tercio
         // de su fundido: la ventana del menú se ve uno o dos cuadros después que la de la foto, y
         // con ContentRendered la foto llegaba cuando el menú ya estaba en su sitio.
-        System.ComponentModel.DependencyPropertyDescriptor.FromProperty(OpacityProperty, typeof(Window))
-            .AddValueChanged(this, (_, _) =>
-            {
-                if (Opacity >= 0.35)
-                    _avatar?.Reveal();
-            });
+        // AddValueChanged guarda una referencia fuerte: sin quitarla, cada menú abierto quedaba en memoria.
+        var opacity = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(OpacityProperty, typeof(Window));
+        EventHandler reveal = (_, _) =>
+        {
+            if (Opacity >= 0.35)
+                _avatar?.Reveal();
+        };
+        opacity.AddValueChanged(this, reveal);
+        Closed += (_, _) => opacity.RemoveValueChanged(this, reveal);
         Loaded += (_, _) =>
         {
             _avatar ??= new ProfileAvatarWindow(this) { Owner = this };

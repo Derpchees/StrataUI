@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Wpf.Ui.Controls;
 using TextBlock = System.Windows.Controls.TextBlock;
 

@@ -3,7 +3,6 @@ using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
 namespace Strata.Shell.Services;

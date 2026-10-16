@@ -154,11 +154,29 @@ public static class TaskbarPins
 }
 
 /// <summary>Botón anclado de una barra: la app y, si está abierta en esa barra, su primera ventana.</summary>
-public sealed class PinSlot(string id) : INotifyPropertyChanged
+public sealed class PinSlot : INotifyPropertyChanged
 {
     private ApplicationWindow? _leader;
 
-    public string Id { get; } = id;
+    public PinSlot(string id)
+    {
+        Id = id;
+        // El ícono de la app se carga después (en segundo plano): al llegar hay que avisarle al botón.
+        // Al iniciar Windows todavía no estaba y los anclados quedaban sin ícono. Débil: la app vive
+        // más que el botón, que se rehace cada vez que cambian los anclados.
+        if (App is { } app)
+            PropertyChangedEventManager.AddHandler(app, OnAppChanged, string.Empty);
+    }
+
+    private void OnAppChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(StartApp.Icon) or null or "")
+            Notify(nameof(Icon));
+        if (e.PropertyName is nameof(StartApp.Name) or null or "")
+            Notify(nameof(Title));
+    }
+
+    public string Id { get; }
     public StartApp? App => TaskbarPins.AppFor(Id);
     public string Title => App?.Name ?? Path.GetFileNameWithoutExtension(Id);
     public ImageSource? Icon => App?.Icon;

@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Services.Updates;

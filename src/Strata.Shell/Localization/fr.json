@@ -903,5 +903,10 @@
   "No se pudo descargar el módulo de optimización.": "Impossible de télécharger le module d’optimisation.",
   "La versión {0} todavía no tiene el módulo publicado.": "La version {0} n’a pas encore de module publié.",
   "El módulo descargado no es de esta versión de Strata UI.": "Le module téléchargé ne correspond pas à cette version de Strata UI.",
-  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installé. Le supprimer conserve les modifications déjà faites dans Windows : pour les annuler, utilisez d’abord Optimisation › Sauvegarde."
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installé. Le supprimer conserve les modifications déjà faites dans Windows : pour les annuler, utilisez d’abord Optimisation › Sauvegarde.",
+  "Luz nocturna": "Éclairage nocturne",
+  "Colores más cálidos para descansar la vista.": "Des couleurs plus chaudes pour reposer les yeux.",
+  "Intensidad y horario": "Intensité et planification",
+  "Mostrar contraseña": "Afficher le mot de passe",
+  "Ocultar contraseña": "Masquer le mot de passe"
 }

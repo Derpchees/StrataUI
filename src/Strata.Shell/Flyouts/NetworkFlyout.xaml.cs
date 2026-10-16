@@ -1,13 +1,12 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using Windows.Devices.Radios;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Network;
 using Wpf.Ui.Controls;
-using PasswordBox = System.Windows.Controls.PasswordBox;
+using PasswordBox = Strata.Shell.Controls.RevealPasswordBox;
 using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Flyouts;
@@ -170,11 +169,23 @@ public partial class NetworkFlyout : FlyoutWindow
 
     private async Task ConnectAsync(WifiRow row)
     {
+        if (row.IsConnecting)
+            return; // Enter dos veces o Enter y clic: un solo intento
+        row.IsConnecting = true;
         row.Message = Loc.T("Conectando…");
-        var result = await _network.ConnectAsync(row.Network, row.PasswordBox?.Password);
+        WifiConnectResult result;
+        try
+        {
+            result = await _network.ConnectAsync(row.Network, row.PasswordBox?.Password);
+        }
+        finally
+        {
+            row.IsConnecting = false;
+        }
         switch (result)
         {
             case WifiConnectResult.Connected:
+                row.Message = null;
                 UpdateConnection();
                 await ScanAsync();
                 break;
@@ -200,6 +211,7 @@ public partial class NetworkFlyout : FlyoutWindow
         private string? _message;
 
         public WifiNetwork Network { get; } = network;
+        public bool IsConnecting { get; set; }
         public PasswordBox? PasswordBox { get; set; }
 
         public string Ssid => Network.Ssid;

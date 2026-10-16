@@ -66,6 +66,13 @@ public static class AutoStart
                     SetRunKey(false);
                     Log.Info("Inicio automático: ahora con una tarea programada al iniciar sesión");
                 }
+                else if (task is not null && !File.Exists(task))
+                {
+                    // La tarea la creó un Strata UI elevado (no se puede cambiar sin administrador) y apunta
+                    // a un ejecutable que ya no está: sin esto, Strata UI dejaba de iniciar con Windows.
+                    SetRunKey(true);
+                    Log.Info($"Inicio automático: la tarea apunta a {task}, que ya no existe; se usa la clave Run");
+                }
             }
         }
         catch (Exception ex)

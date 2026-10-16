@@ -23,7 +23,6 @@ public abstract class StartMenuBase : FlyoutWindow
         DataContext = Model;
         Loaded += (_, _) =>
         {
-            RestoreSize();
             if (!FillWorkArea)
                 AddResizeGrips();
             SearchInput?.Focus();
@@ -82,6 +81,8 @@ public abstract class StartMenuBase : FlyoutWindow
     // ── Tamaño ──────────────────────────────────────────────────────────────
 
     private string SizeKey => GetType().Name;
+
+    protected override void BeforeShow() => RestoreSize();
 
     private void RestoreSize()
     {

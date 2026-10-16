@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Strata.Shell.Services.Localization;
@@ -156,6 +156,14 @@ public sealed class StrataSettings
 
     /// <summary>Categorías marcadas en Optimización › Limpieza (null: las que vienen marcadas).</summary>
     public List<string>? CleanupSelection { get; set; }
+
+    /// <summary>
+    /// Monitores por identificador de hardware: el último nombre ("\\.\DISPLAYn") de cada uno, los que
+    /// estaban conectados y lo guardado de los que no están (ver <see cref="MonitorKeys"/>).
+    /// </summary>
+    public Dictionary<string, string> MonitorNames { get; set; } = new();
+    public List<string> MonitorsPresent { get; set; } = new();
+    public Dictionary<string, MonitorSnapshot> ParkedMonitors { get; set; } = new();
 
     /// <summary>Widgets del escritorio (reloj, visualizador de música).</summary>
     public List<WidgetConfig> Widgets { get; set; } = new();

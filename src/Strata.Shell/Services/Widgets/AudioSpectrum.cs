@@ -1,4 +1,3 @@
-using NAudio.CoreAudioApi;
 using NAudio.Dsp;
 using NAudio.Wave;
 

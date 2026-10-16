@@ -198,7 +198,16 @@ end;
 // Con la app ya en ...\StrataUI, la carpeta WINX sobra (su desinstalador también: el registro ya
 // apunta al nuevo). Solo si de verdad era la de la app.
 procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Code: Integer;
 begin
+  // La tarea de inicio automático pudo crearla un Strata UI elevado: Strata UI sin elevar no puede
+  // cambiarla, así que si la app cambió de carpeta la tarea seguiría apuntando a la vieja. Con
+  // administrador, el instalador la apunta a la nueva (si no existe, schtasks solo falla).
+  if (CurStep = ssPostInstall) and IsAdminInstallMode then
+    Exec(ExpandConstant('{sys}\schtasks.exe'),
+         ExpandConstant('/Change /TN "StrataUI ({username})" /TR "\"{app}\StrataUI.exe\""'), '',
+         SW_HIDE, ewWaitUntilTerminated, Code);
   if (CurStep = ssPostInstall) and MovedFromLegacy and DirExists(LegacyDir)
      and (FileExists(LegacyDir + '\StrataUI.exe') or FileExists(LegacyDir + '\WINX.exe')) then
   begin

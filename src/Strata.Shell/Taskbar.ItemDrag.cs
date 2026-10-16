@@ -1,5 +1,4 @@
 using System.Windows;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using Strata.Shell.Services;
@@ -85,6 +84,8 @@ public partial class Taskbar
             return;
         }
         Mouse.OverrideCursor = Cursors.SizeAll;
+        if ((item == BarItem.Start ? StartButton : Element(item)) is { } element)
+            Controls.DragGhost.Begin(element); // antes de atenuarlo: la imagen lo muestra entero
         SetDragging(item, true);
         if (item != BarItem.Start)
             foreach (var bar in App.Current.Taskbars)
@@ -93,6 +94,7 @@ public partial class Taskbar
 
     private void ItemDragMove(BarItem item)
     {
+        Controls.DragGhost.Move();
         GetCursorPos(out var cursor);
         var point = new Point(cursor.X, cursor.Y);
         if (App.Current.Taskbars.FirstOrDefault(bar => ScreenRect(bar.BarBorder, 0).Contains(point)) is not { } target
@@ -217,6 +219,7 @@ public partial class Taskbar
         if (_itemDrag is not { } item)
             return;
         _itemDrag = null;
+        Controls.DragGhost.End();
         foreach (var bar in App.Current.Taskbars)
             bar.ShowDropZones(false);
         _itemOwner?.SetDragging(item, false);

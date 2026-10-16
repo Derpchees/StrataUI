@@ -6,6 +6,46 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.3.0] - 2026-10-16
+
+### Añadido
+- **Luz nocturna en el panel de brillo**: un interruptor para la luz nocturna de Windows (colores
+  más cálidos para descansar la vista) y un enlace a su intensidad y horario en Configuración.
+  Varios clics seguidos son un solo cambio para Windows.
+- **Lo que se arrastra en la barra se ve en la mano**: una imagen del elemento, la ventana o el
+  anclado con un marco del color de acento sigue al puntero, también de una barra o un monitor a
+  otro; en su lugar queda tenue.
+- **Contraseña de Wi-Fi como en el teléfono**: el último carácter escrito se ve un momento y un ojo
+  muestra la contraseña entera para revisarla.
+- La flecha de los íconos ocultos de la bandeja gira: abierta apunta hacia donde se abre su panel y
+  cerrada, al lado contrario (en los cuatro bordes).
+
+### Cambiado
+- **Menú Inicio más rápido y fluido**: se prepara una vez al iniciar (la primera apertura tardaba
+  casi un segundo) y toma su tamaño guardado antes de mostrarse (se medía dos veces y daba un salto
+  mientras entraba).
+- Limpieza: se quitaron directivas `using` sin uso y las carpetas de compilación que quedaban de
+  cuando se llamaba WINX.
+
+### Corregido
+- **Los ajustes de cada monitor se mezclaban al reiniciar o al conectar y quitar monitores**
+  (posición y elementos de la barra, tema): se guardaban con el nombre "\\.\DISPLAYn" que Windows
+  reparte cada vez, y la pantalla de la laptop sola recibe el mismo nombre que el monitor externo
+  principal. Ahora cada monitor se sigue por su identificador de hardware: sus ajustes pasan a su
+  nombre nuevo y, mientras no está conectado, se guardan hasta que vuelva.
+- **Los anclados de la barra salían sin ícono después de iniciar Windows**: el ícono de la app llega
+  después y el botón no se enteraba.
+- **Wi-Fi se quedaba en "Conectando…" con la conexión ya hecha** (Windows a veces tarda o no
+  responde): ahora se comprueba si el adaptador ya está en esa red, con un límite de tiempo, y los
+  errores ya no dejan el panel colgado.
+- Si la tarea de inicio automático la creó un Strata UI elevado y apunta a un ejecutable que ya no
+  existe, se usa la clave Run (antes dejaba de iniciar con Windows); el instalador la apunta a la
+  carpeta nueva.
+- Cada menú Inicio "Perfil" abierto quedaba en memoria.
+- Si un panel se cerraba mientras entraba, las animaciones de entrada y salida se peleaban la posición.
+- Con los estilos Acercar y Rebote (y las animaciones importadas), los paneles y el menú Inicio
+  casi no se animaban: el crecimiento y el fundido terminaban mientras se dibujaba el primer cuadro.
+
 ## [2.2.0] - 2026-10-16
 
 ### Cambiado

@@ -218,6 +218,12 @@ public partial class App : Application
                 items.Contains(BarItem.Fps) || items.Contains(BarItem.Cpu) || items.Contains(BarItem.Gpu)))
             _ = Sensors.StartAsync();
         _ = Task.Run(AutoStart.Migrate);
+        // El menú Inicio, armado una vez cuando ya cargó el catálogo de apps: así la primera apertura es rápida.
+        _ = Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+        {
+            if (!_exiting)
+                StartMenu.StartMenuLauncher.WarmUp();
+        }, System.Windows.Threading.DispatcherPriority.ApplicationIdle));
         Services.StartMenu.ExplorerMenu.Listen();
         Services.Widgets.WidgetManager.Initialize();
         _explorerMenu = Settings.Current.StartExplorerMenu;
@@ -263,8 +269,20 @@ public partial class App : Application
         }
     }
 
+    /// <summary>Monitores y nombres con que se armaron las barras (para notar si Windows los renombró).</summary>
+    private string _monitors = "";
+
     private void OpenTaskbars()
     {
+        // Antes de leer nada por monitor: si Windows cambió los nombres, los ajustes siguen a su monitor.
+        var present = MonitorKeys.Present();
+        _monitors = string.Join(";", present.Select(p => p.Device + "=" + p.Id).Order());
+        if (MonitorKeys.Reconcile(Settings.Current, present))
+        {
+            Log.Info("Monitores: " + _monitors);
+            Settings.Update(_ => { });
+        }
+
         var screens = AppBarScreen.FromAllScreens();
         _screenCount = screens.Count;
         _barLayout = BarLayoutKey();
@@ -379,9 +397,11 @@ public partial class App : Application
         // atendemos monitores que se conectan o desconectan.
         Dispatcher.BeginInvoke(() =>
         {
-            if (_exiting || AppBarScreen.FromAllScreens().Count == _screenCount)
+            // También si el número es el mismo pero Windows les cambió los nombres (o cambió un monitor).
+            string monitors = string.Join(";", MonitorKeys.Present().Select(p => p.Device + "=" + p.Id).Order());
+            if (_exiting || AppBarScreen.FromAllScreens().Count == _screenCount && monitors == _monitors)
                 return;
-            Log.Info("Cambió el número de monitores; recreando barras");
+            Log.Info("Cambiaron los monitores; recreando barras");
             CloseTaskbars();
             OpenTaskbars();
             _ = Services.Brightness.BrightnessService.RefreshAsync();

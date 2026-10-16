@@ -147,7 +147,13 @@
                                       Padding="0" ToolTip="{l:T 'Mostrar iconos ocultos'}"
                                       IsChecked="{Binding IsOpen, ElementName=HiddenTrayPopup, Mode=TwoWay}"
                                       IsHitTestVisible="{Binding IsOpen, ElementName=HiddenTrayPopup, Converter={StaticResource InverseBool}}">
-                            <TextBlock Style="{StaticResource IconText}" FontSize="11" Text="&#xE70E;" />
+                            <!-- Gira: abierta apunta hacia donde se abre el panel; cerrada, al revés (Taskbar.TurnChevron) -->
+                            <TextBlock x:Name="ChevronGlyph" Style="{StaticResource IconText}" FontSize="11" Text="&#xE70E;"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform />
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
                         </ToggleButton>
                         <Popup x:Name="HiddenTrayPopup" PlacementTarget="{Binding ElementName=ChevronButton}"
                                Placement="Top" VerticalOffset="-8" StaysOpen="False"

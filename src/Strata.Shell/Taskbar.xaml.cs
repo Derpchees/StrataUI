@@ -63,6 +63,8 @@ public partial class Taskbar : AppBarWindow
         }
         ApplyOrientation();
         Services.Themes.Motion.Attach(HiddenTrayPopup, () => Position);
+        HiddenTrayPopup.Opened += (_, _) => TurnChevron(animate: true);
+        HiddenTrayPopup.Closed += (_, _) => TurnChevron(animate: true);
         WatchItemDrag();
         WatchItemMenu();
         StartButton.ContextMenu = StartMenu.WinXMenu.Create(StartButton);
@@ -189,6 +191,7 @@ public partial class Taskbar : AppBarWindow
         };
         HiddenTrayPopup.VerticalOffset = Position switch { TaskbarPosition.Top => 8, TaskbarPosition.Bottom => -8, _ => 0 };
         HiddenTrayPopup.HorizontalOffset = Position switch { TaskbarPosition.Left => 8, TaskbarPosition.Right => -8, _ => 0 };
+        TurnChevron(animate: false);
         if (!IsVertical)
             return;
 
@@ -462,6 +465,25 @@ public partial class Taskbar : AppBarWindow
         if (!_multiMonitor || _appsMode == TaskbarAppsMode.AllTaskbars || window.HMonitor == Screen.HMonitor)
             return true;
         return Role.IsMainScreen && (_appsMode == TaskbarAppsMode.MainAndOwn || !App.Current.HasTaskbarOn(window.HMonitor));
+    }
+
+    /// <summary>
+    /// La flecha de los íconos ocultos apunta hacia donde se abre su panel cuando está abierto
+    /// (hacia dentro de la pantalla desde la barra) y al lado contrario cuando está cerrado.
+    /// El glifo apunta hacia arriba sin girar.
+    /// </summary>
+    private void TurnChevron(bool animate)
+    {
+        double open = Position switch
+        {
+            TaskbarPosition.Top => 180,
+            TaskbarPosition.Left => 90,
+            TaskbarPosition.Right => -90,
+            _ => 0,
+        };
+        double angle = HiddenTrayPopup.IsOpen ? open : open + 180;
+        if (ChevronGlyph.RenderTransform is System.Windows.Media.RotateTransform rotate)
+            Services.Themes.Motion.Turn(rotate, angle, animate);
     }
 
     private void UpdateChevron() =>

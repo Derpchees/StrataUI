@@ -44,6 +44,11 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   PawnIO), FPS (ETW) y liberar RAM en un proceso elevado `--sensors-task` lanzado por una tarea
   programada (UAC solo al crearla); la tarea ejecuta una copia en `%ProgramFiles%\StrataUI\Lecturas`,
   nunca el Strata UI de la carpeta del usuario. El uso de CPU/GPU/RAM (`SystemMonitor`, PDH) no la necesita.
+- **Ajustes por monitor**: la clave es el nombre `\\.\DISPLAYn`, pero Windows lo reparte cada vez
+  (la laptop sola y el monitor externo principal son los dos `DISPLAY1`). `Services/MonitorKeys`
+  sigue a cada monitor por su identificador de hardware y, al abrir las barras, pasa sus ajustes a
+  su nombre actual o los guarda (`ParkedMonitors`) mientras no está. Un ajuste nuevo por monitor
+  va también en `MonitorSnapshot` (`Take`/`Clear`/`Put`), con su caso en `MonitorKeysTests`.
 - **Las barras se recrean, no se transforman**, cuando cambia la posición o la segunda barra de un
   monitor, los monitores sin barra o el principal (`App.BarLayoutKey`). Todo lo demás se aplica en vivo en
   `Taskbar.ApplySettings`, que corre con `Settings.Changed`.
