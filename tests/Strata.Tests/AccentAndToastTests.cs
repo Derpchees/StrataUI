@@ -214,4 +214,8 @@ public class AccentAndToastTests
             System.Globalization.CultureInfo.CurrentCulture = culture;
         }
     }
+
+    [Fact]
+    public void Speed_test_ping_discounts_server_time() =>
+        Assert.Equal(25, SpeedTest.ServerTime("cfSpeedEdge;dur=3, cfSpeedWorker;dur=22,cfL4;desc=\"?proto=TCP&rtt=17717\""));
 }

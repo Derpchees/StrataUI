@@ -227,6 +227,12 @@ public partial class App : Application
         _ = Services.Brightness.BrightnessService.RefreshAsync();
         Services.Media.MediaService.Initialize();
         Services.Notifications.NotificationService.Arrived += OnNotificationArrived;
+        // La prueba de velocidad sigue con el panel cerrado: entonces avisa al terminar.
+        SpeedTest.Finished += result =>
+        {
+            if (!Flyouts.NetSpeedFlyout.IsShowing)
+                Services.Notifications.NotificationService.ShowLocal(Services.Localization.Loc.T("Prueba de velocidad terminada"), SpeedTest.Summary(result));
+        };
         Services.Notifications.NotificationService.Update();
         Services.Notifications.WindowsBanners.Update();
         Services.Themes.WindowsAnimations.Update();

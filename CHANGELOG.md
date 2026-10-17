@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.3.0] - 2026-10-17
+
+### Añadido
+- **Prueba de velocidad**: clic en el medidor de velocidad de internet de la barra abre un panel con
+  lo que pasa ahora y una prueba completa (bajada, subida, ping y variación) con los servidores de
+  Cloudflare. Sigue aunque se cierre el panel y avisa al terminar; el último resultado se guarda.
+
 ## [3.2.0] - 2026-10-17
 
 ### Añadido

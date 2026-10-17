@@ -854,6 +854,9 @@ public partial class Taskbar : AppBarWindow
 
     private void Meter_Click(object sender, RoutedEventArgs e) => ShellHelper.StartTaskManager();
 
+    /// <summary>La velocidad de internet abre su panel (con la prueba de velocidad).</summary>
+    private void NetSpeed_Click(object sender, RoutedEventArgs e) => Flyouts.FlyoutManager.Toggle<Flyouts.NetSpeedFlyout>(NetSpeedButton);
+
     private async void Fps_Click(object sender, RoutedEventArgs e)
     {
         if (!Sensors.Running)

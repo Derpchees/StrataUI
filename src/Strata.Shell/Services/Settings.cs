@@ -171,6 +171,8 @@ public sealed class StrataSettings
     public bool StartAppsZoned { get; set; }
     /// <summary>Al iniciar con Windows también se abre el Hub (por defecto, solo las barras).</summary>
     public bool HubAtStartup { get; set; }
+    /// <summary>La última prueba de velocidad (panel de la velocidad de internet).</summary>
+    public SpeedTestResult? LastSpeedTest { get; set; }
 
     /// <summary>
     /// Valores del perfil global de NVIDIA antes de cambiarlos desde Strata UI (id → valor; null = no

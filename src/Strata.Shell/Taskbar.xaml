@@ -269,7 +269,7 @@
                         </StackPanel>
                     </Button>
                     <!-- Velocidad de internet: bajada arriba y subida abajo (ver Services/NetSpeed) -->
-                    <Button x:Name="NetSpeedButton" Style="{StaticResource MeterButton}" Click="Meter_Click">
+                    <Button x:Name="NetSpeedButton" Style="{StaticResource MeterButton}" Click="NetSpeed_Click">
                         <StackPanel>
                             <TextBlock x:Name="NetDownText" Style="{StaticResource MeterValue}" Text="↓ —" />
                             <TextBlock x:Name="NetUpText" Style="{StaticResource MeterDetail}" Text="↑ —" />

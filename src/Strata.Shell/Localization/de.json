@@ -981,5 +981,20 @@
   "Velocidad de internet": "Internetgeschwindigkeit",
   "Internet": "Internet",
   "Bajada: {0}": "Download: {0}",
-  "Subida: {0}": "Upload: {0}"
+  "Subida: {0}": "Upload: {0}",
+  "Bajada": "Download",
+  "Subida": "Upload",
+  "Con los servidores de Cloudflare. Usa datos: en una conexión rápida, unos cientos de MB.": "Nutzt die Server von Cloudflare. Verbraucht Daten: bei schneller Verbindung einige hundert MB.",
+  "Ahora: ↓ {0}  ↑ {1}": "Jetzt: ↓ {0}  ↑ {1}",
+  "Ping {0} · variación {1}": "Ping {0} · Jitter {1}",
+  "Midiendo el ping…": "Ping wird gemessen…",
+  "Midiendo la bajada…": "Download wird gemessen…",
+  "Midiendo la subida…": "Upload wird gemessen…",
+  "No se pudo completar la prueba. Revisa la conexión.": "Der Test konnte nicht abgeschlossen werden. Prüfe die Verbindung.",
+  "Última prueba: {0:g}": "Letzter Test: {0:g}",
+  "servidor {0}": "Server {0}",
+  "Mide la bajada, la subida y el ping de tu conexión.": "Misst Download, Upload und Ping deiner Verbindung.",
+  "Probar velocidad": "Geschwindigkeit testen",
+  "Prueba de velocidad terminada": "Geschwindigkeitstest abgeschlossen",
+  "Bajada {0} · Subida {1} · Ping {2}": "Download {0} · Upload {1} · Ping {2}"
 }
