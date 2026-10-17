@@ -82,8 +82,8 @@ public sealed class ScreenPicker : UserControl
         Visibility = screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         Loaded += (_, _) =>
         {
-            // Dentro de una pestaña, el de su entrada vale para todas.
-            if (TabbedPage.IsEmbedded(this))
+            // Dentro de una pestaña cuya entrada ya tiene uno, ese vale para todas.
+            if (TabbedPage.PickerAbove(this))
                 Visibility = Visibility.Collapsed;
         };
         // Si se eligió en otra página, este también se pone al día.

@@ -36,8 +36,8 @@ public abstract class FlyoutWindow : FluentWindow
         SizeToContent = SizeToContent.Height;
         MinHeight = 0; // el estilo de FluentWindow impone un mínimo pensado para ventanas normales
         ExtendsContentIntoTitleBar = true;
-        // Paneles: Acrylic como los de Windows; sólido en Material; en Liquid Glass, desenfoque
-        // limpio propio (sin el ruido ni la luminosidad del Acrylic) con esquinas grandes.
+        // Paneles: Acrylic como los de Windows; sólido en Material; en los temas importados de vidrio,
+        // desenfoque limpio propio (sin el ruido ni la luminosidad del Acrylic) con esquinas grandes.
         _device = NextDevice ?? ThemeManager.MainDevice;
         NextDevice = null;
         var theme = ThemeManager.ThemeFor(_device);
@@ -100,18 +100,6 @@ public abstract class FlyoutWindow : FluentWindow
         // Color propio de los paneles claro sobre un tema oscuro (o al revés): textos y controles a juego.
         if (ThemeManager.PanelContrastFor(_device) is { } contrast)
             _root.Resources.MergedDictionaries.Add(contrast);
-        if (ThemeManager.UseLiveGlassFor(_device) && !FillWorkArea)
-        {
-            // Vidrio líquido real: más esmerilado que la barra para que el texto se lea bien.
-            var glass = new Controls.LiquidGlassSurface
-            {
-                Refraction = 20,
-                Frost = 5,
-                CornerRadius = ThemeManager.ThemeFor(_device).PanelRadius,
-            };
-            glass.SetLook(ThemeManager.IsLightFor(_device));
-            _root.Children.Add(glass);
-        }
         _root.Children.Add(Layer("StrataFlyoutBackgroundBrush", null));
         var highlight = Layer("StrataGlassHighlightBrush", null);
         highlight.SetResourceReference(VisibilityProperty, "StrataGlassVisibility");

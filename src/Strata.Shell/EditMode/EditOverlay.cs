@@ -36,6 +36,11 @@ internal sealed class EditOverlay : Window
     private readonly DockPanel _frame = new() { LastChildFill = true };
     private readonly Grid _desktop = new() { Background = Brushes.Transparent };
     private readonly Canvas _widgets = new();
+    private readonly Canvas _bannerLayer = new();
+    private FrameworkElement? _banner;
+    private Border? _colorPanel;
+    private static readonly Size BannerSize = new(380, 86);
+    private const double BannerGap = 12;
     private readonly Grid _edgeHints = new();
     private readonly Canvas _markerLayer = new() { IsHitTestVisible = false };
     private readonly Border _marker = new() { BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(4), Visibility = Visibility.Collapsed };
@@ -82,6 +87,8 @@ internal sealed class EditOverlay : Window
         _root.Children.Add(new Rectangle { Fill = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)), IsHitTestVisible = false });
         _desktop.Children.Add(_edgeHints);
         _desktop.Children.Add(_widgets);
+        _desktop.Children.Add(_bannerLayer);
+        _bannerLayer.SizeChanged += (_, _) => PlaceBanner();
         _desktop.ContextMenu = DesktopMenu();
         _desktop.ContextMenuOpening += (_, _) => _desktop.ContextMenu = DesktopMenu();
         _widgets.SizeChanged += (_, _) => PlaceWidgets();
@@ -119,10 +126,12 @@ internal sealed class EditOverlay : Window
             bool byUs = _closing;
             _closing = true;
             EditSession.Changed -= Rebuild;
+            BarPreview.EditColor -= OnEditColor;
             if (!byUs)
                 EditSession.Cancel(); // Alt+F4 u otra forma de cerrarla: es cancelar
         };
         EditSession.Changed += Rebuild;
+        BarPreview.EditColor += OnEditColor;
         Rebuild();
     }
 
@@ -239,6 +248,97 @@ internal sealed class EditOverlay : Window
         _mainBox.IsChecked = isMain;
         _mainBox.IsEnabled = !isMain;
         BuildWidgets();
+        BuildBanner();
+    }
+
+    // ── Avisos ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Un aviso de ejemplo en el monitor y la esquina donde saldrán las notificaciones: se arrastra a
+    /// otra esquina u otro monitor (antes, Hub › Notificaciones).
+    /// </summary>
+    private void BuildBanner()
+    {
+        _bannerLayer.Children.Clear();
+        _banner = null;
+        if (!Settings.Current.NotificationsEnabled || EditSession.BannerDevice != Device)
+            return;
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = Loc.T("Avisos de notificación"), FontSize = 13, FontWeight = FontWeights.SemiBold });
+        text.Children.Add(new TextBlock
+        {
+            Text = Settings.Current.NotificationBanners ? Loc.T("Salen aquí. Arrástralo a otra esquina o a otro monitor.")
+                : Loc.T("Están desactivados (Hub › Notificaciones); saldrían aquí."),
+            FontSize = 12,
+            Opacity = 0.75,
+            TextWrapping = TextWrapping.Wrap,
+        });
+        var row = new DockPanel();
+        var icon = new SymbolIcon { Symbol = SymbolRegular.Alert24, FontSize = 22, Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center };
+        DockPanel.SetDock(icon, Dock.Left);
+        row.Children.Add(icon);
+        row.Children.Add(text);
+        var card = new Border
+        {
+            Width = BannerSize.Width,
+            Height = BannerSize.Height,
+            Padding = new Thickness(16, 10, 16, 10),
+            CornerRadius = new CornerRadius(10),
+            BorderThickness = new Thickness(1),
+            Child = row,
+            Cursor = Cursors.SizeAll,
+            Opacity = Settings.Current.NotificationBanners ? 1 : 0.6,
+            ToolTip = Loc.T("Dónde salen los avisos"),
+        };
+        card.SetResourceReference(Border.BackgroundProperty, "StrataPopupBackgroundBrush");
+        card.SetResourceReference(Border.BorderBrushProperty, "StrataFlyoutBorderBrush");
+        card.MouseLeftButtonDown += (_, e) => EditDrag.Press(card, new BannerPayload(), e);
+        _banner = card;
+        _bannerLayer.Children.Add(card);
+        PlaceBanner();
+    }
+
+    private void PlaceBanner()
+    {
+        if (_banner is null)
+            return;
+        var rect = CornerRect(EditSession.ScreenOf(Device).NotificationCorner);
+        Canvas.SetLeft(_banner, rect.Left);
+        Canvas.SetTop(_banner, rect.Top);
+    }
+
+    /// <summary>Lugar del aviso en una esquina del escritorio (dentro de las barras), en DIP de su capa.</summary>
+    private Rect CornerRect(NotificationCorner corner)
+    {
+        double width = _bannerLayer.ActualWidth, height = _bannerLayer.ActualHeight;
+        bool left = corner is NotificationCorner.TopLeft or NotificationCorner.BottomLeft;
+        bool top = corner is NotificationCorner.TopLeft or NotificationCorner.TopRight;
+        return new Rect(left ? BannerGap : Math.Max(0, width - BannerSize.Width - BannerGap),
+                        top ? BannerGap : Math.Max(0, height - BannerSize.Height - BannerGap),
+                        BannerSize.Width, BannerSize.Height);
+    }
+
+    // ── Color propio de las barras ──────────────────────────────────────────
+
+    /// <summary>Panel con el editor del color propio de las barras de este monitor (va al borrador).</summary>
+    private void OnEditColor(string device)
+    {
+        if (device != Device || _closing)
+            return;
+        if (_colorPanel != null)
+            _desktop.Children.Remove(_colorPanel);
+        var content = new StackPanel();
+        content.Children.Add(Hub.Pages.ColorsPage.CustomColorCard(this, Loc.T("Color de la barra"),
+            Loc.T("Con su opacidad: a menos, más se ve el material del tema detrás."), SymbolRegular.Color24,
+            () => EditSession.ScreenOf(Device).BarColor, (_, _) => { }, toggle: false,
+            save: value => EditSession.ChangeScreen(Device, s => s.BarColor = value)));
+        var done = ToolButton(SymbolRegular.Checkmark24, Loc.T("Listo"), () => _colorPanel!.Visibility = Visibility.Collapsed);
+        done.HorizontalAlignment = HorizontalAlignment.Right;
+        content.Children.Add(done);
+        _colorPanel = Floating(content, width: 560);
+        _colorPanel.HorizontalAlignment = HorizontalAlignment.Center;
+        _colorPanel.VerticalAlignment = VerticalAlignment.Center;
+        _desktop.Children.Add(_colorPanel);
     }
 
     /// <summary>Un borde sin barra: un hueco punteado donde soltar un elemento (o clic) crea la barra.</summary>
@@ -425,6 +525,21 @@ internal sealed class EditOverlay : Window
                 double y = height > widget.Size.Height ? top / (height - widget.Size.Height) : 0;
                 var marker = _widgets.TransformToVisual(_root).TransformBounds(new Rect(left, top, widget.Size.Width, widget.Size.Height));
                 return new DesktopTarget(x, y, marker);
+            }
+
+            case BannerPayload:
+            {
+                // La esquina del cuadrante donde está el puntero.
+                var point = _bannerLayer.PointFromScreen(screen);
+                bool left = point.X < _bannerLayer.ActualWidth / 2, top = point.Y < _bannerLayer.ActualHeight / 2;
+                var corner = (left, top) switch
+                {
+                    (true, true) => NotificationCorner.TopLeft,
+                    (false, true) => NotificationCorner.TopRight,
+                    (true, false) => NotificationCorner.BottomLeft,
+                    _ => NotificationCorner.BottomRight,
+                };
+                return new CornerTarget(corner, _bannerLayer.TransformToVisual(_root).TransformBounds(CornerRect(corner)));
             }
         }
         return null;

@@ -34,7 +34,7 @@ Ready-made examples live in [`examples/`](examples/).
   "name": "Solarized Dark",
   "light": false,             // true / false; leave it out to follow Windows light/dark mode
   "backdrop": "solid",        // solid, mica, acrylic or blur
-  "glass": false,             // Liquid Glass light edges
+  "glass": false,             // glass look: clean blur with edges of light
   "tonal": false,             // Material-style surfaces tinted with the accent
   "floating": false,          // capsule taskbar detached from the screen edges
   "radius": 8,                // taskbar and button corners (0–24)

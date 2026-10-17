@@ -28,53 +28,12 @@ public partial class TrayPage : Page
     {
         InitializeComponent();
         _onIconsChanged = (_, _) => Dispatcher.BeginInvoke(Refresh);
-        LoadScreen();
         Loaded += (_, _) =>
         {
             App.Current.Shell.NotificationArea.TrayIcons.CollectionChanged += _onIconsChanged;
-            ScreenPicker.Changed += LoadScreen;
-            Settings.Changed += LoadScreen;
             Refresh();
         };
-        Unloaded += (_, _) =>
-        {
-            App.Current.Shell.NotificationArea.TrayIcons.CollectionChanged -= _onIconsChanged;
-            ScreenPicker.Changed -= LoadScreen;
-            Settings.Changed -= LoadScreen;
-        };
-    }
-
-    // ── En qué monitor va ───────────────────────────────────────────────────
-
-    private void LoadScreen()
-    {
-        var bars = App.Current.Taskbars.Where(t => t.Device == ScreenPicker.Device).ToList();
-        bool here = bars.Any(t => t.HasTray);
-        HereSwitch.IsChecked = here;
-        HereSwitch.IsEnabled = bars.Count > 0;
-        HereText.Text = bars.Count == 0 ? Loc.T("Este monitor no tiene barra.")
-            : Loc.T("La bandeja es la misma en cada monitor que la lleve (una por monitor). Su lugar en la barra se cambia en el modo edición.");
-    }
-
-    /// <summary>Pone o quita la bandeja en este monitor (en la barra del reloj, o la primera).</summary>
-    private void Here_Click(object sender, RoutedEventArgs e)
-    {
-        var bars = App.Current.Taskbars.Where(t => t.Device == ScreenPicker.Device).ToList();
-        var target = bars.FirstOrDefault(t => t.Has(BarItem.Clock)) ?? bars.FirstOrDefault();
-        if (target is null)
-            return;
-        bool on = HereSwitch.IsChecked == true;
-        Settings.Update(s =>
-        {
-            foreach (var bar in bars)
-                BarLayout.SetItems(s, bar.BarId, bar.Items.Where(i => i != BarItem.Tray).ToList());
-            if (on)
-            {
-                var list = BarLayout.ItemsFor(target.BarId, s);
-                BarLayout.Insert(list, BarItem.Tray);
-                BarLayout.SetItems(s, target.BarId, list);
-            }
-        });
+        Unloaded += (_, _) => App.Current.Shell.NotificationArea.TrayIcons.CollectionChanged -= _onIconsChanged;
     }
 
     private void Refresh()

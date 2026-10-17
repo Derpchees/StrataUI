@@ -12,18 +12,10 @@
                             Subtitle="{l:T 'Lo que suena en cualquier app, en la barra.'}" />
             <hub:ScreenPicker />
 
-            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon MusicNote224}">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Multimedia en la barra de este monitor'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Carátula, canción, artista y álbum de lo que suena en cualquier app (Spotify, Reproductor multimedia, Deezer, YouTube en el navegador…). Clic: abre la app; clic central: pausa.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="MediaSwitch" Click="Media_Click" />
-            </ui:CardControl>
+            <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
+                       Text="{l:T 'Carátula, canción, artista y álbum de lo que suena en cualquier app (Spotify, Reproductor multimedia, Deezer, YouTube en el navegador…). Clic: abre la app; clic central: pausa. Se agrega a una barra en el modo edición.'}" />
 
-            <ui:CardControl Style="{StaticResource HubCard}" Margin="40,0,0,4" Icon="{ui:SymbolIcon Play24}">
+            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Play24}">
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Controles multimedia'}" />

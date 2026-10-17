@@ -63,7 +63,6 @@ public partial class Taskbar
         BarBorder.BorderBrush = Brushes.Transparent;
         GlassHighlight.Visibility = Visibility.Collapsed;
         BarBorder.Margin = FloatingMargin();
-        UpdateGlassSurface();
         WindowEffects.SetBlur(this, BarTheme.Backdrop, clear: true);
         WindowEffects.SetRoundedRegion(this, null, 0);
         // WPF y WPF-UI terminan de aplicar lo suyo sobre la ventana después: se repite cuando quedan

@@ -4,57 +4,12 @@ using System.Windows;
 namespace Strata.Shell.Services.Themes.Glass;
 
 /// <summary>
-/// Captura periódicamente lo que hay en pantalla detrás de un rectángulo, reducido a escala (la
-/// reducción hace de desenfoque suave). Corre en su propio hilo. La ventana dueña debe estar
-/// excluida de capturas (<see cref="ExcludeFromCapture"/>) para no capturarse a sí misma.
+/// Lo que hay en pantalla detrás de un rectángulo, reducido a escala: la barra transparente lo usa
+/// para elegir texto claro u oscuro según su fondo (Taskbar.Transparency), con la barra excluida de
+/// la captura un momento (<see cref="ExcludeFromCapture"/>).
 /// </summary>
-public sealed class BackdropCapture : IDisposable
+public static class BackdropCapture
 {
-    private readonly object _gate = new();
-    private readonly Thread _thread;
-    private volatile bool _running = true;
-    private Int32Rect _screenRect;
-    private int _scale;
-
-    /// <summary>Nuevo cuadro: píxeles BGRA de arriba abajo, ancho y alto (en el hilo de captura).</summary>
-    public event Action<byte[], int, int>? FrameCaptured;
-
-    public BackdropCapture(int scale, int framesPerSecond)
-    {
-        _scale = Math.Max(1, scale);
-        int interval = 1000 / Math.Max(1, framesPerSecond);
-        _thread = new Thread(() => Loop(interval)) { IsBackground = true, Name = "Strata UI BackdropCapture" };
-        _thread.Start();
-    }
-
-    /// <summary>Rectángulo de pantalla a capturar, en píxeles físicos.</summary>
-    public void SetArea(Int32Rect screenRect)
-    {
-        lock (_gate)
-            _screenRect = screenRect;
-    }
-
-    private void Loop(int interval)
-    {
-        byte[]? buffer = null;
-        while (_running)
-        {
-            Int32Rect rect;
-            lock (_gate)
-                rect = _screenRect;
-
-            if (rect.Width > 0 && rect.Height > 0)
-            {
-                int w = Math.Max(1, rect.Width / _scale), h = Math.Max(1, rect.Height / _scale);
-                if (buffer is null || buffer.Length != w * h * 4)
-                    buffer = new byte[w * h * 4];
-                if (Grab(rect, w, h, buffer))
-                    FrameCaptured?.Invoke(buffer, w, h);
-            }
-            Thread.Sleep(interval);
-        }
-    }
-
     /// <summary>Copia un rectángulo de la pantalla (píxeles físicos) reducido a w×h en BGRA.</summary>
     internal static bool Grab(Int32Rect rect, int w, int h, byte[] buffer)
     {
@@ -91,15 +46,9 @@ public sealed class BackdropCapture : IDisposable
     public static void ExcludeFromCapture(IntPtr hwnd, bool exclude) =>
         SetWindowDisplayAffinity(hwnd, exclude ? WdaExcludeFromCapture : WdaNone);
 
-    /// <summary>La ventana ya está excluida de capturas (p. ej. por el vidrio líquido).</summary>
+    /// <summary>La ventana ya está excluida de capturas.</summary>
     public static bool IsExcludedFromCapture(IntPtr hwnd) =>
         GetWindowDisplayAffinity(hwnd, out uint affinity) && affinity == WdaExcludeFromCapture;
-
-    public void Dispose()
-    {
-        _running = false;
-        _thread.Join(500);
-    }
 
     private const uint WdaNone = 0, WdaExcludeFromCapture = 0x11;
     private const int Halftone = 4;

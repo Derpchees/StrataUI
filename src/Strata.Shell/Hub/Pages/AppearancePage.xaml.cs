@@ -22,7 +22,6 @@ public partial class AppearancePage : Page
 
         var s = Settings.Current;
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
-        LiveGlassSwitch.IsChecked = s.LiveGlass;
         BuildAnimationChoices();
         Select(SpeedBox, s.AnimationSpeed.ToString());
         _loading = false;
@@ -122,9 +121,10 @@ public partial class AppearancePage : Page
                 ThemeGallery.Children.Add(card);
         }
 
-        // Esquemas sobre el estilo elegido; el primero, sin esquema (los colores del estilo).
+        // Esquemas sobre el estilo elegido; el primero, sin esquema: los colores del estilo, claros u
+        // oscuros según Windows. Después Claro y Oscuro (los colores del estilo, fijos) y los de color.
         var choices = new List<(StrataTheme? Kind, string Name, string Description)>
-            { (null, Loc.T("Colores del estilo"), Loc.T("Sin esquema: los colores propios del estilo.")) };
+            { (null, Loc.T("Según Windows"), Loc.T("Los colores del estilo, claros u oscuros como Windows.")) };
         choices.AddRange(ThemeCatalog.All.Where(t => t.IsScheme).Select(t => ((StrataTheme?)t.Kind, t.Name, t.Description)));
         foreach (var (kind, name, description) in choices)
         {
@@ -255,8 +255,6 @@ public partial class AppearancePage : Page
         return template;
     }
 
-    private void LiveGlass_Click(object sender, RoutedEventArgs e) =>
-        Settings.Update(s => s.LiveGlass = LiveGlassSwitch.IsChecked == true);
 
     private static void Select(ComboBox box, string tag) =>
         box.SelectedItem = box.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) ?? box.Items[0];

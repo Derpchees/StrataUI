@@ -170,7 +170,11 @@ public partial class Taskbar : AppBarWindow
     /// flota. Las verticales son algo más anchas, para que quepan el reloj y la fecha.
     /// </summary>
     public static double ReservedSize(bool vertical, string? device) =>
-        Settings.Current.For(device).TaskbarHeight + (vertical ? VerticalExtra : 0)
+        ReservedSize(vertical, Settings.Current.For(device), device);
+
+    /// <summary>Lo mismo con otros ajustes del monitor (el borrador del modo edición).</summary>
+    public static double ReservedSize(bool vertical, ScreenSettings screen, string? device) =>
+        screen.TaskbarHeight + (vertical ? VerticalExtra : 0)
         + (ThemeManager.ThemeFor(device).Floating ? ThemeCatalog.FloatingMargin : 0);
 
     private const double VerticalExtra = 16;
@@ -279,15 +283,11 @@ public partial class Taskbar : AppBarWindow
     /// Desenfoque detrás de la barra (Acrylic o vidrio limpio) y, si flota, recorte a la cápsula
     /// para que ni el desenfoque ni los clics ocupen el margen alrededor.
     /// </summary>
-    private LiquidGlassSurface? _glass;
-
     private void ApplyBackdrop()
     {
         if (ApplyTransparency())
             return;
         var theme = BarTheme;
-        // Con refracción en vivo el shader pinta el vidrio; el desenfoque de DWM queda debajo
-        // solo para suavizar el borde antialiasado.
         WindowEffects.SetBlur(this, theme.Backdrop);
         var margin = FloatingMargin();
         BarBorder.Margin = margin;
@@ -301,7 +301,6 @@ public partial class Taskbar : AppBarWindow
             TaskbarPosition.Right => new Thickness(1, 0, 0, 0),
             _ => new Thickness(0, 1, 0, 0),
         };
-        UpdateGlassSurface();
         if (!theme.Floating || ActualWidth <= 0)
         {
             WindowEffects.SetRoundedRegion(this, null, 0);
@@ -312,26 +311,6 @@ public partial class Taskbar : AppBarWindow
         int width = (int)Math.Round((ActualWidth - margin.Left - margin.Right) * scale);
         int height = (int)Math.Round((ActualHeight - margin.Top - margin.Bottom) * scale);
         WindowEffects.SetRoundedRegion(this, new Int32Rect(left, top, width, height), Math.Min(width, height) / 2);
-    }
-
-    private void UpdateGlassSurface()
-    {
-        bool wanted = ThemeManager.UseLiveGlassFor(Device) && !_transparent;
-        if (wanted && _glass is null)
-        {
-            _glass = new LiquidGlassSurface { Refraction = 14, Frost = 3 };
-            GlassHost.Children.Insert(0, _glass);
-        }
-        else if (!wanted && _glass != null)
-        {
-            GlassHost.Children.Remove(_glass);
-            _glass = null;
-        }
-        if (_glass != null)
-        {
-            _glass.CornerRadius = ((CornerRadius)Resources["StrataTaskbarCornerRadius"]).TopLeft;
-            _glass.SetLook(ThemeManager.IsLightFor(Device));
-        }
     }
 
     // WPF-UI termina de aplicar su tema de forma asíncrona sobre la ventana principal (la barra)

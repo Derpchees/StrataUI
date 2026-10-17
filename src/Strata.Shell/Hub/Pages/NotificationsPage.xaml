@@ -10,7 +10,6 @@
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="Alert24" Title="{l:T 'Notificaciones'}"
                             Subtitle="{l:T 'Centro de notificaciones junto al reloj (o Win+N) y avisos en el monitor y la esquina que elijas.'}" />
-            <hub:ScreenPicker />
 
             <!-- Sin permiso de Windows -->
             <ui:InfoBar x:Name="DeniedBar" IsOpen="False" IsClosable="False" Severity="Warning" Margin="0,0,0,12"
@@ -19,46 +18,18 @@
 
             <!-- ── En este monitor ───────────────────────────────────────────── -->
             <StackPanel x:Name="ScreenOptions">
-                <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,8" Text="{l:T 'En este monitor'}" />
+                <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,8" Text="{l:T 'Dónde salen los avisos'}" />
 
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar los avisos en este monitor'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Aparecen en un solo monitor: activarlo aquí los trae de donde estaban.'}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ui:ToggleSwitch x:Name="HereSwitch" Click="Here_Click" />
-                </ui:CardControl>
-
-                <!-- Esquina: un dibujo de la pantalla con una opción en cada esquina -->
+                <!-- El monitor y la esquina se eligen arrastrando el aviso de ejemplo en el modo edición -->
                 <ui:CardControl Style="{StaticResource HubCard}">
                     <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowExpand24" /></ui:CardControl.Icon>
                     <ui:CardControl.Header>
                         <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Esquina'}" />
-                            <TextBlock x:Name="CornerText" Style="{StaticResource CardDescription}" />
+                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor y esquina'}" />
+                            <TextBlock x:Name="CornerText" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
                         </StackPanel>
                     </ui:CardControl.Header>
-                    <Border Width="200" Height="124" CornerRadius="8" BorderThickness="2"
-                            BorderBrush="{DynamicResource ControlStrongStrokeColorDefaultBrush}"
-                            Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                        <Grid>
-                            <RadioButton x:Name="TopLeft" Style="{StaticResource CornerOption}" GroupName="Corner" Tag="TopLeft"
-                                         HorizontalAlignment="Left" VerticalAlignment="Top" Checked="Corner_Checked"
-                                         ToolTip="{l:T 'Arriba a la izquierda'}" />
-                            <RadioButton x:Name="TopRight" Style="{StaticResource CornerOption}" GroupName="Corner" Tag="TopRight"
-                                         HorizontalAlignment="Right" VerticalAlignment="Top" Checked="Corner_Checked"
-                                         ToolTip="{l:T 'Arriba a la derecha'}" />
-                            <RadioButton x:Name="BottomLeft" Style="{StaticResource CornerOption}" GroupName="Corner" Tag="BottomLeft"
-                                         HorizontalAlignment="Left" VerticalAlignment="Bottom" Checked="Corner_Checked"
-                                         ToolTip="{l:T 'Abajo a la izquierda'}" />
-                            <RadioButton x:Name="BottomRight" Style="{StaticResource CornerOption}" GroupName="Corner" Tag="BottomRight"
-                                         HorizontalAlignment="Right" VerticalAlignment="Bottom" Checked="Corner_Checked"
-                                         ToolTip="{l:T 'Abajo a la derecha'}" />
-                        </Grid>
-                    </Border>
+                    <ui:Button Icon="{ui:SymbolIcon Edit24}" Content="{l:T 'Cambiar en el modo edición'}" Click="EditLayout_Click" />
                 </ui:CardControl>
 
                 <ui:CardControl Style="{StaticResource HubCard}">

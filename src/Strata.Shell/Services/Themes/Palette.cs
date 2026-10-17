@@ -12,7 +12,7 @@ public static class Palette
     /// <param name="shown">Acento tal como lo pintan los controles (el de WPF-UI); si falta, se calcula.</param>
     /// <param name="barColor">Color propio de la barra (Hub › Colores), con su opacidad; null = el del tema.</param>
     /// <param name="panelColor">Color propio de los paneles y el menú Inicio; null = el del tema.</param>
-    public static ResourceDictionary Build(ThemeInfo theme, bool light, Color accent, double barHeight = 48, bool liveGlass = false,
+    public static ResourceDictionary Build(ThemeInfo theme, bool light, Color accent, double barHeight = 48,
                                            Color? shown = null, Color? barColor = null, Color? panelColor = null)
     {
         // Base neutra (equivalente a la paleta de Windows 11)
@@ -34,7 +34,7 @@ public static class Palette
             // Esquema de color (Nord, Dracula…) sobre el estilo elegido: opacos en los estilos sólidos y
             // Mica; sobre vidrio o transparencia, translúcidos para que se siga viendo el efecto.
             // (Con menos, el material de Windows lo aclaraba tanto que el esquema no se reconocía.)
-            (byte barAlpha, byte panelAlpha) = theme.Glass ? (liveGlass ? ((byte)0x80, (byte)0x99) : ((byte)0xB3, (byte)0xCC))
+            (byte barAlpha, byte panelAlpha) = theme.Glass ? ((byte)0xB3, (byte)0xCC)
                 : theme.Backdrop == Backdrop.Acrylic ? ((byte)0xE6, (byte)0xD9)
                 : ((byte)0xFF, (byte)0xFF);
             background = WithAlpha(Hex(scheme.Bar), barAlpha);
@@ -65,8 +65,8 @@ public static class Palette
         }
         else if (theme.Glass)
         {
-            // Liquid Glass (iOS/HyperOS): desenfoque limpio con un tinte mínimo, sin el brillo
-            // lechoso de Aero. La profundidad la dan los bordes de luz (ver GlassRim).
+            // Vidrio (temas importados con "glass"): desenfoque limpio con un tinte mínimo, sin el
+            // brillo lechoso de Aero. La profundidad la dan los bordes de luz (ver GlassRim).
             background = light ? Hex("#4DF5F5FA") : Hex("#3D0A0A0C");
             flyout = light ? Hex("#5CF5F5FA") : Hex("#4D0E0E10");
             border = Colors.Transparent;
@@ -78,16 +78,10 @@ public static class Palette
             hubTint = light ? Hex("#1AFFFFFF") : Hex("#1A000000");
             foreground = light ? Hex("#111114") : Colors.White;
             secondary = light ? Hex("#4A4A52") : Hex("#D0D0D6");
-            if (liveGlass)
-            {
-                // Con refracción en vivo el shader ya tiñe y da brillo: sin capas encima.
-                background = Colors.Transparent;
-                flyout = Colors.Transparent;
-            }
         }
         else if (theme.Backdrop == Backdrop.Acrylic)
         {
-            // Transparencia: el mismo color base, semitransparente sobre el Acrylic.
+            // Translúcido: el mismo color base, semitransparente sobre el Acrylic.
             background = WithAlpha(background, light ? (byte)0xB3 : (byte)0x99);
             flyout = WithAlpha(flyout, 0x66);
             hubTint = WithAlpha(flyout, 0x33);
@@ -136,7 +130,7 @@ public static class Palette
             ["StrataHubTintBrush"] = Brush(hubTint),
             ["StrataAccentBrush"] = Brush(accentShown),
             ["StrataGlassEdgeBrush"] = theme.Glass ? GlassRim(light) : Brushes.Transparent,
-            ["StrataGlassHighlightBrush"] = theme.Glass && !liveGlass ? GlassSheen(light) : Brushes.Transparent,
+            ["StrataGlassHighlightBrush"] = theme.Glass ? GlassSheen(light) : Brushes.Transparent,
             ["StrataGlassVisibility"] = theme.Glass ? Visibility.Visible : Visibility.Collapsed,
             ["StrataCornerRadius"] = new CornerRadius(theme.Radius),
             ["StrataLargeCornerRadius"] = new CornerRadius(theme.Radius + 4),
@@ -161,7 +155,7 @@ public static class Palette
     /// <summary>
     /// Sobrescribe los pinceles de WPF-UI que usan los controles (tarjetas del Hub, botones, cajas
     /// de texto, menús contextuales, tooltips, desplegables) para que sigan el tema y no se queden
-    /// con el gris por defecto. Los temas Sistema/Claro/Oscuro usan los de WPF-UI tal cual.
+    /// con el gris por defecto. Mica (con o sin Claro/Oscuro) usa los de WPF-UI tal cual.
     /// </summary>
     private static void AddControlOverrides(ResourceDictionary dict, ThemeInfo theme, bool light, Color accent, Color barColor)
     {

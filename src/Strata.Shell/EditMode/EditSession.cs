@@ -25,6 +25,36 @@ public static class EditSession
     /// <summary>Borrador del monitor principal de Strata UI (null: el de Windows).</summary>
     internal static string? MainScreen { get; set; }
 
+    /// <summary>Borrador de los ajustes de cada monitor (grosor, estilo y alineación de sus barras, reloj…).</summary>
+    internal static Dictionary<string, ScreenSettings> Screens { get; private set; } = new();
+
+    /// <summary>Borrador del monitor que mide el contador de FPS (null: la app activa).</summary>
+    internal static string? FpsScreen { get; set; }
+
+    /// <summary>Borrador del monitor de los avisos de notificación (null: el principal de Strata UI).</summary>
+    internal static string? NotificationScreen { get; set; }
+
+    /// <summary>Ajustes del borrador de un monitor.</summary>
+    internal static ScreenSettings ScreenOf(string device)
+    {
+        if (!Screens.TryGetValue(device, out var screen))
+            Screens[device] = screen = Settings.Current.For(device).Clone();
+        return screen;
+    }
+
+    /// <summary>Monitor donde saldrían los avisos con el borrador.</summary>
+    internal static string? BannerDevice
+    {
+        get
+        {
+            var screens = Forms.Screen.AllScreens;
+            return NotificationScreen is { } chosen && screens.Any(s => s.DeviceName == chosen)
+                ? chosen
+                : MainScreen is { } main && screens.Any(s => s.DeviceName == main) ? main
+                : screens.FirstOrDefault(s => s.Primary)?.DeviceName;
+        }
+    }
+
     /// <summary>Hay cambios sin aplicar.</summary>
     internal static bool Dirty { get; private set; }
 
@@ -52,6 +82,9 @@ public static class EditSession
             sc => s.Layouts.TryGetValue(sc.DeviceName, out var layout) ? layout.Clone() : BarLayout.DefaultLayout(sc.DeviceName == main, s));
         Widgets = s.Widgets.Select(w => w.Clone()).ToList();
         MainScreen = s.TaskbarMainScreen;
+        Screens = screens.ToDictionary(sc => sc.DeviceName, sc => s.For(sc.DeviceName).Clone());
+        FpsScreen = s.FpsScreen;
+        NotificationScreen = s.NotificationScreen;
         Dirty = false;
 
         Log.Info("Modo edición: abierto");
@@ -102,6 +135,9 @@ public static class EditSession
         var layouts = Layouts;
         var widgets = Widgets;
         var main = MainScreen;
+        var screens = Screens;
+        var fps = FpsScreen;
+        var notifications = NotificationScreen;
         Close();
         Settings.Update(s =>
         {
@@ -109,6 +145,12 @@ public static class EditSession
                 s.Layouts[device] = layout.Clone();
             s.Widgets = widgets.Select(w => w.Clone()).ToList();
             s.TaskbarMainScreen = main;
+            s.FpsScreen = fps;
+            s.NotificationScreen = notifications;
+            // Solo los monitores que cambiaron: uno sin ajustes propios sigue usando los generales.
+            foreach (var (device, screen) in screens)
+                if (System.Text.Json.JsonSerializer.Serialize(screen) != System.Text.Json.JsonSerializer.Serialize(s.For(device)))
+                    s.Screens[device] = screen.Clone();
         });
         WidgetManager.Sync();
         Log.Info("Modo edición: cambios aplicados");
@@ -136,6 +178,7 @@ public static class EditSession
         Overlays.Clear();
         Layouts = new();
         Widgets = new();
+        Screens = new();
         ActiveChanged?.Invoke();
         MemoryTrim.Schedule(TimeSpan.FromSeconds(3));
     }
@@ -185,6 +228,9 @@ public static class EditSession
                 break;
             case (WidgetPayload widget, DesktopTarget desktop):
                 PlaceWidget(widget.Widget, overlay.Device, desktop.X, desktop.Y);
+                break;
+            case (BannerPayload, CornerTarget corner):
+                PlaceBanner(overlay.Device, corner.Corner);
                 break;
         }
     }
@@ -272,6 +318,27 @@ public static class EditSession
     internal static void SetMainScreen(string device)
     {
         MainScreen = device;
+        Touch();
+    }
+
+    /// <summary>Cambia un ajuste del borrador de un monitor (grosor, estilo, alineación, reloj…).</summary>
+    internal static void ChangeScreen(string device, Action<ScreenSettings> change)
+    {
+        change(ScreenOf(device));
+        Touch();
+    }
+
+    internal static void SetFpsScreen(string? device)
+    {
+        FpsScreen = device;
+        Touch();
+    }
+
+    /// <summary>Los avisos salen en ese monitor y esa esquina.</summary>
+    internal static void PlaceBanner(string device, NotificationCorner corner)
+    {
+        NotificationScreen = device;
+        ScreenOf(device).NotificationCorner = corner;
         Touch();
     }
 

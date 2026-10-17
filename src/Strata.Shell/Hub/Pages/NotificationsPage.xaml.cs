@@ -8,8 +8,8 @@ using Forms = System.Windows.Forms;
 namespace Strata.Shell.Hub.Pages;
 
 /// <summary>
-/// Notificaciones: en el monitor elegido arriba, si los avisos salen ahí y en qué esquina; abajo,
-/// el centro de notificaciones y los avisos para todos.
+/// Notificaciones: dónde salen los avisos (se elige en el modo edición), una prueba, y el centro de
+/// notificaciones y los avisos para todos.
 /// </summary>
 public partial class NotificationsPage : Page
 {
@@ -26,20 +26,18 @@ public partial class NotificationsPage : Page
         DndSwitch.IsChecked = s.NotificationDoNotDisturb;
         DurationBox.SelectedItem = DurationBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == s.NotificationSeconds.ToString()) ?? DurationBox.Items[1];
-        LoadScreen();
+        UpdateCornerText();
         UpdateState();
         _loading = false;
 
         NotificationService.Changed += UpdateState;
-        ScreenPicker.Changed += OnScreenChanged;
+        Settings.Changed += UpdateCornerText;
         Unloaded += (_, _) =>
         {
             NotificationService.Changed -= UpdateState;
-            ScreenPicker.Changed -= OnScreenChanged;
+            Settings.Changed -= UpdateCornerText;
         };
     }
-
-    private static string Device => ScreenPicker.Device;
 
     /// <summary>Monitor donde salen ahora los avisos (el elegido o, si no está conectado, el principal de Strata UI).</summary>
     private static string BannerDevice()
@@ -48,23 +46,7 @@ public partial class NotificationsPage : Page
         return chosen != null && Forms.Screen.AllScreens.Any(s => s.DeviceName == chosen) ? chosen : ThemeManager.MainDevice;
     }
 
-    private void OnScreenChanged()
-    {
-        _loading = true;
-        LoadScreen();
-        _loading = false;
-    }
-
-    private void LoadScreen()
-    {
-        bool here = BannerDevice() == Device;
-        HereSwitch.IsChecked = here;
-        // Salen en un solo monitor: se mueven activándolo en otro.
-        HereSwitch.IsEnabled = !here;
-        if (FindName(Settings.Current.For(Device).NotificationCorner.ToString()) is RadioButton corner)
-            corner.IsChecked = true;
-        UpdateCornerText();
-    }
+    private void EditLayout_Click(object sender, RoutedEventArgs e) => EditMode.EditSession.Start();
 
     private void UpdateState()
     {
@@ -73,19 +55,21 @@ public partial class NotificationsPage : Page
         DeniedBar.IsOpen = Settings.Current.NotificationsEnabled && NotificationService.AccessDenied;
     }
 
-    private void UpdateCornerText() => CornerText.Text = Settings.Current.For(Device).NotificationCorner switch
+    /// <summary>"Monitor 2 · Abajo a la derecha": dónde salen ahora (se cambia arrastrando el aviso de ejemplo).</summary>
+    private void UpdateCornerText()
     {
-        NotificationCorner.TopLeft => Loc.T("Arriba a la izquierda"),
-        NotificationCorner.TopRight => Loc.T("Arriba a la derecha"),
-        NotificationCorner.BottomLeft => Loc.T("Abajo a la izquierda"),
-        _ => Loc.T("Abajo a la derecha"),
-    };
-
-    private void Here_Click(object sender, RoutedEventArgs e)
-    {
-        if (HereSwitch.IsChecked == true)
-            Settings.Update(s => s.NotificationScreen = Device);
-        OnScreenChanged();
+        string device = BannerDevice();
+        var screens = ScreenPicker.Screens();
+        int index = screens.FindIndex(s => s.DeviceName == device);
+        string corner = Settings.Current.For(device).NotificationCorner switch
+        {
+            NotificationCorner.TopLeft => Loc.T("Arriba a la izquierda"),
+            NotificationCorner.TopRight => Loc.T("Arriba a la derecha"),
+            NotificationCorner.BottomLeft => Loc.T("Abajo a la izquierda"),
+            _ => Loc.T("Abajo a la derecha"),
+        };
+        CornerText.Text = (index >= 0 && screens.Count > 1 ? ScreenPicker.NameOf(screens[index], index, screens.Count) + " · " : "") + corner
+                          + "\n" + Loc.T("En el modo edición, arrastra el aviso de ejemplo a otra esquina o a otro monitor.");
     }
 
     private void Enabled_Click(object sender, RoutedEventArgs e)
@@ -110,14 +94,6 @@ public partial class NotificationsPage : Page
     {
         if (!_loading && DurationBox.SelectedItem is ComboBoxItem { Tag: string tag })
             Settings.Update(s => s.NotificationSeconds = int.Parse(tag));
-    }
-
-    private void Corner_Checked(object sender, RoutedEventArgs e)
-    {
-        if (_loading || sender is not RadioButton { Tag: string tag })
-            return;
-        Settings.UpdateScreen(Device, s => s.NotificationCorner = Enum.Parse<NotificationCorner>(tag));
-        UpdateCornerText();
     }
 
     private void Test_Click(object sender, RoutedEventArgs e) => NotificationService.ShowTest();

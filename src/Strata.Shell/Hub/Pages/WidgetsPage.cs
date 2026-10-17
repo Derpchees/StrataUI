@@ -10,13 +10,13 @@ using TextBlock = System.Windows.Controls.TextBlock;
 namespace Strata.Shell.Hub.Pages;
 
 /// <summary>
-/// Hub › Widgets: agregar relojes y visualizadores al escritorio, y ver o quitar los que hay. Se
-/// mueven arrastrándolos en el escritorio; el tamaño y las opciones, con su clic derecho. También
-/// se importan widgets hechos por otros (<see cref="WidgetModule"/>).
+/// Hub › Widgets: se agregan, mueven, cambian de tamaño y quitan en el modo edición (sobre el
+/// escritorio mismo); aquí, el acceso y cuántos hay. Los hechos por otros se importan en Hub ›
+/// Importar (<see cref="WidgetModule"/>) y aparecen en la biblioteca del modo edición.
 /// </summary>
 public sealed class WidgetsPage : Page
 {
-    private readonly StackPanel _list = new();
+    private readonly TextBlock _count = new();
 
     public WidgetsPage()
     {
@@ -26,99 +26,48 @@ public sealed class WidgetsPage : Page
         {
             Icon = SymbolRegular.Apps24,
             Title = Loc.T("Widgets"),
-            Subtitle = Loc.T("Relojes, un visualizador de música y medidores de CPU, GPU y FPS sobre el fondo de pantalla. Arrástralos para moverlos; clic derecho para su tamaño y opciones."),
+            Subtitle = Loc.T("Relojes, un visualizador de música y medidores de CPU, GPU y FPS sobre el fondo de pantalla."),
         });
 
-        content.Children.Add(new TextBlock { Style = (Style)FindResource("HubSectionTitle"), Text = Loc.T("Agregar") });
-        var add = new WrapPanel { Margin = new Thickness(0, 0, 0, 8) };
-        add.Children.Add(AddButton(SymbolRegular.Clock24, Loc.T("Reloj"), () => WidgetManager.Add(WidgetKind.Clock, showDate: false)));
-        add.Children.Add(AddButton(SymbolRegular.CalendarClock24, Loc.T("Reloj con fecha"), () => WidgetManager.Add(WidgetKind.Clock, showDate: true)));
-        add.Children.Add(AddButton(SymbolRegular.MusicNote224, Loc.T("Visualizador de música"), () => WidgetManager.Add(WidgetKind.Visualizer)));
-        add.Children.Add(AddButton(SymbolRegular.DeveloperBoard24, Loc.T("Medidor de CPU"), () => WidgetManager.Add(WidgetKind.Cpu)));
-        add.Children.Add(AddButton(SymbolRegular.Gauge24, Loc.T("Medidor de GPU"), () => WidgetManager.Add(WidgetKind.Gpu)));
-        add.Children.Add(AddButton(SymbolRegular.Games24, Loc.T("Contador de FPS"), () => WidgetManager.Add(WidgetKind.Fps)));
-        // Los importados (Hub › Importar), junto a los incluidos.
-        foreach (var module in ModuleStore.All<ModuleBase>(ModuleKind.Widget))
-            add.Children.Add(AddButton(SymbolRegular.PuzzlePiece24, module.Name, () => WidgetManager.Add(WidgetKind.Custom, module: module.Id)));
-        content.Children.Add(add);
-
-        content.Children.Add(new TextBlock { Style = (Style)FindResource("HubSectionTitle"), Text = Loc.T("En el escritorio") });
-        content.Children.Add(_list);
+        var header = new StackPanel();
+        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Editar en el escritorio") });
+        header.Children.Add(new TextBlock
+        {
+            Style = (Style)FindResource("CardDescription"),
+            TextWrapping = TextWrapping.Wrap,
+            Text = Loc.T("En el modo edición se arrastran desde la biblioteca, se mueven a cualquier monitor y con clic derecho se cambia su tamaño, sus opciones o se quitan."),
+        });
+        _count.Style = (Style)FindResource("CardDescription");
+        header.Children.Add(_count);
+        var edit = new Wpf.Ui.Controls.Button
+        {
+            Appearance = ControlAppearance.Primary,
+            Icon = new SymbolIcon { Symbol = SymbolRegular.Edit24 },
+            Content = Loc.T("Editar diseño"),
+        };
+        edit.Click += (_, _) => EditMode.EditSession.Start();
+        content.Children.Add(new CardControl
+        {
+            Style = (Style)FindResource("HubCard"),
+            Icon = new SymbolIcon { Symbol = SymbolRegular.DesignIdeas24 },
+            Header = header,
+            Content = edit,
+        });
 
         ScrollViewer.SetCanContentScroll(this, false);
         Content = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, CanContentScroll = false, Content = content };
         Loaded += (_, _) =>
         {
-            WidgetManager.Changed += Build;
-            Build();
+            WidgetManager.Changed += UpdateCount;
+            UpdateCount();
         };
-        Unloaded += (_, _) => WidgetManager.Changed -= Build;
+        Unloaded += (_, _) => WidgetManager.Changed -= UpdateCount;
     }
 
-    private static FrameworkElement AddButton(SymbolRegular icon, string text, Action action)
+    private void UpdateCount()
     {
-        var button = new Wpf.Ui.Controls.Button
-        {
-            Icon = new SymbolIcon { Symbol = icon },
-            Content = text,
-            Margin = new Thickness(0, 0, 8, 8),
-            Padding = new Thickness(14, 8, 14, 8),
-        };
-        button.Click += (_, _) => action();
-        return button;
+        int count = Settings.Current.Widgets.Count;
+        _count.Text = count == 0 ? Loc.T("Todavía no hay widgets.") : Loc.F("Widgets en el escritorio: {0}", count);
+        _count.Margin = new Thickness(0, 4, 0, 0);
     }
-
-    private void Build()
-    {
-        _list.Children.Clear();
-        var widgets = Settings.Current.Widgets;
-        if (widgets.Count == 0)
-        {
-            _list.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), Text = Loc.T("Todavía no hay widgets.") });
-            return;
-        }
-        var screens = System.Windows.Forms.Screen.AllScreens.Select(s => s.DeviceName).ToList();
-        foreach (var widget in widgets)
-        {
-            var header = new StackPanel();
-            header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = KindName(widget) });
-            int monitor = screens.IndexOf(widget.Device ?? "") + 1;
-            header.Children.Add(new TextBlock
-            {
-                Style = (Style)FindResource("CardDescription"),
-                Text = (monitor > 0 ? Loc.F("Monitor {0}", monitor) : Loc.T("Monitor principal"))
-                       + (widget.Locked ? " · " + Loc.T("posición bloqueada") : ""),
-            });
-            var remove = new Wpf.Ui.Controls.Button { Content = Loc.T("Quitar"), Icon = new SymbolIcon { Symbol = SymbolRegular.Delete24 } };
-            remove.Click += (_, _) => WidgetManager.Remove(widget.Id);
-            _list.Children.Add(new CardControl
-            {
-                Style = (Style)FindResource("HubCard"),
-                Header = header,
-                Content = remove,
-                Icon = new SymbolIcon
-                {
-                    Symbol = widget.Kind switch
-                    {
-                        WidgetKind.Visualizer => SymbolRegular.MusicNote224,
-                        WidgetKind.Custom => SymbolRegular.PuzzlePiece24,
-                        WidgetKind.Cpu => SymbolRegular.DeveloperBoard24,
-                        WidgetKind.Gpu => SymbolRegular.Gauge24,
-                        WidgetKind.Fps => SymbolRegular.Games24,
-                        _ => SymbolRegular.Clock24,
-                    },
-                },
-            });
-        }
-    }
-
-    private static string KindName(WidgetConfig widget) => widget.Kind switch
-    {
-        WidgetKind.Visualizer => Loc.T("Visualizador de música"),
-        WidgetKind.Cpu => Loc.T("Medidor de CPU"),
-        WidgetKind.Gpu => Loc.T("Medidor de GPU"),
-        WidgetKind.Fps => Loc.T("Contador de FPS"),
-        WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, widget.Module)?.Name ?? Loc.T("Widget importado"),
-        _ => widget.ShowDate ? Loc.T("Reloj con fecha") : Loc.T("Reloj"),
-    };
 }

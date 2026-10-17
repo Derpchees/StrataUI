@@ -6,6 +6,33 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.0.0] - 2026-10-16
+
+Todo lo que se ve en pantalla se arma en el **modo edición**; el Hub queda para lo general. Incluye
+la 2.6.0, que no llegó a publicarse.
+
+### Añadido
+- **Opciones de las barras en el modo edición** (clic derecho en una barra): tamaño, estilo (el del
+  tema, transparente total o un color propio, con su editor de color ahí mismo), alineación de
+  Inicio y las apps, y centrar las apps. Se ven al instante en la vista previa.
+- **Opciones de cada elemento en el modo edición** (clic derecho en él): segundos y fecha del reloj,
+  porcentaje de la batería, temperaturas de CPU y GPU, controles multimedia y qué monitor mide el
+  contador de FPS.
+- **Dónde salen los avisos, arrastrando**: el modo edición muestra un aviso de ejemplo en su monitor
+  y su esquina; se arrastra a otra esquina o a otro monitor.
+
+### Cambiado
+- **Temas: estilo y esquema por separado.** Los estilos son Mica (antes Sistema), Translúcido (antes
+  Transparencia), Material y Transparente total; **Claro** y **Oscuro** pasan a ser esquemas, junto
+  a "Según Windows" (el de siempre) y los de color. El esquema se mantiene al cambiar de estilo.
+  Quien tenía Claro, Oscuro o Liquid Glass lo conserva como estilo + esquema.
+- **Liquid Glass ya no está** (y con él la refracción en vivo, que capturaba la pantalla sin parar):
+  pasa a Translúcido con su claro u oscuro.
+- El Hub ya no repite lo que hace el modo edición: Barra de tareas muestra un resumen del diseño de
+  cada monitor y deja las apps abiertas y las lecturas avanzadas; Bandeja, solo qué íconos se ven;
+  Multimedia, solo sus controles; Notificaciones, dónde salen los avisos con un acceso al modo
+  edición; Widgets, el acceso al modo edición. El monitor principal se elige en el modo edición.
+
 ## [2.6.0] - 2026-10-16
 
 ### Añadido

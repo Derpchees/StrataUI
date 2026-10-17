@@ -6,8 +6,9 @@ using Strata.Shell.Services.Localization;
 namespace Strata.Shell.Hub.Pages;
 
 /// <summary>
-/// Barra de tareas del monitor elegido arriba (<see cref="ScreenPicker"/>): qué lleva, su aspecto,
-/// posición, reloj y temperaturas. Abajo, lo que vale para todos los monitores.
+/// Barra de tareas: el modo edición (donde se arma el diseño de cada monitor y las opciones de cada
+/// barra y elemento), un resumen de lo que lleva cada monitor, las apps abiertas del monitor elegido
+/// (<see cref="ScreenPicker"/>) y, para todos, en qué barras aparecen y las lecturas avanzadas.
 /// </summary>
 public partial class TaskbarPage : Page
 {
@@ -18,16 +19,17 @@ public partial class TaskbarPage : Page
         InitializeComponent();
         var s = Settings.Current;
         Select(AppsModeBox, s.TaskbarAppsMode.ToString());
-        BuildMainScreenBox();
+        AppsModeCard.Visibility = ScreenPicker.Screens().Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         SensorsStartupSwitch.IsChecked = s.SensorsAtStartup;
-        BuildFpsScreens();
         UpdateSensors();
         LoadScreen();
+        BuildSummary();
         _loading = false;
         Loaded += (_, _) =>
         {
             Sensors.Changed += UpdateSensors;
             ScreenPicker.Changed += OnScreenChanged;
+            Settings.Changed += BuildSummary;
             EditMode.EditSession.ActiveChanged += UpdateEditLibrary;
             UpdateEditLibrary();
         };
@@ -35,8 +37,33 @@ public partial class TaskbarPage : Page
         {
             Sensors.Changed -= UpdateSensors;
             ScreenPicker.Changed -= OnScreenChanged;
+            Settings.Changed -= BuildSummary;
             EditMode.EditSession.ActiveChanged -= UpdateEditLibrary;
         };
+    }
+
+    /// <summary>Qué barras tiene cada monitor y qué lleva cada una (se cambia en el modo edición).</summary>
+    private void BuildSummary()
+    {
+        LayoutSummary.Children.Clear();
+        var screens = ScreenPicker.Screens();
+        for (int i = 0; i < screens.Count; i++)
+        {
+            var layout = Settings.Current.Layouts.GetValueOrDefault(screens[i].DeviceName);
+            LayoutSummary.Children.Add(new TextBlock
+            {
+                Style = (Style)FindResource("CardTitle"),
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, i == 0 ? 0 : 10, 0, 2),
+                Text = ScreenPicker.NameOf(screens[i], i, screens.Count),
+            });
+            IEnumerable<string> lines = layout is null || layout.Bars.Count == 0
+                ? [Loc.T("Sin barra")]
+                : BarLayout.InCreationOrder(layout).Select(bar => BarLayout.BarName(bar.Edge) + ": "
+                    + (bar.Items.Count == 0 ? Loc.T("vacía") : string.Join(", ", bar.Items.Select(BarLayout.Name))));
+            foreach (var line in lines)
+                LayoutSummary.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), TextWrapping = TextWrapping.Wrap, Text = line });
+        }
     }
 
     /// <summary>Mientras el modo edición está abierto, su biblioteca también se arrastra desde aquí.</summary>
@@ -56,54 +83,12 @@ public partial class TaskbarPage : Page
         _loading = false;
     }
 
-    /// <summary>Los ajustes del monitor elegido.</summary>
+    /// <summary>Las opciones de las apps abiertas del monitor elegido.</summary>
     private void LoadScreen()
     {
         var s = Settings.Current.For(Device);
-        Select(AlignmentBox, s.TaskbarAlignment.ToString());
-        CenterAppsSwitch.IsChecked = s.TaskbarCenterApps;
         PreviewsSwitch.IsChecked = s.ShowTaskPreviews;
         CombineSwitch.IsChecked = s.CombineTaskWindows;
-        HeightBox.SelectedItem = HeightBox.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(i => (string)i.Tag == s.TaskbarHeight.ToString()) ?? HeightBox.Items[1];
-        SecondsSwitch.IsChecked = s.ShowSeconds;
-        DateSwitch.IsChecked = s.ShowDate;
-        TemperaturesSwitch.IsChecked = s.ShowTemperatures;
-        BatteryPercentSwitch.IsChecked = s.ShowBatteryPercent;
-        Select(BarStyleBox, s.BarStyle.ToString());
-        BuildBarColor();
-    }
-
-    /// <summary>El editor del color propio de la barra de este monitor (solo con ese estilo).</summary>
-    private void BuildBarColor()
-    {
-        string device = Device;
-        BarColorHost.Content = Settings.Current.For(device).BarStyle != BarStyle.Color ? null
-            : ColorsPage.CustomColorCard(this, Loc.T("Color de la barra"), Loc.T("Con su opacidad: a menos, más se ve el material del tema detrás."),
-                Wpf.Ui.Controls.SymbolRegular.Color24,
-                () => Settings.Current.For(device).BarColor,
-                (st, value) =>
-                {
-                    if (!st.Screens.TryGetValue(device, out var screen))
-                        st.Screens[device] = screen = st.DefaultScreen();
-                    screen.BarColor = value;
-                },
-                toggle: false);
-    }
-
-    private void BarStyle_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loading || BarStyleBox.SelectedItem is not ComboBoxItem { Tag: string tag })
-            return;
-        var style = Enum.Parse<BarStyle>(tag);
-        Settings.UpdateScreen(Device, s =>
-        {
-            s.BarStyle = style;
-            // Al elegir color propio por primera vez, uno oscuro y algo transparente para empezar.
-            if (style == BarStyle.Color && s.BarColor is null)
-                s.BarColor = "#E61C1C1C";
-        });
-        BuildBarColor();
     }
 
     private static void Select(ComboBox box, string tag) =>
@@ -115,56 +100,14 @@ public partial class TaskbarPage : Page
             return;
         Settings.UpdateScreen(Device, s =>
         {
-            s.TaskbarCenterApps = CenterAppsSwitch.IsChecked == true;
             s.ShowTaskPreviews = PreviewsSwitch.IsChecked == true;
             s.CombineTaskWindows = CombineSwitch.IsChecked == true;
-            s.ShowSeconds = SecondsSwitch.IsChecked == true;
-            s.ShowDate = DateSwitch.IsChecked == true;
-            s.ShowTemperatures = TemperaturesSwitch.IsChecked == true;
-            s.ShowBatteryPercent = BatteryPercentSwitch.IsChecked == true;
         });
     }
-
-    private void Alignment_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_loading && AlignmentBox.SelectedItem is ComboBoxItem { Tag: string tag })
-            Settings.UpdateScreen(Device, s => s.TaskbarAlignment = Enum.Parse<TaskbarAlignment>(tag));
-    }
-
-    private void Height_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_loading && HeightBox.SelectedItem is ComboBoxItem { Tag: string tag })
-            Settings.UpdateScreen(Device, s => s.TaskbarHeight = int.Parse(tag));
-    }
-
-    private void ResetLayout_Click(object sender, RoutedEventArgs e) => BarEditor.Reset();
 
     private void EditLayout_Click(object sender, RoutedEventArgs e) => EditMode.EditSession.Start();
 
     // ── Para todos los monitores ────────────────────────────────────────────
-
-    private void BuildMainScreenBox()
-    {
-        var screens = ScreenPicker.Screens();
-        MultiMonitorOptions.Visibility = screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
-        MainScreenBox.Items.Add(new ComboBoxItem { Content = Loc.T("Igual que Windows"), Tag = null });
-        for (int i = 0; i < screens.Count; i++)
-            MainScreenBox.Items.Add(new ComboBoxItem
-            {
-                Content = screens.Count == 1 ? Loc.T("Monitor") : Loc.F("Monitor {0}", i + 1),
-                Tag = screens[i].DeviceName,
-            });
-        string? chosen = Settings.Current.TaskbarMainScreen;
-        MainScreenBox.SelectedItem = MainScreenBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string?)i.Tag == chosen)
-                                     ?? MainScreenBox.Items[0];
-    }
-
-    private void MainScreen_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loading || MainScreenBox.SelectedItem is not ComboBoxItem item)
-            return;
-        Settings.Update(s => s.TaskbarMainScreen = (string?)item.Tag);
-    }
 
     private void AppsMode_Changed(object sender, SelectionChangedEventArgs e)
     {
@@ -176,23 +119,6 @@ public partial class TaskbarPage : Page
     {
         if (!_loading)
             Settings.Update(s => s.SensorsAtStartup = SensorsStartupSwitch.IsChecked == true);
-    }
-
-    private void BuildFpsScreens()
-    {
-        var screens = ScreenPicker.Screens();
-        FpsScreenBox.Items.Add(new ComboBoxItem { Content = Loc.T("Automático: la app activa"), Tag = null });
-        for (int i = 0; i < screens.Count; i++)
-            FpsScreenBox.Items.Add(new ComboBoxItem { Content = ScreenPicker.NameOf(screens[i], i, screens.Count), Tag = screens[i].DeviceName });
-        string? chosen = Settings.Current.FpsScreen;
-        FpsScreenBox.SelectedItem = FpsScreenBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string?)i.Tag == chosen)
-                                    ?? FpsScreenBox.Items[0];
-    }
-
-    private void FpsScreen_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_loading && FpsScreenBox.SelectedItem is ComboBoxItem item)
-            Settings.Update(s => s.FpsScreen = (string?)item.Tag);
     }
 
     private void UpdateSensors()

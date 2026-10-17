@@ -32,9 +32,6 @@ public static class ThemeManager
 
     public static bool IsLight => IsLightFor(MainDevice);
 
-    /// <summary>Tema de vidrio con refracción real activa (y soportada por el equipo).</summary>
-    public static bool UseLiveGlass => UseLiveGlassFor(MainDevice);
-
     /// <summary>Monitor principal de Strata UI (el de la bandeja), aunque las barras aún no existan.</summary>
     public static string MainDevice =>
         App.MainScreenDevice(System.Windows.Forms.Screen.AllScreens.Select(sc => (sc.DeviceName, sc.Primary)));
@@ -50,9 +47,6 @@ public static class ThemeManager
 
     public static bool IsLightFor(string? device) => ThemeFor(device).Light ?? WindowsUsesLightTheme();
 
-    public static bool UseLiveGlassFor(string? device) =>
-        ThemeFor(device).Glass && Settings.Current.LiveGlass && Services.Themes.Glass.LiquidGlassEffect.IsSupported;
-
     /// <summary>
     /// Colores de un monitor cuando no coinciden con los generales (otro tema, claro/oscuro u otro
     /// tamaño de barra); null si son los mismos. La barra y sus paneles los agregan a sus recursos.
@@ -66,7 +60,7 @@ public static class ThemeManager
         if ((theme.Key, light, height, barColor) == (Theme.Key, IsLight, Settings.Current.For(MainDevice).TaskbarHeight, BarColorFor(MainDevice)))
             return null;
         var accent = Readable(AccentFor(theme), light);
-        return Palette.Build(theme, light, accent, height, UseLiveGlassFor(device), light == IsLight ? _shownAccent : null,
+        return Palette.Build(theme, light, accent, height, light == IsLight ? _shownAccent : null,
                              barColor, CustomPanelColor);
     }
 
@@ -154,7 +148,7 @@ public static class ThemeManager
         _ => WindowBackdropType.None,
     };
 
-    private static (string, string?, int, bool, bool, string?, string?) _appliedKey;
+    private static (string, string?, int, bool, string?, string?) _appliedKey;
     private static HwndSource? _colorWatcher;
 
     public static void Initialize()
@@ -205,12 +199,12 @@ public static class ThemeManager
             Apply();
     }
 
-    /// <summary>Lo que cambia los recursos generales: el tema y la barra del monitor principal, el acento y el vidrio.</summary>
-    private static (string, string?, int, bool, bool, string?, string?) AppliedKey()
+    /// <summary>Lo que cambia los recursos generales: el tema y la barra del monitor principal y el acento.</summary>
+    private static (string, string?, int, bool, string?, string?) AppliedKey()
     {
         var s = Settings.Current;
         var main = s.For(MainDevice);
-        return (ThemeFor(MainDevice).Key, s.AccentColor, main.TaskbarHeight, s.LiveGlass, s.AccentFromWallpaper,
+        return (ThemeFor(MainDevice).Key, s.AccentColor, main.TaskbarHeight, s.AccentFromWallpaper,
                 BarColorFor(MainDevice)?.ToString(), s.CustomPanelColor);
     }
 
@@ -331,7 +325,7 @@ public static class ThemeManager
         // botones principales, selección), no un cálculo aparte con otro tono.
         Color? shown = (resources["AccentFillColorDefaultBrush"] as SolidColorBrush)?.Color;
         _shownAccent = shown;
-        var next = Palette.Build(theme, light, accent, Settings.Current.For(MainDevice).TaskbarHeight, UseLiveGlass, shown,
+        var next = Palette.Build(theme, light, accent, Settings.Current.For(MainDevice).TaskbarHeight, shown,
                                  BarColorFor(MainDevice), CustomPanelColor);
         if (_current != null)
             resources.MergedDictionaries.Remove(_current);

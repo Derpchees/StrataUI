@@ -9,17 +9,16 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="PanelBottom20" Title="{l:T 'Barra de tareas'}"
-                            Subtitle="{l:T 'Qué lleva la barra de cada monitor, su aspecto, posición, reloj y rendimiento.'}" />
-            <hub:ScreenPicker />
+                            Subtitle="{l:T 'El diseño de cada monitor se arma en el modo edición; aquí, las apps abiertas y las lecturas avanzadas.'}" />
 
-            <!-- ── Modo edición ──────────────────────────────────────────────── -->
+            <!-- ── Modo edición: barras, elementos, sus opciones y widgets ──────── -->
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="DesignIdeas24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Modo edición'}" />
                         <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Arma las barras, los elementos y los widgets de cada monitor sobre la pantalla misma, arrastrando. Nada cambia hasta que lo apliques.'}" />
+                                   Text="{l:T 'Arma las barras, los elementos y los widgets de cada monitor sobre la pantalla misma, arrastrando. Clic derecho en una barra: tamaño, estilo y alineación; en un elemento, sus opciones. Nada cambia hasta que lo apliques.'}" />
                     </StackPanel>
                 </ui:CardControl.Header>
                 <ui:Button Appearance="Primary" Icon="{ui:SymbolIcon Edit24}" Content="{l:T 'Editar diseño'}" Click="EditLayout_Click" />
@@ -29,65 +28,17 @@
                     BorderThickness="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" />
 
-            <!-- ── Qué lleva la barra (de este monitor) ─────────────────────── -->
-            <Grid Margin="2,8,0,4">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource HubSectionTitle}" Margin="0" VerticalAlignment="Center" Text="{l:T 'Qué lleva la barra'}" />
-                <ui:Button Grid.Column="1" Content="{l:T 'Restablecer'}" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetLayout_Click" />
-            </Grid>
-            <TextBlock Style="{StaticResource CardDescription}" Margin="2,4,0,10" TextWrapping="Wrap"
-                       Text="{l:T 'Qué barras tiene este monitor y qué lleva cada una (cada elemento, una vez por monitor). Para ordenarlos, arrástralos en la barra misma o usa el modo edición; clic derecho en uno: su configuración en Windows.'}" />
-            <hub:BarItemsEditor x:Name="BarEditor" />
+            <!-- Qué tiene ahora cada monitor -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Diseño actual'}" />
+            <Border Margin="0,0,0,6" Padding="18,10,18,12" CornerRadius="8" BorderThickness="1"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                <StackPanel x:Name="LayoutSummary" />
+            </Border>
 
-            <!-- ── Barra ─────────────────────────────────────────────────────── -->
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Barra'}" />
-
-            <!-- Estilo de la barra de este monitor, sobre el tema de todos (Tema y colores) -->
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="PaintBrush24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Estilo de la barra'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                   Text="{l:T 'Solo la de este monitor: con el tema de todos, sin fondo (solo íconos y texto) o con un color propio.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ComboBox x:Name="BarStyleBox" MinWidth="200" SelectionChanged="BarStyle_Changed">
-                    <ComboBoxItem Content="{l:T 'Igual que el tema'}" Tag="Theme" />
-                    <ComboBoxItem Content="{l:T 'Transparente total'}" Tag="Clear" />
-                    <ComboBoxItem Content="{l:T 'Color propio'}" Tag="Color" />
-                </ComboBox>
-            </ui:CardControl>
-            <ContentControl x:Name="BarColorHost" />
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="AlignCenterHorizontal24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Alineación'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Posición del botón Inicio y de las apps abiertas (en barras verticales, Izquierda es arriba)'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ComboBox x:Name="AlignmentBox" MinWidth="200" SelectionChanged="Alignment_Changed">
-                    <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="Windows" />
-                    <ComboBoxItem Content="{l:T 'Centro'}" Tag="Center" />
-                    <ComboBoxItem Content="{l:T 'Izquierda'}" Tag="Left" />
-                </ComboBox>
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CenterHorizontal24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Centrar las apps abiertas'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Con Inicio a la izquierda, las apps quedan igual al centro de la barra.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="CenterAppsSwitch" Click="Options_Changed" />
-            </ui:CardControl>
+            <!-- ── Apps abiertas (de este monitor) ──────────────────────────── -->
+            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Apps abiertas'}" />
+            <hub:ScreenPicker />
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple20" /></ui:CardControl.Icon>
@@ -111,93 +62,24 @@
                 <ui:ToggleSwitch x:Name="CombineSwitch" Click="Options_Changed" />
             </ui:CardControl>
 
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowAutofitHeight24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Tamaño'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Grosor de la barra de este monitor'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ComboBox x:Name="HeightBox" MinWidth="160" SelectionChanged="Height_Changed">
-                    <ComboBoxItem Content="{l:T 'Compacta'}" Tag="40" />
-                    <ComboBoxItem Content="{l:T 'Normal'}" Tag="48" />
-                    <ComboBoxItem Content="{l:T 'Grande'}" Tag="56" />
-                </ComboBox>
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Battery524" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Porcentaje de la batería'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'El número dentro del ícono, con un rayo mientras carga'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="BatteryPercentSwitch" Click="Options_Changed" />
-            </ui:CardControl>
-
-            <!-- ── Reloj ─────────────────────────────────────────────────────── -->
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Reloj'}" />
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Clock24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar segundos'}" VerticalAlignment="Center" />
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="SecondsSwitch" Click="Options_Changed" />
-            </ui:CardControl>
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CalendarLtr24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar fecha'}" VerticalAlignment="Center" />
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="DateSwitch" Click="Options_Changed" />
-            </ui:CardControl>
-
-            <!-- ── Rendimiento (de este monitor) ─────────────────────────────── -->
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Rendimiento'}" />
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Temperature24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar temperaturas'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Debajo del uso de la CPU y de la GPU'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="TemperaturesSwitch" Click="Options_Changed" />
-            </ui:CardControl>
-
             <!-- ── Para todos los monitores ──────────────────────────────────── -->
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Para todos los monitores'}" />
 
-            <StackPanel x:Name="MultiMonitorOptions">
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="Star24" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor principal de Strata UI'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Lleva la bandeja del sistema y abre el menú con la tecla Windows. No cambia el monitor principal de Windows.'}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ComboBox x:Name="MainScreenBox" MinWidth="200" SelectionChanged="MainScreen_Changed" />
-                </ui:CardControl>
-
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple16" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar las apps abiertas en'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'En qué barras aparece cada ventana.'}" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ComboBox x:Name="AppsModeBox" MinWidth="260" SelectionChanged="AppsMode_Changed">
-                        <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="Windows" />
-                        <ComboBoxItem Content="{l:T 'Todas las barras'}" Tag="AllTaskbars" />
-                        <ComboBoxItem Content="{l:T 'La principal y la del monitor de la ventana'}" Tag="MainAndOwn" />
-                        <ComboBoxItem Content="{l:T 'Solo la del monitor de la ventana'}" Tag="OwnOnly" />
-                    </ComboBox>
-                </ui:CardControl>
-            </StackPanel>
+            <ui:CardControl x:Name="AppsModeCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowMultiple16" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Mostrar las apps abiertas en'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'En qué barras aparece cada ventana.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="AppsModeBox" MinWidth="260" SelectionChanged="AppsMode_Changed">
+                    <ComboBoxItem Content="{l:T 'Igual que Windows'}" Tag="Windows" />
+                    <ComboBoxItem Content="{l:T 'Todas las barras'}" Tag="AllTaskbars" />
+                    <ComboBoxItem Content="{l:T 'La principal y la del monitor de la ventana'}" Tag="MainAndOwn" />
+                    <ComboBoxItem Content="{l:T 'Solo la del monitor de la ventana'}" Tag="OwnOnly" />
+                </ComboBox>
+            </ui:CardControl>
 
             <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon DeveloperBoard24}" IsExpanded="True">
                 <ui:CardExpander.Header>
@@ -229,18 +111,6 @@
                             <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Sin pedir permiso, una vez concedido'}" />
                         </StackPanel>
                         <ui:ToggleSwitch x:Name="SensorsStartupSwitch" HorizontalAlignment="Right" Click="Global_Changed" />
-                    </Grid>
-                    <Grid Style="{StaticResource HubSubOption}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="0,0,12,0">
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor que mide el contador de FPS'}" />
-                            <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
-                                       Text="{l:T 'Automático: la app activa, en cualquier monitor. Con un monitor elegido, la app que lo ocupa aunque el contador esté en la barra de otro. Con generación de cuadros (DLSS, FSR, Lossless Scaling…) muestra los FPS en pantalla y abajo los reales.'}" />
-                        </StackPanel>
-                        <ComboBox x:Name="FpsScreenBox" Grid.Column="1" MinWidth="200" SelectionChanged="FpsScreen_Changed" />
                     </Grid>
                     <ui:InfoBar x:Name="PawnIoBar" Margin="0,4,0,0" Severity="Informational" IsClosable="False" IsOpen="False"
                                 Title="{l:T 'Temperatura de la CPU'}"

@@ -25,6 +25,8 @@ public enum BarStyle { Theme, Clear, Color }
 
 public enum StrataTheme
 {
+    // Estilos: System es Mica y Transparent, Translúcido. Light y Dark son esquemas (solo claro u
+    // oscuro); LiquidGlass y LiquidGlassDark ya no existen: quedan para leer ajustes de antes.
     System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material, Clear,
     // Esquemas de color (ver Themes/ThemeCatalog). Siempre al final: ver Settings.IsScheme.
     Midnight, Nord, Dracula, CatppuccinMocha, CatppuccinLatte, TokyoNight, RosePine, Gruvbox,
@@ -309,9 +311,6 @@ public sealed class StrataSettings
     /// [ventanas, menús, minimizar y maximizar]. Null: no las cambió.
     /// </summary>
     public bool[]? WindowsAnimationBackup { get; set; }
-    /// <summary>Liquid Glass con refracción real (captura del fondo + shader). Oculta la barra y
-    /// los paneles de las capturas de pantalla; desactivado usa el desenfoque de Windows.</summary>
-    public bool LiveGlass { get; set; } = true;
     /// <summary>Llevar el tema a Windows: modo claro/oscuro y fondo de las ventanas del Explorador.</summary>
     public bool ApplyThemeToWindows { get; set; }
     /// <summary>De versiones anteriores: ahora es el tema Transparente total (ver Settings.Migrate).</summary>
@@ -478,6 +477,12 @@ public static class Settings
             (s.Theme, s.TaskbarFullyTransparent) = (StrataTheme.Clear, false);
         foreach (var screen in s.Screens.Values.Where(sc => sc.TaskbarFullyTransparent))
             (screen.Theme, screen.TaskbarFullyTransparent) = (StrataTheme.Clear, false);
+        // Claro, Oscuro y los Liquid Glass eran estilos: ahora claro/oscuro es un esquema (se mantiene
+        // al cambiar de estilo) y Liquid Glass ya no está (pasa a Translúcido, lo más parecido). Un
+        // esquema de color ya elegido manda sobre el claro/oscuro del estilo, como antes.
+        s.Theme = SplitMode(s, s.Theme);
+        foreach (var screen in s.Screens.Values)
+            screen.Theme = SplitMode(s, screen.Theme);
         // Los esquemas de color eran temas: ahora tiñen un estilo. Sus colores son opacos, así que
         // sobre Sistema se ven igual que antes.
         // (Sin ThemeCatalog: esto corre al cargar la configuración y sus textos ya la leen.)
@@ -507,6 +512,22 @@ public static class Settings
 
     /// <summary>Los esquemas de color van al final de <see cref="StrataTheme"/>, desde Medianoche.</summary>
     private static bool IsScheme(StrataTheme theme) => theme >= StrataTheme.Midnight;
+
+    /// <summary>El estilo que queda de un tema de antes que traía claro u oscuro (el esquema va a <see cref="StrataSettings.ColorScheme"/>).</summary>
+    private static StrataTheme SplitMode(StrataSettings s, StrataTheme theme)
+    {
+        var (style, mode) = theme switch
+        {
+            StrataTheme.Light => (StrataTheme.System, StrataTheme.Light),
+            StrataTheme.Dark => (StrataTheme.System, StrataTheme.Dark),
+            StrataTheme.LiquidGlass => (StrataTheme.Transparent, StrataTheme.Light),
+            StrataTheme.LiquidGlassDark => (StrataTheme.Transparent, StrataTheme.Dark),
+            _ => (theme, (StrataTheme?)null),
+        };
+        if (mode != null)
+            s.ColorScheme ??= mode;
+        return style;
+    }
 
     internal static string Serialize(StrataSettings settings) => JsonSerializer.Serialize(settings, Json);
 

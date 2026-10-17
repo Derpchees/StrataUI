@@ -41,7 +41,7 @@
             BorderBrush="{DynamicResource StrataTaskbarEdgeBrush}"
             BorderThickness="{DynamicResource StrataTaskbarBorderThickness}"
             CornerRadius="{DynamicResource StrataTaskbarCornerRadius}">
-        <!-- En Liquid Glass con refracción en vivo, aquí se inserta la superficie de vidrio (por código) -->
+        <!-- Brillo del vidrio de los temas importados que lo piden ("glass") -->
         <Grid x:Name="GlassHost">
             <!-- Brillo interior sutil del vidrio -->
             <Border x:Name="GlassHighlight" IsHitTestVisible="False" Background="{DynamicResource StrataGlassHighlightBrush}"

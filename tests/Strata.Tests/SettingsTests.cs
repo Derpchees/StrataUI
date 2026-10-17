@@ -45,16 +45,56 @@ public class SettingsTests
     [Fact]
     public void A_scheme_tints_the_style_but_keeps_its_material()
     {
-        var glass = ThemeCatalog.Get(StrataTheme.LiquidGlass);
+        var translucent = ThemeCatalog.Get(StrataTheme.Transparent);
 
-        var tinted = ThemeCatalog.Combine(glass, StrataTheme.Dracula);
+        var tinted = ThemeCatalog.Combine(translucent, StrataTheme.Dracula);
 
-        Assert.True(tinted.Glass);
-        Assert.Equal(glass.Backdrop, tinted.Backdrop);
+        Assert.Equal(translucent.Backdrop, tinted.Backdrop);
         Assert.Equal(ThemeCatalog.Get(StrataTheme.Dracula).Scheme, tinted.Scheme);
         Assert.False(tinted.Light);
-        Assert.NotEqual(glass.Key, tinted.Key);
-        Assert.Same(glass, ThemeCatalog.Combine(glass, null));
+        Assert.NotEqual(translucent.Key, tinted.Key);
+        Assert.Same(translucent, ThemeCatalog.Combine(translucent, null));
+    }
+
+    [Fact]
+    public void Light_and_dark_are_schemes_that_keep_the_style_colors()
+    {
+        var material = ThemeCatalog.Get(StrataTheme.Material);
+
+        var dark = ThemeCatalog.Combine(material, StrataTheme.Dark);
+
+        Assert.False(dark.Light);
+        Assert.Null(dark.Scheme);                 // los colores tonales de Material, no los de un esquema
+        Assert.True(dark.Tonal);
+        Assert.NotEqual(material.Key, dark.Key);
+        Assert.True(ThemeCatalog.Get(StrataTheme.Light).IsScheme);
+        Assert.DoesNotContain(ThemeCatalog.All, t => t.Kind is StrataTheme.LiquidGlass or StrataTheme.LiquidGlassDark);
+    }
+
+    [Theory]
+    [InlineData(StrataTheme.Light, StrataTheme.System, StrataTheme.Light)]
+    [InlineData(StrataTheme.Dark, StrataTheme.System, StrataTheme.Dark)]
+    [InlineData(StrataTheme.LiquidGlass, StrataTheme.Transparent, StrataTheme.Light)]
+    [InlineData(StrataTheme.LiquidGlassDark, StrataTheme.Transparent, StrataTheme.Dark)]
+    public void Old_light_dark_and_liquid_glass_themes_become_a_style_and_a_scheme(StrataTheme old, StrataTheme style, StrataTheme scheme)
+    {
+        var s = new StrataSettings { Theme = old };
+
+        Settings.Migrate(s);
+
+        Assert.Equal(style, s.Theme);
+        Assert.Equal(scheme, s.ColorScheme);
+    }
+
+    [Fact]
+    public void A_color_scheme_already_chosen_wins_over_the_old_dark_theme()
+    {
+        var s = new StrataSettings { Theme = StrataTheme.LiquidGlassDark, ColorScheme = StrataTheme.Nord };
+
+        Settings.Migrate(s);
+
+        Assert.Equal(StrataTheme.Transparent, s.Theme);
+        Assert.Equal(StrataTheme.Nord, s.ColorScheme);
     }
 
     [Fact]

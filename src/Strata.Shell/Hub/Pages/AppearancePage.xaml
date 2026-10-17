@@ -9,7 +9,6 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="PaintBrush24" Title="{l:T 'Tema'}" Subtitle="{l:T 'Estilo de la barra, los paneles y el Hub, y sus animaciones.'}" />
-            <hub:ScreenPicker />
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,4" Text="{l:T 'Tema'}" />
             <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
@@ -24,18 +23,6 @@
 
             <!-- ── Efectos ───────────────────────────────────────────────────── -->
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Efectos'}" />
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Drop24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Refracción en vivo (Liquid Glass)'}" />
-                        <TextBlock Style="{StaticResource CardDescription}"
-                                   Text="{l:T 'Vidrio real: el fondo se curva en los bordes con colores vivos. Mientras esté activo, la barra y los paneles no aparecen en capturas de pantalla ni grabaciones.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="LiveGlassSwitch" Click="LiveGlass_Click" />
-            </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="WindowSettings20" /></ui:CardControl.Icon>

@@ -24,8 +24,8 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 
 ## Conceptos de la arquitectura
 
-- **Monitor principal de Strata UI ≠ monitor principal de Windows.** Se elige en el Hub o en el
-  modo edición (`Settings.TaskbarMainScreen`, resuelto por `App.MainScreenDevice`). La tecla Windows,
+- **Monitor principal de Strata UI ≠ monitor principal de Windows.** Se elige en el modo edición
+  (`Settings.TaskbarMainScreen`, resuelto por `App.MainScreenDevice`). La tecla Windows,
   Win+X, Win+N y el OSD prefieren sus barras (`Taskbar.IsMainScreen`; `App.AppsTaskbar` /
   `App.StatusTaskbar`); las ventanas de monitores sin apps abiertas van a `App.AppsHostDevice`.
   No usar `Screen.Primary` para eso.
@@ -42,10 +42,13 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   convertirlos (`Services/LegacyLayouts`, en `Settings.Migrate`). Un elemento nuevo: valor en
   `BarItem`, botón en `Taskbar.xaml`, caso en `Taskbar.Element`, nombre/ícono en `BarLayout` (y en
   `BarLayout.All`), su vista en `EditMode/BarPreview.ItemVisual` y zona en `ContrastZones()`.
-- **Modo edición** (`EditMode/`): `EditSession` guarda un borrador del diseño y de los widgets y
-  abre una `EditOverlay` por monitor (ventana encima de todo con el fondo de pantalla, las barras
-  del borrador dibujadas por `BarPreview` como las reales y los widgets en su lugar). Nada se
-  guarda hasta `Apply` (un solo `Settings.Update` + `WidgetManager.Sync`); Esc o `Cancel` lo
+- **Modo edición** (`EditMode/`): `EditSession` guarda un borrador del diseño, los widgets, los
+  `ScreenSettings` de cada monitor (`ScreenOf`/`ChangeScreen`), el monitor principal, el del
+  contador de FPS y el de los avisos, y abre una `EditOverlay` por monitor (ventana encima de todo
+  con el fondo de pantalla, las barras del borrador dibujadas por `BarPreview` como las reales, los
+  widgets en su lugar y un aviso de ejemplo en su esquina). La vista previa lee siempre el borrador,
+  nunca `Settings.Current.For(...)`. Nada se guarda hasta `Apply` (un solo `Settings.Update` +
+  `WidgetManager.Sync`; los `ScreenSettings` solo de los monitores que cambiaron); Esc o `Cancel` lo
   descarta. Se arrastra con `EditDrag` (captura en el elemento donde empezó y todo se ubica por la
   posición del puntero en la pantalla, también entre monitores y desde la biblioteca del Hub). El
   Hub abierto queda como ventana de la capa de su monitor (siempre encima). Se abre con clic derecho
@@ -73,8 +76,12 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   coloca junto a la barra en cualquier borde (`BarPosition`), aplica el tema y la región, reserva
   lo que sobresale (`TopOverflow`) y puede seguir abierto sin foco (`StayOpenWhenDeactivated`).
   Se abren con `FlyoutManager.Toggle<T>(botón)`.
-- **Opción nueva**: propiedad con valor por defecto en `StrataSettings` → control en la página del
-  Hub que guarda con `Settings.Update(...)` → reacción en `Settings.Changed`. Los ajustes viven en
+- **Opción nueva**: propiedad con valor por defecto en `StrataSettings` (o `ScreenSettings` si es por
+  monitor) → control → reacción en `Settings.Changed`. **Dónde va el control**: si se ve en la
+  pantalla (una barra, un elemento, un widget, dónde sale algo), en el modo edición: clic derecho de
+  la barra (`BarPreview.BarMenu`) o del elemento (`BarPreview.ItemOptions`), sobre el borrador y con
+  la vista previa al día; el Hub no la repite. Si es general (tema, menú Inicio, paneles,
+  comportamiento, permisos), en su página del Hub con `Settings.Update(...)`. Los ajustes viven en
   `%LOCALAPPDATA%\StrataUI\settings.json`; una propiedad que falta en el archivo toma su valor por defecto.
 - **Controlador de NVIDIA** (`Services/Vendors/NvidiaSettings`): NVAPI DRS en un proceso aparte
   (`--nvidia get|set`, escribir pide UAC); IDs de funciones y de ajustes verificados con
@@ -112,6 +119,13 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **OSD** (`Notifications/OsdWindow`, clase `Osd`): volumen, brillo y teclas de bloqueo. El OSD
   nativo de volumen lo dibuja `ShellHost.exe` (no se puede ocultar): por eso, con el OSD activo, el
   gancho de teclado se queda con las teclas de volumen y Strata UI cambia el volumen.
+- **Temas = estilo + esquema** (`Services/Themes/ThemeCatalog`, `Settings.Theme` + `Settings.ColorScheme`,
+  unidos por `ThemeCatalog.Combine`): el estilo pone el material y las formas (Mica = `StrataTheme.System`,
+  Translúcido = `Transparent`, Material, Transparente total = `Clear`); el esquema, el claro/oscuro
+  (`Light`/`Dark`, con `Mode`: los colores del estilo) o los colores (Nord…). Sin esquema, claro u
+  oscuro según Windows. `LiquidGlass`/`LiquidGlassDark` ya no existen (solo se leen para migrarlos en
+  `Settings.SplitMode`). Ojo: con "Aplicar el tema a Windows" activado, elegir un esquema claro u
+  oscuro cambia el modo de Windows.
 - **Animaciones**: `Services/Themes/Motion` (`In`/`Out`) según `PanelAnimation` y `AnimationSpeed`
   (o la importada, `AnimationModule`); usarlo en cualquier ventana emergente nueva.
 - **Módulos importables** (`Services/Modules`): temas, animaciones, widgets y aspectos del menú

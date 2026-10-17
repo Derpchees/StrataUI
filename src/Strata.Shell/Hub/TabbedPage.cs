@@ -45,6 +45,7 @@ public abstract class TabbedPage : Page
     protected TabbedPage(SymbolRegular icon, string title, string subtitle, bool screenPicker, IReadOnlyList<Tab> tabs)
     {
         _tabs = tabs;
+        _screenPicker = screenPicker;
         Title = title;
         ScrollViewer.SetCanContentScroll(this, false);
 
@@ -127,6 +128,19 @@ public abstract class TabbedPage : Page
 
     private void Show(Tab tab) => _frame.Navigate(Activator.CreateInstance(tab.PageType));
 
+    private bool _screenPicker;
+
+    /// <summary>El elemento está en una pestaña cuya entrada ya muestra el selector de monitor (el suyo sobra).</summary>
+    public static bool PickerAbove(DependencyObject element)
+    {
+        for (var parent = VisualTreeHelper.GetParent(element); parent != null; parent = VisualTreeHelper.GetParent(parent))
+        {
+            if (parent is TabbedPage page)
+                return page._screenPicker;
+        }
+        return false;
+    }
+
     /// <summary>El elemento está dentro de una pestaña (su página no muestra cabecera propia).</summary>
     public static bool IsEmbedded(DependencyObject element)
     {
@@ -141,7 +155,7 @@ public abstract class TabbedPage : Page
 
 /// <summary>Barra de tareas: la barra, la bandeja del sistema y multimedia.</summary>
 public sealed class TaskbarHubPage() : TabbedPage(SymbolRegular.PanelBottom20, Loc.T("Barra de tareas"),
-    Loc.T("Qué lleva la barra de cada monitor, la bandeja del sistema y lo que suena."), screenPicker: true,
+    Loc.T("El modo edición, las apps abiertas, la bandeja del sistema y lo que suena."), screenPicker: false,
     [
         new(Loc.T("Barra"), SymbolRegular.PanelBottom20, typeof(TaskbarPage)),
         new(Loc.T("Bandeja del sistema"), SymbolRegular.ChevronUp24, typeof(TrayPage)),

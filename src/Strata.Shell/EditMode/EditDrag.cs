@@ -14,6 +14,9 @@ internal sealed record ItemPayload(BarItem Item, string? FromDevice) : DragPaylo
 /// <summary>Un widget (del borrador o uno nuevo de la biblioteca) y su tamaño en la capa, en DIP.</summary>
 internal sealed record WidgetPayload(WidgetConfig Widget, Size Size, Vector Grab) : DragPayload;
 
+/// <summary>El aviso de ejemplo: dónde salen las notificaciones.</summary>
+internal sealed record BannerPayload : DragPayload;
+
 /// <summary>Dónde caería lo arrastrado, con el rectángulo a resaltar (en DIP de la capa).</summary>
 internal abstract record DropTarget(Rect Marker);
 
@@ -28,6 +31,9 @@ internal sealed record RemoveTarget(Rect Marker) : DropTarget(Marker);
 
 /// <summary>Un lugar del escritorio para un widget (fracción del espacio libre).</summary>
 internal sealed record DesktopTarget(double X, double Y, Rect Marker) : DropTarget(Marker);
+
+/// <summary>Una esquina del escritorio para los avisos.</summary>
+internal sealed record CornerTarget(NotificationCorner Corner, Rect Marker) : DropTarget(Marker);
 
 /// <summary>
 /// Arrastrar en el modo edición, de una capa a otra (otro monitor) o desde la biblioteca del Hub:

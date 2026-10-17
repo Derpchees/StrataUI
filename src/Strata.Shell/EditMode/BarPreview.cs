@@ -23,7 +23,9 @@ internal sealed class BarPreview
     private readonly BarConfig _bar;
     private readonly bool _vertical;
     private readonly double _thickness;
-    private readonly StackPanel _startZone, _centerZone, _endZone, _apps;
+    private readonly ScreenSettings _screen;
+    private readonly StackPanel _startZone, _centerZone, _endZone;
+    private readonly Panel _apps;
     private readonly Dictionary<BarItem, FrameworkElement> _chips = new();
 
     public FrameworkElement Root { get; }
@@ -33,34 +35,62 @@ internal sealed class BarPreview
     {
         _device = device;
         _bar = bar;
+        _screen = EditSession.ScreenOf(device);
         _vertical = BarLayout.IsVertical(bar.Edge);
-        _thickness = Taskbar.ReservedSize(_vertical, device);
+        _thickness = Taskbar.ReservedSize(_vertical, _screen, device);
         var orientation = _vertical ? Orientation.Vertical : Orientation.Horizontal;
         _startZone = new StackPanel { Orientation = orientation };
         _centerZone = new StackPanel { Orientation = orientation };
         _endZone = new StackPanel { Orientation = orientation };
-        _apps = new StackPanel { Orientation = orientation };
+
+        // Inicio y las apps como en la barra: juntos a la izquierda (arriba) o al centro, o Inicio al
+        // principio y las apps al centro del espacio que sobra ("centrar las apps").
+        bool left = WindowsTaskbarPrefs.Alignment(_screen) == TaskbarAlignment.Left;
+        bool split = left && _screen.TaskbarCenterApps;
+        if (split)
+        {
+            _apps = new DockPanel { LastChildFill = true };
+        }
+        else
+        {
+            var stack = new StackPanel { Orientation = orientation };
+            if (_vertical)
+                stack.VerticalAlignment = left ? VerticalAlignment.Top : VerticalAlignment.Center;
+            else
+                stack.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Center;
+            _apps = stack;
+        }
         BarZonesPanel.SetZone(_startZone, BarPanelZone.Start);
         BarZonesPanel.SetZone(_centerZone, BarPanelZone.Center);
         BarZonesPanel.SetZone(_endZone, BarPanelZone.End);
         BarZonesPanel.SetZone(_apps, BarPanelZone.Apps);
-
-        bool left = WindowsTaskbarPrefs.Alignment(Settings.Current.For(device)) == TaskbarAlignment.Left;
-        if (_vertical)
-            _apps.VerticalAlignment = left ? VerticalAlignment.Top : VerticalAlignment.Center;
-        else
-            _apps.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Center;
         var zones = new BarZonesPanel { Orientation = orientation, AppsCentered = !left };
         zones.Children.Add(_startZone);
         zones.Children.Add(_apps);
         zones.Children.Add(_centerZone);
         zones.Children.Add(_endZone);
 
-        foreach (var item in bar.Items)
+        // Inicio siempre delante de las apps.
+        foreach (var item in bar.Items.OrderBy(i => i == BarItem.Start ? 0 : 1))
         {
             var chip = Chip(item);
             _chips[item] = chip;
+            if (split)
+            {
+                DockPanel.SetDock(chip, _vertical ? Dock.Top : Dock.Left);
+                if (item == BarItem.Apps)
+                {
+                    chip.HorizontalAlignment = _vertical ? HorizontalAlignment.Stretch : HorizontalAlignment.Center;
+                    chip.VerticalAlignment = _vertical ? VerticalAlignment.Center : VerticalAlignment.Stretch;
+                }
+            }
             ZonePanelOf(item).Children.Add(chip);
+        }
+        // En el DockPanel la última ocupa lo que sobra: las apps van al final.
+        if (split && _chips.TryGetValue(BarItem.Apps, out var appsChip))
+        {
+            _apps.Children.Remove(appsChip);
+            _apps.Children.Add(appsChip);
         }
         UpdateZoneVisibility(false);
 
@@ -91,20 +121,38 @@ internal sealed class BarPreview
             Child = zones,
         };
         surface.SetResourceReference(Border.BorderBrushProperty, "StrataTaskbarEdgeBrush");
-        if (ThemeManager.ClearBarFor(device))
+        // El estilo del borrador (como ThemeManager.ClearBarFor / BarColorFor, pero sin guardar).
+        bool clear = _screen.BarStyle switch
+        {
+            BarStyle.Clear => true,
+            BarStyle.Color => false,
+            _ => theme.ClearBar,
+        };
+        var root = new Grid { Background = Brushes.Transparent };
+        if (clear)
+        {
             surface.Background = Brushes.Transparent;
-        else if (ThemeManager.BarColorFor(device) is { } color)
+            surface.BorderBrush = Brushes.Transparent;
+        }
+        else if (_screen.BarStyle == BarStyle.Color && ThemeManager.TryParseColor(_screen.BarColor) is { } color)
+        {
             surface.Background = new SolidColorBrush(color);
+            // Texto claro u oscuro según el color (en la barra lo calcula la paleta de su monitor).
+            double luminance = (0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B) / 255 * (color.A / 255.0)
+                               + (1 - color.A / 255.0) * (ThemeManager.IsLightFor(device) ? 0.9 : 0.1);
+            root.Resources["StrataForegroundBrush"] = new SolidColorBrush(luminance > 0.55 ? Color.FromRgb(20, 20, 20) : Colors.White);
+        }
         else
+        {
             surface.SetResourceReference(Border.BackgroundProperty, "StrataTaskbarBackgroundBrush");
+        }
         var veil = new Border
         {
             Margin = margin,
             CornerRadius = radius,
             Background = new SolidColorBrush(ThemeManager.IsLightFor(device) ? Color.FromArgb(150, 240, 240, 240) : Color.FromArgb(150, 24, 24, 24)),
-            Visibility = ThemeManager.ClearBarFor(device) ? Visibility.Collapsed : Visibility.Visible,
+            Visibility = clear ? Visibility.Collapsed : Visibility.Visible,
         };
-        var root = new Grid { Background = Brushes.Transparent };
         if (_vertical)
             root.Width = _thickness;
         else
@@ -115,7 +163,7 @@ internal sealed class BarPreview
         Root = root;
     }
 
-    private StackPanel ZonePanelOf(BarItem item) => !BarLayout.Zoned(item) ? _apps : BarLayout.ZoneOf(_bar, item) switch
+    private Panel ZonePanelOf(BarItem item) => !BarLayout.Zoned(item) ? _apps : BarLayout.ZoneOf(_bar, item) switch
     {
         BarZone.Start => _startZone,
         BarZone.Center => _centerZone,
@@ -332,6 +380,13 @@ internal sealed class BarPreview
             case BarItem.Volume:
                 return Cell(Glyph(0xE767));
             case BarItem.Battery:
+                if (_screen.ShowBatteryPercent)
+                {
+                    var outline = new Border { Width = 25, Height = 12, CornerRadius = new CornerRadius(3), BorderThickness = new Thickness(1) };
+                    outline.SetResourceReference(Border.BorderBrushProperty, "StrataForegroundBrush");
+                    outline.Child = Text((SystemStatus.GetBattery()?.Percent ?? 100).ToString(), 9);
+                    return Cell(outline, 34);
+                }
                 return Cell(Glyph(SystemStatus.GetBattery()?.Glyph ?? (char)0xE83F));
             case BarItem.Notifications:
                 return Cell(Glyph(0xEA8F));
@@ -378,6 +433,14 @@ internal sealed class BarPreview
             {
                 stack.Children.Add(Text(name + " " + value, 11, bold: true));
             }
+            // La temperatura debajo, si está activada (la RAM no tiene).
+            if (_screen.ShowTemperatures && item is BarItem.Cpu or BarItem.Gpu)
+            {
+                double? temperature = item == BarItem.Cpu ? Sensors.CpuTemperature : Sensors.GpuTemperature;
+                var detail = Text(temperature is { } t ? $"{t:0} °C" : "-- °C", 10);
+                detail.Opacity = 0.75;
+                stack.Children.Add(detail);
+            }
         }
         return new Border { MinWidth = 40, Height = _vertical ? 40 : _thickness - 8, Child = stack };
     }
@@ -385,7 +448,7 @@ internal sealed class BarPreview
     private FrameworkElement ClockVisual()
     {
         var now = DateTime.Now;
-        var s = Settings.Current.For(_device);
+        var s = _screen;
         var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = _vertical ? new Thickness(2, 6, 2, 6) : new Thickness(10, 0, 10, 0) };
         var time = Text(now.ToString(s.ShowSeconds ? "T" : "t"), _vertical ? 11 : 12);
         time.HorizontalAlignment = _vertical ? HorizontalAlignment.Center : HorizontalAlignment.Right;
@@ -497,9 +560,66 @@ internal sealed class BarPreview
         foreach (var edge in Edges.Where(e => e != Edge))
             move.Items.Add(Entry(BarLayout.BarName(edge), () => EditSession.PlaceItem(_device, edge, item, null, BarLayout.ZoneOf(_bar, item))));
         menu.Items.Add(move);
+        var options = ItemOptions(item).ToList();
+        if (options.Count > 0)
+        {
+            menu.Items.Add(new Separator());
+            foreach (var option in options)
+                menu.Items.Add(option);
+        }
         menu.Items.Add(new Separator());
         menu.Items.Add(Entry(Loc.T("Quitar"), () => EditSession.RemoveItem(_device, item)));
         return menu;
+    }
+
+    /// <summary>Opciones propias de cada elemento (lo que antes estaba en Hub › Barra de tareas).</summary>
+    private IEnumerable<MenuItem> ItemOptions(BarItem item)
+    {
+        switch (item)
+        {
+            case BarItem.Clock:
+                yield return Toggle(Loc.T("Mostrar segundos"), _screen.ShowSeconds, s => s.ShowSeconds = !s.ShowSeconds);
+                yield return Toggle(Loc.T("Mostrar fecha"), _screen.ShowDate, s => s.ShowDate = !s.ShowDate);
+                break;
+            case BarItem.Battery:
+                yield return Toggle(Loc.T("Porcentaje de la batería"), _screen.ShowBatteryPercent, s => s.ShowBatteryPercent = !s.ShowBatteryPercent);
+                break;
+            case BarItem.Cpu or BarItem.Gpu:
+                yield return Toggle(Loc.T("Mostrar temperaturas"), _screen.ShowTemperatures, s => s.ShowTemperatures = !s.ShowTemperatures);
+                break;
+            case BarItem.Media:
+                yield return Toggle(Loc.T("Controles multimedia"), _screen.ShowMediaControls, s => s.ShowMediaControls = !s.ShowMediaControls);
+                break;
+            case BarItem.Fps:
+            {
+                // De qué monitor se cuentan los FPS (para todos los contadores).
+                var which = new MenuItem { Header = Loc.T("Monitor que mide el contador de FPS") };
+                var auto = Entry(Loc.T("Automático: la app activa"), () => EditSession.SetFpsScreen(null));
+                auto.IsCheckable = true;
+                auto.IsChecked = EditSession.FpsScreen is null;
+                which.Items.Add(auto);
+                var screens = System.Windows.Forms.Screen.AllScreens.ToList();
+                for (int i = 0; i < screens.Count; i++)
+                {
+                    string device = screens[i].DeviceName;
+                    var entry = Entry(Hub.ScreenPicker.NameOf(screens[i], i, screens.Count), () => EditSession.SetFpsScreen(device));
+                    entry.IsCheckable = true;
+                    entry.IsChecked = EditSession.FpsScreen == device;
+                    which.Items.Add(entry);
+                }
+                yield return which;
+                break;
+            }
+        }
+    }
+
+    /// <summary>Opción (marcada si está elegida) que cambia el borrador de este monitor.</summary>
+    private MenuItem Toggle(string header, bool isChecked, Action<ScreenSettings> change)
+    {
+        var entry = Entry(header, () => EditSession.ChangeScreen(_device, change));
+        entry.IsCheckable = true;
+        entry.IsChecked = isChecked;
+        return entry;
     }
 
     private ContextMenu BarMenu(ScreenLayout layout)
@@ -514,10 +634,48 @@ internal sealed class BarPreview
         }
         add.IsEnabled = add.Items.Count > 0;
         menu.Items.Add(add);
+
+        // Aspecto de las barras de este monitor (antes en Hub › Barra de tareas).
+        menu.Items.Add(new Separator());
+        menu.Items.Add(new MenuItem { Header = Loc.T("Barras de este monitor"), IsEnabled = false });
+        var size = new MenuItem { Header = Loc.T("Tamaño") };
+        foreach (var (name, height) in new[] { (Loc.T("Compacta"), 40), (Loc.T("Normal"), 48), (Loc.T("Grande"), 56) })
+            size.Items.Add(Toggle(name, _screen.TaskbarHeight == height, s => s.TaskbarHeight = height));
+        menu.Items.Add(size);
+        var style = new MenuItem { Header = Loc.T("Estilo de la barra") };
+        style.Items.Add(Toggle(Loc.T("Igual que el tema"), _screen.BarStyle == BarStyle.Theme, s => s.BarStyle = BarStyle.Theme));
+        style.Items.Add(Toggle(Loc.T("Transparente total"), _screen.BarStyle == BarStyle.Clear, s => s.BarStyle = BarStyle.Clear));
+        var custom = Entry(Loc.T("Color propio…"), () =>
+        {
+            EditSession.ChangeScreen(_device, s =>
+            {
+                s.BarStyle = BarStyle.Color;
+                // La primera vez, uno oscuro y algo transparente para empezar.
+                s.BarColor ??= "#E61C1C1C";
+            });
+            EditColor?.Invoke(_device);
+        });
+        custom.IsCheckable = true;
+        custom.IsChecked = _screen.BarStyle == BarStyle.Color;
+        style.Items.Add(custom);
+        menu.Items.Add(style);
+        var alignment = new MenuItem { Header = Loc.T("Alineación") };
+        alignment.Items.Add(Toggle(Loc.T("Igual que Windows"), _screen.TaskbarAlignment == TaskbarAlignment.Windows, s => s.TaskbarAlignment = TaskbarAlignment.Windows));
+        alignment.Items.Add(Toggle(Loc.T("Centro"), _screen.TaskbarAlignment == TaskbarAlignment.Center, s => s.TaskbarAlignment = TaskbarAlignment.Center));
+        alignment.Items.Add(Toggle(Loc.T("Izquierda"), _screen.TaskbarAlignment == TaskbarAlignment.Left, s => s.TaskbarAlignment = TaskbarAlignment.Left));
+        menu.Items.Add(alignment);
+        var center = Toggle(Loc.T("Centrar las apps abiertas"), _screen.TaskbarCenterApps, s => s.TaskbarCenterApps = !s.TaskbarCenterApps);
+        center.ToolTip = Loc.T("Con Inicio a la izquierda, las apps quedan igual al centro de la barra.");
+        center.IsEnabled = WindowsTaskbarPrefs.Alignment(_screen) == TaskbarAlignment.Left;
+        menu.Items.Add(center);
+
         menu.Items.Add(new Separator());
         menu.Items.Add(Entry(Loc.T("Quitar esta barra"), () => EditSession.RemoveBar(_device, Edge)));
         return menu;
     }
+
+    /// <summary>Abre el editor del color propio de las barras de un monitor (lo pone la capa).</summary>
+    internal static event Action<string>? EditColor;
 
     internal static readonly TaskbarPosition[] Edges = [TaskbarPosition.Bottom, TaskbarPosition.Top, TaskbarPosition.Left, TaskbarPosition.Right];
 

@@ -121,9 +121,13 @@ public partial class ColorsPage : Page
     /// guarda como "#AARRGGBB" (null = el del tema). Sin <paramref name="toggle"/>, el editor siempre a
     /// la vista (lo muestra u oculta quien lo usa, como el estilo de cada barra en Barra de tareas).
     /// </summary>
+    /// <param name="save">Dónde se guarda el color elegido; si no se da, en la configuración con <paramref name="write"/>
+    /// (el modo edición lo guarda en su borrador).</param>
     internal static FrameworkElement CustomColorCard(FrameworkElement host, string title, string description, SymbolRegular icon,
-                                                     Func<string?> read, Action<StrataSettings, string?> write, bool toggle = true)
+                                                     Func<string?> read, Action<StrataSettings, string?> write, bool toggle = true,
+                                                     Action<string?>? save = null)
     {
+        save ??= value => Settings.Update(s => write(s, value));
         var header = new StackPanel();
         header.Children.Add(new TextBlock { Style = (Style)host.FindResource("CardTitle"), Text = title });
         header.Children.Add(new TextBlock { Style = (Style)host.FindResource("CardDescription"), Text = description, TextWrapping = TextWrapping.Wrap });
@@ -182,7 +186,7 @@ public partial class ColorsPage : Page
         {
             byte alpha = (byte)Math.Round(Math.Clamp(percent, 20, 100) / 100 * 255);
             string value = $"#{alpha:X2}{rgb.R:X2}{rgb.G:X2}{rgb.B:X2}";
-            Settings.Update(s => write(s, value));
+            save(value);
             Show();
         }
 
@@ -202,7 +206,7 @@ public partial class ColorsPage : Page
                 Save(Current(), Current().A / 255.0 * 100);
             else
             {
-                Settings.Update(s => write(s, null));
+                save(null);
                 Show();
             }
         };

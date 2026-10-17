@@ -30,8 +30,6 @@ public partial class ProfileAvatarWindow : Window
         {
             var hwnd = new WindowInteropHelper(this).Handle;
             SetWindowLong(hwnd, GwlExStyle, GetWindowLong(hwnd, GwlExStyle) | WsExNoActivate | WsExTransparent | WsExToolWindow);
-            if (ThemeManager.UseLiveGlass)
-                BackdropCapture.ExcludeFromCapture(hwnd, true); // que el vidrio del menú no la capture
         };
         menu.LocationChanged += (_, _) => Follow();
         menu.SizeChanged += (_, _) => Dispatcher.BeginInvoke(Follow, System.Windows.Threading.DispatcherPriority.Render);

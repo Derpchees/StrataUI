@@ -16,10 +16,11 @@ public sealed record ColorScheme(string Bar, string Panel, string Surface, strin
 
 /// <summary>
 /// Definición de un tema. <see cref="Light"/> null = sigue el modo claro/oscuro de Windows.
-/// <see cref="Glass"/> agrega bordes de luz especulares (Liquid Glass); <see cref="Floating"/>
+/// <see cref="Glass"/> agrega bordes de luz especulares (temas importados); <see cref="Floating"/>
 /// separa la barra de los bordes en forma de cápsula; <see cref="Tonal"/> tiñe las superficies
 /// con el acento (Material Design). <see cref="PanelRadius"/> es el redondeo de los paneles.
-/// <see cref="ModuleId"/>: tema importado (Services/Modules).
+/// <see cref="ModuleId"/>: tema importado (Services/Modules). <see cref="Mode"/>: esquema que solo
+/// fija claro u oscuro (Claro, Oscuro) y deja los colores del estilo.
 /// </summary>
 public sealed record ThemeInfo(
     StrataTheme Kind,
@@ -35,7 +36,8 @@ public sealed record ThemeInfo(
     ColorScheme? Scheme = null,
     string? ModuleId = null,
     bool ClearBar = false,
-    StrataTheme? SchemeKind = null)
+    StrataTheme? SchemeKind = null,
+    bool Mode = false)
 {
     /// <summary>
     /// Identifica el tema (el de la lista o uno importado, con su esquema de color si lo tiñe uno)
@@ -43,8 +45,8 @@ public sealed record ThemeInfo(
     /// </summary>
     public string Key => (ModuleId is null ? Kind.ToString() : "module:" + ModuleId) + (SchemeKind is { } k ? "+" + k : "");
 
-    /// <summary>Es un esquema de color (Nord, Dracula…), que tiñe un estilo, y no un estilo.</summary>
-    public bool IsScheme => Scheme != null && SchemeKind is null && ModuleId is null;
+    /// <summary>Es un esquema (Claro, Oscuro, Nord, Dracula…), que se pone sobre un estilo, y no un estilo.</summary>
+    public bool IsScheme => (Scheme != null || Mode) && SchemeKind is null && ModuleId is null;
 }
 
 public static class ThemeCatalog
@@ -52,23 +54,26 @@ public static class ThemeCatalog
     /// <summary>Separación de la barra flotante respecto a los bordes de la pantalla.</summary>
     public const double FloatingMargin = 10;
 
+    /// <summary>
+    /// Estilos (el material y las formas; claro u oscuro según Windows o el esquema) y esquemas (los
+    /// colores o solo claro/oscuro), que se combinan (<see cref="Combine"/>).
+    /// </summary>
     public static IReadOnlyList<ThemeInfo> All { get; } =
     [
-        new(StrataTheme.System, Loc.T("Sistema"), Loc.T("Claro u oscuro según Windows, con Mica."), null, Backdrop.Mica),
-        new(StrataTheme.Light, Loc.T("Claro"), Loc.T("Superficies claras y limpias."), true, Backdrop.Mica),
-        new(StrataTheme.Dark, Loc.T("Oscuro"), Loc.T("Superficies oscuras, ideal de noche."), false, Backdrop.Mica),
-        new(StrataTheme.Transparent, Loc.T("Transparencia"), Loc.T("Vidrio esmerilado que deja ver el fondo."), null, Backdrop.Acrylic, Radius: 6),
-        new(StrataTheme.LiquidGlass, "Liquid Glass", Loc.T("Vidrio claro estilo iOS: cristalino, flotante, con bordes de luz."),
-            true, Backdrop.Blur, Glass: true, Floating: true, Radius: 14, PanelRadius: 22),
-        new(StrataTheme.LiquidGlassDark, Loc.T("Liquid Glass oscuro"), Loc.T("Vidrio ahumado estilo iOS: cristalino, flotante, con bordes de luz."),
-            false, Backdrop.Blur, Glass: true, Floating: true, Radius: 14, PanelRadius: 22),
+        // ── Estilos ────────────────────────────────────────────────────────────
+        new(StrataTheme.System, "Mica", Loc.T("El material de Windows 11: sólido y sobrio, con un toque del fondo."), null, Backdrop.Mica),
+        new(StrataTheme.Transparent, Loc.T("Translúcido"), Loc.T("Vidrio esmerilado que deja ver el fondo."), null, Backdrop.Acrylic, Radius: 6),
         new(StrataTheme.Material, "Material", Loc.T("Material Design: superficies tonales con tu acento."), null, Backdrop.Solid,
             Tonal: true, Radius: 14, PanelRadius: 16),
         // Solo la barra va sin fondo (Taskbar.Transparency); los paneles, el menú Inicio y los menús
-        // llevan el vidrio esmerilado de Transparencia, que se lee sobre cualquier fondo.
+        // llevan el vidrio esmerilado de Translúcido, que se lee sobre cualquier fondo.
         new(StrataTheme.Clear, Loc.T("Transparente total"),
             Loc.T("Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles y menús llevan vidrio esmerilado para que se lean."),
             null, Backdrop.Acrylic, Radius: 6, ClearBar: true),
+
+        // ── Esquemas: claro u oscuro con los colores del estilo ────────────────
+        new(StrataTheme.Light, Loc.T("Claro"), Loc.T("Siempre claro, con los colores del estilo."), true, Backdrop.Mica, Mode: true),
+        new(StrataTheme.Dark, Loc.T("Oscuro"), Loc.T("Siempre oscuro, con los colores del estilo."), false, Backdrop.Mica, Mode: true),
 
         // ── Esquemas de color ──────────────────────────────────────────────────
         new(StrataTheme.Midnight, Loc.T("Medianoche"), Loc.T("Negro puro para pantallas OLED, con tu acento."), false, Backdrop.Solid, Radius: 8, PanelRadius: 12,
@@ -97,6 +102,8 @@ public static class ThemeCatalog
     /// </summary>
     public static ThemeInfo Combine(ThemeInfo style, StrataTheme? scheme) =>
         scheme is { } kind && style.Scheme is null && Get(kind) is { IsScheme: true } colors
-            ? style with { Scheme = colors.Scheme, Light = colors.Light, SchemeKind = kind }
+            ? colors.Mode
+                ? style with { Light = colors.Light, SchemeKind = kind }
+                : style with { Scheme = colors.Scheme, Light = colors.Light, SchemeKind = kind }
             : style;
 }
