@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Services.Themes;
@@ -228,6 +228,8 @@ public sealed class StartMenuModule : ModuleBase
 {
     public StartMenuStyle? Style { get; set; }
     public StartIconSize? IconSize { get; set; }
+    /// <summary>Tamaño libre de los íconos (manda sobre <see cref="IconSize"/>).</summary>
+    public double? IconPixels { get; set; }
     public bool? PinnedLabels { get; set; }
     public bool? ShowPinned { get; set; }
     public bool? ShowAllApps { get; set; }
@@ -248,6 +250,8 @@ public sealed class StartMenuModule : ModuleBase
             return Loc.T("Algún valor no es válido.");
         // Los botones que esta versión no conoce se ignoran.
         Footer = Footer?.Where(id => Services.StartMenu.StartFooterCatalog.All.Any(b => b.Id == id)).Distinct().ToList();
+        if (IconPixels is { } px)
+            IconPixels = Clamp(px, Services.StartMenu.StartMenuService.MinIconPixels, Services.StartMenu.StartMenuService.MaxIconPixels);
         if (Width is { } w)
             Width = Clamp(w, 280, 4000);
         if (Height is { } h)
@@ -261,7 +265,9 @@ public sealed class StartMenuModule : ModuleBase
         if (Style is { } style)
             s.StartStyle = style;
         if (IconSize is { } size)
-            s.StartIconSize = size;
+            (s.StartIconSize, s.StartIconPixels) = (size, Services.StartMenu.StartMenuService.PixelsOf(size));
+        if (IconPixels is { } pixels)
+            s.StartIconPixels = pixels;
         if (PinnedLabels is { } labels)
             s.StartShowPinnedLabels = labels;
         if (ShowPinned is { } pinned)
@@ -304,6 +310,7 @@ public sealed class StartMenuModule : ModuleBase
             Name = name,
             Style = s.StartStyle,
             IconSize = s.StartIconSize,
+            IconPixels = Services.StartMenu.StartMenuService.IconPixels(s),
             PinnedLabels = s.StartShowPinnedLabels,
             ShowPinned = s.StartShowPinned,
             ShowAllApps = s.StartShowAllApps,

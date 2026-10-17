@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -22,6 +22,9 @@ public abstract class StartMenuBase : FlyoutWindow
     protected StartMenuBase()
     {
         DataContext = Model;
+        // Clic derecho en un lugar vacío del menú: tamaño de los íconos y nombres (lo que tiene su
+        // propio menú, como las apps o los anclados, lo muestra en lugar de este).
+        ContextMenu = new ContextMenu { Items = { StartViewMenu.Create() } };
         Loaded += (_, _) =>
         {
             if (!FillWorkArea)
@@ -53,8 +56,14 @@ public abstract class StartMenuBase : FlyoutWindow
 
     protected override bool ScrollContent => false;
 
+    /// <summary>Junto al botón Inicio según su zona en la barra: al principio, al centro o al final.</summary>
     protected override FlyoutPlacement Placement =>
-        WindowsTaskbarPrefs.Alignment(Settings.Current) == TaskbarAlignment.Left ? FlyoutPlacement.Left : FlyoutPlacement.Center;
+        (Anchor is null ? null : Window.GetWindow(Anchor) as Taskbar)?.ZoneOf(BarItem.Start) switch
+        {
+            BarZone.Start => FlyoutPlacement.Left,
+            BarZone.End => FlyoutPlacement.Right,
+            _ => FlyoutPlacement.Center,
+        };
 
     protected override bool HandleEscape()
     {

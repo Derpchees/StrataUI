@@ -34,7 +34,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   (`BarZone` inicio/centro/final; `Controls/BarZonesPanel` las acomoda junto a Inicio y las apps).
   `Services/BarLayout` lo lee y lo cambia (barra = `"\\.\DISPLAY1|Bottom"`). Reglas: cada monitor
   lleva cada elemento una sola vez (`BarLayout.Normalize`); las apps abiertas son un elemento más
-  (`BarItem.Apps`) y van con Inicio en el espacio libre (sin zona); la bandeja puede ir en varios
+  (`BarItem.Apps`) con su zona, y se estiran en el espacio libre (`TaskArea`): lo de su misma zona va
+  antes o después de ellas (`AppsBeforePanel`/`AppsAfterPanel`) según el orden. Inicio es un elemento
+  con zona como los demás; ya no hay alineación (la de antes se convierte una vez con
+  `BarLayout.ZoneStartAndApps`); la bandeja puede ir en varios
   monitores (la misma; `Taskbar.HasTray`, y `IsMain` es la primera, la que se informa a las apps);
   arriba y abajo se crean primero y se quedan las esquinas (`BarLayout.InCreationOrder`). Un monitor
   sin entrada recibe `BarLayout.DefaultLayout` al abrir las barras. Los ajustes de antes de la 2.6
@@ -69,8 +72,8 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **Lecturas avanzadas que se iniciaron solas** (por un medidor, `Sensors.StartQuietly`) se
   detienen cuando ninguna barra ni widget muestra CPU, GPU o FPS (`Sensors.StopIfUnused`); las
   pedidas a mano siguen hasta que se detienen en el Hub.
-- **Opciones "Igual que Windows"** (alineación, apps por monitor): leer siempre el valor efectivo
-  con `WindowsTaskbarPrefs.Alignment(s)` / `WindowsTaskbarPrefs.AppsMode(s)`, nunca el ajuste crudo.
+- **Opciones "Igual que Windows"** (apps por monitor): leer siempre el valor efectivo con
+  `WindowsTaskbarPrefs.AppsMode(s)`, nunca el ajuste crudo. La alineación solo se lee para convertirla en zonas.
   Se releen cuando Windows avisa (`SystemEvents.UserPreferenceChanged`).
 - **Paneles** (sonido, red, Bluetooth, menús Inicio): heredan de `Flyouts/FlyoutWindow`, que los
   coloca junto a la barra en cualquier borde (`BarPosition`), aplica el tema y la región, reserva
@@ -104,6 +107,13 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   nombre. Una fuente nueva va en `ExtraApps.Scan` y su carpeta en `WatchedFolders`.
 - **Diálogos de abrir archivo o carpeta**: siempre con `Services/FilePicker` (proceso aparte
   `--pick`); el diálogo de Windows dentro del proceso de Strata UI lo tumbó (corrupción del montón).
+- **Inicio automático y el Hub**: la tarea y la clave Run abren con `--autostart` (`AutoStart.Arg`);
+  así no se abre el Hub salvo con `HubAtStartup`. Una tarea creada elevada no se puede actualizar
+  (sigue sin el argumento): por eso, un pedido de abrir el Hub de otra copia en el primer minuto se
+  ignora (`App.OnOpenHubRequested`). Strata UI tiene su ícono en la bandeja (`Services/StrataTrayIcon`,
+  `NotifyIcon` de WinForms; se ancla la primera vez en `TrayPromotion`).
+- **Desinstalar desde Inicio** (`AppActions.UninstallAsync`): una app web de Chromium (`_crx_` en el ID o
+  `--app-id=` en el acceso directo) usa `--uninstall-app-id`, nunca el desinstalador del navegador.
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y
   lanzado con `Elevation.RunSelfAsync(...)` (UAC). El proceso elevado valida sus argumentos y
   solo hace lo previsto (ver `AudioDeviceOptions.RunElevated`, `TweakEngine.RunElevatedCommand`).

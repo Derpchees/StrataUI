@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -301,10 +301,14 @@ public abstract class FlyoutWindow : FluentWindow
     [DllImport("shcore.dll")]
     private static extern int GetDpiForMonitor(IntPtr monitor, int type, out uint dpiX, out uint dpiY);
 
+    /// <summary>El botón junto al que se abrió el panel (para elegir <see cref="Placement"/>).</summary>
+    protected FrameworkElement? Anchor { get; private set; }
+
     private void PositionAbove(FrameworkElement anchor)
     {
         if (_closing || !anchor.IsVisible)
             return;
+        Anchor = anchor;
         var hwnd = new WindowInteropHelper(this).Handle;
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
         // Tamaño según WPF (ya actualizado), convertido a píxeles físicos.

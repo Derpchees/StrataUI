@@ -29,31 +29,8 @@
                 </ComboBox>
             </ui:CardControl>
 
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="ResizeImage24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Tamaño de los íconos'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Apps ancladas, listas y cuadrículas del menú. El tamaño del menú se cambia arrastrando sus bordes.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ComboBox x:Name="IconSizeBox" MinWidth="210" SelectionChanged="IconSize_Changed">
-                    <ComboBoxItem Content="{l:T 'Pequeños'}" />
-                    <ComboBoxItem Content="{l:T 'Medianos'}" />
-                    <ComboBoxItem Content="{l:T 'Grandes'}" />
-                </ComboBox>
-            </ui:CardControl>
-
-            <ui:CardControl Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="TextCaseTitle24" /></ui:CardControl.Icon>
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Nombres de las apps ancladas'}" />
-                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Sin ellos el menú queda más limpio; el nombre aparece al pasar el mouse.'}" />
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ui:ToggleSwitch x:Name="PinnedLabelsSwitch" Click="Options_Changed" />
-            </ui:CardControl>
+            <TextBlock Style="{StaticResource CardDescription}" Margin="0,4,0,8" TextWrapping="Wrap"
+                       Text="{l:T 'El tamaño de los íconos y los nombres de las apps ancladas se cambian con clic derecho en el menú Inicio › Ver. El tamaño del menú, arrastrando sus bordes.'}" />
 
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Ícono del botón Inicio'}" />
             <WrapPanel x:Name="IconGallery" Margin="0,0,0,4" />

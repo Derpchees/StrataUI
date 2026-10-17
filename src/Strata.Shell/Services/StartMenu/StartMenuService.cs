@@ -366,19 +366,34 @@ public static class StartMenuService
     /// Tamaños de íconos del menú Inicio como recursos dinámicos: las plantillas los leen con
     /// DynamicResource, así que cambiar la opción en el Hub se refleja sin reabrir nada.
     /// </summary>
-    public static void ApplyIconSizes()
+    public static void ApplyIconSizes() => ApplyIconSizes(IconPixels(Settings.Current));
+
+    /// <summary>Límites del tamaño de los íconos (clic derecho en Inicio › Ver).</summary>
+    public const double MinIconPixels = 20, MaxIconPixels = 96;
+
+    /// <summary>Lo que medían chico, mediano y grande (antes de poder elegir cualquier tamaño).</summary>
+    internal static double PixelsOf(StartIconSize size) => size switch
     {
-        var (tile, row, grid, large) = Settings.Current.StartIconSize switch
-        {
-            StartIconSize.Small => (26.0, 20.0, 30.0, 40.0),
-            StartIconSize.Large => (44.0, 30.0, 50.0, 64.0),
-            _ => (32.0, 24.0, 38.0, 48.0),
-        };
+        StartIconSize.Small => 26,
+        StartIconSize.Large => 44,
+        _ => 32,
+    };
+
+    public static double IconPixels(StrataSettings s) =>
+        s.StartIconPixels > 0 ? Math.Clamp(s.StartIconPixels, MinIconPixels, MaxIconPixels) : PixelsOf(s.StartIconSize);
+
+    /// <summary>Aplica un tamaño sin guardarlo (mientras se mueve el deslizador).</summary>
+    public static void ApplyIconSizes(double tile)
+    {
+        // Las listas y cuadrículas crecen menos que los anclados, como con los tamaños fijos de antes.
+        double row = Math.Round(Math.Clamp(tile * 0.75, 16, 48));
+        double grid = Math.Round(tile * 1.18);
+        double large = Math.Round(tile * 1.5);
         bool labels = Settings.Current.StartShowPinnedLabels;
         var resources = Application.Current.Resources;
         resources["StartTileIconSize"] = tile;
         // Sin nombres, el mosaico solo necesita el ícono y su margen.
-        resources["StartTileWidth"] = labels ? tile * 3 : tile + 32;
+        resources["StartTileWidth"] = labels ? Math.Max(tile + 64, Math.Round(tile * 1.6)) : tile + 32;
         resources["StartTileLabelVisibility"] = labels ? Visibility.Visible : Visibility.Collapsed;
         resources["StartTileIconMargin"] = new Thickness(0, 0, 0, labels ? 6 : 0);
         resources["StartRowIconSize"] = row;

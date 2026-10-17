@@ -1,4 +1,4 @@
-using Strata.Shell.Services.StartMenu;
+﻿using Strata.Shell.Services.StartMenu;
 using Strata.Shell.Services.Updates;
 
 namespace Strata.Tests;
@@ -52,4 +52,19 @@ public sealed class StartAndUpdateTests
     [Fact]
     public void Release_with_an_invalid_tag_is_ignored() =>
         Assert.Null(UpdateService.Parse("""{ "tag_name": "nightly" }"""));
+
+    [Theory]
+    [InlineData("Brave._crx_pmniijhifabcifkhcllpfigbjbkjnlcb", "pmniijhifabcifkhcllpfigbjbkjnlcb")]
+    [InlineData("Chrome._crx_agimnkijcaahngcdmfeangaknmldooml!App", "agimnkijcaahngcdmfeangaknmldooml")]
+    [InlineData("Brave.BraveBrowser", null)]
+    [InlineData("_crx_short", null)]
+    public void Web_apps_are_recognized_by_their_id(string id, string? expected) =>
+        Assert.Equal(expected, AppActions.CrxId(id));
+
+    [Theory]
+    [InlineData(" --profile-directory=Default --app-id=mbjjclfgakoikobpdbdffincflpcjkag", "mbjjclfgakoikobpdbdffincflpcjkag")]
+    [InlineData("--app-id=xyz", null)]
+    [InlineData(null, null)]
+    public void Web_apps_are_recognized_by_their_shortcut(string? arguments, string? expected) =>
+        Assert.Equal(expected, AppActions.AppIdArgument(arguments));
 }

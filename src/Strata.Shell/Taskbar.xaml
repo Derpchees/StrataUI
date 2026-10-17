@@ -53,14 +53,17 @@
             <controls:BarZonesPanel x:Name="MainGrid">
                 <StackPanel x:Name="StartZonePanel" controls:BarZonesPanel.Zone="Start" Orientation="Horizontal" Visibility="Collapsed" />
 
-                <!-- Inicio + ventanas abiertas; alineación configurable desde el Hub -->
+                <!-- Ventanas abiertas, en la zona que se les eligió (ApplyLayout); lo de esa misma zona
+                     va antes o después de ellas, según el orden -->
                 <!-- DockPanel (no StackPanel) para que la lista reciba un ancho limitado y pueda desplazarse -->
                 <DockPanel x:Name="TaskArea" controls:BarZonesPanel.Zone="Apps" HorizontalAlignment="Center" LastChildFill="True">
-                    <!-- El ícono se elige en Hub › Menú Inicio (ver Controls/StartIcons) -->
-                    <Button x:Name="StartButton" DockPanel.Dock="Left" Style="{StaticResource TaskbarButton}" Width="44"
-                            Padding="0" ToolTip="{l:T 'Inicio'}" Click="StartButton_Click" />
+                    <StackPanel x:Name="AppsBeforePanel" DockPanel.Dock="Left" Orientation="Horizontal">
+                        <!-- El ícono se elige en Hub › Menú Inicio (ver Controls/StartIcons); va en su zona como los demás -->
+                        <Button x:Name="StartButton" Style="{StaticResource TaskbarButton}" Width="44"
+                                Padding="0" ToolTip="{l:T 'Inicio'}" Click="StartButton_Click" />
+                    </StackPanel>
+                    <StackPanel x:Name="AppsAfterPanel" DockPanel.Dock="Right" Orientation="Horizontal" />
 
-    
                     <!-- Si no caben todas las ventanas, la rueda del mouse desplaza la lista -->
                     <ScrollViewer x:Name="TaskScroller" HorizontalScrollBarVisibility="Hidden"
                                   VerticalScrollBarVisibility="Disabled" Focusable="False"

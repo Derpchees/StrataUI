@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,6 +15,7 @@ public partial class GeneralPage : Page
     {
         InitializeComponent();
         AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
+        HubAtStartupSwitch.IsChecked = Settings.Current.HubAtStartup;
         VersionText.Text = $"Strata UI v{App.Version}";
         DataPathText.Text = DataFolder;
         foreach (var code in Services.Localization.Loc.Translated)
@@ -60,6 +61,9 @@ public partial class GeneralPage : Page
             AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
         }
     }
+
+    private void HubAtStartup_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.HubAtStartup = HubAtStartupSwitch.IsChecked == true);
 
     private void OpenData_Click(object sender, RoutedEventArgs e)
     {

@@ -87,8 +87,9 @@ public static class PinLayout
                     tiles.Add(new PinGapView(entry));
                 else if (entry.IsFolder)
                 {
+                    // Una carpeta recién creada (vacía) también se ve: se le arrastran apps.
                     var apps = entry.FolderApps!.Select(Find).Where(a => a != null).Select(a => a!).ToList();
-                    if (apps.Count > 0)
+                    if (apps.Count > 0 || entry.FolderApps!.Count == 0)
                         tiles.Add(new PinFolderView(entry, apps));
                 }
                 else if (Find(entry.AppId) is { } app)
@@ -134,6 +135,22 @@ public static class PinLayout
         }
         Editable[0].Items.Add(entry);
         Commit();
+    }
+
+    /// <summary>Crea una carpeta vacía en el primer hueco (o al final de la sección indicada o de la primera).</summary>
+    public static string AddFolder(string? sectionId = null)
+    {
+        if (Editable.Count == 0)
+            Editable.Add(new PinSection());
+        var folder = new PinEntry { FolderName = Loc.T("Carpeta"), FolderApps = [] };
+        var section = (sectionId != null ? FindSection(sectionId) : null) ?? Editable[0];
+        int gap = section.Items.FindIndex(e => e.IsGap);
+        if (gap >= 0)
+            section.Items[gap] = folder;
+        else
+            section.Items.Add(folder);
+        Commit();
+        return folder.Id;
     }
 
     /// <summary>

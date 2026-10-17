@@ -62,8 +62,7 @@
                 <Button.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="{l:T 'Abrir carpeta'}" Click="FolderOpen_Click" />
-                        <MenuItem Header="{l:T 'Desagrupar'}" Click="FolderUngroup_Click" />
-                    </ContextMenu>
+                        <MenuItem Header="{l:T 'Desagrupar'}" Click="FolderUngroup_Click" />                    </ContextMenu>
                 </Button.ContextMenu>
                 <StackPanel>
                     <Border Width="{DynamicResource StartTileIconSize}" Height="{DynamicResource StartTileIconSize}" Margin="{DynamicResource StartTileIconMargin}"
@@ -109,10 +108,15 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <!-- Clic derecho en un lugar vacío: nueva sección o anclar archivos y carpetas -->
-    <Grid Background="Transparent">
+    <!-- Clic derecho en un lugar vacío: Ver (tamaño, nombres; se agrega desde el código), nueva
+         carpeta o sección, o anclar archivos y carpetas -->
+    <Grid x:Name="Root" Background="Transparent">
     <Grid.ContextMenu>
         <ContextMenu>
+            <Separator />
+            <MenuItem Header="{l:T 'Nueva carpeta'}" Click="NewFolder_Click">
+                <MenuItem.Icon><ui:SymbolIcon Symbol="FolderAdd24" /></MenuItem.Icon>
+            </MenuItem>
             <MenuItem Header="{l:T 'Nueva sección'}" Click="NewSection_Click">
                 <MenuItem.Icon><ui:SymbolIcon Symbol="Add24" /></MenuItem.Icon>
             </MenuItem>

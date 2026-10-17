@@ -201,9 +201,12 @@ public partial class Taskbar : AppBarWindow
         MainGrid.Orientation = Orientation.Vertical;
         StartZonePanel.Orientation = Orientation.Vertical;
         CenterZonePanel.Orientation = Orientation.Vertical;
+        AppsBeforePanel.Orientation = Orientation.Vertical;
+        AppsAfterPanel.Orientation = Orientation.Vertical;
 
         TaskArea.HorizontalAlignment = HorizontalAlignment.Stretch;
-        DockPanel.SetDock(StartButton, Dock.Top);
+        DockPanel.SetDock(AppsBeforePanel, Dock.Top);
+        DockPanel.SetDock(AppsAfterPanel, Dock.Bottom);
         StartButton.Width = double.NaN;
         StartButton.Height = 44;
         TaskScroller.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
@@ -356,7 +359,6 @@ public partial class Taskbar : AppBarWindow
             StartButton.Content = StartIcons.Create(s.StartIcon);
             StartButton.Tag = s.StartIcon;
         }
-        ApplyAlignment(WindowsTaskbarPrefs.Alignment(S) == TaskbarAlignment.Left, S.TaskbarCenterApps);
         var appsMode = WindowsTaskbarPrefs.AppsMode(s);
         if (appsMode != _appsMode)
         {
@@ -380,25 +382,16 @@ public partial class Taskbar : AppBarWindow
     }
 
     /// <summary>
-    /// "Izquierda" pone Inicio y las apps juntos al principio de la barra (arriba si es vertical);
-    /// "Centro", juntos al centro. Con "centrar apps", Inicio queda al principio y las apps al
-    /// centro del espacio que sobra.
+    /// Las ventanas (con lo de su zona antes y después) al principio, al centro o al final del
+    /// espacio libre, según la zona de las apps abiertas.
     /// </summary>
-    private void ApplyAlignment(bool left, bool centerApps)
+    private void ApplyAppsZone(BarZone zone)
     {
-        bool split = left && centerApps;
-        // Lo del centro se agrupa con las ventanas cuando van centradas (ver BarZonesPanel).
-        MainGrid.AppsCentered = !left;
+        MainGrid.AppsZone = zone;
         if (IsVertical)
-        {
-            TaskArea.VerticalAlignment = split ? VerticalAlignment.Stretch : left ? VerticalAlignment.Top : VerticalAlignment.Center;
-            AppsStack.VerticalAlignment = split ? VerticalAlignment.Center : VerticalAlignment.Top;
-        }
+            TaskArea.VerticalAlignment = zone switch { BarZone.Start => VerticalAlignment.Top, BarZone.Center => VerticalAlignment.Center, _ => VerticalAlignment.Bottom };
         else
-        {
-            TaskArea.HorizontalAlignment = split ? HorizontalAlignment.Stretch : left ? HorizontalAlignment.Left : HorizontalAlignment.Center;
-            AppsStack.HorizontalAlignment = split ? HorizontalAlignment.Center : HorizontalAlignment.Left;
-        }
+            TaskArea.HorizontalAlignment = zone switch { BarZone.Start => HorizontalAlignment.Left, BarZone.Center => HorizontalAlignment.Center, _ => HorizontalAlignment.Right };
     }
 
     /// <summary>Re-lee las preferencias de Windows que se siguen (alineación, apps por monitor).</summary>
@@ -650,8 +643,11 @@ public partial class Taskbar : AppBarWindow
     private List<BarZone> _zones = new();
     private bool _layoutApplied;
 
-    /// <summary>Paneles de las zonas de la barra (inicio, centro y final, donde va "mostrar escritorio").</summary>
-    private IEnumerable<StackPanel> ZonePanels => [StartZonePanel, CenterZonePanel, StatusPanel];
+    /// <summary>
+    /// Paneles de la barra que llevan elementos: las zonas (inicio, centro y final, donde va
+    /// "mostrar escritorio") y, en la zona de las apps abiertas, lo que va antes y después de ellas.
+    /// </summary>
+    private IEnumerable<StackPanel> ZonePanels => [StartZonePanel, AppsBeforePanel, CenterZonePanel, AppsAfterPanel, StatusPanel];
 
     private StackPanel ZonePanel(BarZone zone) => zone switch
     {
@@ -659,6 +655,12 @@ public partial class Taskbar : AppBarWindow
         BarZone.Center => CenterZonePanel,
         _ => StatusPanel,
     };
+
+    /// <summary>Zona de las apps abiertas en esta barra (null si no las lleva).</summary>
+    private BarZone? AppsZone => _items.IndexOf(BarItem.Apps) is var i and >= 0 ? _zones[i] : null;
+
+    /// <summary>Lo que ocupa una zona en la barra: la de las apps es su área (con lo de antes y después).</summary>
+    private FrameworkElement ZoneArea(BarZone zone) => AppsZone == zone ? TaskArea : ZonePanel(zone);
 
     /// <summary>Zona en que está un elemento de esta barra.</summary>
     public BarZone ZoneOf(BarItem item) => _items.IndexOf(item) is var i and >= 0 ? _zones[i] : BarZone.End;
@@ -671,8 +673,9 @@ public partial class Taskbar : AppBarWindow
 
     /// <summary>
     /// Pone en sus zonas los elementos elegidos para esta barra, en su orden (los demás salen del
-    /// panel). Inicio va siempre delante de las apps abiertas. La bandeja solo puede ir en las
-    /// barras que la recibieron al crearse (<see cref="HasTray"/>).
+    /// panel). Las apps abiertas ocupan el espacio libre de su zona y lo de esa zona va antes o
+    /// después de ellas según el orden. La bandeja solo puede ir en las barras que la recibieron
+    /// al crearse (<see cref="HasTray"/>).
     /// </summary>
     private void ApplyLayout()
     {
@@ -687,19 +690,23 @@ public partial class Taskbar : AppBarWindow
         _items = items;
         _zones = zones;
 
-        StartButton.Visibility = Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
-        TaskArea.Visibility = Has(BarItem.Apps) || Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
-        TaskScroller.Visibility = Has(BarItem.Apps) ? Visibility.Visible : Visibility.Collapsed;
+        TaskArea.Visibility = Has(BarItem.Apps) ? Visibility.Visible : Visibility.Collapsed;
         if (appsChanged)
             RefreshTasks(); // los anclados y las ventanas dependen de que la barra lleve las apps
+        int apps = items.IndexOf(BarItem.Apps);
+        ApplyAppsZone(apps >= 0 ? zones[apps] : BarZone.End);
 
         // Cada elemento en su zona, en el orden de la lista; "mostrar escritorio" siempre al final.
         foreach (var panel in ZonePanels)
             panel.Children.Clear();
         for (int i = 0; i < items.Count; i++)
         {
-            if (Element(items[i]) is { } element)
-                ZonePanel(zones[i]).Children.Add(element);
+            if (Element(items[i]) is not { } element)
+                continue;
+            var panel = apps >= 0 && zones[i] == zones[apps]
+                ? i < apps ? AppsBeforePanel : AppsAfterPanel
+                : ZonePanel(zones[i]);
+            panel.Children.Add(element);
         }
         bool any = ZonePanels.Any(panel => panel.Children.Count > 0);
         if (any)
@@ -735,6 +742,7 @@ public partial class Taskbar : AppBarWindow
 
     private FrameworkElement? Element(BarItem item) => item switch
     {
+        BarItem.Start => StartButton,
         BarItem.Media => MediaModule,
         BarItem.Tray => TrayArea,
         BarItem.Network => NetworkButton,
@@ -749,7 +757,7 @@ public partial class Taskbar : AppBarWindow
         BarItem.FreeRam => FreeRamButton,
         BarItem.Clock => ClockButton,
         BarItem.Notifications => NotificationsButton,
-        _ => null, // Inicio va con las ventanas
+        _ => null, // las apps abiertas son el área de las ventanas (TaskArea)
     };
 
     // ── Medidores ───────────────────────────────────────────────────────────

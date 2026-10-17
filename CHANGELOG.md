@@ -6,6 +6,33 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.1.0] - 2026-10-17
+
+### Añadido
+- **Inicio y las apps abiertas se colocan como cualquier elemento**: a la izquierda, al centro o a
+  la derecha de la barra (arriba, centro o abajo en las verticales), juntos o por separado,
+  arrastrándolos en el modo edición o en la barra. La alineación es eso: el clic derecho de la
+  barra en el modo edición trae atajos (juntos a la izquierda, al centro o a la derecha, o Inicio a
+  la izquierda y las apps al centro). El menú Inicio se abre del lado de su botón. Tu alineación de
+  antes se conserva.
+- **Clic derecho en el menú Inicio › Ver**: tamaño de los íconos con un deslizador (de 20 a 96 px,
+  se ve al moverlo) y los nombres de las apps ancladas. Sale del Hub.
+- **Nueva carpeta** en el clic derecho de los anclados: una carpeta vacía a la que se arrastran apps
+  (además de soltar una app sobre otra).
+- **Ícono de Strata UI en la bandeja**: clic para abrir el Hub; clic derecho para editar el diseño,
+  reiniciar o salir.
+- **Abrir el Hub al iniciar con Windows** (Hub › General), apagado por defecto.
+
+### Cambiado
+- Arrastrar apps ancladas en Inicio es fluido: el ícono va pegado al puntero (antes era una ventana
+  aparte que se quedaba atrás) y las pistas de mover o crear carpeta se animan.
+
+### Corregido
+- **Desinstalar una app web** (Brave, Chrome, Edge…) desde Inicio abría el desinstalador del
+  navegador entero. Ahora quita solo esa app web, y el menú se actualiza al terminar.
+- El Hub se abría solo al iniciar Windows: el inicio automático lanzaba Strata UI dos veces (la tarea
+  y la clave Run del instalador) y la segunda le pedía el Hub a la primera.
+
 ## [3.0.0] - 2026-10-16
 
 Todo lo que se ve en pantalla se arma en el **modo edición**; el Hub queda para lo general. Incluye

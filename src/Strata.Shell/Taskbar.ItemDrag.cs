@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using Strata.Shell.Services;
@@ -16,8 +16,9 @@ namespace Strata.Shell;
 /// de la bandeja), así que el botón no recibe el clic al soltar. Mientras tanto se cambian las
 /// listas del diseño (<see cref="StrataSettings.Layouts"/>) sin guardar y cada barra afectada se
 /// rehace con sus propios botones. La bandeja solo se ordena dentro de su barra: cambiarla de barra
-/// recrea las barras (se hace en el modo edición). Inicio puede pasar a otra barra, siempre delante
-/// de las ventanas. Un monitor lleva cada elemento una sola vez: no pasa a otro monitor que ya lo tenga.
+/// recrea las barras (se hace en el modo edición). Inicio se mueve como los demás, también a la
+/// zona de las ventanas (antes o después de ellas). Un monitor lleva cada elemento una sola vez: no
+/// pasa a otro monitor que ya lo tenga.
 /// </remarks>
 public partial class Taskbar
 {
@@ -32,7 +33,6 @@ public partial class Taskbar
     {
         foreach (var panel in ZonePanels)
             panel.PreviewMouseLeftButtonDown += OnItemMouseDown;
-        StartButton.PreviewMouseLeftButtonDown += OnItemMouseDown;
         PreviewMouseMove += OnItemPreviewMove;
         PreviewMouseLeftButtonUp += (_, _) => _itemPressed = null;
     }
@@ -82,12 +82,11 @@ public partial class Taskbar
             return;
         }
         Mouse.OverrideCursor = Cursors.SizeAll;
-        if ((item == BarItem.Start ? StartButton : Element(item)) is { } element)
+        if (Element(item) is { } element)
             Controls.DragGhost.Begin(element); // antes de atenuarlo: la imagen lo muestra entero
         SetDragging(item, true);
-        if (item != BarItem.Start)
-            foreach (var bar in App.Current.Taskbars)
-                bar.ShowDropZones(true);
+        foreach (var bar in App.Current.Taskbars)
+            bar.ShowDropZones(true);
     }
 
     private void ItemDragMove(BarItem item)
@@ -104,22 +103,12 @@ public partial class Taskbar
             return;
 
         var targetItems = target.Items.ToList();
-        int index;
-        if (item == BarItem.Start)
-        {
-            if (ReferenceEquals(target, owner))
-                return; // Inicio va siempre delante de las ventanas
-            index = 0;
-        }
-        else
-        {
-            (index, var zone) = target.IndexAt(point, item);
-            if (index < 0)
-                return;
-            // Pasar a otra zona (inicio, centro, final) cambia la del elemento en esa barra.
-            if (zone != target.ZoneOf(item) || !ReferenceEquals(target, owner))
-                BarLayout.SetZone(target.BarId, item, zone, Settings.Current);
-        }
+        var (index, zone) = target.IndexAt(point, item);
+        if (index < 0)
+            return;
+        // Pasar a otra zona (inicio, centro, final) cambia la del elemento en esa barra.
+        if (zone != target.ZoneOf(item) || !ReferenceEquals(target, owner))
+            BarLayout.SetZone(target.BarId, item, zone, Settings.Current);
 
         int current = ReferenceEquals(target, owner) ? targetItems.IndexOf(item) : -1;
         if (current >= 0)
@@ -156,7 +145,7 @@ public partial class Taskbar
         BarZone? zone = null;
         foreach (var candidate in new[] { BarZone.Start, BarZone.Center, BarZone.End })
         {
-            if (ScreenRect(ZonePanel(candidate), 12).Contains(screen))
+            if (ScreenRect(ZoneArea(candidate), 12).Contains(screen))
                 zone = candidate;
         }
         if (zone is null && !ZonePanels.Any(p => p.IsVisible) && ScreenRect(BarBorder, 0).Contains(screen))
@@ -166,7 +155,9 @@ public partial class Taskbar
         int last = -1;
         for (int i = 0; i < _items.Count; i++)
         {
-            if (_items[i] == moving || _zones[i] != target || Element(_items[i]) is not { IsVisible: true } element)
+            // Las apps abiertas cuentan por su lista: se puede soltar antes o después de ellas.
+            var other = _items[i] == BarItem.Apps ? TaskScroller : Element(_items[i]);
+            if (_items[i] == moving || _zones[i] != target || other is not { IsVisible: true } element)
                 continue;
             var rect = ScreenRect(element, 0);
             double center = IsVertical ? rect.Top + rect.Height / 2 : rect.Left + rect.Width / 2;
@@ -187,9 +178,10 @@ public partial class Taskbar
     private void ShowDropZones(bool show)
     {
         _showingDropZones = show;
-        foreach (var panel in new[] { StartZonePanel, CenterZonePanel })
+        foreach (var (zone, panel) in new[] { (BarZone.Start, StartZonePanel), (BarZone.Center, CenterZonePanel) })
         {
-            if (show && panel.Children.Count == 0)
+            // La zona de las ventanas ya se ve (es su área).
+            if (show && panel.Children.Count == 0 && AppsZone != zone)
             {
                 panel.Visibility = Visibility.Visible;
                 panel.MinWidth = IsVertical ? 0 : 44;
@@ -209,8 +201,7 @@ public partial class Taskbar
     /// <summary>El elemento que se arrastra se ve tenue en la barra donde está.</summary>
     private void SetDragging(BarItem item, bool dragging)
     {
-        var element = item == BarItem.Start ? StartButton : Element(item);
-        if (element != null)
+        if (Element(item) is { } element)
             element.Opacity = dragging ? 0.55 : 1;
     }
 

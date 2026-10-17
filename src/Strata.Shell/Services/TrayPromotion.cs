@@ -112,7 +112,9 @@ public static class TrayPromotion
             return;
 
         known.Add(key);
-        if (!icon.IsPinned && !string.IsNullOrEmpty(icon.Path) && promoted.Contains(icon.Path))
+        // El de Strata UI se ve la primera vez (después se mueve o se oculta como cualquiera).
+        bool own = string.Equals(icon.Path, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase);
+        if (!icon.IsPinned && !string.IsNullOrEmpty(icon.Path) && (own || promoted.Contains(icon.Path)))
             icon.Pin();
         SavePinned();
     }

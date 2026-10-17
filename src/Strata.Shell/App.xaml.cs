@@ -144,10 +144,12 @@ public partial class App : Application
         }
 
         _mutex = new Mutex(true, MutexName, out bool isFirstInstance);
+        bool autostart = e.Args.Contains(AutoStart.Arg, StringComparer.OrdinalIgnoreCase);
         if (!isFirstInstance)
         {
-            // Abrir Strata UI otra vez mientras ya corre muestra el Hub de la instancia existente.
-            if (EventWaitHandle.TryOpenExisting(OpenHubEventName, out var openHub))
+            // Abrir Strata UI otra vez mientras ya corre muestra el Hub de la instancia existente,
+            // salvo si es el inicio de sesión (la tarea y la clave Run pueden lanzarlo dos veces).
+            if (!autostart && EventWaitHandle.TryOpenExisting(OpenHubEventName, out var openHub))
             {
                 // "--hub Privacy" abre directamente esa página del Hub; "--edit", el modo edición.
                 int hubArg = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
@@ -172,7 +174,11 @@ public partial class App : Application
             (_, _) => Dispatcher.BeginInvoke(() => ExitShell()), null, Timeout.Infinite, true);
         _openHubEvent = new EventWaitHandle(false, EventResetMode.AutoReset, OpenHubEventName);
         _openHubWait = ThreadPool.RegisterWaitForSingleObject(_openHubEvent,
-            (_, _) => Dispatcher.BeginInvoke(OpenHub), null, Timeout.Infinite, false);
+            (_, _) => Dispatcher.BeginInvoke(OnOpenHubRequested), null, Timeout.Infinite, false);
+        _startedAt = DateTime.UtcNow;
+        // La tarea creada por un Strata UI elevado no se puede actualizar y abre sin el argumento: un
+        // arranque en los primeros minutos de Windows también cuenta como inicio de sesión.
+        autostart |= Environment.TickCount64 < 5 * 60_000;
 
         Services.Localization.Loc.Initialize(Settings.Current.Language);
         Log.Info($"Strata UI {Version} iniciando (idioma: {Services.Localization.Loc.Language})");
@@ -207,6 +213,7 @@ public partial class App : Application
         TrayPromotion.Attach(_shell.NotificationArea);
         TrayMemory.Attach(_shell.NotificationArea, TrayOwnership.OwnTrayWindow());
         TrayOwnership.Start();
+        StrataTrayIcon.Show();
         SystemStatus.Initialize();
         Services.StartMenu.StartMenuService.Initialize();
         Services.StartMenu.WinKeyHook.WinPressed += OnWinKey;
@@ -245,6 +252,8 @@ public partial class App : Application
         Settings.Changed += OnSettingsChanged;
 
         int hubIndex = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
+        if (autostart && Settings.Current.HubAtStartup && hubIndex < 0)
+            OpenHub();
         if (hubIndex >= 0)
         {
             OpenHub();
@@ -588,6 +597,25 @@ public partial class App : Application
         ExitShell(restart: true);
     }
 
+    /// <summary>Cuándo arrancó esta instancia (para ignorar copias que llegan a la vez).</summary>
+    private DateTime _startedAt;
+
+    /// <summary>
+    /// Otra copia pidió el Hub. Al iniciar sesión pueden arrancar dos (la tarea programada y la
+    /// clave Run que deja el instalador): la que llega en el primer minuto no abre el Hub. Los
+    /// pedidos con página o del modo edición (--hub X, --edit) sí se atienden.
+    /// </summary>
+    private void OnOpenHubRequested()
+    {
+        if (DateTime.UtcNow - _startedAt < TimeSpan.FromSeconds(60)
+            && !File.Exists(HubRequestPath) && !Settings.Current.HubAtStartup)
+        {
+            Log.Info("Se ignoró el pedido de abrir el Hub de otra copia lanzada al iniciar sesión");
+            return;
+        }
+        OpenHub();
+    }
+
     /// <summary>Abre el Hub en una página ("Updates", "Notifications"…).</summary>
     public void OpenHub(string page)
     {
@@ -660,6 +688,7 @@ public partial class App : Application
         SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
         EditMode.EditSession.Cancel();
+        StrataTrayIcon.Remove();
         TrayOwnership.Stop();
         ExplorerWatch.Stop();
         TrayMemory.Flush();

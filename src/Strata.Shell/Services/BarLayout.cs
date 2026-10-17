@@ -1,4 +1,4 @@
-using Strata.Shell.Services.Localization;
+﻿using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services;
 
@@ -33,9 +33,6 @@ public static class BarLayout
         BarItem.Brightness, BarItem.Battery, BarItem.Clock, BarItem.Notifications, BarItem.Cpu, BarItem.Gpu, BarItem.Ram,
         BarItem.Fps, BarItem.FreeRam,
     ];
-
-    /// <summary>Si el elemento va en una zona (Inicio y las apps abiertas van juntos en el espacio libre).</summary>
-    public static bool Zoned(BarItem item) => item is not (BarItem.Start or BarItem.Apps);
 
     /// <summary>
     /// Lo de siempre (antes de poder elegirlo): Inicio y las apps en las barras con ventanas; el
@@ -73,10 +70,52 @@ public static class BarLayout
     }
 
     /// <summary>Diseño de un monitor que nunca se configuró: una barra abajo con lo de siempre.</summary>
-    public static ScreenLayout DefaultLayout(bool isMainScreen, StrataSettings s) => new()
+    public static ScreenLayout DefaultLayout(bool isMainScreen, StrataSettings s)
     {
-        Bars = [new BarConfig { Edge = TaskbarPosition.Bottom, Items = Defaults(new BarRole(isMainScreen, isMainScreen), s) }],
-    };
+        var bar = new BarConfig { Edge = TaskbarPosition.Bottom, Items = Defaults(new BarRole(isMainScreen, isMainScreen), s) };
+        ZoneLikeAlignment(bar, s.DefaultScreen());
+        return new ScreenLayout { Bars = [bar] };
+    }
+
+    /// <summary>
+    /// Inicio y las apps donde los ponía la alineación de antes (o la de Windows): juntos a la
+    /// izquierda o al centro, o Inicio a la izquierda y las apps al centro ("centrar las apps").
+    /// Quedan junto a lo que ya había en esa zona, como se veían.
+    /// </summary>
+    internal static void ZoneLikeAlignment(BarConfig bar, ScreenSettings screen)
+    {
+        bool left = WindowsTaskbarPrefs.Alignment(screen) == TaskbarAlignment.Left;
+        var startZone = left ? BarZone.Start : BarZone.Center;
+        var appsZone = left && !screen.TaskbarCenterApps ? BarZone.Start : BarZone.Center;
+        foreach (var (item, zone) in new[] { (BarItem.Start, startZone), (BarItem.Apps, appsZone) })
+        {
+            if (!bar.Items.Remove(item))
+                continue;
+            SetZone(bar, item, zone);
+            // Al principio iban después de lo de esa zona; al centro, antes.
+            int at = zone == BarZone.Start
+                ? bar.Items.FindLastIndex(i => ZoneOf(bar, i) == BarZone.Start && i is not (BarItem.Start or BarItem.Apps)) + 1
+                : bar.Items.FindIndex(i => ZoneOf(bar, i) == BarZone.Center && i is not (BarItem.Start or BarItem.Apps));
+            if (item == BarItem.Apps && bar.Items.IndexOf(BarItem.Start) is var start and >= 0 && startZone == appsZone)
+                at = start + 1;
+            bar.Items.Insert(at < 0 ? bar.Items.Count : at, item);
+        }
+    }
+
+    /// <summary>
+    /// Hasta la 3.0 Inicio y las apps no tenían zona: iban juntos donde decía la alineación. Se les
+    /// da la zona en que se veían, una vez. True si cambió algo.
+    /// </summary>
+    public static bool ZoneStartAndApps(StrataSettings s)
+    {
+        if (s.StartAppsZoned)
+            return false;
+        s.StartAppsZoned = true;
+        foreach (var (device, layout) in s.Layouts)
+            foreach (var bar in layout.Bars)
+                ZoneLikeAlignment(bar, s.For(device));
+        return true;
+    }
 
     /// <summary>La barra con ese identificador (null si su monitor no la tiene).</summary>
     public static BarConfig? Find(StrataSettings s, string barId) =>
@@ -103,7 +142,7 @@ public static class BarLayout
         Find(s, barId) is { } bar ? ZoneOf(bar, item) : BarZone.End;
 
     public static BarZone ZoneOf(BarConfig bar, BarItem item) =>
-        Zoned(item) && bar.Zones.TryGetValue(item, out var zone) ? zone : BarZone.End;
+        bar.Zones.TryGetValue(item, out var zone) ? zone : BarZone.End;
 
     /// <summary>Cambia la zona de un elemento (sin guardar).</summary>
     public static void SetZone(string barId, BarItem item, BarZone zone, StrataSettings s)
@@ -114,7 +153,7 @@ public static class BarLayout
 
     public static void SetZone(BarConfig bar, BarItem item, BarZone zone)
     {
-        if (zone == BarZone.End || !Zoned(item))
+        if (zone == BarZone.End)
             bar.Zones.Remove(item);
         else
             bar.Zones[item] = zone;
@@ -149,7 +188,7 @@ public static class BarLayout
         foreach (var bar in layout.Bars)
         {
             bar.Items = bar.Items.Where(seen.Add).ToList();
-            foreach (var key in bar.Zones.Keys.Where(k => !bar.Items.Contains(k) || !Zoned(k)).ToList())
+            foreach (var key in bar.Zones.Keys.Where(k => !bar.Items.Contains(k)).ToList())
                 bar.Zones.Remove(key);
         }
     }

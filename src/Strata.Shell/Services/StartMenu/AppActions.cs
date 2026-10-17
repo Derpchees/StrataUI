@@ -125,13 +125,20 @@ public static class AppActions
             return;
         }
 
-        if (FindUninstaller(app) is { } command)
+        // App web de un navegador (Brave, Chrome, Edge): su ejecutable es el del navegador, así que
+        // buscar por carpeta daba con el desinstalador del navegador entero.
+        string? command = WebAppId(app) is { } webApp ? WebAppUninstaller(app, webApp) : FindUninstaller(app);
+        if (command != null)
         {
             Log.Info($"Desinstalando {app.Name}: {command}");
             var (file, args) = SplitCommand(command);
             try
             {
-                Process.Start(new ProcessStartInfo(file, args) { UseShellExecute = true });
+                using var process = Process.Start(new ProcessStartInfo(file, args) { UseShellExecute = true });
+                // Al terminar el desinstalador se vuelve a leer el catálogo (no siempre se nota el cambio solo).
+                if (process != null)
+                    _ = process.WaitForExitAsync().ContinueWith(_ =>
+                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(StartMenuService.Refresh));
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
             {
@@ -139,6 +146,76 @@ public static class AppActions
             return;
         }
         Process.Start(new ProcessStartInfo("ms-settings:appsfeatures") { UseShellExecute = true });
+    }
+
+    // ── Apps web de navegadores Chromium ────────────────────────────────────
+
+    /// <summary>
+    /// ID de la app web (32 letras a–p) si la app es una app web de un navegador Chromium: su
+    /// AppUserModelID lleva "_crx_ID" y su acceso directo, "--app-id=ID".
+    /// </summary>
+    internal static string? WebAppId(StartApp app)
+    {
+        if (CrxId(app.Id) is { } fromId)
+            return fromId;
+        if (app.IsExtra || IsPackaged(app))
+            return null;
+        var lnk = ShortcutPath(app);
+        string? arguments = lnk != null ? ReadString(lnk, LinkArguments) : null;
+        return AppIdArgument(arguments);
+    }
+
+    internal static string? CrxId(string id)
+    {
+        int at = id.IndexOf("_crx_", StringComparison.OrdinalIgnoreCase);
+        if (at < 0)
+            return null;
+        var rest = id[(at + 5)..];
+        return rest.Length >= 32 && rest[..32].All(c => c is >= 'a' and <= 'p') ? rest[..32] : null;
+    }
+
+    internal static string? AppIdArgument(string? arguments)
+    {
+        if (arguments is null)
+            return null;
+        var match = System.Text.RegularExpressions.Regex.Match(arguments, @"--app-id=([a-p]{32})\b");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    /// <summary>
+    /// La entrada de "Programas y características" que el navegador registró para la app web
+    /// (UninstallString con "--uninstall-app-id=ID"). Si no hay, se le pide al navegador mismo que
+    /// la quite (muestra su confirmación); nunca el desinstalador del navegador.
+    /// </summary>
+    private static string? WebAppUninstaller(StartApp app, string appId)
+    {
+        foreach (var (hive, view) in new[] { (RegistryHive.CurrentUser, RegistryView.Default), (RegistryHive.LocalMachine, RegistryView.Registry64) })
+        {
+            using var root = RegistryKey.OpenBaseKey(hive, view).OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall");
+            if (root is null)
+                continue;
+            foreach (var name in root.GetSubKeyNames())
+            {
+                using var key = root.OpenSubKey(name);
+                if (key?.GetValue("UninstallString") is string command
+                    && command.Contains("--uninstall-app-id=" + appId, StringComparison.OrdinalIgnoreCase)
+                    && File.Exists(SplitCommand(command).File))
+                    return command;
+            }
+        }
+        // El navegador del acceso directo (chrome_proxy.exe o brave_proxy.exe está junto al navegador).
+        if (TargetPath(app) is not { } target || Path.GetDirectoryName(target) is not { } folder)
+            return null;
+        var browser = Directory.EnumerateFiles(folder, "*.exe")
+            .FirstOrDefault(f => Path.GetFileName(f).ToLowerInvariant() is "brave.exe" or "chrome.exe" or "msedge.exe" or "vivaldi.exe" or "opera.exe");
+        if (browser is null)
+            return null;
+        var lnk = ShortcutPath(app);
+        string profile = (lnk != null ? ReadString(lnk, LinkArguments) : null) is { } args
+                         && System.Text.RegularExpressions.Regex.Match(args, "--profile-directory=(\"[^\"]+\"|\\S+)") is { Success: true } m
+            ? m.Groups[1].Value
+            : "Default";
+        return $"\"{browser}\" --profile-directory={profile} --uninstall-app-id={appId}";
     }
 
     private static async Task RemovePackageAsync(StartApp app)
@@ -172,6 +249,10 @@ public static class AppActions
     internal static string? FindUninstaller(StartApp app)
     {
         string? target = TargetPath(app);
+        // Lanzador de apps web de un navegador: la carpeta es la del navegador y su desinstalador
+        // quitaría el navegador entero.
+        if (target != null && Path.GetFileName(target).EndsWith("_proxy.exe", StringComparison.OrdinalIgnoreCase))
+            return null;
         string? targetDir = target != null ? Path.GetDirectoryName(target) : null;
         string? best = null;
         int bestScore = 0;
@@ -232,6 +313,7 @@ public static class AppActions
     // ── Propiedades del shell ───────────────────────────────────────────────
 
     private static readonly PropertyKey LinkTargetParsingPath = new(new Guid("B9B4B3FC-2B51-4A42-B5D8-324146AFCF25"), 2);
+    private static readonly PropertyKey LinkArguments = new(new Guid("436F2667-14E2-4FEB-B30A-146C53B5B674"), 100);
 
     private static string? ReadString(string parsingName, PropertyKey key)
     {

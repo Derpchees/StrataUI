@@ -292,6 +292,24 @@ public static class EditSession
         }
     }
 
+    /// <summary>
+    /// Pone Inicio y las apps abiertas de esa barra en esas zonas (atajo del clic derecho de la
+    /// barra, lo que antes era la alineación). Si quedan juntos, Inicio va justo delante de las apps.
+    /// </summary>
+    internal static void SetStartAndApps(string device, TaskbarPosition edge, BarZone start, BarZone apps)
+    {
+        if (LayoutOf(device).Bars.FirstOrDefault(b => b.Edge == edge) is not { } bar)
+            return;
+        BarLayout.SetZone(bar, BarItem.Start, start);
+        BarLayout.SetZone(bar, BarItem.Apps, apps);
+        if (start == apps && bar.Items.Contains(BarItem.Start) && bar.Items.Contains(BarItem.Apps))
+        {
+            bar.Items.Remove(BarItem.Start);
+            bar.Items.Insert(bar.Items.IndexOf(BarItem.Apps), BarItem.Start);
+        }
+        Touch();
+    }
+
     internal static void AddBar(string device, TaskbarPosition edge)
     {
         var layout = LayoutOf(device);

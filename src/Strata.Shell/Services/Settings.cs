@@ -63,9 +63,9 @@ public sealed class PinEntry
 public enum StartIconKind { Strata, Windows, WindowsMono, Circle, Dot, Grid, Search }
 
 /// <summary>
-/// Lo que puede llevar una barra. Cada barra tiene su lista, en orden (modo edición o Hub ›
-/// Barra de tareas); Inicio va siempre delante de las apps abiertas (<see cref="Apps"/>), que
-/// ocupan el espacio libre. Cada monitor lleva cada elemento una sola vez.
+/// Lo que puede llevar una barra. Cada barra tiene su lista, en orden y con la zona de cada uno
+/// (modo edición); las apps abiertas (<see cref="Apps"/>) se estiran en el espacio libre de su
+/// zona. Cada monitor lleva cada elemento una sola vez.
 /// </summary>
 public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock, Notifications, Apps }
 
@@ -167,6 +167,10 @@ public sealed class StrataSettings
 
     /// <summary>Ya se agregó la campana de notificaciones junto al reloj de las barras de antes (una sola vez).</summary>
     public bool NotificationBellAdded { get; set; }
+    /// <summary>Inicio y las apps abiertas ya tienen zona en cada barra (antes las ponía la alineación).</summary>
+    public bool StartAppsZoned { get; set; }
+    /// <summary>Al iniciar con Windows también se abre el Hub (por defecto, solo las barras).</summary>
+    public bool HubAtStartup { get; set; }
 
     /// <summary>
     /// Valores del perfil global de NVIDIA antes de cambiarlos desde Strata UI (id → valor; null = no
@@ -223,7 +227,10 @@ public sealed class StrataSettings
     public List<PinSection>? StartLayout { get; set; }
     /// <summary>Íconos elegidos para apps de Inicio: ID de la app → imagen (Services/StartMenu/CustomIcons).</summary>
     public Dictionary<string, string> StartCustomIcons { get; set; } = new();
+    /// <summary>De versiones anteriores (y de los módulos): ahora el tamaño va en <see cref="StartIconPixels"/>.</summary>
     public StartIconSize StartIconSize { get; set; } = StartIconSize.Medium;
+    /// <summary>Tamaño de los íconos de las apps ancladas en DIP (clic derecho en Inicio › Ver); 0 = el de <see cref="StartIconSize"/>.</summary>
+    public double StartIconPixels { get; set; }
     /// <summary>Nombres debajo de las apps ancladas (sin ellos, el nombre queda en el tooltip).</summary>
     public bool StartShowPinnedLabels { get; set; } = true;
     /// <summary>Tamaño elegido por el usuario para cada estilo de menú: [ancho, alto] en DIP.</summary>
@@ -507,6 +514,11 @@ public static class Settings
         }
         // Posición, segunda barra y elementos por barra eran ajustes sueltos: ahora un diseño por monitor.
         LegacyLayouts.Convert(s, LegacyLayouts.CurrentMainDevice(s));
+        // Inicio y las apps abiertas iban donde decía la alineación: ahora tienen zona como lo demás.
+        BarLayout.ZoneStartAndApps(s);
+        // El tamaño de los íconos de Inicio era chico, mediano o grande: ahora es libre.
+        if (s.StartIconPixels <= 0)
+            s.StartIconPixels = StartMenu.StartMenuService.PixelsOf(s.StartIconSize);
         return s;
     }
 

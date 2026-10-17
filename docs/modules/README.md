@@ -131,6 +131,7 @@ A preset of the Start menu options. Applying it changes only what the file inclu
   "name": "Minimal",
   "style": "compact",       // windows11, list, fullscreen, compact, spotlight, icons or profile
   "iconSize": "small",      // small, medium or large
+  "iconPixels": 28,         // any icon size from 20 to 96 (wins over iconSize)
   "pinnedLabels": false,    // names under pinned apps
   "showPinned": true,
   "showAllApps": true,

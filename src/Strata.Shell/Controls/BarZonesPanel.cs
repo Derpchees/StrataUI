@@ -1,5 +1,6 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
+using Strata.Shell.Services;
 
 namespace Strata.Shell.Controls;
 
@@ -7,10 +8,10 @@ namespace Strata.Shell.Controls;
 public enum BarPanelZone { Apps, Start, Center, End }
 
 /// <summary>
-/// Distribución de la barra a lo largo (horizontal o vertical): zona de inicio, Inicio con las
-/// ventanas, zona central y zona del final. Lo del centro queda exactamente al medio de la barra
-/// si las ventanas van al principio; si van centradas, se agrupa con ellas (justo después) para no
-/// encimarse. Las ventanas reciben el espacio que sobra (su lista se desplaza si no caben).
+/// Distribución de la barra a lo largo (horizontal o vertical): zona de inicio, zona central, zona
+/// del final y el área de las ventanas, que reciben el espacio que sobra (su lista se desplaza si
+/// no caben). Lo de la zona de las ventanas va dentro de su área; las demás zonas, en su lugar: lo
+/// del centro queda exactamente al medio de la barra y las ventanas antes o después de él.
 /// </summary>
 public sealed class BarZonesPanel : Panel
 {
@@ -31,15 +32,15 @@ public sealed class BarZonesPanel : Panel
         set => SetValue(OrientationProperty, value);
     }
 
-    public static readonly DependencyProperty AppsCenteredProperty = DependencyProperty.Register(
-        nameof(AppsCentered), typeof(bool), typeof(BarZonesPanel),
-        new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsArrange));
+    public static readonly DependencyProperty AppsZoneProperty = DependencyProperty.Register(
+        nameof(AppsZone), typeof(BarZone), typeof(BarZonesPanel),
+        new FrameworkPropertyMetadata(BarZone.Start, FrameworkPropertyMetadataOptions.AffectsArrange));
 
-    /// <summary>Las ventanas van centradas (y lo del centro se agrupa con ellas).</summary>
-    public bool AppsCentered
+    /// <summary>Zona de las ventanas: al principio, al centro o al final del espacio libre.</summary>
+    public BarZone AppsZone
     {
-        get => (bool)GetValue(AppsCenteredProperty);
-        set => SetValue(AppsCenteredProperty, value);
+        get => (BarZone)GetValue(AppsZoneProperty);
+        set => SetValue(AppsZoneProperty, value);
     }
 
     private bool Horizontal => Orientation == Orientation.Horizontal;
@@ -83,7 +84,6 @@ public sealed class BarZonesPanel : Panel
         var end = Child(BarPanelZone.End);
         var apps = Child(BarPanelZone.Apps);
         double startLen = Visible(start, Along), centerLen = Visible(center, Along), endLen = Visible(end, Along);
-        double appsLen = Visible(apps, Along);
         double from = startLen, to = Math.Max(from, total - endLen);
 
         Place(start, 0, startLen);
@@ -91,24 +91,19 @@ public sealed class BarZonesPanel : Panel
 
         if (centerLen == 0)
         {
-            // Como siempre: las ventanas en el espacio entre las zonas (su alineación decide dónde).
+            // Las ventanas en el espacio entre las zonas (su alineación decide dónde; si van al
+            // centro, lo del centro va dentro de su área).
             Place(apps, from, to - from);
             Place(center, from, 0);
         }
-        else if (AppsCentered)
-        {
-            // Ventanas y centro juntos, centrados en la barra (sin salirse del espacio libre).
-            double group = Math.Min(appsLen + centerLen, to - from);
-            double at = Math.Clamp((total - group) / 2, from, Math.Max(from, to - group));
-            double appsRoom = Math.Max(0, group - centerLen);
-            Place(apps, at, appsRoom);
-            Place(center, at + appsRoom, centerLen);
-        }
         else
         {
-            // Centro al medio exacto de la barra; las ventanas antes de él.
+            // Centro al medio exacto de la barra; las ventanas antes o después de él.
             double at = Math.Clamp((total - centerLen) / 2, from, Math.Max(from, to - centerLen));
-            Place(apps, from, Math.Max(0, at - from));
+            if (AppsZone == BarZone.End)
+                Place(apps, at + centerLen, Math.Max(0, to - at - centerLen));
+            else
+                Place(apps, from, Math.Max(0, at - from));
             Place(center, at, centerLen);
         }
         return final;

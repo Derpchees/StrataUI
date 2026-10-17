@@ -19,8 +19,14 @@ public static class AutoStart
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "StrataUI";
 
+    /// <summary>
+    /// Argumento con que lo abre el inicio de sesión: así no abre el Hub (salvo que se pida) y una
+    /// segunda copia lanzada a la vez (la clave Run que deja el instalador) no se lo pide a la primera.
+    /// </summary>
+    public const string Arg = "--autostart";
+
     private static string ExePath => Environment.ProcessPath ?? "";
-    private static string Command => $"\"{ExePath}\"";
+    private static string Command => $"\"{ExePath}\" {Arg}";
     private static string TaskName => $"StrataUI ({Environment.UserName})";
 
     // Cuando se llamaba WINX (hasta la 1.3).
@@ -29,7 +35,7 @@ public static class AutoStart
 
     public static bool IsEnabled
     {
-        get => TaskCommand() is { } command && command.Equals(ExePath, StringComparison.OrdinalIgnoreCase)
+        get => TaskCommand() is ({ } command, _) && command.Equals(ExePath, StringComparison.OrdinalIgnoreCase)
                || RunKeyEnabled();
         set
         {
@@ -58,13 +64,21 @@ public static class AutoStart
         {
             bool legacy = RemoveLegacy();
             bool runKey = RunKeyEnabled();
-            string? task = TaskCommand();
-            if (legacy || runKey || (task is not null && !task.Equals(ExePath, StringComparison.OrdinalIgnoreCase)))
+            var (task, arguments) = TaskCommand();
+            // También la tarea de antes, sin el argumento de inicio automático.
+            if (legacy || runKey || (task is not null && (!task.Equals(ExePath, StringComparison.OrdinalIgnoreCase) || arguments != Arg)))
             {
                 if (CreateTask())
                 {
                     SetRunKey(false);
                     Log.Info("Inicio automático: ahora con una tarea programada al iniciar sesión");
+                }
+                else if (runKey && task is not null && task.Equals(ExePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    // La tarea (creada elevada, no se puede actualizar) ya abre este Strata UI: la clave
+                    // Run que dejó el instalador solo lo abría dos veces.
+                    SetRunKey(false);
+                    Log.Info("Inicio automático: se quitó la clave Run repetida (ya hay una tarea)");
                 }
                 else if (task is not null && !File.Exists(task))
                 {
@@ -106,8 +120,9 @@ public static class AutoStart
     private static bool RunKeyEnabled()
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKey);
+        // Con o sin el argumento (el instalador de antes la escribía sin él).
         return key?.GetValue(ValueName) is string value
-               && value.Equals(Command, StringComparison.OrdinalIgnoreCase);
+               && value.StartsWith($"\"{ExePath}\"", StringComparison.OrdinalIgnoreCase);
     }
 
     private static void SetRunKey(bool enabled)
@@ -119,21 +134,22 @@ public static class AutoStart
             key.DeleteValue(ValueName, throwOnMissingValue: false);
     }
 
-    /// <summary>El programa que abre la tarea, o null si no existe.</summary>
-    private static string? TaskCommand()
+    /// <summary>El programa que abre la tarea y sus argumentos; (null, null) si no existe.</summary>
+    private static (string? Command, string? Arguments) TaskCommand()
     {
         var (code, output) = Schtasks($"/Query /TN \"{TaskName}\" /XML");
         if (code != 0)
-            return null;
+            return (null, null);
         try
         {
-            var command = System.Xml.Linq.XDocument.Parse(output).Descendants()
-                .FirstOrDefault(e => e.Name.LocalName == "Command")?.Value;
-            return command?.Trim().Trim('"');
+            var elements = System.Xml.Linq.XDocument.Parse(output).Descendants().ToList();
+            var command = elements.FirstOrDefault(e => e.Name.LocalName == "Command")?.Value;
+            var arguments = elements.FirstOrDefault(e => e.Name.LocalName == "Arguments")?.Value;
+            return (command?.Trim().Trim('"'), arguments?.Trim());
         }
         catch (System.Xml.XmlException)
         {
-            return null;
+            return (null, null);
         }
     }
 
@@ -154,7 +170,7 @@ public static class AutoStart
                 <Priority>4</Priority>
                 <Enabled>true</Enabled>
               </Settings>
-              <Actions Context="Author"><Exec><Command>{SecurityElement.Escape(Command)}</Command></Exec></Actions>
+              <Actions Context="Author"><Exec><Command>{SecurityElement.Escape($"\"{ExePath}\"")}</Command><Arguments>{Arg}</Arguments></Exec></Actions>
             </Task>
             """;
         string file = Path.Combine(Path.GetTempPath(), $"strataui-task-{Environment.ProcessId}.xml");
@@ -174,7 +190,7 @@ public static class AutoStart
 
     private static void DeleteTask()
     {
-        if (TaskCommand() is not null)
+        if (TaskCommand().Command is not null)
             Schtasks($"/Delete /TN \"{TaskName}\" /F");
     }
 

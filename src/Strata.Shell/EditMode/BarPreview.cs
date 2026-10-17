@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -24,8 +24,10 @@ internal sealed class BarPreview
     private readonly bool _vertical;
     private readonly double _thickness;
     private readonly ScreenSettings _screen;
-    private readonly StackPanel _startZone, _centerZone, _endZone;
-    private readonly Panel _apps;
+    private readonly StackPanel _startZone, _centerZone, _endZone, _appsBefore, _appsAfter;
+    /// <summary>Las apps abiertas con lo de su zona antes y después (como TaskArea en la barra).</summary>
+    private readonly DockPanel _apps;
+    private readonly BarZone? _appsZone;
     private readonly Dictionary<BarItem, FrameworkElement> _chips = new();
 
     public FrameworkElement Root { get; }
@@ -42,56 +44,48 @@ internal sealed class BarPreview
         _startZone = new StackPanel { Orientation = orientation };
         _centerZone = new StackPanel { Orientation = orientation };
         _endZone = new StackPanel { Orientation = orientation };
+        _appsBefore = new StackPanel { Orientation = orientation };
+        _appsAfter = new StackPanel { Orientation = orientation };
 
-        // Inicio y las apps como en la barra: juntos a la izquierda (arriba) o al centro, o Inicio al
-        // principio y las apps al centro del espacio que sobra ("centrar las apps").
-        bool left = WindowsTaskbarPrefs.Alignment(_screen) == TaskbarAlignment.Left;
-        bool split = left && _screen.TaskbarCenterApps;
-        if (split)
-        {
-            _apps = new DockPanel { LastChildFill = true };
-        }
+        // Las apps abiertas al principio, al centro o al final del espacio libre, con lo de su zona
+        // antes y después de ellas según el orden (como en la barra).
+        _appsZone = bar.Items.Contains(BarItem.Apps) ? BarLayout.ZoneOf(bar, BarItem.Apps) : null;
+        _apps = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(_appsBefore, _vertical ? Dock.Top : Dock.Left);
+        DockPanel.SetDock(_appsAfter, _vertical ? Dock.Bottom : Dock.Right);
+        _apps.Children.Add(_appsBefore);
+        _apps.Children.Add(_appsAfter);
+        if (_vertical)
+            _apps.VerticalAlignment = _appsZone switch { BarZone.Start => VerticalAlignment.Top, BarZone.Center => VerticalAlignment.Center, _ => VerticalAlignment.Bottom };
         else
-        {
-            var stack = new StackPanel { Orientation = orientation };
-            if (_vertical)
-                stack.VerticalAlignment = left ? VerticalAlignment.Top : VerticalAlignment.Center;
-            else
-                stack.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Center;
-            _apps = stack;
-        }
+            _apps.HorizontalAlignment = _appsZone switch { BarZone.Start => HorizontalAlignment.Left, BarZone.Center => HorizontalAlignment.Center, _ => HorizontalAlignment.Right };
         BarZonesPanel.SetZone(_startZone, BarPanelZone.Start);
         BarZonesPanel.SetZone(_centerZone, BarPanelZone.Center);
         BarZonesPanel.SetZone(_endZone, BarPanelZone.End);
         BarZonesPanel.SetZone(_apps, BarPanelZone.Apps);
-        var zones = new BarZonesPanel { Orientation = orientation, AppsCentered = !left };
+        var zones = new BarZonesPanel { Orientation = orientation, AppsZone = _appsZone ?? BarZone.End };
         zones.Children.Add(_startZone);
         zones.Children.Add(_apps);
         zones.Children.Add(_centerZone);
         zones.Children.Add(_endZone);
 
-        // Inicio siempre delante de las apps.
-        foreach (var item in bar.Items.OrderBy(i => i == BarItem.Start ? 0 : 1))
+        int appsIndex = bar.Items.IndexOf(BarItem.Apps);
+        FrameworkElement? appsChip = null;
+        for (int i = 0; i < bar.Items.Count; i++)
         {
+            var item = bar.Items[i];
             var chip = Chip(item);
             _chips[item] = chip;
-            if (split)
-            {
-                DockPanel.SetDock(chip, _vertical ? Dock.Top : Dock.Left);
-                if (item == BarItem.Apps)
-                {
-                    chip.HorizontalAlignment = _vertical ? HorizontalAlignment.Stretch : HorizontalAlignment.Center;
-                    chip.VerticalAlignment = _vertical ? VerticalAlignment.Center : VerticalAlignment.Stretch;
-                }
-            }
-            ZonePanelOf(item).Children.Add(chip);
+            if (item == BarItem.Apps)
+                appsChip = chip;
+            else if (BarLayout.ZoneOf(bar, item) == _appsZone)
+                (i < appsIndex ? _appsBefore : _appsAfter).Children.Add(chip);
+            else
+                ZonePanel(BarLayout.ZoneOf(bar, item)).Children.Add(chip);
         }
-        // En el DockPanel la última ocupa lo que sobra: las apps van al final.
-        if (split && _chips.TryGetValue(BarItem.Apps, out var appsChip))
-        {
-            _apps.Children.Remove(appsChip);
+        // En el DockPanel la última ocupa lo que sobra: las apps.
+        if (appsChip != null)
             _apps.Children.Add(appsChip);
-        }
         UpdateZoneVisibility(false);
 
         // La barra con el aspecto de su monitor: color propio, sin fondo o el del tema (sobre un velo
@@ -163,21 +157,30 @@ internal sealed class BarPreview
         Root = root;
     }
 
-    private Panel ZonePanelOf(BarItem item) => !BarLayout.Zoned(item) ? _apps : BarLayout.ZoneOf(_bar, item) switch
+    private StackPanel ZonePanel(BarZone zone) => zone switch
     {
         BarZone.Start => _startZone,
         BarZone.Center => _centerZone,
         _ => _endZone,
     };
 
+    /// <summary>Lo que ocupa una zona: la de las apps es su área (con lo de antes y después).</summary>
+    private FrameworkElement ZoneArea(BarZone zone) => _appsZone == zone ? _apps : ZonePanel(zone);
+
     /// <summary>Mientras se arrastra, las zonas vacías se ven como un lugar donde soltar.</summary>
     public void ShowDropZones(bool show) => UpdateZoneVisibility(show);
 
     private void UpdateZoneVisibility(bool dropping)
     {
-        foreach (var panel in new[] { _startZone, _centerZone, _endZone })
+        foreach (var (zone, panel) in new[] { (BarZone.Start, _startZone), (BarZone.Center, _centerZone), (BarZone.End, _endZone) })
         {
+            // La zona de las apps se ve en su área: su panel no hace falta.
             bool empty = panel.Children.Count == 0;
+            if (zone == _appsZone && empty)
+            {
+                panel.Visibility = Visibility.Collapsed;
+                continue;
+            }
             panel.Visibility = empty && !dropping ? Visibility.Collapsed : Visibility.Visible;
             if (empty && dropping)
             {
@@ -194,7 +197,7 @@ internal sealed class BarPreview
                 panel.ClearValue(Panel.BackgroundProperty);
             }
         }
-        _apps.Visibility = _apps.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        _apps.Visibility = _appsZone != null ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ── Soltar ──────────────────────────────────────────────────────────────
@@ -208,12 +211,9 @@ internal sealed class BarPreview
         var bar = ScreenRect(Root, 0);
         if (!bar.Contains(screen))
             return null;
-        if (!BarLayout.Zoned(item))
-            return new BarTarget(Edge, null, BarZone.End, Local(_apps.IsVisible ? _apps : Root, relativeTo));
-
         BarZone? zone = null;
-        foreach (var (candidate, panel) in new[] { (BarZone.Start, _startZone), (BarZone.Center, _centerZone), (BarZone.End, _endZone) })
-            if (ScreenRect(panel, 12).Contains(screen))
+        foreach (var candidate in new[] { BarZone.Start, BarZone.Center, BarZone.End })
+            if (ScreenRect(ZoneArea(candidate), 12).Contains(screen))
                 zone = candidate;
         // Fuera de las zonas: por tercios de la barra.
         zone ??= Along(screen, bar) switch
@@ -257,7 +257,7 @@ internal sealed class BarPreview
         }
         else
         {
-            marker = Local(target switch { BarZone.Start => _startZone, BarZone.Center => _centerZone, _ => _endZone }, relativeTo);
+            marker = Local(ZoneArea(target), relativeTo);
         }
         return new BarTarget(Edge, index, target, marker);
     }
@@ -544,18 +544,15 @@ internal sealed class BarPreview
     private ContextMenu ItemMenu(BarItem item)
     {
         var menu = new ContextMenu();
-        if (BarLayout.Zoned(item))
+        var position = new MenuItem { Header = Loc.T("Posición en la barra") };
+        foreach (var zone in new[] { BarZone.Start, BarZone.Center, BarZone.End })
         {
-            var position = new MenuItem { Header = Loc.T("Posición en la barra") };
-            foreach (var zone in new[] { BarZone.Start, BarZone.Center, BarZone.End })
-            {
-                var entry = Entry(BarLayout.ZoneName(zone, _vertical), () => EditSession.SetZone(_device, Edge, item, zone));
-                entry.IsCheckable = true;
-                entry.IsChecked = BarLayout.ZoneOf(_bar, item) == zone;
-                position.Items.Add(entry);
-            }
-            menu.Items.Add(position);
+            var entry = Entry(BarLayout.ZoneName(zone, _vertical), () => EditSession.SetZone(_device, Edge, item, zone));
+            entry.IsCheckable = true;
+            entry.IsChecked = BarLayout.ZoneOf(_bar, item) == zone;
+            position.Items.Add(entry);
         }
+        menu.Items.Add(position);
         var move = new MenuItem { Header = Loc.T("Mover a otra barra") };
         foreach (var edge in Edges.Where(e => e != Edge))
             move.Items.Add(Entry(BarLayout.BarName(edge), () => EditSession.PlaceItem(_device, edge, item, null, BarLayout.ZoneOf(_bar, item))));
@@ -630,7 +627,11 @@ internal sealed class BarPreview
         {
             bool elsewhere = layout.Bars.Any(b => b.Items.Contains(item));
             string header = elsewhere ? Loc.F("{0} (está en otra barra)", BarLayout.Name(item)) : BarLayout.Name(item);
-            add.Items.Add(Entry(header, () => EditSession.PlaceItem(_device, Edge, item, null, BarZone.End)));
+            // Inicio y las apps llegan junto al otro (o al centro); lo demás, al final.
+            var partner = item == BarItem.Start ? BarItem.Apps : BarItem.Start;
+            var zone = item is not (BarItem.Start or BarItem.Apps) ? BarZone.End
+                : _bar.Items.Contains(partner) ? BarLayout.ZoneOf(_bar, partner) : BarZone.Center;
+            add.Items.Add(Entry(header, () => EditSession.PlaceItem(_device, Edge, item, null, zone)));
         }
         add.IsEnabled = add.Items.Count > 0;
         menu.Items.Add(add);
@@ -659,15 +660,25 @@ internal sealed class BarPreview
         custom.IsChecked = _screen.BarStyle == BarStyle.Color;
         style.Items.Add(custom);
         menu.Items.Add(style);
-        var alignment = new MenuItem { Header = Loc.T("Alineación") };
-        alignment.Items.Add(Toggle(Loc.T("Igual que Windows"), _screen.TaskbarAlignment == TaskbarAlignment.Windows, s => s.TaskbarAlignment = TaskbarAlignment.Windows));
-        alignment.Items.Add(Toggle(Loc.T("Centro"), _screen.TaskbarAlignment == TaskbarAlignment.Center, s => s.TaskbarAlignment = TaskbarAlignment.Center));
-        alignment.Items.Add(Toggle(Loc.T("Izquierda"), _screen.TaskbarAlignment == TaskbarAlignment.Left, s => s.TaskbarAlignment = TaskbarAlignment.Left));
+        // Atajos para Inicio y las apps abiertas (también se arrastran a cualquier zona, como lo demás).
+        var alignment = new MenuItem { Header = Loc.T("Inicio y apps abiertas") };
+        var startZone = BarLayout.ZoneOf(_bar, BarItem.Start);
+        var appsZone = BarLayout.ZoneOf(_bar, BarItem.Apps);
+        foreach (var (start, apps, name) in new[]
+                 {
+                     (BarZone.Start, BarZone.Start, Loc.F("Juntos: {0}", BarLayout.ZoneName(BarZone.Start, _vertical))),
+                     (BarZone.Center, BarZone.Center, Loc.F("Juntos: {0}", BarLayout.ZoneName(BarZone.Center, _vertical))),
+                     (BarZone.End, BarZone.End, Loc.F("Juntos: {0}", BarLayout.ZoneName(BarZone.End, _vertical))),
+                     (BarZone.Start, BarZone.Center, Loc.F("Inicio: {0}; apps: {1}", BarLayout.ZoneName(BarZone.Start, _vertical), BarLayout.ZoneName(BarZone.Center, _vertical))),
+                 })
+        {
+            var entry = Entry(name, () => EditSession.SetStartAndApps(_device, Edge, start, apps));
+            entry.IsCheckable = true;
+            entry.IsChecked = (!_bar.Items.Contains(BarItem.Start) || startZone == start) && (!_bar.Items.Contains(BarItem.Apps) || appsZone == apps);
+            alignment.Items.Add(entry);
+        }
+        alignment.IsEnabled = _bar.Items.Contains(BarItem.Start) || _bar.Items.Contains(BarItem.Apps);
         menu.Items.Add(alignment);
-        var center = Toggle(Loc.T("Centrar las apps abiertas"), _screen.TaskbarCenterApps, s => s.TaskbarCenterApps = !s.TaskbarCenterApps);
-        center.ToolTip = Loc.T("Con Inicio a la izquierda, las apps quedan igual al centro de la barra.");
-        center.IsEnabled = WindowsTaskbarPrefs.Alignment(_screen) == TaskbarAlignment.Left;
-        menu.Items.Add(center);
 
         menu.Items.Add(new Separator());
         menu.Items.Add(Entry(Loc.T("Quitar esta barra"), () => EditSession.RemoveBar(_device, Edge)));

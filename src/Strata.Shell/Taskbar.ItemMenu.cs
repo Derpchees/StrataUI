@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using Strata.Shell.Services;
@@ -21,8 +21,8 @@ public partial class Taskbar
 
     private void OnItemMenuOpening(object sender, ContextMenuEventArgs e)
     {
-        if (ItemAt(e.OriginalSource as DependencyObject) is not { } item || Element(item) is not { } element)
-            return; // fuera de un elemento (o un ícono de la bandeja): el menú de la barra
+        if (ItemAt(e.OriginalSource as DependencyObject) is not { } item || item == BarItem.Start || Element(item) is not { } element)
+            return; // fuera de un elemento (o un ícono de la bandeja): el menú de la barra; Inicio tiene el suyo (Win+X)
         e.Handled = true;
         var menu = ItemMenu(item);
         menu.PlacementTarget = element;

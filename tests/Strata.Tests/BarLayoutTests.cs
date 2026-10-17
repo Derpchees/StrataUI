@@ -1,4 +1,4 @@
-using Strata.Shell;
+﻿using Strata.Shell;
 using Strata.Shell.Services;
 using Xunit;
 
@@ -141,13 +141,41 @@ public class BarLayoutTests
     }
 
     [Fact]
-    public void Start_and_apps_have_no_zone()
+    public void Start_and_apps_have_a_zone_like_the_rest()
     {
-        var bar = new BarConfig { Items = [BarItem.Start, BarItem.Clock] };
+        var bar = new BarConfig { Items = [BarItem.Start, BarItem.Apps, BarItem.Clock] };
         BarLayout.SetZone(bar, BarItem.Start, BarZone.Center);
-        BarLayout.SetZone(bar, BarItem.Clock, BarZone.Center);
-        Assert.Equal(BarZone.End, BarLayout.ZoneOf(bar, BarItem.Start));
-        Assert.Equal(BarZone.Center, BarLayout.ZoneOf(bar, BarItem.Clock));
+        BarLayout.SetZone(bar, BarItem.Apps, BarZone.Start);
+        Assert.Equal(BarZone.Center, BarLayout.ZoneOf(bar, BarItem.Start));
+        Assert.Equal(BarZone.Start, BarLayout.ZoneOf(bar, BarItem.Apps));
+        Assert.Equal(BarZone.End, BarLayout.ZoneOf(bar, BarItem.Clock));
+    }
+
+    [Theory]
+    // Alineación de antes → zona de Inicio y de las apps.
+    [InlineData(TaskbarAlignment.Left, false, BarZone.Start, BarZone.Start)]
+    [InlineData(TaskbarAlignment.Center, false, BarZone.Center, BarZone.Center)]
+    [InlineData(TaskbarAlignment.Left, true, BarZone.Start, BarZone.Center)]
+    public void Old_alignment_becomes_zones(TaskbarAlignment alignment, bool centerApps, BarZone start, BarZone apps)
+    {
+        var s = With(D1, new BarConfig { Items = [BarItem.Start, BarItem.Apps, BarItem.Clock] });
+        s.Screens[D1] = new ScreenSettings { TaskbarAlignment = alignment, TaskbarCenterApps = centerApps };
+        Assert.True(BarLayout.ZoneStartAndApps(s));
+        var bar = s.Layouts[D1].Bars[0];
+        Assert.Equal(start, BarLayout.ZoneOf(bar, BarItem.Start));
+        Assert.Equal(apps, BarLayout.ZoneOf(bar, BarItem.Apps));
+        Assert.True(bar.Items.IndexOf(BarItem.Start) < bar.Items.IndexOf(BarItem.Apps));
+        Assert.False(BarLayout.ZoneStartAndApps(s)); // una sola vez
+    }
+
+    [Fact]
+    public void Start_and_apps_stay_after_what_was_already_at_the_start()
+    {
+        // Antes la zona de inicio iba delante de Inicio y las apps.
+        var bar = new BarConfig { Items = [BarItem.Start, BarItem.Apps, BarItem.Media, BarItem.Clock] };
+        BarLayout.SetZone(bar, BarItem.Media, BarZone.Start);
+        BarLayout.ZoneLikeAlignment(bar, new ScreenSettings { TaskbarAlignment = TaskbarAlignment.Left });
+        Assert.Equal([BarItem.Media, BarItem.Start, BarItem.Apps, BarItem.Clock], bar.Items);
     }
 
     [Fact]

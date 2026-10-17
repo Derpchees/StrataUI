@@ -105,7 +105,7 @@ Name: "{autodesktop}\Strata UI"; Filename: "{app}\StrataUI.exe"; Tasks: desktopi
 
 [Registry]
 ; El valor de siempre; al abrirse, Strata UI lo cambia por una tarea programada (Services\AutoStart.cs).
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "StrataUI"; ValueData: """{app}\StrataUI.exe"""; Tasks: autostart
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "StrataUI"; ValueData: """{app}\StrataUI.exe"" --autostart"; Tasks: autostart
 ; El de cuando se llamaba WINX apunta a un ejecutable que ya no existe.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "WINX"; Flags: deletevalue
 

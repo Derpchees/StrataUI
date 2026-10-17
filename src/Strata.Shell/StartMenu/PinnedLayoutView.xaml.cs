@@ -1,7 +1,9 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using Strata.Shell.Services.StartMenu;
 using Strata.Shell.Services.Localization;
 
@@ -15,6 +17,8 @@ namespace Strata.Shell.StartMenu;
 /// <remarks>
 /// El arrastre se hace capturando el mouse en lugar de DragDrop de OLE: así el ícono sigue
 /// al cursor y no depende del bucle de OLE, que cancela en silencio ante cualquier excepción.
+/// Dentro del menú el ícono es un adorno de su ventana (se mueve en el mismo cuadro que el resto,
+/// sin retraso); fuera de ella, camino a la barra, una ventana emergente.
 /// </remarks>
 public partial class PinnedLayoutView : UserControl
 {
@@ -30,10 +34,14 @@ public partial class PinnedLayoutView : UserControl
     private PinDrag? _drag;
     private FrameworkElement? _hintTile;
     private PinFolderView? _openFolder;
+    private GhostAdorner? _ghost;
 
     public PinnedLayoutView()
     {
         InitializeComponent();
+        if (Root.ContextMenu is { } menu)
+            menu.Items.Insert(0, StartViewMenu.Create());
+        Root.ContextMenuOpening += (_, _) => _menuPoint = Mouse.GetPosition(this);
         // La carpeta se abre sobre el centro del menú: crece o aparece con la animación elegida.
         Services.Themes.Motion.Attach(FolderPopup, () => Services.TaskbarPosition.Bottom);
         MouseMove += (_, e) => { if (_drag != null) DragMove(e.GetPosition(this)); };
@@ -91,7 +99,7 @@ public partial class PinnedLayoutView : UserControl
         _drag = drag;
         DragGhostIcon.Source = icon;
         DragGhost.PlacementTarget = this;
-        DragGhost.IsOpen = true;
+        _ghost = GhostAdorner.Attach(this, icon);
         CaptureMouse(); // el botón tenía la captura: así tampoco se dispara su clic al soltar
         // Una fila más en cada sección: se puede soltar debajo de lo que ya hay.
         foreach (var panel in SectionPanels())
@@ -106,10 +114,18 @@ public partial class PinnedLayoutView : UserControl
 
     private void DragMove(Point position)
     {
-        // El ícono queda centrado bajo el cursor.
-        double half = DragGhostIcon.ActualWidth / 2 + 8;
-        DragGhost.HorizontalOffset = position.X - half;
-        DragGhost.VerticalOffset = position.Y - half;
+        // El ícono queda centrado bajo el cursor: en el menú, el adorno; fuera, la ventana emergente.
+        if (_ghost != null && _ghost.MoveTo(this, position))
+        {
+            DragGhost.IsOpen = false;
+        }
+        else
+        {
+            double half = (TryFindResource("StartTileIconSize") is double size ? size : 32) / 2 + 8;
+            DragGhost.HorizontalOffset = position.X - half;
+            DragGhost.VerticalOffset = position.Y - half;
+            DragGhost.IsOpen = true;
+        }
 
         var tile = TileAt(position);
         if (!ReferenceEquals(tile, _hintTile))
@@ -262,6 +278,8 @@ public partial class PinnedLayoutView : UserControl
             return;
         _drag = null;
         DragGhost.IsOpen = false;
+        _ghost?.Detach();
+        _ghost = null;
         CellHint.Visibility = Visibility.Collapsed;
         foreach (var (panel, minHeight) in _grown)
             panel.MinHeight = minHeight;
@@ -386,6 +404,10 @@ public partial class PinnedLayoutView : UserControl
         }
     }
 
+    private static readonly Duration HintDuration = TimeSpan.FromMilliseconds(130);
+    private static readonly IEasingFunction HintEasing = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+
+    /// <summary>Agranda o corre un mosaico con una animación corta (solo si cambia lo pedido).</summary>
     private static void SetHint(FrameworkElement tile, double scale, double offset)
     {
         // La transformación de la plantilla está congelada (compartida): cada mosaico usa la suya.
@@ -397,8 +419,87 @@ public partial class PinnedLayoutView : UserControl
             t = new TranslateTransform();
             tile.RenderTransform = new TransformGroup { Children = { s, t } };
         }
-        s.ScaleX = s.ScaleY = scale;
-        t.X = offset;
+        if (tile.Tag is ValueTuple<double, double> old && old.Item1 == scale && old.Item2 == offset)
+            return; // ya va hacia ahí: no reiniciar la animación en cada movimiento
+        tile.Tag = (scale, offset);
+        var grow = new DoubleAnimation(scale, HintDuration) { EasingFunction = HintEasing };
+        s.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
+        s.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
+        t.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(offset, HintDuration) { EasingFunction = HintEasing });
+    }
+
+    /// <summary>
+    /// El ícono arrastrado, en la capa de adornos de la ventana del menú (fuera de los recortes de
+    /// las listas). La capa fija la transformación del adorno, así que lo que se mueve es su tarjeta.
+    /// </summary>
+    private sealed class GhostAdorner : Adorner
+    {
+        private readonly AdornerLayer _layer;
+        private readonly Border _card;
+        private readonly double _half;
+        private readonly TranslateTransform _move = new();
+
+        private GhostAdorner(UIElement root, AdornerLayer layer, ImageSource? icon, double size) : base(root)
+        {
+            _layer = layer;
+            _half = size / 2 + 8;
+            IsHitTestVisible = false;
+            _card = new Border
+            {
+                Width = size + 16,
+                Height = size + 16,
+                Padding = new Thickness(7),
+                BorderThickness = new Thickness(1.5),
+                CornerRadius = new CornerRadius(8),
+                Child = new Image { Source = icon, Width = size, Height = size },
+                RenderTransform = _move,
+                Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 14, ShadowDepth = 2, Opacity = 0.35 },
+            };
+            RenderOptions.SetBitmapScalingMode(_card.Child, BitmapScalingMode.HighQuality);
+            _card.SetResourceReference(Border.BackgroundProperty, "StrataPopupBackgroundBrush");
+            _card.SetResourceReference(Border.BorderBrushProperty, "StrataAccentBrush");
+            AddVisualChild(_card);
+        }
+
+        public static GhostAdorner? Attach(FrameworkElement view, ImageSource? icon)
+        {
+            if (Window.GetWindow(view)?.Content is not UIElement root || AdornerLayer.GetAdornerLayer(root) is not { } layer)
+                return null;
+            double size = view.TryFindResource("StartTileIconSize") is double d ? d : 32;
+            var ghost = new GhostAdorner(root, layer, icon, size);
+            layer.Add(ghost);
+            return ghost;
+        }
+
+        /// <summary>Lo pone bajo el puntero; false si el puntero salió de la ventana del menú.</summary>
+        public bool MoveTo(Visual view, Point position)
+        {
+            var element = (FrameworkElement)AdornedElement;
+            var p = view.TransformToVisual(element).Transform(position);
+            bool inside = p.X >= 0 && p.Y >= 0 && p.X <= element.ActualWidth && p.Y <= element.ActualHeight;
+            _card.Visibility = inside ? Visibility.Visible : Visibility.Hidden;
+            _move.X = p.X - _half;
+            _move.Y = p.Y - _half;
+            return inside;
+        }
+
+        public void Detach() => _layer.Remove(this);
+
+        protected override int VisualChildrenCount => 1;
+
+        protected override Visual GetVisualChild(int index) => _card;
+
+        protected override Size MeasureOverride(Size constraint)
+        {
+            _card.Measure(constraint);
+            return AdornedElement.RenderSize;
+        }
+
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            _card.Arrange(new Rect(_card.DesiredSize));
+            return finalSize;
+        }
     }
 
     // ── Carpetas ────────────────────────────────────────────────────────────
@@ -524,6 +625,24 @@ public partial class PinnedLayoutView : UserControl
     }
 
     private void NewSection_Click(object sender, RoutedEventArgs e) => PinLayout.AddSection(Loc.T("Nueva sección"));
+
+    private Point _menuPoint;
+
+    /// <summary>Carpeta vacía (luego se le arrastran apps), en la sección donde se hizo clic derecho.</summary>
+    private void NewFolder_Click(object sender, RoutedEventArgs e)
+    {
+        string id = PinLayout.AddFolder(SectionAt(_menuPoint)?.Id);
+        // Se abre para ponerle nombre.
+        Dispatcher.BeginInvoke(() =>
+        {
+            if (PinLayout.Sections.SelectMany(s => s.Tiles).OfType<PinFolderView>().FirstOrDefault(f => f.Id == id) is { } folder)
+            {
+                OpenFolder(folder);
+                FolderName.Focus();
+                FolderName.SelectAll();
+            }
+        }, System.Windows.Threading.DispatcherPriority.Loaded);
+    }
 
     /// <summary>Elemento sobre el que se abrió el menú contextual de un MenuItem.</summary>
     private static FrameworkElement? MenuTarget(object sender) =>
