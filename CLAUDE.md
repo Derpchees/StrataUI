@@ -24,22 +24,32 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 
 ## Conceptos de la arquitectura
 
-- **Barra principal de Strata UI ≠ monitor principal de Windows.** Se elige en el Hub
-  (`Settings.TaskbarMainScreen`, resuelto por `App.MainScreenDevice`). La bandeja, la tecla
-  Windows, Win+X y las ventanas de monitores sin barra van a la barra con `Taskbar.IsMain`;
-  no usar `Screen.Primary` para eso.
-- **Dos barras por monitor**: la segunda va en el borde opuesto (`Settings.SecondTaskbars`) y
-  `App.BarsFor` reparte qué lleva cada una (`BarRole`: apps, área de estado, bandeja). La bandeja,
-  la tecla Windows y Win+N usan la barra del monitor principal que tenga eso (`IsMain` = la que
-  lleva la bandeja; `App.AppsTaskbar` / `App.StatusTaskbar`).
-- **Elementos de cada barra** (`Services/BarLayout`, `Settings.BarItems`, clave `"\\.\DISPLAY1|1"`):
-  lista ordenada de `BarItem` por barra; sin entrada, `BarLayout.Defaults` (lo de antes). La bandeja
-  va en la primera barra que la lleve (`IsMain`; moverla recrea las barras). Se editan en el Hub
-  (`Hub/BarItemsEditor`) o arrastrando en la barra (`Taskbar.ItemDrag.cs`); al guardar se escriben
-  las listas de todas las barras. Un elemento nuevo: valor en `BarItem`, botón en `Taskbar.xaml`,
-  caso en `Taskbar.Element`, nombre/ícono en `BarLayout` y zona en `ContrastZones()`.
-  Cada elemento va en una zona de la barra (`Settings.BarItemZones`, `BarZone` inicio/centro/final;
-  `Controls/BarZonesPanel` las acomoda a lo largo de la barra junto con Inicio y las ventanas).
+- **Monitor principal de Strata UI ≠ monitor principal de Windows.** Se elige en el Hub o en el
+  modo edición (`Settings.TaskbarMainScreen`, resuelto por `App.MainScreenDevice`). La tecla Windows,
+  Win+X, Win+N y el OSD prefieren sus barras (`Taskbar.IsMainScreen`; `App.AppsTaskbar` /
+  `App.StatusTaskbar`); las ventanas de monitores sin apps abiertas van a `App.AppsHostDevice`.
+  No usar `Screen.Primary` para eso.
+- **Diseño por monitor** (`Settings.Layouts`, `ScreenLayout` → `BarConfig`): de cero a cuatro
+  barras, una por borde, cada una con su lista ordenada de `BarItem` y la zona de cada elemento
+  (`BarZone` inicio/centro/final; `Controls/BarZonesPanel` las acomoda junto a Inicio y las apps).
+  `Services/BarLayout` lo lee y lo cambia (barra = `"\\.\DISPLAY1|Bottom"`). Reglas: cada monitor
+  lleva cada elemento una sola vez (`BarLayout.Normalize`); las apps abiertas son un elemento más
+  (`BarItem.Apps`) y van con Inicio en el espacio libre (sin zona); la bandeja puede ir en varios
+  monitores (la misma; `Taskbar.HasTray`, y `IsMain` es la primera, la que se informa a las apps);
+  arriba y abajo se crean primero y se quedan las esquinas (`BarLayout.InCreationOrder`). Un monitor
+  sin entrada recibe `BarLayout.DefaultLayout` al abrir las barras. Los ajustes de antes de la 2.6
+  (posición, segunda barra, monitores sin barra, `BarItems`/`BarItemZones`) solo se leen para
+  convertirlos (`Services/LegacyLayouts`, en `Settings.Migrate`). Un elemento nuevo: valor en
+  `BarItem`, botón en `Taskbar.xaml`, caso en `Taskbar.Element`, nombre/ícono en `BarLayout` (y en
+  `BarLayout.All`), su vista en `EditMode/BarPreview.ItemVisual` y zona en `ContrastZones()`.
+- **Modo edición** (`EditMode/`): `EditSession` guarda un borrador del diseño y de los widgets y
+  abre una `EditOverlay` por monitor (ventana encima de todo con el fondo de pantalla, las barras
+  del borrador dibujadas por `BarPreview` como las reales y los widgets en su lugar). Nada se
+  guarda hasta `Apply` (un solo `Settings.Update` + `WidgetManager.Sync`); Esc o `Cancel` lo
+  descarta. Se arrastra con `EditDrag` (captura en el elemento donde empezó y todo se ubica por la
+  posición del puntero en la pantalla, también entre monitores y desde la biblioteca del Hub). El
+  Hub abierto queda como ventana de la capa de su monitor (siempre encima). Se abre con clic derecho
+  en la barra, desde Hub › Barra de tareas o con `StrataUI.exe --edit` (sirve para probarlo).
 - **Lecturas avanzadas** (`Services/Sensors`, `SensorsTask`): temperaturas (LibreHardwareMonitor +
   PawnIO), FPS (ETW) y liberar RAM en un proceso elevado `--sensors-task` lanzado por una tarea
   programada (UAC solo al crearla); la tarea ejecuta una copia en `%ProgramFiles%\StrataUI\Lecturas`,
@@ -49,9 +59,13 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   sigue a cada monitor por su identificador de hardware y, al abrir las barras, pasa sus ajustes a
   su nombre actual o los guarda (`ParkedMonitors`) mientras no está. Un ajuste nuevo por monitor
   va también en `MonitorSnapshot` (`Take`/`Clear`/`Put`), con su caso en `MonitorKeysTests`.
-- **Las barras se recrean, no se transforman**, cuando cambia la posición o la segunda barra de un
-  monitor, los monitores sin barra o el principal (`App.BarLayoutKey`). Todo lo demás se aplica en vivo en
+- **Las barras se recrean, no se transforman**, cuando cambia qué bordes tiene un monitor, qué
+  barras llevan la bandeja o las apps abiertas, o el principal (`App.BarLayoutKey`,
+  `BarLayout.StructureKey`). Todo lo demás (elementos, orden, zonas) se aplica en vivo en
   `Taskbar.ApplySettings`, que corre con `Settings.Changed`.
+- **Lecturas avanzadas que se iniciaron solas** (por un medidor, `Sensors.StartQuietly`) se
+  detienen cuando ninguna barra ni widget muestra CPU, GPU o FPS (`Sensors.StopIfUnused`); las
+  pedidas a mano siguen hasta que se detienen en el Hub.
 - **Opciones "Igual que Windows"** (alineación, apps por monitor): leer siempre el valor efectivo
   con `WindowsTaskbarPrefs.Alignment(s)` / `WindowsTaskbarPrefs.AppsMode(s)`, nunca el ajuste crudo.
   Se releen cuando Windows avisa (`SystemEvents.UserPreferenceChanged`).
@@ -205,8 +219,9 @@ tecla Windows, Win+N).
 - Su PC: Windows en inglés (en-US), así que Strata UI se ve en inglés salvo que elija Español en el
   Hub; los títulos de ventana también están traducidos ("Volume", "Start"). Dos monitores de
   2560×1440: el principal de Windows es `\\.\DISPLAY1` (X = 0, 100 %) y el otro está a su
-  izquierda (X negativa, 125 %). Usa las barras en vertical: la principal de Strata UI (con la bandeja)
-  está en el borde derecho del monitor izquierdo. Sus monitores aceptan brillo por DDC/CI.
+  izquierda (X negativa; a veces al 125 %). Cambia seguido su diseño de barras (bordes, segunda
+  barra, verticales): antes de probar, leer `Layouts` en su `settings.json` en vez de suponerlo.
+  Sus monitores aceptan brillo por DDC/CI.
   Es una laptop con batería: a veces está sin los monitores externos (solo la pantalla de
   1920×1080, 100 %, con la barra arriba). El fondo es de Wallpaper Engine (animado; se detiene con
   una ventana maximizada). Puede tener abierto un Strata UI compilado desde otra copia

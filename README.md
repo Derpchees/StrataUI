@@ -36,8 +36,9 @@ and everything goes back to normal.
 
 | | |
 |---|---|
-| 🧭 **Taskbar** | One or two bars per monitor, on any edge, with any size and alignment, and each with its own style: the theme's, fully transparent (text adapts to the wallpaper) or a color of your own. Pinned apps, live window previews, drag to reorder (what you drag follows your pointer), group by app with stacks you can see in any theme, click an open app to minimize it, end task, and web apps (YouTube, WhatsApp Web…) with their own icon. |
-| 🧩 **Bar items** | Choose what each bar shows, in which order and where: start, center or end of the bar (Start, tray, network, Bluetooth, brightness, volume, battery, clock, media, performance meters). Drag them on the bar itself or set them in the Hub, even from one bar to another. |
+| ✏️ **Edit mode** | Lay out every monitor right on the screen: an overlay shows your wallpaper with the bars and widgets as they will look, and you drag items between bars, edges and monitors, add new ones from the library (also from the Hub) or right-click for more. Nothing changes until you apply it; Esc cancels. Right-click the taskbar › *Edit layout…* or run `StrataUI.exe --edit`. |
+| 🧭 **Taskbar** | Up to four bars per monitor, one on each edge (top and bottom bars keep the corners), with any size and alignment, and each with its own style: the theme's, fully transparent (text adapts to the wallpaper) or a color of your own. Pinned apps, live window previews, drag to reorder (what you drag follows your pointer), group by app with stacks you can see in any theme, click an open app to minimize it, end task, and web apps (YouTube, WhatsApp Web…) with their own icon. |
+| 🧩 **Bar items** | Choose what each bar shows, in which order and where: start, center or end of the bar (Start, open apps, tray, network, Bluetooth, brightness, volume, battery, clock, notifications, media, performance meters). Each monitor gets its own Start menu, tray and status items, once per monitor. Drag them in edit mode, on the bar itself or set them in the Hub. |
 | 🚀 **Start menu** | 7 styles (Windows 11, Profile, List, Full screen, Compact, Search only, Icons), resizable. Pinned apps with folders, sections and free placement; pin files, shortcuts and folders (also from the Windows 11 right-click menu); custom icons for any app. Finds Store apps, installed programs and Steam, Epic and GOG games; drag any app onto the taskbar to pin it. Update and shut down / restart when updates are pending. Opens on the monitor your mouse is on. |
 | 🔔 **Notifications** | Its own notification center behind a bell on the taskbar (Win+N), banners on the monitor and corner you choose, Do not disturb, a calendar on the clock, and icons and pictures for every notification (web apps included). Its own notification sound (or one you import), and Windows' per-app sounds muted so you only hear one. |
 | 🔊 **Flyouts** | Sound (output, input, per-app volume, device options), network and Wi-Fi (with a show-password eye), Bluetooth, brightness for every monitor (DDC/CI) with Windows Night light, and battery. |
@@ -69,6 +70,7 @@ dotnet test tests\Strata.Tests -c Release  # tests (xUnit)
 |---|---|
 | *(none)* | Starts Strata UI; if it's already running, opens the Hub. |
 | `--hub <page>` | Opens the Hub on a page: `Dashboard`, `Taskbar`, `Tray`, `Flyouts`, `Start`, `Notifications`, `Appearance`, `Import`, `General`, `Updates`, `Privacy`, `Backup`… |
+| `--edit` | Opens edit mode (in the running instance, or right after starting). |
 | `--exit` | Cleanly closes the running instance (and waits for it). |
 | `--restore-taskbar` | Emergency: shows the Windows taskbar again if Strata UI didn't close properly. |
 

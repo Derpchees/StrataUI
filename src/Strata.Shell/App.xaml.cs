@@ -228,7 +228,7 @@ public partial class App : Application
         OptimizationModule.StartupMaintenance();
         if (Settings.Current.SensorsAtStartup && Settings.Current.Layouts.Values.SelectMany(l => l.Bars).Any(bar =>
                 bar.Items.Contains(BarItem.Fps) || bar.Items.Contains(BarItem.Cpu) || bar.Items.Contains(BarItem.Gpu)))
-            _ = Sensors.StartAsync();
+            _ = Sensors.StartAsync(automatic: true);
         _ = Task.Run(AutoStart.Migrate);
         // El menú Inicio, armado una vez cuando ya cargó el catálogo de apps: así la primera apertura es rápida.
         _ = Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
@@ -553,6 +553,8 @@ public partial class App : Application
             OpenTaskbars();
         }
         // El tamaño de cada barra (por monitor) lo ajusta ella misma en ApplySettings.
+        Sensors.StopIfUnused(_taskbars.Any(t => t.Has(BarItem.Cpu) || t.Has(BarItem.Gpu) || t.Has(BarItem.Fps))
+                             || Settings.Current.Widgets.Any(w => w.Kind is WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps));
     }
 
     /// <summary>

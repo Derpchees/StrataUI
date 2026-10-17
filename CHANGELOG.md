@@ -6,6 +6,34 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [2.6.0] - 2026-10-16
+
+### Añadido
+- **Modo edición**: el diseño de cada monitor se arma sobre la pantalla misma. Una capa tapa
+  todo con el fondo de pantalla y muestra las barras y los widgets como se van a ver; los
+  elementos se arrastran entre barras, bordes y monitores, se agregan desde la biblioteca (también
+  desde el Hub, que queda encima) o con clic derecho, y los widgets se mueven, agregan, cambian de
+  tamaño o se quitan ahí mismo. Nada cambia hasta **Aplicar**; Esc o **Cancelar** lo descartan. Se
+  abre con clic derecho en la barra › *Editar diseño…*, desde Hub › Barra de tareas o con
+  `StrataUI.exe --edit`.
+- **Hasta cuatro barras por monitor**, una en cada borde: las de arriba y abajo ocupan todo el
+  ancho y las de los lados van entre ellas. Un monitor también puede quedar sin barra.
+- **Las apps abiertas son un elemento** como los demás: una barra puede llevar solo el área de
+  estado, solo Inicio o solo las apps.
+- **Un menú Inicio, una bandeja y un área de estado por monitor**: cada monitor lleva cada
+  elemento una vez y la bandeja puede ir en varios (es la misma en todos).
+
+### Cambiado
+- Hub › Barra de tareas: en lugar de posición y segunda barra, qué bordes tienen barra y qué lleva
+  cada una (activar un elemento en una barra lo trae de la otra del mismo monitor).
+- El diseño de antes (posición, segunda barra, monitores sin barra y los elementos y zonas de cada
+  barra) pasa solo al nuevo y se ve igual, también el de los monitores desconectados.
+- Las lecturas avanzadas leen las temperaturas cada 2 s (los FPS siguen cada segundo) y, si se
+  iniciaron solas por un medidor, se detienen cuando ninguna barra ni widget muestra CPU, GPU o FPS.
+
+### Corregido
+- Una barra cerrada (al recrearse) seguía atendiendo los cambios de los íconos ocultos de la bandeja.
+
 ## [2.5.0] - 2026-10-16
 
 ### Añadido

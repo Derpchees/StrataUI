@@ -209,8 +209,11 @@ public static class Sensors
     /// vez (o tras actualizar Strata UI) pide UAC para crearla. Si la tarea no se puede usar, se lanza
     /// elevado directamente (UAC cada vez). Devuelve false si se canceló o falló.
     /// </summary>
-    public static async Task<bool> StartAsync()
+    /// <param name="automatic">Las inicia un medidor o "Iniciarlas al abrir Strata UI" (se detienen
+    /// solas si ya nadie las usa); a mano o por una acción, siguen hasta detenerlas.</param>
+    public static async Task<bool> StartAsync(bool automatic = false)
     {
+        _automatic = automatic;
         if (Running || Starting)
             return Running;
         Starting = true;
@@ -248,9 +251,13 @@ public static class Sensors
 
     private static bool _quietTried;
 
+    /// <summary>Se iniciaron solas (por un medidor), no a pedido del usuario: se detienen si ya nadie las usa.</summary>
+    private static bool _automatic;
+
     /// <summary>
     /// Inicia las lecturas solo si el permiso ya está dado (la tarea existe y está al día): nunca
-    /// pregunta. Lo usan las barras con medidores al abrir Strata UI. Una vez por sesión.
+    /// pregunta. Lo usan las barras y los widgets con medidores. Una vez por sesión (o hasta que
+    /// <see cref="StopIfUnused"/> las detenga).
     /// </summary>
     public static async void StartQuietly()
     {
@@ -258,7 +265,21 @@ public static class Sensors
             return;
         _quietTried = true;
         if (await Task.Run(SensorsTask.IsReady))
-            await StartAsync();
+            await StartAsync(automatic: true);
+    }
+
+    /// <summary>
+    /// Ninguna barra ni widget muestra CPU, GPU o FPS: si las lecturas se iniciaron solas, el proceso
+    /// elevado se cierra (deja de leer el hardware y los eventos de la GPU). Vuelven a iniciarse
+    /// solas al agregar un medidor.
+    /// </summary>
+    public static void StopIfUnused(bool used)
+    {
+        if (used || !Running || !_automatic || !_runs.IsEmpty)
+            return;
+        Log.Info("Lecturas avanzadas: ningún medidor las usa; se detienen");
+        Close();
+        _quietTried = false;
     }
 
     private static bool Fail(string message)
@@ -520,7 +541,9 @@ public static class Sensors
                 (cpu, gpu) = temperatures.Read();
                 if (reading.ElapsedMilliseconds > 2000)
                     Log.Info($"Lecturas avanzadas: leer las temperaturas tardó {reading.ElapsedMilliseconds} ms");
-                Thread.Sleep(1000);
+                // Cada 2 s: las temperaturas cambian despacio y leer el hardware (sobre todo la placa) es
+                // lo que más consume de este proceso. Los FPS siguen saliendo cada segundo.
+                Thread.Sleep(2000);
             }
         }) { IsBackground = true }.Start();
 
