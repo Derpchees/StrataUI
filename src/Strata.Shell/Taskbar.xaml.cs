@@ -764,7 +764,7 @@ public partial class Taskbar : AppBarWindow
             return;
         NetDownText.Text = "↓ " + NetSpeed.Format(NetSpeed.DownBytesPerSecond, compact: IsVertical);
         NetUpText.Text = "↑ " + NetSpeed.Format(NetSpeed.UpBytesPerSecond, compact: IsVertical);
-        NetSpeedButton.ToolTip = NetSpeed.Description();
+        NetSpeedButton.ToolTip = NetSpeed.Description() + "\n" + Loc.T("Clic para la prueba de velocidad");
     }
 
     private FrameworkElement? Element(BarItem item) => item switch

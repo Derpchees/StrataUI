@@ -996,5 +996,11 @@
   "Mide la bajada, la subida y el ping de tu conexión.": "Mesure la réception, l'envoi et le ping de votre connexion.",
   "Probar velocidad": "Tester la vitesse",
   "Prueba de velocidad terminada": "Test de vitesse terminé",
-  "Bajada {0} · Subida {1} · Ping {2}": "Réception {0} · Envoi {1} · Ping {2}"
+  "Bajada {0} · Subida {1} · Ping {2}": "Réception {0} · Envoi {1} · Ping {2}",
+  "Cancelar la prueba": "Annuler le test",
+  "Prueba: ping": "Test : ping",
+  "Prueba: bajada": "Test : réception",
+  "Prueba: subida": "Test : envoi",
+  "Prueba de velocidad": "Test de vitesse",
+  "Clic para la prueba de velocidad": "Cliquez pour le test de vitesse"
 }

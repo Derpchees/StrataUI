@@ -996,5 +996,11 @@
   "Mide la bajada, la subida y el ping de tu conexión.": "Measures your connection's download, upload and ping.",
   "Probar velocidad": "Test speed",
   "Prueba de velocidad terminada": "Speed test finished",
-  "Bajada {0} · Subida {1} · Ping {2}": "Download {0} · Upload {1} · Ping {2}"
+  "Bajada {0} · Subida {1} · Ping {2}": "Download {0} · Upload {1} · Ping {2}",
+  "Cancelar la prueba": "Cancel the test",
+  "Prueba: ping": "Test: ping",
+  "Prueba: bajada": "Test: download",
+  "Prueba: subida": "Test: upload",
+  "Prueba de velocidad": "Speed test",
+  "Clic para la prueba de velocidad": "Click for the speed test"
 }

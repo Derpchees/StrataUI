@@ -53,6 +53,7 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
             {
                 NetSpeed.Subscribe();
                 NetSpeed.Changed += Update;
+                SpeedTest.Changed += Update;
                 Update();
                 return;
             }
@@ -69,6 +70,7 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
             {
                 NetSpeed.Unsubscribe();
                 NetSpeed.Changed -= Update;
+                SpeedTest.Changed -= Update;
                 return;
             }
             SystemMonitor.Unsubscribe();
@@ -90,11 +92,47 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
         _detail.MaxHeight = _detail.FontSize * 2.8;
     }
 
+    /// <summary>
+    /// Mientras corre la prueba de velocidad (y medio minuto después), el widget la muestra en vez
+    /// de la velocidad de ahora: lo que va midiendo y, al final, el resultado.
+    /// </summary>
+    private bool UpdateSpeedTest()
+    {
+        var phase = SpeedTest.Current;
+        var last = Settings.Current.LastSpeedTest;
+        if (SpeedTest.Running)
+        {
+            bool ping = phase == SpeedTest.Phase.Ping;
+            _number.Text = Math.Round(SpeedTest.LiveValue).ToString();
+            _unit.Text = ping ? " ms" : " Mbps";
+            _label.Text = phase switch
+            {
+                SpeedTest.Phase.Ping => Loc.T("Prueba: ping"),
+                SpeedTest.Phase.Download => Loc.T("Prueba: bajada"),
+                _ => Loc.T("Prueba: subida"),
+            };
+            _detail.Text = $"{Math.Round(SpeedTest.Progress * 100)} %";
+            return true;
+        }
+        if (phase == SpeedTest.Phase.Done && last != null && DateTime.Now - last.When < TimeSpan.FromSeconds(30))
+        {
+            _number.Text = Math.Round(last.DownMbps).ToString();
+            _unit.Text = " Mbps";
+            _label.Text = "↓ " + Loc.T("Prueba de velocidad");
+            _detail.Text = "↑ " + SpeedTest.Mbps(last.UpMbps) + " · " + SpeedTest.Ms(last.PingMs);
+            return true;
+        }
+        return false;
+    }
+
     private void Update()
     {
+        if (_kind == WidgetKind.NetSpeed && UpdateSpeedTest())
+            return;
         if (_kind == WidgetKind.NetSpeed)
         {
             // "12.4" grande con "MB/s" al lado; debajo, la subida.
+            _label.Text = "↓ " + Loc.T("Internet");
             string down = NetSpeed.Format(NetSpeed.DownBytesPerSecond);
             int space = down.LastIndexOf(' ');
             _number.Text = space > 0 ? down[..space] : down;

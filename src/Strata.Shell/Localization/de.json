@@ -996,5 +996,11 @@
   "Mide la bajada, la subida y el ping de tu conexión.": "Misst Download, Upload und Ping deiner Verbindung.",
   "Probar velocidad": "Geschwindigkeit testen",
   "Prueba de velocidad terminada": "Geschwindigkeitstest abgeschlossen",
-  "Bajada {0} · Subida {1} · Ping {2}": "Download {0} · Upload {1} · Ping {2}"
+  "Bajada {0} · Subida {1} · Ping {2}": "Download {0} · Upload {1} · Ping {2}",
+  "Cancelar la prueba": "Test abbrechen",
+  "Prueba: ping": "Test: Ping",
+  "Prueba: bajada": "Test: Download",
+  "Prueba: subida": "Test: Upload",
+  "Prueba de velocidad": "Geschwindigkeitstest",
+  "Clic para la prueba de velocidad": "Klicken für den Geschwindigkeitstest"
 }

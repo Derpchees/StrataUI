@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -193,6 +193,26 @@ public sealed class WidgetWindow : Window
     private ContextMenu BuildMenu()
     {
         var menu = new ContextMenu();
+        if (Config.Kind == WidgetKind.NetSpeed)
+        {
+            // La prueba de velocidad también desde el widget (se ve en él mientras corre).
+            var test = new MenuItem
+            {
+                Header = SpeedTest.Running ? Loc.T("Cancelar la prueba") : Loc.T("Probar velocidad"),
+                FontWeight = FontWeights.SemiBold,
+            };
+            test.Click += (_, _) =>
+            {
+                if (SpeedTest.Running)
+                    SpeedTest.Cancel();
+                else
+                    SpeedTest.Start();
+            };
+            // El menú se arma una vez: el texto se pone al abrirlo.
+            menu.Opened += (_, _) => test.Header = SpeedTest.Running ? Loc.T("Cancelar la prueba") : Loc.T("Probar velocidad");
+            menu.Items.Add(test);
+            menu.Items.Add(new Separator());
+        }
         var size = new MenuItem { Header = Loc.T("Tamaño") };
         foreach (var (name, scale) in new[] { (Loc.T("Chico"), 0.75), (Loc.T("Mediano"), 1.0), (Loc.T("Grande"), 1.5) })
         {

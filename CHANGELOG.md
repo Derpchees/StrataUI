@@ -6,6 +6,12 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.4.0] - 2026-10-17
+
+### Añadido
+- **Prueba de velocidad desde el widget** (clic derecho › Probar velocidad): el widget muestra lo que va
+  midiendo y, al terminar, el resultado. El medidor de la barra dice en su tooltip que el clic abre la prueba.
+
 ## [3.3.0] - 2026-10-17
 
 ### Añadido
