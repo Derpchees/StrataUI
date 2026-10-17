@@ -61,10 +61,33 @@ public sealed class PinEntry
 public enum StartIconKind { Strata, Windows, WindowsMono, Circle, Dot, Grid, Search }
 
 /// <summary>
-/// Lo que puede llevar una barra además de las ventanas abiertas. Cada barra tiene su lista, en
-/// orden (Hub › Elementos de la barra); Inicio va siempre delante de las ventanas.
+/// Lo que puede llevar una barra. Cada barra tiene su lista, en orden (modo edición o Hub ›
+/// Barra de tareas); Inicio va siempre delante de las apps abiertas (<see cref="Apps"/>), que
+/// ocupan el espacio libre. Cada monitor lleva cada elemento una sola vez.
 /// </summary>
-public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock, Notifications }
+public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock, Notifications, Apps }
+
+/// <summary>Una barra de un monitor: su borde, sus elementos en orden y la zona de cada uno.</summary>
+public sealed class BarConfig
+{
+    public TaskbarPosition Edge { get; set; }
+    public List<BarItem> Items { get; set; } = new();
+    /// <summary>Zona de cada elemento a lo largo de la barra; sin entrada, al final.</summary>
+    public Dictionary<BarItem, BarZone> Zones { get; set; } = new();
+
+    public BarConfig Clone() => new() { Edge = Edge, Items = [.. Items], Zones = new(Zones) };
+}
+
+/// <summary>
+/// Diseño de un monitor (modo edición): sus barras, de cero a cuatro, una por borde. Las de arriba
+/// y abajo ocupan todo el ancho; las de los lados van entre ellas.
+/// </summary>
+public sealed class ScreenLayout
+{
+    public List<BarConfig> Bars { get; set; } = new();
+
+    public ScreenLayout Clone() => new() { Bars = Bars.Select(b => b.Clone()).ToList() };
+}
 
 /// <summary>Widgets de escritorio (ver Services/Widgets).</summary>
 public enum WidgetKind { Clock, Visualizer, Custom, Cpu, Gpu, Fps }
@@ -88,6 +111,8 @@ public sealed class WidgetConfig
     public bool Locked { get; set; }
     /// <summary>Widget importado (<see cref="WidgetKind.Custom"/>): el ID de su módulo.</summary>
     public string? Module { get; set; }
+
+    public WidgetConfig Clone() => (WidgetConfig)MemberwiseClone();
 }
 
 /// <summary>
@@ -117,42 +142,29 @@ public sealed class StrataSettings
     /// <summary>Red, Bluetooth, sonido, batería y reloj en todas las barras (false: solo en la principal).</summary>
     public bool StatusOnAllTaskbars { get; set; } = true;
     public TaskbarAppsMode TaskbarAppsMode { get; set; } = TaskbarAppsMode.Windows;
-    /// <summary>Posición de la barra en cada monitor (clave: nombre del dispositivo, "\\.\DISPLAY1"); abajo si no está.</summary>
-    public Dictionary<string, TaskbarPosition> TaskbarPositions { get; set; } = new();
-    /// <summary>Monitores sin barra de Strata UI (nunca el principal: ahí va la bandeja).</summary>
-    public List<string> TaskbarHiddenScreens { get; set; } = new();
 
-    public TaskbarPosition PositionOf(string screen) =>
-        TaskbarPositions.TryGetValue(screen, out var position) ? position : TaskbarPosition.Bottom;
-
-    /// <summary>Segunda barra de cada monitor (clave: nombre del dispositivo); ninguna si no está.</summary>
-    public Dictionary<string, SecondBarContent> SecondTaskbars { get; set; } = new();
-
-    public SecondBarContent SecondBarOf(string screen) =>
-        SecondTaskbars.TryGetValue(screen, out var content) ? content : SecondBarContent.None;
-
-    /// <summary>Borde opuesto (donde va la segunda barra).</summary>
-    public static TaskbarPosition Opposite(TaskbarPosition position) => position switch
-    {
-        TaskbarPosition.Top => TaskbarPosition.Bottom,
-        TaskbarPosition.Left => TaskbarPosition.Right,
-        TaskbarPosition.Right => TaskbarPosition.Left,
-        _ => TaskbarPosition.Top,
-    };
     /// <summary>
-    /// Elementos de cada barra en orden (clave: <see cref="BarLayout.Id"/>, "\\.\DISPLAY1|1"). Una
-    /// barra sin entrada usa los de siempre (<see cref="BarLayout.Defaults"/>).
+    /// Diseño de cada monitor (clave: nombre del dispositivo, "\\.\DISPLAY1"): qué barras tiene y
+    /// qué lleva cada una. Un monitor sin entrada recibe el de siempre al abrir las barras
+    /// (<see cref="BarLayout.DefaultLayout"/>); con la lista de barras vacía, no tiene barra.
     /// </summary>
-    public Dictionary<string, List<BarItem>> BarItems { get; set; } = new();
+    public Dictionary<string, ScreenLayout> Layouts { get; set; } = new();
+
+    // Diseño de las versiones anteriores a la 2.6 (posición, segunda barra, monitores sin barra y
+    // elementos por barra): solo se leen para pasarlos a Layouts (ver LegacyLayouts) y no se guardan.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, TaskbarPosition>? TaskbarPositions { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? TaskbarHiddenScreens { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, SecondBarContent>? SecondTaskbars { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, List<BarItem>>? BarItems { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, Dictionary<BarItem, BarZone>>? BarItemZones { get; set; }
 
     /// <summary>Ya se agregó la campana de notificaciones junto al reloj de las barras de antes (una sola vez).</summary>
     public bool NotificationBellAdded { get; set; }
-
-    /// <summary>
-    /// Zona de la barra de cada elemento (misma clave que <see cref="BarItems"/>); sin entrada, al
-    /// final como siempre. Inicio va siempre con las ventanas.
-    /// </summary>
-    public Dictionary<string, Dictionary<BarItem, BarZone>> BarItemZones { get; set; } = new();
 
     /// <summary>
     /// Valores del perfil global de NVIDIA antes de cambiarlos desde Strata UI (id → valor; null = no
@@ -488,6 +500,8 @@ public static class Settings
                 (screen.BarStyle, screen.BarColor) = (BarStyle.Color, barColor);
             s.CustomBarColor = null;
         }
+        // Posición, segunda barra y elementos por barra eran ajustes sueltos: ahora un diseño por monitor.
+        LegacyLayouts.Convert(s, LegacyLayouts.CurrentMainDevice(s));
         return s;
     }
 

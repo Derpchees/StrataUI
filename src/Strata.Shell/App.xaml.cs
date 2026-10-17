@@ -19,6 +19,9 @@ public partial class App : Application
     private const string OpenHubEventName = @"Local\StrataUI.Shell.OpenHub";
     private const string RestoreArg = "--restore-taskbar";
     private const string ExitArg = "--exit";
+    private const string EditArg = "--edit";
+    /// <summary>Pedido de otra instancia (en hub-request.txt): abrir el modo edición en lugar del Hub.</summary>
+    private const string EditRequest = "::edit";
 
     private static readonly string HubRequestPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrataUI", "hub-request.txt");
@@ -146,12 +149,14 @@ public partial class App : Application
             // Abrir Strata UI otra vez mientras ya corre muestra el Hub de la instancia existente.
             if (EventWaitHandle.TryOpenExisting(OpenHubEventName, out var openHub))
             {
-                // "--hub Privacy" abre directamente esa página del Hub.
+                // "--hub Privacy" abre directamente esa página del Hub; "--edit", el modo edición.
                 int hubArg = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
-                if (hubArg >= 0 && hubArg + 1 < e.Args.Length)
+                string? request = e.Args.Contains(EditArg, StringComparer.OrdinalIgnoreCase) ? EditRequest
+                    : hubArg >= 0 && hubArg + 1 < e.Args.Length ? e.Args[hubArg + 1] : null;
+                if (request != null)
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(HubRequestPath)!);
-                    File.WriteAllText(HubRequestPath, e.Args[hubArg + 1]);
+                    File.WriteAllText(HubRequestPath, request);
                 }
                 // Este proceso lo lanzó el usuario, así que puede ceder el permiso de primer plano.
                 AllowSetForegroundWindow(AsfwAny);
@@ -221,8 +226,8 @@ public partial class App : Application
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
         OptimizationModule.StartupMaintenance();
-        if (Settings.Current.SensorsAtStartup && Settings.Current.BarItems.Values.Any(items =>
-                items.Contains(BarItem.Fps) || items.Contains(BarItem.Cpu) || items.Contains(BarItem.Gpu)))
+        if (Settings.Current.SensorsAtStartup && Settings.Current.Layouts.Values.SelectMany(l => l.Bars).Any(bar =>
+                bar.Items.Contains(BarItem.Fps) || bar.Items.Contains(BarItem.Cpu) || bar.Items.Contains(BarItem.Gpu)))
             _ = Sensors.StartAsync();
         _ = Task.Run(AutoStart.Migrate);
         // El menú Inicio, armado una vez cuando ya cargó el catálogo de apps: así la primera apertura es rápida.
@@ -246,6 +251,9 @@ public partial class App : Application
             if (hubIndex + 1 < e.Args.Length)
                 _hub?.NavigateTo(e.Args[hubIndex + 1]);
         }
+        // Con las barras ya ubicadas (su tamaño define el escritorio que se dibuja).
+        if (e.Args.Contains(EditArg, StringComparer.OrdinalIgnoreCase))
+            Dispatcher.BeginInvoke(EditMode.EditSession.Start, DispatcherPriority.ApplicationIdle);
 
         // ManagedShell termina de inicializar los estados de las ventanas de forma asíncrona.
         var activeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -301,73 +309,68 @@ public partial class App : Application
         // Antes de leer nada por monitor: si Windows cambió los nombres, los ajustes siguen a su monitor.
         var present = MonitorKeys.Present();
         _monitors = string.Join(";", present.Select(p => p.Device + "=" + p.Id).Order());
-        if (MonitorKeys.Reconcile(Settings.Current, present))
-        {
+        var s = Settings.Current;
+        bool changed = MonitorKeys.Reconcile(s, present);
+        if (changed)
             Log.Info("Monitores: " + _monitors);
-            Settings.Update(_ => { });
-        }
-        if (BarLayout.AddNotificationBell(Settings.Current))
-            Settings.Save();
+        changed |= BarLayout.AddNotificationBell(s);
 
         var screens = AppBarScreen.FromAllScreens();
         _screenCount = screens.Count;
-        _barLayout = BarLayoutKey();
         bool multiMonitor = screens.Count > 1;
-        var s = Settings.Current;
-
-        // Las barras del monitor principal de Strata UI siempre existen; las demás pueden ocultarse.
         string main = MainScreenDevice(screens.Select(sc => (sc.DeviceName, sc.Primary)));
-        var plan = new List<(AppBarScreen Screen, TaskbarPosition Edge, BarRole Role, string Id)>();
+
+        // Cada monitor conectado queda con su diseño escrito (lo de siempre si nunca se configuró):
+        // así el modo edición, el Hub y los arrastres en la barra trabajan sobre la misma lista.
+        foreach (var screen in screens.Where(sc => !s.Layouts.ContainsKey(sc.DeviceName)))
+        {
+            s.Layouts[screen.DeviceName] = BarLayout.DefaultLayout(screen.DeviceName == main, s);
+            changed = true;
+        }
+        if (changed)
+            Settings.Update(_ => { });
+        _barLayout = BarLayoutKey();
+
+        // El monitor principal primero y, en cada monitor, arriba y abajo antes que los lados: las
+        // barras horizontales se quedan con las esquinas.
+        var plan = new List<(AppBarScreen Screen, BarConfig Bar)>();
         foreach (var screen in screens.OrderByDescending(sc => sc.DeviceName == main))
         {
-            bool isMain = screen.DeviceName == main;
-            if (!isMain && s.TaskbarHiddenScreens.Contains(screen.DeviceName))
-                continue;
-            var position = s.PositionOf(screen.DeviceName);
-            foreach (var (edge, role) in BarsFor(position, s.SecondBarOf(screen.DeviceName), isMain))
-                plan.Add((screen, edge, role, BarLayout.Id(screen.DeviceName, second: edge != position)));
+            var layout = s.Layouts[screen.DeviceName];
+            BarLayout.Normalize(layout);
+            foreach (var bar in BarLayout.InCreationOrder(layout))
+                plan.Add((screen, bar));
         }
 
-        // La bandeja va en la barra que la lleve (Hub › Elementos de la barra) y esa se crea
-        // primero, para que reciba los íconos.
-        string trayBar = BarLayout.TrayBar(plan.Select(p => (p.Id, p.Role)).ToList(), s);
-        foreach (var (screen, edge, role, id) in plan.OrderByDescending(p => p.Id == trayBar))
+        // La bandeja es la misma en cada barra que la lleve; la primera (la del monitor principal, si
+        // la tiene) es la que se informa a las apps que preguntan dónde está.
+        bool hostAssigned = false;
+        foreach (var (screen, bar) in plan)
         {
-            var taskbar = new Taskbar(_shell!, screen, multiMonitor, edge, role with { HasTray = id == trayBar }, id, role);
+            bool tray = bar.Items.Contains(BarItem.Tray);
+            var taskbar = new Taskbar(_shell!, screen, multiMonitor, bar.Edge, BarLayout.Id(screen.DeviceName, bar.Edge),
+                                      isMainScreen: screen.DeviceName == main, hasTray: tray, isTrayHost: tray && !hostAssigned);
+            hostAssigned |= tray;
             taskbar.Show();
             _taskbars.Add(taskbar);
         }
-        // Ya se sabe qué monitores quedaron sin barra: la principal muestra también sus ventanas.
+        _appsHost = _taskbars.FirstOrDefault(t => t.IsMainScreen && t.Has(BarItem.Apps))?.Device
+                    ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Apps))?.Device;
+        // Ya se sabe qué monitores quedaron sin apps abiertas: la barra principal muestra también sus ventanas.
         foreach (var taskbar in _taskbars)
             taskbar.RefreshTasks();
     }
 
-    /// <summary>
-    /// Barras de un monitor. Con dos se reparten: la segunda (borde opuesto) lleva lo elegido y la
-    /// primera el resto ("Completa": las dos todo). La bandeja va con el área de estado del monitor
-    /// principal (en la primera si las dos la tienen), y esa barra se crea primero.
-    /// </summary>
-    internal static List<(TaskbarPosition Edge, BarRole Role)> BarsFor(TaskbarPosition position, SecondBarContent second, bool isMain)
-    {
-        var primary = new BarRole(
-            HasTray: isMain && second != SecondBarContent.Status,
-            IsMainScreen: isMain,
-            ShowsApps: second != SecondBarContent.Apps,
-            ShowsStatus: second != SecondBarContent.Status);
-        var bars = new List<(TaskbarPosition, BarRole)> { (position, primary) };
-        if (second == SecondBarContent.None)
-            return bars;
-        var secondRole = new BarRole(
-            HasTray: isMain && second == SecondBarContent.Status,
-            IsMainScreen: isMain,
-            ShowsApps: second is SecondBarContent.Apps or SecondBarContent.Full,
-            ShowsStatus: second is SecondBarContent.Status or SecondBarContent.Full);
-        bars.Insert(secondRole.HasTray ? 0 : 1, (StrataSettings.Opposite(position), secondRole));
-        return bars;
-    }
+    private string? _appsHost;
 
-    /// <summary>Hay una barra de Strata UI en ese monitor.</summary>
-    public bool HasTaskbarOn(IntPtr hMonitor) => _taskbars.Any(t => t.Screen.HMonitor == hMonitor);
+    /// <summary>
+    /// Monitor cuyas barras muestran también las ventanas de los monitores sin apps abiertas: el
+    /// principal de Strata UI o, si no las lleva, el primero que las tenga.
+    /// </summary>
+    public string? AppsHostDevice => _appsHost;
+
+    /// <summary>Hay una barra de Strata UI con las apps abiertas en ese monitor.</summary>
+    public bool HasTaskbarOn(IntPtr hMonitor) => _taskbars.Any(t => t.Screen.HMonitor == hMonitor && t.Has(BarItem.Apps));
 
     /// <summary>
     /// Monitor principal de Strata UI: el elegido en el Hub si sigue conectado; si no, el de Windows.
@@ -381,18 +384,18 @@ public partial class App : Application
         return list.FirstOrDefault(sc => sc.Primary).Device ?? list.FirstOrDefault().Device ?? "";
     }
 
-    /// <summary>Lo que obliga a recrear las barras: posición y segunda barra por monitor, monitores sin barra y principal.</summary>
+    /// <summary>
+    /// Lo que obliga a recrear las barras: qué barras tiene cada monitor (y cuáles llevan la bandeja
+    /// o las apps) y el monitor principal.
+    /// </summary>
     private static string BarLayoutKey()
     {
         var s = Settings.Current;
-        return string.Join(";", s.TaskbarPositions.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
-               + "|" + string.Join(";", s.SecondTaskbars.OrderBy(p => p.Key).Select(p => $"{p.Key}={p.Value}"))
-               + "|" + string.Join(";", s.TaskbarHiddenScreens.Order())
+        return BarLayout.StructureKey(s)
                + "|" + s.TaskbarMainScreen
                // La barra transparente también se aplica recreándolas: cambiar en vivo de Acrylic a
                // transparente deja negra la parte transparente (DWM no suelta el material anterior).
-               + "|" + string.Join(";", ScreenDevices().Select(d => d + "=" + ThemeManager.ClearBarFor(d)))
-               + "|" + BarLayout.TrayKey(s);
+               + "|" + string.Join(";", ScreenDevices().Select(d => d + "=" + ThemeManager.ClearBarFor(d)));
     }
 
     private static IEnumerable<string> ScreenDevices() =>
@@ -428,6 +431,7 @@ public partial class App : Application
             if (_exiting || AppBarScreen.FromAllScreens().Count == _screenCount && monitors == _monitors)
                 return;
             Log.Info("Cambiaron los monitores; recreando barras");
+            EditMode.EditSession.Cancel(); // sus capas eran de los monitores de antes
             CloseTaskbars();
             OpenTaskbars();
             _ = Services.Brightness.BrightnessService.RefreshAsync();
@@ -448,6 +452,7 @@ public partial class App : Application
         _shell.ExplorerHelper.SetTaskbarVisibility(SwpHideWindow);
         _shell.ExplorerHelper.SetSecondaryTaskbarVisibility(SwpHideWindow);
         Flyouts.FlyoutManager.CloseAll();
+        EditMode.EditSession.Cancel();
         CloseTaskbars();
         OpenTaskbars();
     }
@@ -505,20 +510,22 @@ public partial class App : Application
 
     /// <summary>Barra con el botón Inicio (tecla Windows, Win+X): la del monitor principal si lo lleva.</summary>
     private Taskbar? AppsTaskbar =>
-        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Start))
+        _taskbars.FirstOrDefault(t => t.IsMainScreen && t.Has(BarItem.Start))
         ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Start))
-        ?? _taskbars.FirstOrDefault(t => t.IsMain);
+        ?? _taskbars.FirstOrDefault(t => t.IsMain)
+        ?? _taskbars.FirstOrDefault();
 
     /// <summary>Barra junto a la que aparecen los avisos en pantalla (volumen, brillo, Bloq Mayús…).</summary>
     public Taskbar? OsdTaskbar => StatusTaskbar ?? AppsTaskbar;
 
     /// <summary>Barra con la campana o el reloj (Win+N): la del monitor principal si la lleva.</summary>
     private Taskbar? StatusTaskbar =>
-        _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Notifications))
+        _taskbars.FirstOrDefault(t => t.IsMainScreen && t.Has(BarItem.Notifications))
         ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Notifications))
-        ?? _taskbars.FirstOrDefault(t => t.Role.IsMainScreen && t.Has(BarItem.Clock))
+        ?? _taskbars.FirstOrDefault(t => t.IsMainScreen && t.Has(BarItem.Clock))
         ?? _taskbars.FirstOrDefault(t => t.Has(BarItem.Clock))
-        ?? _taskbars.FirstOrDefault(t => t.IsMain);
+        ?? _taskbars.FirstOrDefault(t => t.IsMain)
+        ?? _taskbars.FirstOrDefault();
 
     private void OnSettingsChanged()
     {
@@ -590,6 +597,22 @@ public partial class App : Application
     {
         if (_exiting)
             return;
+        // Otra instancia pidió el modo edición (StrataUI.exe --edit).
+        if (File.Exists(HubRequestPath))
+        {
+            try
+            {
+                if (File.ReadAllText(HubRequestPath).Trim() == EditRequest)
+                {
+                    File.Delete(HubRequestPath);
+                    EditMode.EditSession.Start();
+                    return;
+                }
+            }
+            catch (IOException)
+            {
+            }
+        }
         if (_hub is null)
         {
             _hub = new Hub.HubWindow();
@@ -634,6 +657,7 @@ public partial class App : Application
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
+        EditMode.EditSession.Cancel();
         TrayOwnership.Stop();
         ExplorerWatch.Stop();
         TrayMemory.Flush();

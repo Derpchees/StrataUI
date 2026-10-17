@@ -10,10 +10,11 @@ public sealed class MonitorKeysTests
 
     private static void Configure(StrataSettings s, string device, TaskbarPosition position, int height)
     {
-        s.TaskbarPositions[device] = position;
+        s.Layouts[device] = new ScreenLayout { Bars = [new BarConfig { Edge = position, Items = [BarItem.Start, BarItem.Apps, BarItem.Clock] }] };
         s.Screens[device] = new ScreenSettings { TaskbarHeight = height };
-        s.BarItems[device + "|1"] = [BarItem.Start, BarItem.Clock];
     }
+
+    private static TaskbarPosition EdgeOf(StrataSettings s, string device) => s.Layouts[device].Bars[0].Edge;
 
     [Fact]
     public void Laptop_and_external_monitor_sharing_DISPLAY1_keep_their_own_settings()
@@ -31,14 +32,14 @@ public sealed class MonitorKeysTests
 
         // Sin monitores otra vez: la laptop vuelve a DISPLAY1 con lo suyo.
         Assert.True(MonitorKeys.Reconcile(s, [(D1, Laptop)]));
-        Assert.Equal(TaskbarPosition.Top, s.PositionOf(D1));
+        Assert.Equal(TaskbarPosition.Top, EdgeOf(s, D1));
         Assert.Equal(41, s.Screens[D1].TaskbarHeight);
 
         // Y con los monitores, cada uno recupera lo suyo.
         Assert.True(MonitorKeys.Reconcile(s, [(D1, Right), (D2, Left)]));
-        Assert.Equal(TaskbarPosition.Left, s.PositionOf(D1));
+        Assert.Equal(TaskbarPosition.Left, EdgeOf(s, D1));
         Assert.Equal(42, s.Screens[D1].TaskbarHeight);
-        Assert.Equal(TaskbarPosition.Right, s.PositionOf(D2));
+        Assert.Equal(TaskbarPosition.Right, EdgeOf(s, D2));
         Assert.Equal(43, s.Screens[D2].TaskbarHeight);
     }
 
@@ -49,16 +50,16 @@ public sealed class MonitorKeysTests
         Configure(s, D1, TaskbarPosition.Left, 44);
         Configure(s, D2, TaskbarPosition.Right, 45);
         s.TaskbarMainScreen = D2;
-        s.BarItems[D2 + "|2"] = [BarItem.Tray];
+        s.Layouts[D2].Bars.Add(new BarConfig { Edge = TaskbarPosition.Top, Items = [BarItem.Tray] });
         MonitorKeys.Reconcile(s, [(D1, Left), (D2, Right)]);
 
         Assert.True(MonitorKeys.Reconcile(s, [(D1, Right), (D2, Left)]));
-        Assert.Equal(TaskbarPosition.Right, s.PositionOf(D1));
+        Assert.Equal(TaskbarPosition.Right, EdgeOf(s, D1));
         Assert.Equal(45, s.Screens[D1].TaskbarHeight);
-        Assert.Equal(TaskbarPosition.Left, s.PositionOf(D2));
+        Assert.Equal(TaskbarPosition.Left, EdgeOf(s, D2));
         Assert.Equal(D1, s.TaskbarMainScreen);
-        Assert.Equal([BarItem.Tray], s.BarItems[D1 + "|2"]);
-        Assert.False(s.BarItems.ContainsKey(D2 + "|2"));
+        Assert.Contains(s.Layouts[D1].Bars, b => b.Edge == TaskbarPosition.Top && b.Items.Contains(BarItem.Tray));
+        Assert.DoesNotContain(s.Layouts[D2].Bars, b => b.Items.Contains(BarItem.Tray));
     }
 
     [Fact]
@@ -82,5 +83,22 @@ public sealed class MonitorKeysTests
         Configure(s, D1, TaskbarPosition.Top, 44);
         Assert.False(MonitorKeys.Reconcile(s, [(D1, "")]));
         Assert.Equal(44, s.Screens[D1].TaskbarHeight);
+    }
+
+    [Fact]
+    public void A_monitor_without_bars_stays_without_bars_when_it_comes_back()
+    {
+        var s = new StrataSettings();
+        Configure(s, D1, TaskbarPosition.Bottom, 44);
+        s.Layouts[D2] = new ScreenLayout();
+        MonitorKeys.Reconcile(s, [(D1, Right), (D2, Left)]);
+        MonitorKeys.Reconcile(s, [(D1, Right)]);
+        Assert.Empty(s.ParkedMonitors[Left].Layout!.Bars);
+        // Otro monitor toma su nombre mientras no está y lo configura con una barra.
+        MonitorKeys.Reconcile(s, [(D1, Right), (D2, Laptop)]);
+        Configure(s, D2, TaskbarPosition.Top, 40);
+        MonitorKeys.Reconcile(s, [(D1, Right), (D3, Laptop), (D2, Left)]);
+        Assert.Empty(s.Layouts[D2].Bars);
+        Assert.Equal(TaskbarPosition.Top, EdgeOf(s, D3));
     }
 }

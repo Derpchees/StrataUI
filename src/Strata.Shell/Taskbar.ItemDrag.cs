@@ -14,9 +14,10 @@ namespace Strata.Shell;
 /// Un clic sigue abriendo su panel: el arrastre empieza al mover unos píxeles con el botón
 /// pulsado. Entonces la captura pasa a la ventana de la barra (como al ordenar ventanas o íconos
 /// de la bandeja), así que el botón no recibe el clic al soltar. Mientras tanto se cambian las
-/// listas de <see cref="StrataSettings.BarItems"/> sin guardar y cada barra afectada se rehace con
-/// sus propios botones. La bandeja solo se ordena dentro de su barra: cambiarla de barra recrea
-/// las barras (se hace desde el Hub). Inicio puede pasar a otra barra, siempre delante de las ventanas.
+/// listas del diseño (<see cref="StrataSettings.Layouts"/>) sin guardar y cada barra afectada se
+/// rehace con sus propios botones. La bandeja solo se ordena dentro de su barra: cambiarla de barra
+/// recrea las barras (se hace en el modo edición). Inicio puede pasar a otra barra, siempre delante
+/// de las ventanas. Un monitor lleva cada elemento una sola vez: no pasa a otro monitor que ya lo tenga.
 /// </remarks>
 public partial class Taskbar
 {
@@ -73,9 +74,6 @@ public partial class Taskbar
 
     private void StartItemDrag(BarItem item)
     {
-        // Todas las barras quedan con su lista explícita: así mover algo no deja a otra con los de siempre.
-        foreach (var bar in App.Current.Taskbars)
-            Settings.Current.BarItems[bar.BarId] = bar.Items.ToList();
         _itemDrag = item;
         _itemOwner = this;
         if (!CaptureMouse())
@@ -100,8 +98,10 @@ public partial class Taskbar
         if (App.Current.Taskbars.FirstOrDefault(bar => ScreenRect(bar.BarBorder, 0).Contains(point)) is not { } target
             || _itemOwner is not { } owner)
             return;
-        if (!ReferenceEquals(target, owner) && (item == BarItem.Tray || target.Has(item)))
-            return; // la bandeja no cambia de barra aquí; y ninguna barra lleva dos veces lo mismo
+        // La bandeja no cambia de barra aquí; y ningún monitor lleva dos veces lo mismo.
+        if (!ReferenceEquals(target, owner) && (item == BarItem.Tray || target.Has(item)
+            || target.Device != owner.Device && App.Current.Taskbars.Any(bar => bar.Device == target.Device && bar.Has(item))))
+            return;
 
         var targetItems = target.Items.ToList();
         int index;
@@ -136,11 +136,11 @@ public partial class Taskbar
             var ownerItems = owner.Items.ToList();
             ownerItems.Remove(item);
             owner.SetDragging(item, false);
-            Settings.Current.BarItems[owner.BarId] = ownerItems;
+            BarLayout.SetItems(Settings.Current, owner.BarId, ownerItems);
             owner.ApplyLayout();
         }
         targetItems.Insert(Math.Clamp(index, 0, targetItems.Count), item);
-        Settings.Current.BarItems[target.BarId] = targetItems;
+        BarLayout.SetItems(Settings.Current, target.BarId, targetItems);
         target.ApplyLayout();
         target.SetDragging(item, true);
         _itemOwner = target;

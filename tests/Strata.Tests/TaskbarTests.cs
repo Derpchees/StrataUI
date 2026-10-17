@@ -47,7 +47,7 @@ public sealed class TaskbarTests
     [Fact]
     public void One_bar_per_monitor_by_default()
     {
-        var bars = App.BarsFor(TaskbarPosition.Bottom, SecondBarContent.None, isMain: true);
+        var bars = LegacyLayouts.BarsFor(TaskbarPosition.Bottom, SecondBarContent.None, isMain: true);
         var (edge, role) = Assert.Single(bars);
         Assert.Equal(TaskbarPosition.Bottom, edge);
         Assert.Equal(new BarRole(HasTray: true, IsMainScreen: true), role);
@@ -56,7 +56,7 @@ public sealed class TaskbarTests
     [Fact]
     public void Second_bar_with_apps_leaves_the_status_area_and_tray_on_the_first()
     {
-        var bars = App.BarsFor(TaskbarPosition.Left, SecondBarContent.Apps, isMain: true);
+        var bars = LegacyLayouts.BarsFor(TaskbarPosition.Left, SecondBarContent.Apps, isMain: true);
         Assert.Equal([TaskbarPosition.Left, TaskbarPosition.Right], bars.Select(b => b.Edge));
         Assert.Equal(new BarRole(true, true, ShowsApps: false, ShowsStatus: true), bars[0].Role);
         Assert.Equal(new BarRole(false, true, ShowsApps: true, ShowsStatus: false), bars[1].Role);
@@ -65,7 +65,7 @@ public sealed class TaskbarTests
     [Fact]
     public void Second_bar_with_the_status_area_takes_the_tray_and_is_created_first()
     {
-        var bars = App.BarsFor(TaskbarPosition.Bottom, SecondBarContent.Status, isMain: true);
+        var bars = LegacyLayouts.BarsFor(TaskbarPosition.Bottom, SecondBarContent.Status, isMain: true);
         Assert.Equal([TaskbarPosition.Top, TaskbarPosition.Bottom], bars.Select(b => b.Edge));
         Assert.True(bars[0].Role is { HasTray: true, ShowsStatus: true, ShowsApps: false });
         Assert.True(bars[1].Role is { HasTray: false, ShowsStatus: false, ShowsApps: true });
@@ -74,11 +74,11 @@ public sealed class TaskbarTests
     [Fact]
     public void Full_second_bar_repeats_everything_but_the_tray()
     {
-        var bars = App.BarsFor(TaskbarPosition.Top, SecondBarContent.Full, isMain: true);
+        var bars = LegacyLayouts.BarsFor(TaskbarPosition.Top, SecondBarContent.Full, isMain: true);
         Assert.All(bars, b => Assert.True(b.Role is { ShowsApps: true, ShowsStatus: true }));
         Assert.Single(bars, b => b.Role.HasTray);
         // En otro monitor ninguna lleva la bandeja.
-        Assert.DoesNotContain(App.BarsFor(TaskbarPosition.Top, SecondBarContent.Full, isMain: false), b => b.Role.HasTray);
+        Assert.DoesNotContain(LegacyLayouts.BarsFor(TaskbarPosition.Top, SecondBarContent.Full, isMain: false), b => b.Role.HasTray);
     }
 
     [Theory]

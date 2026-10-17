@@ -3,29 +3,53 @@ using Strata.Shell.Services.Localization;
 namespace Strata.Shell.Services;
 
 /// <summary>
-/// Qué elementos lleva cada barra y en qué orden. Cada barra se identifica por su monitor y si es
-/// la primera o la segunda (borde opuesto). La bandeja va en una sola barra: la primera que la
-/// lleve; esa es la barra "principal" (tecla Windows, ventanas de monitores sin barra).
+/// Qué lleva una barra según lo de siempre (antes de poder elegirlo): bandeja, si es la del
+/// monitor principal, ventanas abiertas y área de estado. Solo sirve para armar los elementos
+/// por defecto y para leer los ajustes de antes (<see cref="LegacyLayouts"/>).
+/// </summary>
+public sealed record BarRole(bool HasTray, bool IsMainScreen, bool ShowsApps = true, bool ShowsStatus = true);
+
+/// <summary>
+/// El diseño de las barras (<see cref="StrataSettings.Layouts"/>): qué barras tiene cada monitor
+/// (una por borde) y qué lleva cada una, en orden y por zonas. Cada monitor lleva cada elemento
+/// una sola vez; la bandeja es la misma en todos los que la lleven.
 /// </summary>
 public static class BarLayout
 {
-    /// <summary>Identificador estable de una barra: "\\.\DISPLAY1|1" (primera) o "|2" (segunda).</summary>
-    public static string Id(string device, bool second) => device + (second ? "|2" : "|1");
+    /// <summary>Identificador estable de una barra: su monitor y su borde ("\\.\DISPLAY1|Bottom").</summary>
+    public static string Id(string device, TaskbarPosition edge) => device + "|" + edge;
 
     public static string DeviceOf(string barId) => barId[..barId.LastIndexOf('|')];
 
-    public static bool IsSecond(string barId) => barId.EndsWith("|2", StringComparison.Ordinal);
+    public static TaskbarPosition EdgeOf(string barId) =>
+        Enum.TryParse<TaskbarPosition>(barId[(barId.LastIndexOf('|') + 1)..], out var edge) ? edge : TaskbarPosition.Bottom;
+
+    public static bool IsVertical(TaskbarPosition edge) => edge is TaskbarPosition.Left or TaskbarPosition.Right;
+
+    /// <summary>Elementos que se pueden poner, en el orden en que se listan (en la barra, el elegido).</summary>
+    public static readonly BarItem[] All =
+    [
+        BarItem.Start, BarItem.Apps, BarItem.Tray, BarItem.Media, BarItem.Network, BarItem.Bluetooth, BarItem.Volume,
+        BarItem.Brightness, BarItem.Battery, BarItem.Clock, BarItem.Notifications, BarItem.Cpu, BarItem.Gpu, BarItem.Ram,
+        BarItem.Fps, BarItem.FreeRam,
+    ];
+
+    /// <summary>Si el elemento va en una zona (Inicio y las apps abiertas van juntos en el espacio libre).</summary>
+    public static bool Zoned(BarItem item) => item is not (BarItem.Start or BarItem.Apps);
 
     /// <summary>
-    /// Lo de siempre (antes de poder elegirlo): Inicio en las barras con ventanas; el área de estado
-    /// en las del monitor principal, en las dedicadas a ella o en todas si así se eligió; la bandeja
-    /// en la que la llevaba.
+    /// Lo de siempre (antes de poder elegirlo): Inicio y las apps en las barras con ventanas; el
+    /// área de estado en las del monitor principal, en las dedicadas a ella o en todas si así se
+    /// eligió; la bandeja en la que la llevaba.
     /// </summary>
     public static List<BarItem> Defaults(BarRole role, StrataSettings s)
     {
         var items = new List<BarItem>();
         if (role.ShowsApps)
+        {
             items.Add(BarItem.Start);
+            items.Add(BarItem.Apps);
+        }
         bool status = role.ShowsStatus && (role.IsMainScreen || !role.ShowsApps || s.StatusOnAllTaskbars);
         if (status && s.ShowMediaModule)
             items.Add(BarItem.Media);
@@ -48,38 +72,103 @@ public static class BarLayout
         return items;
     }
 
-    /// <summary>
-    /// La campana de notificaciones llegó después que el reloj (que antes abría las notificaciones):
-    /// las barras con reloj elegidas a mano la reciben a su lado, una sola vez. True si cambió algo.
-    /// </summary>
-    public static bool AddNotificationBell(StrataSettings s)
+    /// <summary>Diseño de un monitor que nunca se configuró: una barra abajo con lo de siempre.</summary>
+    public static ScreenLayout DefaultLayout(bool isMainScreen, StrataSettings s) => new()
     {
-        if (s.NotificationBellAdded)
-            return false;
-        s.NotificationBellAdded = true;
-        foreach (var items in s.BarItems.Values)
-            if (items.IndexOf(BarItem.Clock) is var clock and >= 0 && !items.Contains(BarItem.Notifications))
-                items.Insert(clock + 1, BarItem.Notifications);
-        return true;
+        Bars = [new BarConfig { Edge = TaskbarPosition.Bottom, Items = Defaults(new BarRole(isMainScreen, isMainScreen), s) }],
+    };
+
+    /// <summary>La barra con ese identificador (null si su monitor no la tiene).</summary>
+    public static BarConfig? Find(StrataSettings s, string barId) =>
+        s.Layouts.TryGetValue(DeviceOf(barId), out var layout)
+            ? layout.Bars.FirstOrDefault(b => b.Edge == EdgeOf(barId))
+            : null;
+
+    /// <summary>Elementos de una barra, en orden y sin repetir.</summary>
+    public static List<BarItem> ItemsFor(string barId, StrataSettings s) =>
+        Find(s, barId)?.Items.Distinct().ToList() ?? [];
+
+    /// <summary>Cambia los elementos de una barra (sin guardar); las zonas de los que salieron se olvidan.</summary>
+    public static void SetItems(StrataSettings s, string barId, List<BarItem> items)
+    {
+        if (Find(s, barId) is not { } bar)
+            return;
+        bar.Items = items.Distinct().ToList();
+        foreach (var gone in bar.Zones.Keys.Where(k => !bar.Items.Contains(k)).ToList())
+            bar.Zones.Remove(gone);
     }
 
     /// <summary>Zona de un elemento en una barra (al final si no se eligió otra).</summary>
     public static BarZone ZoneOf(string barId, BarItem item, StrataSettings s) =>
-        item != BarItem.Start && s.BarItemZones.TryGetValue(barId, out var zones) && zones.TryGetValue(item, out var zone)
-            ? zone : BarZone.End;
+        Find(s, barId) is { } bar ? ZoneOf(bar, item) : BarZone.End;
+
+    public static BarZone ZoneOf(BarConfig bar, BarItem item) =>
+        Zoned(item) && bar.Zones.TryGetValue(item, out var zone) ? zone : BarZone.End;
 
     /// <summary>Cambia la zona de un elemento (sin guardar).</summary>
     public static void SetZone(string barId, BarItem item, BarZone zone, StrataSettings s)
     {
-        if (!s.BarItemZones.TryGetValue(barId, out var zones))
-            s.BarItemZones[barId] = zones = new();
-        if (zone == BarZone.End)
-            zones.Remove(item);
-        else
-            zones[item] = zone;
-        if (zones.Count == 0)
-            s.BarItemZones.Remove(barId);
+        if (Find(s, barId) is { } bar)
+            SetZone(bar, item, zone);
     }
+
+    public static void SetZone(BarConfig bar, BarItem item, BarZone zone)
+    {
+        if (zone == BarZone.End || !Zoned(item))
+            bar.Zones.Remove(item);
+        else
+            bar.Zones[item] = zone;
+    }
+
+    /// <summary>
+    /// Lugar de un elemento nuevo en la lista: Inicio al principio, las apps detrás de Inicio y lo
+    /// demás antes del reloj (o al final).
+    /// </summary>
+    public static void Insert(List<BarItem> items, BarItem item)
+    {
+        items.Remove(item);
+        int start = items.IndexOf(BarItem.Start), clock = items.IndexOf(BarItem.Clock);
+        int index = item switch
+        {
+            BarItem.Start => 0,
+            BarItem.Apps => start + 1,
+            _ => clock >= 0 ? clock : items.Count,
+        };
+        items.Insert(Math.Clamp(index, 0, items.Count), item);
+    }
+
+    /// <summary>
+    /// Deja un diseño válido: una barra por borde y cada elemento una sola vez en el monitor (se
+    /// queda la primera barra que lo lleva, en el orden de creación); sin zonas de lo que no está.
+    /// </summary>
+    public static void Normalize(ScreenLayout layout)
+    {
+        var seen = new HashSet<BarItem>();
+        var edges = new HashSet<TaskbarPosition>();
+        layout.Bars = InCreationOrder(layout).Where(b => edges.Add(b.Edge)).ToList();
+        foreach (var bar in layout.Bars)
+        {
+            bar.Items = bar.Items.Where(seen.Add).ToList();
+            foreach (var key in bar.Zones.Keys.Where(k => !bar.Items.Contains(k) || !Zoned(k)).ToList())
+                bar.Zones.Remove(key);
+        }
+    }
+
+    /// <summary>
+    /// Orden en que se crean las barras de un monitor: arriba y abajo primero, así Windows les deja
+    /// las esquinas (ocupan todo el ancho) y las de los lados van entre ellas.
+    /// </summary>
+    public static IEnumerable<BarConfig> InCreationOrder(ScreenLayout layout) =>
+        layout.Bars.OrderBy(b => IsVertical(b.Edge)).ThenBy(b => b.Edge);
+
+    /// <summary>
+    /// Lo que obliga a recrear las barras: qué bordes tiene cada monitor y cuáles llevan la bandeja
+    /// o las apps abiertas (la bandeja se asigna al crearlas y de las apps depende qué ventanas
+    /// muestra cada una). Lo demás se aplica en vivo.
+    /// </summary>
+    public static string StructureKey(StrataSettings s) =>
+        string.Join(";", s.Layouts.OrderBy(p => p.Key, StringComparer.Ordinal).Select(p => p.Key + "=" + string.Join(",",
+            InCreationOrder(p.Value).Select(b => b.Edge + (b.Items.Contains(BarItem.Tray) ? "+T" : "") + (b.Items.Contains(BarItem.Apps) ? "+A" : "")))));
 
     /// <summary>Nombre de una zona según la orientación de la barra.</summary>
     public static string ZoneName(BarZone zone, bool vertical) => zone switch
@@ -89,28 +178,46 @@ public static class BarLayout
         _ => vertical ? Loc.T("Abajo") : Loc.T("Derecha"),
     };
 
-    /// <summary>Elementos de una barra: los elegidos en el Hub o, si no hay, los de siempre.</summary>
-    public static List<BarItem> ItemsFor(string barId, BarRole role, StrataSettings s) =>
-        s.BarItems.TryGetValue(barId, out var chosen) ? chosen.Distinct().ToList() : Defaults(role, s);
+    /// <summary>Nombre de un borde de la pantalla.</summary>
+    public static string EdgeName(TaskbarPosition edge) => edge switch
+    {
+        TaskbarPosition.Top => Loc.T("Arriba"),
+        TaskbarPosition.Left => Loc.T("Izquierda"),
+        TaskbarPosition.Right => Loc.T("Derecha"),
+        _ => Loc.T("Abajo"),
+    };
+
+    /// <summary>Nombre de la barra de un borde ("Barra de abajo").</summary>
+    public static string BarName(TaskbarPosition edge) => edge switch
+    {
+        TaskbarPosition.Top => Loc.T("Barra de arriba"),
+        TaskbarPosition.Left => Loc.T("Barra de la izquierda"),
+        TaskbarPosition.Right => Loc.T("Barra de la derecha"),
+        _ => Loc.T("Barra de abajo"),
+    };
 
     /// <summary>
-    /// Barra que lleva la bandeja: la primera (en el orden dado) que la tenga entre sus elementos;
-    /// si ninguna, la que la llevaba siempre. Nunca queda sin bandeja.
+    /// La campana de notificaciones llegó después que el reloj (que antes abría las notificaciones):
+    /// las barras con reloj elegidas a mano la reciben a su lado, una sola vez. True si cambió algo.
     /// </summary>
-    public static string TrayBar(IReadOnlyList<(string Id, BarRole Role)> bars, StrataSettings s) =>
-        bars.FirstOrDefault(b => ItemsFor(b.Id, b.Role, s).Contains(BarItem.Tray)).Id
-        ?? bars.FirstOrDefault(b => b.Role.HasTray).Id
-        ?? bars.FirstOrDefault().Id
-        ?? "";
+    public static bool AddNotificationBell(StrataSettings s)
+    {
+        if (s.NotificationBellAdded)
+            return false;
+        s.NotificationBellAdded = true;
+        var lists = (s.BarItems?.Values ?? Enumerable.Empty<List<BarItem>>())
+            .Concat(s.Layouts.Values.SelectMany(l => l.Bars).Select(b => b.Items));
+        foreach (var items in lists)
+            if (items.IndexOf(BarItem.Clock) is var clock and >= 0 && !items.Contains(BarItem.Notifications))
+                items.Insert(clock + 1, BarItem.Notifications);
+        return true;
+    }
 
-    /// <summary>Barras con la bandeja elegida (cambiarla recrea las barras: la bandeja se asigna al crearlas).</summary>
-    public static string TrayKey(StrataSettings s) =>
-        string.Join(";", s.BarItems.Where(p => p.Value.Contains(BarItem.Tray)).Select(p => p.Key).Order());
-
-    /// <summary>Nombre del elemento en el Hub.</summary>
+    /// <summary>Nombre del elemento en el Hub y en el modo edición.</summary>
     public static string Name(BarItem item) => item switch
     {
         BarItem.Start => Loc.T("Menú Inicio"),
+        BarItem.Apps => Loc.T("Apps abiertas"),
         BarItem.Media => Loc.T("Multimedia"),
         BarItem.Tray => Loc.T("Bandeja del sistema"),
         BarItem.Network => Loc.T("Red"),
@@ -128,10 +235,11 @@ public static class BarLayout
         _ => item.ToString(),
     };
 
-    /// <summary>Ícono del elemento en el Hub.</summary>
+    /// <summary>Ícono del elemento en el Hub y en el modo edición.</summary>
     public static Wpf.Ui.Controls.SymbolRegular Icon(BarItem item) => item switch
     {
         BarItem.Start => Wpf.Ui.Controls.SymbolRegular.Grid24,
+        BarItem.Apps => Wpf.Ui.Controls.SymbolRegular.WindowMultiple20,
         BarItem.Media => Wpf.Ui.Controls.SymbolRegular.MusicNote224,
         BarItem.Tray => Wpf.Ui.Controls.SymbolRegular.ChevronUp24,
         BarItem.Network => Wpf.Ui.Controls.SymbolRegular.Wifi124,

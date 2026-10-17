@@ -28,12 +28,23 @@ public partial class TaskbarPage : Page
         {
             Sensors.Changed += UpdateSensors;
             ScreenPicker.Changed += OnScreenChanged;
+            EditMode.EditSession.ActiveChanged += UpdateEditLibrary;
+            UpdateEditLibrary();
         };
         Unloaded += (_, _) =>
         {
             Sensors.Changed -= UpdateSensors;
             ScreenPicker.Changed -= OnScreenChanged;
+            EditMode.EditSession.ActiveChanged -= UpdateEditLibrary;
         };
+    }
+
+    /// <summary>Mientras el modo edición está abierto, su biblioteca también se arrastra desde aquí.</summary>
+    private void UpdateEditLibrary()
+    {
+        bool active = EditMode.EditSession.IsActive;
+        EditLibraryHost.Child = active ? new EditMode.EditLibrary(null) : null;
+        EditLibraryHost.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static string Device => ScreenPicker.Device;
@@ -61,7 +72,6 @@ public partial class TaskbarPage : Page
         BatteryPercentSwitch.IsChecked = s.ShowBatteryPercent;
         Select(BarStyleBox, s.BarStyle.ToString());
         BuildBarColor();
-        BuildMonitorPanel();
     }
 
     /// <summary>El editor del color propio de la barra de este monitor (solo con ese estilo).</summary>
@@ -129,99 +139,7 @@ public partial class TaskbarPage : Page
 
     private void ResetLayout_Click(object sender, RoutedEventArgs e) => BarEditor.Reset();
 
-    // ── Posición (del monitor elegido) ──────────────────────────────────────
-
-    private static readonly string[] PositionNames = [Loc.T("Abajo"), Loc.T("Arriba"), Loc.T("Izquierda"), Loc.T("Derecha")];
-
-    // En el orden de SecondBarContent.
-    private static readonly string[] SecondBarNames =
-        [Loc.T("Ninguna"), Loc.T("Apps abiertas"), Loc.T("Área de estado y reloj"), Loc.T("Completa")];
-
-    private static string SecondBarDescription(TaskbarPosition position) =>
-        Loc.F("En el borde opuesto ({0}). Con \"Apps abiertas\" o \"Área de estado y reloj\" las dos barras se reparten el contenido; \"Completa\" repite todo.",
-              PositionNames[(int)StrataSettings.Opposite(position)]);
-
-    /// <summary>Borde de la barra, si tiene barra (el principal de Strata UI siempre) y la segunda barra.</summary>
-    private void BuildMonitorPanel()
-    {
-        MonitorPanel.Children.Clear();
-        string device = Device;
-        bool isMain = device == ThemeManager.MainDevice;
-
-        var position = new ComboBox { MinWidth = 140, ItemsSource = PositionNames, SelectedIndex = (int)Settings.Current.PositionOf(device) };
-        var secondText = new TextBlock { Style = (Style)FindResource("CardDescription"), Text = SecondBarDescription(Settings.Current.PositionOf(device)) };
-        var second = new ComboBox { MinWidth = 200, ItemsSource = SecondBarNames, SelectedIndex = (int)Settings.Current.SecondBarOf(device) };
-        position.SelectionChanged += (_, _) =>
-        {
-            if (_loading || position.SelectedIndex < 0)
-                return;
-            Settings.Update(s => s.TaskbarPositions[device] = (TaskbarPosition)position.SelectedIndex);
-            secondText.Text = SecondBarDescription((TaskbarPosition)position.SelectedIndex);
-        };
-        second.SelectionChanged += (_, _) =>
-        {
-            if (_loading || second.SelectedIndex < 0)
-                return;
-            var content = (SecondBarContent)second.SelectedIndex;
-            Settings.Update(s =>
-            {
-                if (content == SecondBarContent.None)
-                    s.SecondTaskbars.Remove(device);
-                else
-                    s.SecondTaskbars[device] = content;
-            });
-        };
-
-        var header = new StackPanel();
-        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Borde de la pantalla") });
-        header.Children.Add(new TextBlock
-        {
-            Style = (Style)FindResource("CardDescription"),
-            Text = isMain ? Loc.T("Es el principal de Strata UI: siempre tiene barra.") : Loc.T("El interruptor muestra u oculta la barra en este monitor."),
-        });
-        var controls = new StackPanel { Orientation = Orientation.Horizontal };
-        controls.Children.Add(position);
-        if (!isMain)
-        {
-            var visible = new Wpf.Ui.Controls.ToggleSwitch
-            {
-                Margin = new Thickness(16, 0, 0, 0),
-                IsChecked = !Settings.Current.TaskbarHiddenScreens.Contains(device),
-                ToolTip = Loc.T("Mostrar la barra en este monitor"),
-            };
-            visible.Click += (_, _) =>
-            {
-                bool show = visible.IsChecked == true;
-                position.IsEnabled = second.IsEnabled = show;
-                Settings.Update(s =>
-                {
-                    s.TaskbarHiddenScreens.Remove(device);
-                    if (!show)
-                        s.TaskbarHiddenScreens.Add(device);
-                });
-            };
-            position.IsEnabled = second.IsEnabled = visible.IsChecked == true;
-            controls.Children.Add(visible);
-        }
-        MonitorPanel.Children.Add(new Wpf.Ui.Controls.CardControl
-        {
-            Style = (Style)FindResource("HubCard"),
-            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Desktop24 },
-            Header = header,
-            Content = controls,
-        });
-
-        var secondHeader = new StackPanel();
-        secondHeader.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Segunda barra") });
-        secondHeader.Children.Add(secondText);
-        MonitorPanel.Children.Add(new Wpf.Ui.Controls.CardControl
-        {
-            Style = (Style)FindResource("HubCard"),
-            Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowBidirectionalUpDown24 },
-            Header = secondHeader,
-            Content = second,
-        });
-    }
+    private void EditLayout_Click(object sender, RoutedEventArgs e) => EditMode.EditSession.Start();
 
     // ── Para todos los monitores ────────────────────────────────────────────
 
@@ -245,17 +163,7 @@ public partial class TaskbarPage : Page
     {
         if (_loading || MainScreenBox.SelectedItem is not ComboBoxItem item)
             return;
-        var device = (string?)item.Tag;
-        // El principal de Strata UI siempre tiene barra: si estaba oculta, se vuelve a mostrar.
-        Settings.Update(s =>
-        {
-            s.TaskbarMainScreen = device;
-            if (device != null)
-                s.TaskbarHiddenScreens.Remove(device);
-        });
-        _loading = true;
-        BuildMonitorPanel();
-        _loading = false;
+        Settings.Update(s => s.TaskbarMainScreen = (string?)item.Tag);
     }
 
     private void AppsMode_Changed(object sender, SelectionChangedEventArgs e)

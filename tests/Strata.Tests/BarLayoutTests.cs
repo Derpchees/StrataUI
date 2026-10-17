@@ -9,36 +9,53 @@ public class BarLayoutTests
     private static readonly BarRole Main = new(HasTray: true, IsMainScreen: true);
     private static readonly BarRole Other = new(HasTray: false, IsMainScreen: false);
 
+    private const string D1 = @"\\.\DISPLAY1", D2 = @"\\.\DISPLAY2";
+
+    private static StrataSettings With(string device, params BarConfig[] bars)
+    {
+        var s = new StrataSettings();
+        s.Layouts[device] = new ScreenLayout { Bars = [.. bars] };
+        return s;
+    }
+
     [Fact]
     public void Main_bar_keeps_the_usual_items_in_order()
     {
         var items = BarLayout.Defaults(Main, new StrataSettings { ShowBatteryModule = true });
         Assert.Equal(
-            [BarItem.Start, BarItem.Media, BarItem.Tray, BarItem.Network, BarItem.Bluetooth, BarItem.Brightness,
+            [BarItem.Start, BarItem.Apps, BarItem.Media, BarItem.Tray, BarItem.Network, BarItem.Bluetooth, BarItem.Brightness,
              BarItem.Volume, BarItem.Battery, BarItem.Clock, BarItem.Notifications],
             items);
     }
 
     [Fact]
+    public void A_new_monitor_gets_one_bar_at_the_bottom()
+    {
+        var layout = BarLayout.DefaultLayout(isMainScreen: false, new StrataSettings { StatusOnAllTaskbars = false });
+        var bar = Assert.Single(layout.Bars);
+        Assert.Equal(TaskbarPosition.Bottom, bar.Edge);
+        Assert.Equal([BarItem.Start, BarItem.Apps], bar.Items);
+    }
+
+    [Fact]
     public void Bars_chosen_by_hand_get_the_bell_next_to_the_clock_once()
     {
-        var s = new StrataSettings();
-        s.BarItems["A|1"] = [BarItem.Start, BarItem.Clock, BarItem.Volume];
-        s.BarItems["B|1"] = [BarItem.Start];
+        var s = With(D1, new BarConfig { Items = [BarItem.Start, BarItem.Clock, BarItem.Volume] },
+                         new BarConfig { Edge = TaskbarPosition.Top, Items = [BarItem.Start] });
         Assert.True(BarLayout.AddNotificationBell(s));
-        Assert.Equal([BarItem.Start, BarItem.Clock, BarItem.Notifications, BarItem.Volume], s.BarItems["A|1"]);
-        Assert.Equal([BarItem.Start], s.BarItems["B|1"]);
+        Assert.Equal([BarItem.Start, BarItem.Clock, BarItem.Notifications, BarItem.Volume], s.Layouts[D1].Bars[0].Items);
+        Assert.Equal([BarItem.Start], s.Layouts[D1].Bars[1].Items);
 
         // Si después se quita, no vuelve.
-        s.BarItems["A|1"].Remove(BarItem.Notifications);
+        s.Layouts[D1].Bars[0].Items.Remove(BarItem.Notifications);
         Assert.False(BarLayout.AddNotificationBell(s));
-        Assert.DoesNotContain(BarItem.Notifications, s.BarItems["A|1"]);
+        Assert.DoesNotContain(BarItem.Notifications, s.Layouts[D1].Bars[0].Items);
     }
 
     [Fact]
     public void Other_monitor_follows_status_on_all_taskbars()
     {
-        Assert.Equal([BarItem.Start], BarLayout.Defaults(Other, new StrataSettings { StatusOnAllTaskbars = false }));
+        Assert.Equal([BarItem.Start, BarItem.Apps], BarLayout.Defaults(Other, new StrataSettings { StatusOnAllTaskbars = false }));
         Assert.Contains(BarItem.Clock, BarLayout.Defaults(Other, new StrataSettings { StatusOnAllTaskbars = true }));
         Assert.DoesNotContain(BarItem.Tray, BarLayout.Defaults(Other, new StrataSettings()));
     }
@@ -52,46 +69,85 @@ public class BarLayoutTests
     }
 
     [Fact]
-    public void Chosen_items_replace_the_defaults_without_repeats()
+    public void Items_are_read_by_monitor_and_edge_without_repeats()
     {
-        var s = new StrataSettings();
-        s.BarItems["A|1"] = [BarItem.Cpu, BarItem.Clock, BarItem.Cpu];
-        Assert.Equal([BarItem.Cpu, BarItem.Clock], BarLayout.ItemsFor("A|1", Main, s));
+        var s = With(D1, new BarConfig { Edge = TaskbarPosition.Left, Items = [BarItem.Cpu, BarItem.Clock, BarItem.Cpu] });
+        Assert.Equal([BarItem.Cpu, BarItem.Clock], BarLayout.ItemsFor(BarLayout.Id(D1, TaskbarPosition.Left), s));
+        Assert.Empty(BarLayout.ItemsFor(BarLayout.Id(D1, TaskbarPosition.Right), s));
     }
 
     [Fact]
-    public void Tray_goes_to_the_first_bar_that_has_it()
+    public void Bar_ids_name_the_monitor_and_the_edge()
     {
-        var s = new StrataSettings();
-        s.BarItems["A|1"] = [BarItem.Start, BarItem.Clock];
-        s.BarItems["B|1"] = [BarItem.Tray, BarItem.Clock];
-        Assert.Equal("B|1", BarLayout.TrayBar([("A|1", Main), ("B|1", Other)], s));
+        string id = BarLayout.Id(D2, TaskbarPosition.Right);
+        Assert.Equal(@"\\.\DISPLAY2|Right", id);
+        Assert.Equal(D2, BarLayout.DeviceOf(id));
+        Assert.Equal(TaskbarPosition.Right, BarLayout.EdgeOf(id));
     }
 
     [Fact]
-    public void Without_a_chosen_tray_it_stays_where_it_was()
+    public void Each_monitor_carries_each_item_once_and_one_bar_per_edge()
     {
-        var s = new StrataSettings();
-        s.BarItems["A|1"] = [BarItem.Start];
-        Assert.Equal("A|1", BarLayout.TrayBar([("A|1", Main), ("B|1", Other)], s));
+        var layout = new ScreenLayout
+        {
+            Bars =
+            [
+                new BarConfig { Edge = TaskbarPosition.Left, Items = [BarItem.Volume, BarItem.Clock], Zones = { [BarItem.Clock] = BarZone.Start } },
+                new BarConfig { Edge = TaskbarPosition.Bottom, Items = [BarItem.Clock, BarItem.Start] },
+                new BarConfig { Edge = TaskbarPosition.Bottom, Items = [BarItem.Tray] },
+            ],
+        };
+        BarLayout.Normalize(layout);
+        // La de abajo se crea antes (se queda el reloj); la segunda de abajo sobra.
+        Assert.Equal([TaskbarPosition.Bottom, TaskbarPosition.Left], layout.Bars.Select(b => b.Edge));
+        Assert.Equal([BarItem.Clock, BarItem.Start], layout.Bars[0].Items);
+        Assert.Equal([BarItem.Volume], layout.Bars[1].Items);
+        Assert.Empty(layout.Bars[1].Zones);
     }
 
     [Fact]
-    public void Bar_ids_name_the_monitor_and_which_bar()
+    public void Horizontal_bars_are_created_first_to_keep_the_corners()
     {
-        string id = BarLayout.Id(@"\\.\DISPLAY2", second: true);
-        Assert.Equal(@"\\.\DISPLAY2|2", id);
-        Assert.Equal(@"\\.\DISPLAY2", BarLayout.DeviceOf(id));
-        Assert.True(BarLayout.IsSecond(id));
+        var layout = new ScreenLayout
+        {
+            Bars = [new BarConfig { Edge = TaskbarPosition.Right }, new BarConfig { Edge = TaskbarPosition.Top }, new BarConfig { Edge = TaskbarPosition.Left }, new BarConfig { Edge = TaskbarPosition.Bottom }],
+        };
+        Assert.Equal([TaskbarPosition.Bottom, TaskbarPosition.Top, TaskbarPosition.Left, TaskbarPosition.Right],
+                     BarLayout.InCreationOrder(layout).Select(b => b.Edge));
     }
 
     [Fact]
-    public void Moving_the_tray_changes_the_layout_key()
+    public void Tray_apps_and_edges_change_the_structure_key_but_other_items_do_not()
     {
-        var s = new StrataSettings();
-        string before = BarLayout.TrayKey(s);
-        s.BarItems["B|1"] = [BarItem.Tray];
-        Assert.NotEqual(before, BarLayout.TrayKey(s));
+        var s = With(D1, new BarConfig { Items = [BarItem.Start, BarItem.Clock] });
+        string before = BarLayout.StructureKey(s);
+        s.Layouts[D1].Bars[0].Items.Add(BarItem.Volume);
+        Assert.Equal(before, BarLayout.StructureKey(s));
+        s.Layouts[D1].Bars[0].Items.Add(BarItem.Tray);
+        Assert.NotEqual(before, BarLayout.StructureKey(s));
+        string withTray = BarLayout.StructureKey(s);
+        s.Layouts[D1].Bars.Add(new BarConfig { Edge = TaskbarPosition.Top });
+        Assert.NotEqual(withTray, BarLayout.StructureKey(s));
+    }
+
+    [Fact]
+    public void New_items_go_to_their_usual_place()
+    {
+        var items = new List<BarItem> { BarItem.Volume, BarItem.Clock };
+        BarLayout.Insert(items, BarItem.Start);
+        BarLayout.Insert(items, BarItem.Apps);
+        BarLayout.Insert(items, BarItem.Network);
+        Assert.Equal([BarItem.Start, BarItem.Apps, BarItem.Volume, BarItem.Network, BarItem.Clock], items);
+    }
+
+    [Fact]
+    public void Start_and_apps_have_no_zone()
+    {
+        var bar = new BarConfig { Items = [BarItem.Start, BarItem.Clock] };
+        BarLayout.SetZone(bar, BarItem.Start, BarZone.Center);
+        BarLayout.SetZone(bar, BarItem.Clock, BarZone.Center);
+        Assert.Equal(BarZone.End, BarLayout.ZoneOf(bar, BarItem.Start));
+        Assert.Equal(BarZone.Center, BarLayout.ZoneOf(bar, BarItem.Clock));
     }
 
     [Fact]

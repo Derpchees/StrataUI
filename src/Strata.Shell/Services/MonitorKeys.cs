@@ -1,22 +1,31 @@
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 
 namespace Strata.Shell.Services;
 
 /// <summary>Lo que un monitor tiene guardado (para llevarlo a otro nombre o guardarlo mientras no está).</summary>
 public sealed class MonitorSnapshot
 {
-    public TaskbarPosition? Position { get; set; }
-    public SecondBarContent? Second { get; set; }
-    public bool Hidden { get; set; }
+    /// <summary>Sus barras y lo que lleva cada una (null: nunca se configuró).</summary>
+    public ScreenLayout? Layout { get; set; }
     public bool Main { get; set; }
     public bool Fps { get; set; }
     public bool Notifications { get; set; }
     public ScreenSettings? Screen { get; set; }
-    /// <summary>Elementos de cada barra del monitor, por sufijo ("1", "2").</summary>
-    public Dictionary<string, List<BarItem>> Items { get; set; } = new();
-    public Dictionary<string, Dictionary<BarItem, BarZone>> Zones { get; set; } = new();
     /// <summary>Widgets que estaban en ese monitor.</summary>
     public List<string> Widgets { get; set; } = new();
+
+    // Formato anterior a la 2.6 (ver LegacyLayouts): se lee y se pasa a Layout.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public TaskbarPosition? Position { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public SecondBarContent? Second { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Hidden { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, List<BarItem>>? Items { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, Dictionary<BarItem, BarZone>>? Zones { get; set; }
 }
 
 /// <summary>
@@ -87,34 +96,21 @@ public static class MonitorKeys
 
     internal static MonitorSnapshot Take(StrataSettings s, string device)
     {
-        var snap = new MonitorSnapshot
+        return new MonitorSnapshot
         {
-            Position = s.TaskbarPositions.TryGetValue(device, out var position) ? position : null,
-            Second = s.SecondTaskbars.TryGetValue(device, out var second) ? second : null,
-            Hidden = s.TaskbarHiddenScreens.Contains(device),
+            Layout = s.Layouts.TryGetValue(device, out var layout) ? layout.Clone() : null,
             Main = s.TaskbarMainScreen == device,
             Fps = s.FpsScreen == device,
             Notifications = s.NotificationScreen == device,
             Screen = s.Screens.TryGetValue(device, out var screen) ? screen.Clone() : null,
             Widgets = s.Widgets.Where(w => w.Device == device).Select(w => w.Id).ToList(),
         };
-        foreach (var (key, items) in s.BarItems.Where(p => p.Key.Contains('|') && BarLayout.DeviceOf(p.Key) == device))
-            snap.Items[key[(key.LastIndexOf('|') + 1)..]] = [.. items];
-        foreach (var (key, zones) in s.BarItemZones.Where(p => p.Key.Contains('|') && BarLayout.DeviceOf(p.Key) == device))
-            snap.Zones[key[(key.LastIndexOf('|') + 1)..]] = new(zones);
-        return snap;
     }
 
     private static void Clear(StrataSettings s, string device)
     {
-        s.TaskbarPositions.Remove(device);
-        s.SecondTaskbars.Remove(device);
-        s.TaskbarHiddenScreens.Remove(device);
+        s.Layouts.Remove(device);
         s.Screens.Remove(device);
-        foreach (var key in s.BarItems.Keys.Where(k => k.Contains('|') && BarLayout.DeviceOf(k) == device).ToList())
-            s.BarItems.Remove(key);
-        foreach (var key in s.BarItemZones.Keys.Where(k => k.Contains('|') && BarLayout.DeviceOf(k) == device).ToList())
-            s.BarItemZones.Remove(key);
         if (s.TaskbarMainScreen == device)
             s.TaskbarMainScreen = null;
         if (s.FpsScreen == device)
@@ -125,18 +121,10 @@ public static class MonitorKeys
 
     private static void Put(StrataSettings s, string device, MonitorSnapshot snap)
     {
-        if (snap.Position is { } position)
-            s.TaskbarPositions[device] = position;
-        if (snap.Second is { } second)
-            s.SecondTaskbars[device] = second;
-        if (snap.Hidden)
-            s.TaskbarHiddenScreens.Add(device);
+        if (snap.Layout is { } layout)
+            s.Layouts[device] = layout.Clone();
         if (snap.Screen is { } screen)
             s.Screens[device] = screen.Clone();
-        foreach (var (suffix, items) in snap.Items)
-            s.BarItems[device + "|" + suffix] = [.. items];
-        foreach (var (suffix, zones) in snap.Zones)
-            s.BarItemZones[device + "|" + suffix] = new(zones);
         if (snap.Main)
             s.TaskbarMainScreen = device;
         if (snap.Fps)

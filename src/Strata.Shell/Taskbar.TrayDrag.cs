@@ -24,7 +24,7 @@ public partial class Taskbar
 
     private void OnTrayDragStarted(TrayIcon source)
     {
-        if (!IsMain || source.NotifyIcon is not { } icon
+        if (!HasTray || source.NotifyIcon is not { } icon
             || !(HiddenTray.IsAncestorOf(source) || PinnedTray.IsAncestorOf(source)))
             return;
         _trayDrag = icon;

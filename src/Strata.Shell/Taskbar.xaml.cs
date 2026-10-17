@@ -23,14 +23,9 @@ using Media = Strata.Shell.Services.Media.MediaService;
 namespace Strata.Shell;
 
 /// <summary>
-/// Qué lleva una barra. Un monitor puede tener dos (bordes opuestos) que se reparten el contenido.
+/// Una barra de un monitor, en un borde. Un monitor puede tener hasta cuatro; lo que lleva cada una
+/// sale de su diseño (<see cref="BarLayout"/>, modo edición).
 /// </summary>
-/// <param name="HasTray">Lleva la bandeja del sistema (una sola barra: la del área de estado del monitor principal de Strata UI).</param>
-/// <param name="IsMainScreen">Está en el monitor principal de Strata UI.</param>
-/// <param name="ShowsApps">Inicio y ventanas abiertas.</param>
-/// <param name="ShowsStatus">Área de estado y reloj.</param>
-public sealed record BarRole(bool HasTray, bool IsMainScreen, bool ShowsApps = true, bool ShowsStatus = true);
-
 public partial class Taskbar : AppBarWindow
 {
     private readonly ShellManager _shell;
@@ -40,21 +35,22 @@ public partial class Taskbar : AppBarWindow
     private readonly ICollectionView? _hiddenTrayView;
     private TaskbarAppsMode _appsMode;
 
-    /// <param name="role">Lo que lleva (la bandeja ya asignada a la barra que la tiene).</param>
-    /// <param name="barId">Identificador para los elementos elegidos en el Hub (<see cref="BarLayout.Id"/>).</param>
-    /// <param name="defaultsRole">El papel de siempre, para los elementos por defecto.</param>
-    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, BarRole role,
-                   string barId, BarRole defaultsRole)
+    /// <param name="barId">Identificador de la barra en el diseño (<see cref="BarLayout.Id"/>).</param>
+    /// <param name="isMainScreen">Está en el monitor principal de Strata UI.</param>
+    /// <param name="hasTray">Lleva la bandeja (cambiarlo recrea las barras).</param>
+    /// <param name="isTrayHost">Es la primera con bandeja: la que se informa a las apps.</param>
+    public Taskbar(ShellManager shell, AppBarScreen screen, bool multiMonitor, TaskbarPosition position, string barId,
+                   bool isMainScreen, bool hasTray, bool isTrayHost)
         : base(shell.AppBarManager, shell.ExplorerHelper, shell.FullScreenHelper,
                screen, EdgeOf(position), AppBarMode.Normal, ReservedSize(IsVerticalPosition(position), screen.DeviceName))
     {
         _shell = shell;
         _multiMonitor = multiMonitor;
         Position = position;
-        Role = role;
         BarId = barId;
-        _defaultsRole = defaultsRole;
-        IsMain = role.HasTray;
+        IsMainScreen = isMainScreen;
+        HasTray = hasTray;
+        IsMain = isTrayHost;
         InitializeComponent();
         if (IsVertical)
         {
@@ -83,17 +79,20 @@ public partial class Taskbar : AppBarWindow
         ClockButton.ToolTipOpening += (_, _) => ClockButton.ToolTip = ClockToolTip();
         Services.Notifications.NotificationService.Changed += UpdateNotificationBadge;
 
-        if (IsMain)
+        if (HasTray)
         {
             var tray = shell.NotificationArea;
             PinnedTray.ItemsSource = tray.PinnedIcons;
             _hiddenTrayView = TrayPromotion.CreateHiddenView(tray);
             HiddenTray.ItemsSource = _hiddenTrayView;
             TrayIcon.DragStarted += OnTrayDragStarted;
-            ((INotifyCollectionChanged)tray.UnpinnedIcons).CollectionChanged += (_, _) => UpdateChevron();
+            ((INotifyCollectionChanged)tray.UnpinnedIcons).CollectionChanged += OnUnpinnedTrayChanged;
             UpdateChevron();
-            LocationChanged += (_, _) => ReportTrayPosition();
-            SizeChanged += (_, _) => ReportTrayPosition();
+            if (IsMain)
+            {
+                LocationChanged += (_, _) => ReportTrayPosition();
+                SizeChanged += (_, _) => ReportTrayPosition();
+            }
         }
         else
         {
@@ -458,13 +457,15 @@ public partial class Taskbar : AppBarWindow
 
     /// <summary>
     /// Si esta barra muestra la ventana, según el modo (como en Windows): en todas, en la principal y
-    /// en la de su monitor, o solo en la de su monitor. Las ventanas de un monitor sin barra van a la principal.
+    /// en la de su monitor, o solo en la de su monitor. Las ventanas de un monitor sin apps abiertas
+    /// van a la principal (<see cref="App.AppsHostDevice"/>).
     /// </summary>
     private bool Shows(ApplicationWindow window)
     {
         if (!_multiMonitor || _appsMode == TaskbarAppsMode.AllTaskbars || window.HMonitor == Screen.HMonitor)
             return true;
-        return Role.IsMainScreen && (_appsMode == TaskbarAppsMode.MainAndOwn || !App.Current.HasTaskbarOn(window.HMonitor));
+        return Device == App.Current.AppsHostDevice
+               && (_appsMode == TaskbarAppsMode.MainAndOwn || !App.Current.HasTaskbarOn(window.HMonitor));
     }
 
     /// <summary>
@@ -485,6 +486,8 @@ public partial class Taskbar : AppBarWindow
         if (ChevronGlyph.RenderTransform is System.Windows.Media.RotateTransform rotate)
             Services.Themes.Motion.Turn(rotate, angle, animate);
     }
+
+    private void OnUnpinnedTrayChanged(object? sender, NotifyCollectionChangedEventArgs e) => UpdateChevron();
 
     private void UpdateChevron() =>
         ChevronButton.Visibility = _shell.NotificationArea.UnpinnedIcons
@@ -616,6 +619,8 @@ public partial class Taskbar : AppBarWindow
         Services.Notifications.NotificationService.Changed -= UpdateNotificationBadge;
         ThemeManager.ThemeChanged -= OnThemeChanged;
         TrayIcon.DragStarted -= OnTrayDragStarted;
+        if (HasTray)
+            ((INotifyCollectionChanged)_shell.NotificationArea.UnpinnedIcons).CollectionChanged -= OnUnpinnedTrayChanged;
         TaskButton.DragStarted -= OnTaskDragStarted;
         TaskOrder.Changed -= OnTaskOrderChanged;
         if (_hiddenTrayView != null)
@@ -647,17 +652,24 @@ public partial class Taskbar : AppBarWindow
             StartMenu.WinXMenu.ShowAt(menu, StartButton, Position);
     }
 
-    /// <summary>Lleva la bandeja del sistema (la del área de estado del monitor principal de Strata UI).</summary>
+    /// <summary>
+    /// La primera barra con la bandeja (la del monitor principal, si la lleva): la que se informa a
+    /// las apps que preguntan dónde está la bandeja.
+    /// </summary>
     public bool IsMain { get; }
 
-    public BarRole Role { get; }
+    /// <summary>Lleva la bandeja del sistema (la misma en todas las barras que la lleven).</summary>
+    public bool HasTray { get; }
 
-    /// <summary>Identificador de la barra para los elementos elegidos en el Hub.</summary>
+    /// <summary>Está en el monitor principal de Strata UI.</summary>
+    public bool IsMainScreen { get; }
+
+    /// <summary>Identificador de la barra en el diseño (<see cref="BarLayout.Id"/>).</summary>
     public string BarId { get; }
 
-    private readonly BarRole _defaultsRole;
     private List<BarItem> _items = new();
     private List<BarZone> _zones = new();
+    private bool _layoutApplied;
 
     /// <summary>Paneles de las zonas de la barra (inicio, centro y final, donde va "mostrar escritorio").</summary>
     private IEnumerable<StackPanel> ZonePanels => [StartZonePanel, CenterZonePanel, StatusPanel];
@@ -679,26 +691,28 @@ public partial class Taskbar : AppBarWindow
     public bool Has(BarItem item) => _items.Contains(item);
 
     /// <summary>
-    /// Pone en el área de estado los elementos elegidos para esta barra, en su orden (los demás
-    /// salen del panel). Inicio va siempre delante de las ventanas. La bandeja solo puede ir en
-    /// la barra que la recibe (<see cref="IsMain"/>).
+    /// Pone en sus zonas los elementos elegidos para esta barra, en su orden (los demás salen del
+    /// panel). Inicio va siempre delante de las apps abiertas. La bandeja solo puede ir en las
+    /// barras que la recibieron al crearse (<see cref="HasTray"/>).
     /// </summary>
     private void ApplyLayout()
     {
-        var items = BarLayout.ItemsFor(BarId, _defaultsRole, Settings.Current);
-        if (!IsMain)
+        var items = BarLayout.ItemsFor(BarId, Settings.Current);
+        if (!HasTray)
             items.Remove(BarItem.Tray);
-        else if (!items.Contains(BarItem.Tray))
-            items.Insert(items.Contains(BarItem.Start) ? 1 : 0, BarItem.Tray);
         var zones = items.Select(item => BarLayout.ZoneOf(BarId, item, Settings.Current)).ToList();
-        if (_items.SequenceEqual(items) && _zones.SequenceEqual(zones) && StatusPanel.Children.Count > 0)
+        if (_items.SequenceEqual(items) && _zones.SequenceEqual(zones) && _layoutApplied)
             return;
+        bool appsChanged = _layoutApplied && Has(BarItem.Apps) != items.Contains(BarItem.Apps);
+        _layoutApplied = true;
         _items = items;
         _zones = zones;
 
         StartButton.Visibility = Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
-        TaskArea.Visibility = Role.ShowsApps || Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
-        TaskScroller.Visibility = Role.ShowsApps ? Visibility.Visible : Visibility.Collapsed;
+        TaskArea.Visibility = Has(BarItem.Apps) || Has(BarItem.Start) ? Visibility.Visible : Visibility.Collapsed;
+        TaskScroller.Visibility = Has(BarItem.Apps) ? Visibility.Visible : Visibility.Collapsed;
+        if (appsChanged)
+            RefreshTasks(); // los anclados y las ventanas dependen de que la barra lleve las apps
 
         // Cada elemento en su zona, en el orden de la lista; "mostrar escritorio" siempre al final.
         foreach (var panel in ZonePanels)
@@ -1037,6 +1051,8 @@ public partial class Taskbar : AppBarWindow
     }
 
     private void OpenHub_Click(object sender, RoutedEventArgs e) => App.Current.OpenHub();
+
+    private void EditLayout_Click(object sender, RoutedEventArgs e) => EditMode.EditSession.Start();
 
     private void TaskManager_Click(object sender, RoutedEventArgs e) => ShellHelper.StartTaskManager();
 

@@ -12,6 +12,23 @@
                             Subtitle="{l:T 'Qué lleva la barra de cada monitor, su aspecto, posición, reloj y rendimiento.'}" />
             <hub:ScreenPicker />
 
+            <!-- ── Modo edición ──────────────────────────────────────────────── -->
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="DesignIdeas24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Modo edición'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Arma las barras, los elementos y los widgets de cada monitor sobre la pantalla misma, arrastrando. Nada cambia hasta que lo apliques.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button Appearance="Primary" Icon="{ui:SymbolIcon Edit24}" Content="{l:T 'Editar diseño'}" Click="EditLayout_Click" />
+            </ui:CardControl>
+            <!-- Con el modo edición abierto: la biblioteca, para arrastrar desde aquí a las capas -->
+            <Border x:Name="EditLibraryHost" Visibility="Collapsed" Margin="0,0,0,6" Padding="18,10,18,12" CornerRadius="8"
+                    BorderThickness="1" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" />
+
             <!-- ── Qué lleva la barra (de este monitor) ─────────────────────── -->
             <Grid Margin="2,8,0,4">
                 <Grid.ColumnDefinitions>
@@ -22,7 +39,7 @@
                 <ui:Button Grid.Column="1" Content="{l:T 'Restablecer'}" Icon="{ui:SymbolIcon ArrowReset24}" Click="ResetLayout_Click" />
             </Grid>
             <TextBlock Style="{StaticResource CardDescription}" Margin="2,4,0,10" TextWrapping="Wrap"
-                       Text="{l:T 'Activa lo que quieres en la barra de este monitor. Para ordenarlos, arrástralos en la barra misma (también a la de otro monitor); clic derecho en uno: su configuración en Windows.'}" />
+                       Text="{l:T 'Qué barras tiene este monitor y qué lleva cada una (cada elemento, una vez por monitor). Para ordenarlos, arrástralos en la barra misma o usa el modo edición; clic derecho en uno: su configuración en Windows.'}" />
             <hub:BarItemsEditor x:Name="BarEditor" />
 
             <!-- ── Barra ─────────────────────────────────────────────────────── -->
@@ -119,10 +136,6 @@
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="BatteryPercentSwitch" Click="Options_Changed" />
             </ui:CardControl>
-
-            <!-- ── Posición (de este monitor) ────────────────────────────────── -->
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Posición'}" />
-            <StackPanel x:Name="MonitorPanel" />
 
             <!-- ── Reloj ─────────────────────────────────────────────────────── -->
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Reloj'}" />

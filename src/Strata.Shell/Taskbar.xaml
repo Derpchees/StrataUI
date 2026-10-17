@@ -23,6 +23,7 @@
     <appbar:AppBarWindow.ContextMenu>
         <ContextMenu>
             <MenuItem Header="{l:T 'Configuración de Strata UI'}" FontWeight="SemiBold" Click="OpenHub_Click" />
+            <MenuItem Header="{l:T 'Editar diseño…'}" Click="EditLayout_Click" />
             <Separator />
             <MenuItem Header="{l:T 'Administrador de tareas'}" Click="TaskManager_Click" />
             <MenuItem Header="{l:T 'Configuración de Windows'}" Click="WindowsSettings_Click" />

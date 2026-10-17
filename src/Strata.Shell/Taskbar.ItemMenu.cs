@@ -57,6 +57,8 @@ public partial class Taskbar
         menu.Items.Add(position);
         if (item != BarItem.Tray)
             menu.Items.Add(Entry(Loc.T("Quitar de esta barra"), () => RemoveItem(item)));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Entry(Loc.T("Editar diseño…"), () => EditMode.EditSession.Start()));
         return menu;
     }
 
@@ -104,11 +106,7 @@ public partial class Taskbar
         _ => [],
     };
 
-    /// <summary>Quita el elemento de esta barra y guarda las listas de todas (como el editor del Hub).</summary>
-    private void RemoveItem(BarItem item)
-    {
-        foreach (var bar in App.Current.Taskbars)
-            Settings.Current.BarItems[bar.BarId] = bar.Items.ToList();
-        Settings.Update(s => s.BarItems[BarId] = _items.Where(i => i != item).ToList());
-    }
+    /// <summary>Quita el elemento de esta barra y lo guarda.</summary>
+    private void RemoveItem(BarItem item) =>
+        Settings.Update(s => BarLayout.SetItems(s, BarId, _items.Where(i => i != item).ToList()));
 }

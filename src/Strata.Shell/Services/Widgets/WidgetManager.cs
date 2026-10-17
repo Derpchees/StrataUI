@@ -89,6 +89,38 @@ public static class WidgetManager
         Changed?.Invoke();
     }
 
+    /// <summary>Ventana de un widget abierto (el modo edición la muestra tal cual se ve).</summary>
+    public static WidgetWindow? WindowOf(string id) => Windows.GetValueOrDefault(id);
+
+    /// <summary>
+    /// Aplica una lista completa de widgets (modo edición): cierra los que ya no están, abre los
+    /// nuevos y mueve o cambia los demás. La lista ya debe estar guardada en la configuración.
+    /// </summary>
+    public static void Sync()
+    {
+        var wanted = Settings.Current.Widgets.ToDictionary(w => w.Id);
+        foreach (var id in Windows.Keys.Where(id => !wanted.ContainsKey(id)).ToList())
+            if (Windows.Remove(id, out var gone))
+                gone.Close();
+        foreach (var config in wanted.Values)
+        {
+            if (Windows.TryGetValue(config.Id, out var window))
+                window.Update(config);
+            else
+                Open(config);
+        }
+        Changed?.Invoke();
+        // Las barras nuevas cambian el área de trabajo un momento después: cada widget vuelve a su lugar.
+        var later = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
+        later.Tick += (_, _) =>
+        {
+            later.Stop();
+            foreach (var w in Windows.Values)
+                w.PlaceFromConfig();
+        };
+        later.Start();
+    }
+
     private static void Open(WidgetConfig config)
     {
         FrameworkElement content = config.Kind switch

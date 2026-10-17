@@ -17,7 +17,7 @@ public partial class Taskbar
     private string? _pinDrag;
 
     /// <summary>Esta barra muestra los anclados (las que llevan ventanas).</summary>
-    private bool ShowsPins => Role.ShowsApps;
+    private bool ShowsPins => Has(BarItem.Apps);
 
     /// <summary>
     /// El puntero está sobre esta barra y la barra lleva anclados: ahí se puede soltar una app del menú

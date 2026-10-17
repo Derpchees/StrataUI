@@ -50,19 +50,18 @@ public partial class MediaPage : Page
         if (_loading)
             return;
         bool on = MediaSwitch.IsChecked == true;
-        var layout = App.Current.Taskbars.ToDictionary(t => t.BarId, t => t.Items.ToList());
         var bars = Bars();
-        foreach (var bar in bars)
-            layout[bar.BarId].Remove(BarItem.Media);
-        if (on && (bars.FirstOrDefault(t => t.Has(BarItem.Clock)) ?? bars.FirstOrDefault()) is { } target)
-        {
-            var items = layout[target.BarId];
-            items.Insert(items.Contains(BarItem.Start) ? 1 : 0, BarItem.Media);
-        }
+        var target = bars.FirstOrDefault(t => t.Has(BarItem.Clock)) ?? bars.FirstOrDefault();
         Settings.Update(s =>
         {
-            foreach (var (id, list) in layout)
-                s.BarItems[id] = list;
+            foreach (var bar in bars)
+                BarLayout.SetItems(s, bar.BarId, bar.Items.Where(i => i != BarItem.Media).ToList());
+            if (on && target != null)
+            {
+                var items = BarLayout.ItemsFor(target.BarId, s);
+                items.Insert(items.Contains(BarItem.Apps) ? items.IndexOf(BarItem.Apps) + 1 : items.Contains(BarItem.Start) ? 1 : 0, BarItem.Media);
+                BarLayout.SetItems(s, target.BarId, items);
+            }
         });
     }
 

@@ -49,31 +49,31 @@ public partial class TrayPage : Page
     private void LoadScreen()
     {
         var bars = App.Current.Taskbars.Where(t => t.Device == ScreenPicker.Device).ToList();
-        bool here = bars.Any(t => t.IsMain);
+        bool here = bars.Any(t => t.HasTray);
         HereSwitch.IsChecked = here;
-        // Va en una sola barra: se mueve activándola en otro monitor.
-        HereSwitch.IsEnabled = !here && bars.Count > 0;
-        HereText.Text = here ? Loc.T("Aquí está. Para moverla, actívala en otro monitor.")
-            : bars.Count == 0 ? Loc.T("Este monitor no tiene barra.")
-            : Loc.T("Al activarla, la bandeja pasa a la barra de este monitor (con la tecla Windows y lo demás de la barra principal).");
+        HereSwitch.IsEnabled = bars.Count > 0;
+        HereText.Text = bars.Count == 0 ? Loc.T("Este monitor no tiene barra.")
+            : Loc.T("La bandeja es la misma en cada monitor que la lleve (una por monitor). Su lugar en la barra se cambia en el modo edición.");
     }
 
+    /// <summary>Pone o quita la bandeja en este monitor (en la barra del reloj, o la primera).</summary>
     private void Here_Click(object sender, RoutedEventArgs e)
     {
         var bars = App.Current.Taskbars.Where(t => t.Device == ScreenPicker.Device).ToList();
         var target = bars.FirstOrDefault(t => t.Has(BarItem.Clock)) ?? bars.FirstOrDefault();
-        if (HereSwitch.IsChecked != true || target is null)
+        if (target is null)
             return;
-        var layout = App.Current.Taskbars.ToDictionary(t => t.BarId, t => t.Items.ToList());
-        foreach (var items in layout.Values)
-            items.Remove(BarItem.Tray);
-        var list = layout[target.BarId];
-        int clock = list.IndexOf(BarItem.Clock);
-        list.Insert(clock >= 0 ? clock : list.Count, BarItem.Tray);
+        bool on = HereSwitch.IsChecked == true;
         Settings.Update(s =>
         {
-            foreach (var (id, items) in layout)
-                s.BarItems[id] = items;
+            foreach (var bar in bars)
+                BarLayout.SetItems(s, bar.BarId, bar.Items.Where(i => i != BarItem.Tray).ToList());
+            if (on)
+            {
+                var list = BarLayout.ItemsFor(target.BarId, s);
+                BarLayout.Insert(list, BarItem.Tray);
+                BarLayout.SetItems(s, target.BarId, list);
+            }
         });
     }
 
