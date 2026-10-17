@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -9,8 +9,8 @@ using Strata.Shell.Services.Localization;
 namespace Strata.Shell.Widgets;
 
 /// <summary>
-/// Medidor grande para el escritorio (CPU, GPU o FPS): el número grande y debajo el nombre y la
-/// temperatura (o, en el de FPS, el juego que se mide). Blanco con sombra, como el reloj. Los datos
+/// Medidor grande para el escritorio (CPU, GPU, FPS o velocidad de internet): el número grande y
+/// debajo el nombre y la temperatura (en el de FPS, el juego que se mide; en el de internet, la subida). Blanco con sombra, como el reloj. Los datos
 /// son los de los medidores de la barra (<see cref="SystemMonitor"/> y las lecturas avanzadas de
 /// <see cref="Sensors"/>).
 /// </summary>
@@ -44,11 +44,18 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
             text.Foreground = Brushes.White;
         }
         Effect = new DropShadowEffect { BlurRadius = 12, ShadowDepth = 1, Opacity = 0.55, Color = Colors.Black };
-        _label.Text = _kind switch { WidgetKind.Gpu => "GPU", WidgetKind.Fps => "FPS", _ => "CPU" };
+        _label.Text = _kind switch { WidgetKind.Gpu => "GPU", WidgetKind.Fps => "FPS", WidgetKind.NetSpeed => "↓ " + Loc.T("Internet"), _ => "CPU" };
 
         Apply(config);
         Loaded += (_, _) =>
         {
+            if (_kind == WidgetKind.NetSpeed)
+            {
+                NetSpeed.Subscribe();
+                NetSpeed.Changed += Update;
+                Update();
+                return;
+            }
             SystemMonitor.Subscribe();
             SystemMonitor.Changed += Update;
             Sensors.Changed += Update;
@@ -58,6 +65,12 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
         };
         Unloaded += (_, _) =>
         {
+            if (_kind == WidgetKind.NetSpeed)
+            {
+                NetSpeed.Unsubscribe();
+                NetSpeed.Changed -= Update;
+                return;
+            }
             SystemMonitor.Unsubscribe();
             SystemMonitor.Changed -= Update;
             Sensors.Changed -= Update;
@@ -67,7 +80,7 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
     public void Apply(WidgetConfig config)
     {
         // Ancho fijo: el widget no cambia de tamaño (ni se corre) cuando el número pasa de 9 a 10.
-        Width = 140 * config.Scale;
+        Width = (_kind == WidgetKind.NetSpeed ? 200 : 140) * config.Scale;
         Margin = new Thickness(8 * config.Scale);
         _number.FontSize = 54 * config.Scale;
         _unit.FontSize = 22 * config.Scale;
@@ -79,6 +92,16 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
 
     private void Update()
     {
+        if (_kind == WidgetKind.NetSpeed)
+        {
+            // "12.4" grande con "MB/s" al lado; debajo, la subida.
+            string down = NetSpeed.Format(NetSpeed.DownBytesPerSecond);
+            int space = down.LastIndexOf(' ');
+            _number.Text = space > 0 ? down[..space] : down;
+            _unit.Text = space > 0 ? " " + down[(space + 1)..] : "";
+            _detail.Text = "↑ " + NetSpeed.Format(NetSpeed.UpBytesPerSecond);
+            return;
+        }
         if (_kind == WidgetKind.Fps)
         {
             var target = Sensors.TargetProcess(Settings.Current.FpsScreen);

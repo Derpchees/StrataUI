@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -8,9 +8,11 @@ namespace Strata.Shell.Services.Notifications;
 
 /// <summary>Lo que la API de notificaciones no da y sí está en el XML original del aviso.</summary>
 /// <param name="Domain">Sitio que la envió desde el navegador (atribución o dirección de origen).</param>
-/// <param name="Picture">Imagen del aviso (foto del remitente, logotipo del sitio): ruta local.</param>
+/// <param name="Picture">Imagen del aviso (foto del remitente, logotipo del sitio): ruta local o https.</param>
 /// <param name="CircleCrop">Windows la recorta en círculo (hint-crop="circle").</param>
-public sealed record ToastDetails(string? Domain, string? Picture, bool CircleCrop);
+/// <param name="Launch">Lo que Windows le pasa a la app al hacer clic (en Chromium, el origen y la pestaña).</param>
+/// <param name="Hero">Imagen grande del contenido (sticker, foto): ruta local o https.</param>
+public sealed record ToastDetails(string? Domain, string? Picture, bool CircleCrop, string? Launch = null, string? Hero = null);
 
 /// <summary>
 /// Lee el XML de una notificación de la base de datos de Windows
@@ -88,15 +90,23 @@ public static class NotificationDb
                 domain = origin.Groups[1].Value.ToLowerInvariant();
 
             var logo = toast.Descendants("image").FirstOrDefault(i => (string?)i.Attribute("placement") == "appLogoOverride");
-            string? picture = LocalPath((string?)logo?.Attribute("src"));
+            string? picture = Source((string?)logo?.Attribute("src"));
             bool circle = (string?)logo?.Attribute("hint-crop") == "circle";
-            return new ToastDetails(domain, picture, circle);
+            // La imagen del contenido: la de arriba (hero) o la que va en el cuerpo (sin placement).
+            var hero = toast.Descendants("image").FirstOrDefault(i => (string?)i.Attribute("placement") is null or "hero");
+            return new ToastDetails(domain, picture, circle, (string?)toast.Attribute("launch"), Source((string?)hero?.Attribute("src")));
         }
         catch (System.Xml.XmlException)
         {
             return null;
         }
     }
+
+    /// <summary>Imagen en disco o en internet (https, como las fotos de WhatsApp); las del paquete (ms-appx), no.</summary>
+    internal static string? Source(string? src) =>
+        src != null && src.StartsWith("https://", StringComparison.OrdinalIgnoreCase) && Uri.IsWellFormedUriString(src, UriKind.Absolute)
+            ? src
+            : LocalPath(src);
 
     /// <summary>Solo imágenes en disco ("C:\…" o "file:///C:/…"); las de internet o del paquete, no.</summary>
     internal static string? LocalPath(string? src)

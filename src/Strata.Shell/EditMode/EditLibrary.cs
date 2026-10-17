@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -25,6 +25,7 @@ internal static class WidgetCatalog
             new(SymbolRegular.DeveloperBoard24, Loc.T("Medidor de CPU"), () => new WidgetConfig { Kind = WidgetKind.Cpu }),
             new(SymbolRegular.Gauge24, Loc.T("Medidor de GPU"), () => new WidgetConfig { Kind = WidgetKind.Gpu }),
             new(SymbolRegular.Games24, Loc.T("Contador de FPS"), () => new WidgetConfig { Kind = WidgetKind.Fps }),
+            new(SymbolRegular.ArrowBidirectionalUpDown24, Loc.T("Velocidad de internet"), () => new WidgetConfig { Kind = WidgetKind.NetSpeed }),
         };
         foreach (var module in ModuleStore.All<ModuleBase>(ModuleKind.Widget))
             list.Add(new(SymbolRegular.PuzzlePiece24, module.Name, () => new WidgetConfig { Kind = WidgetKind.Custom, Module = module.Id }));
@@ -38,6 +39,7 @@ internal static class WidgetCatalog
         WidgetKind.Cpu => SymbolRegular.DeveloperBoard24,
         WidgetKind.Gpu => SymbolRegular.Gauge24,
         WidgetKind.Fps => SymbolRegular.Games24,
+        WidgetKind.NetSpeed => SymbolRegular.ArrowBidirectionalUpDown24,
         _ => SymbolRegular.Clock24,
     };
 
@@ -47,6 +49,7 @@ internal static class WidgetCatalog
         WidgetKind.Cpu => Loc.T("Medidor de CPU"),
         WidgetKind.Gpu => Loc.T("Medidor de GPU"),
         WidgetKind.Fps => Loc.T("Contador de FPS"),
+        WidgetKind.NetSpeed => Loc.T("Velocidad de internet"),
         WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, widget.Module)?.Name ?? Loc.T("Widget importado"),
         _ => widget.ShowDate ? Loc.T("Reloj con fecha") : Loc.T("Reloj"),
     };
@@ -59,6 +62,7 @@ internal static class WidgetCatalog
             WidgetKind.Clock => new Size(widget.ShowDate ? 300 : 240, widget.ShowDate ? 150 : 110),
             WidgetKind.Visualizer => new Size(380, 150),
             WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps => new Size(190, 120),
+            WidgetKind.NetSpeed => new Size(240, 120),
             _ => new Size(260, 150),
         };
         return new Size(size.Width * widget.Scale, size.Height * widget.Scale);

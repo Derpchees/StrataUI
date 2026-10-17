@@ -977,5 +977,9 @@
   "Juntos: {0}": "Zusammen: {0}",
   "Inicio: {0}; apps: {1}": "Start: {0}; Apps: {1}",
   "Abrir el Hub al iniciar con Windows": "Hub beim Windows-Start öffnen",
-  "Si está apagado, al iniciar sesión solo aparecen las barras. El Hub se abre desde el ícono de Strata UI en la bandeja.": "Wenn aus, erscheinen bei der Anmeldung nur die Leisten. Den Hub öffnest du über das Strata-UI-Symbol im Infobereich."
+  "Si está apagado, al iniciar sesión solo aparecen las barras. El Hub se abre desde el ícono de Strata UI en la bandeja.": "Wenn aus, erscheinen bei der Anmeldung nur die Leisten. Den Hub öffnest du über das Strata-UI-Symbol im Infobereich.",
+  "Velocidad de internet": "Internetgeschwindigkeit",
+  "Internet": "Internet",
+  "Bajada: {0}": "Download: {0}",
+  "Subida: {0}": "Upload: {0}"
 }

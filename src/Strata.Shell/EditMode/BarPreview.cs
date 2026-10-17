@@ -398,6 +398,13 @@ internal sealed class BarPreview
             }
             case BarItem.Cpu or BarItem.Gpu or BarItem.Ram or BarItem.Fps:
                 return MeterVisual(item);
+            case BarItem.NetSpeed:
+            {
+                var stack = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) };
+                stack.Children.Add(Text("↓ " + NetSpeed.Format(NetSpeed.DownBytesPerSecond, _vertical), 11, bold: true));
+                stack.Children.Add(Text("↑ " + NetSpeed.Format(NetSpeed.UpBytesPerSecond, _vertical), 10));
+                return stack;
+            }
             case BarItem.Clock:
                 return ClockVisual();
             default:

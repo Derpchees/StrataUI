@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Windows.Media;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Notifications;
@@ -136,4 +136,82 @@ public class AccentAndToastTests
 
     [Fact]
     public void Broken_xml_is_ignored() => Assert.Null(NotificationDb.Parse("<toast"));
+
+    [Fact]
+    public void Launch_web_pictures_and_content_image_are_read()
+    {
+        var details = NotificationDb.Parse("""
+            <toast launch="0|1|Default|Brave|0|https://web.whatsapp.com/|n#1">
+              <visual><binding template="ToastGeneric">
+                <text>Ana</text>
+                <image src="https://cdn.example.com/sticker.webp" />
+                <image placement="appLogoOverride" src="https://cdn.example.com/ana.jpg" hint-crop="circle" />
+              </binding></visual>
+            </toast>
+            """);
+        Assert.Equal("0|1|Default|Brave|0|https://web.whatsapp.com/|n#1", details?.Launch);
+        Assert.Equal("https://cdn.example.com/ana.jpg", details?.Picture);
+        Assert.Equal("https://cdn.example.com/sticker.webp", details?.Hero);
+    }
+
+    [Fact]
+    public void Package_and_plain_http_images_are_not_loaded()
+    {
+        Assert.Null(NotificationDb.Source("ms-appx:///Assets/logo.png"));
+        Assert.Null(NotificationDb.Source("http://example.com/a.png"));
+    }
+
+    // ── Clic en avisos de sitios ────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("WhatsApp", "WhatsApp", true, true)]
+    [InlineData("WhatsApp Web", "WhatsApp", false, true)]
+    [InlineData("WhatsApp Web", "WhatsApp", true, false)]
+    [InlineData("Xbox", "X", false, false)]
+    public void Web_apps_match_their_site_by_name(string app, string site, bool exact, bool expected) =>
+        Assert.Equal(expected, BrowserActivation.Matches(app, site, exact));
+
+    // ── Texto de las notificaciones ─────────────────────────────────────────
+
+    [Fact]
+    public void Links_and_emojis_are_split_out()
+    {
+        var parts = Strata.Shell.Controls.RichText.Split("Mira https://x.com/a. 😀👍🏽 ok");
+        Assert.Equal(
+            [(Strata.Shell.Controls.RichText.Kind.Text, "Mira "), (Strata.Shell.Controls.RichText.Kind.Link, "https://x.com/a"),
+             (Strata.Shell.Controls.RichText.Kind.Text, ". "), (Strata.Shell.Controls.RichText.Kind.Emoji, "😀"),
+             (Strata.Shell.Controls.RichText.Kind.Emoji, "👍🏽"), (Strata.Shell.Controls.RichText.Kind.Text, " ok")],
+            parts);
+    }
+
+    [Theory]
+    [InlineData("❤️", true)]
+    [InlineData("⭐", true)]
+    [InlineData("1️⃣", true)]
+    [InlineData("✓", false)]
+    [InlineData("©", false)]
+    [InlineData("7", false)]
+    [InlineData("a", false)]
+    public void Emojis_are_recognized(string text, bool expected) =>
+        Assert.Equal(expected, Strata.Shell.Controls.RichText.IsEmoji(text));
+
+    [Theory]
+    [InlineData(null, false, "— KB/s")]
+    [InlineData(512.0, false, "1 KB/s")]
+    [InlineData(1536.0 * 1024, false, "1.5 MB/s")]
+    [InlineData(150.0 * 1024 * 1024, false, "150 MB/s")]
+    [InlineData(1536.0 * 1024, true, "1.5M")]
+    public void Net_speed_is_formatted(double? bytes, bool compact, string expected)
+    {
+        var culture = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+        try
+        {
+            Assert.Equal(expected, NetSpeed.Format(bytes, compact));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = culture;
+        }
+    }
 }

@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Media;
@@ -37,12 +37,42 @@ public sealed class StrataNotification : System.ComponentModel.INotifyPropertyCh
     public string? SiteDomain { get; init; }
 
     /// <summary>Imagen del aviso (foto del remitente, logotipo del sitio), como la muestra Windows a la izquierda.</summary>
-    public ImageSource? Picture { get; init; }
+    public ImageSource? Picture
+    {
+        get => _picture;
+        set
+        {
+            _picture = value;
+            Notify(nameof(Picture));
+            Notify(nameof(HasPicture));
+        }
+    }
+
+    private ImageSource? _picture, _hero;
 
     /// <summary>La imagen va recortada en círculo (fotos de contactos).</summary>
     public bool PictureIsCircle { get; init; }
 
     public bool HasPicture => Picture != null;
+
+    /// <summary>Imagen grande del contenido (un sticker, una foto), debajo del texto.</summary>
+    public ImageSource? Hero
+    {
+        get => _hero;
+        set
+        {
+            _hero = value;
+            Notify(nameof(Hero));
+            Notify(nameof(HasHero));
+        }
+    }
+
+    public bool HasHero => Hero != null;
+
+    /// <summary>El "launch" del aviso: lo que recibe la app al hacer clic (ver <see cref="NotificationService.Activate"/>).</summary>
+    public string? Launch { get; init; }
+
+    private void Notify(string name) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
 
     public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
     /// <summary>Aviso propio de Strata UI (prueba, actualización): no existe en Windows.</summary>
@@ -252,19 +282,24 @@ public static class NotificationService
                     appName = site?.Name ?? WebSites.DomainName(domain);
                 }
             }
-            var picture = details?.Picture is { } file ? AppIcons.Load(file, 96) : null;
-            return new StrataNotification
+            var item = new StrataNotification
             {
                 Id = raw.Id,
                 AppName = string.IsNullOrWhiteSpace(appName) ? Loc.T("Notificación") : appName,
                 AppId = appId,
                 SiteDomain = siteDomain,
-                Picture = picture,
+                Launch = details?.Launch,
                 PictureIsCircle = details?.CircleCrop == true,
                 Title = texts.FirstOrDefault() ?? "",
                 Body = string.Join("\n", texts.Skip(1)),
                 Time = raw.CreationTime,
             };
+            // Las imágenes de internet (fotos de WhatsApp) llegan un momento después.
+            if (details?.Picture is { } picture)
+                _ = NotificationImages.SetAsync(picture, 96, image => item.Picture = image);
+            if (details?.Hero is { } hero)
+                _ = NotificationImages.SetAsync(hero, 360, image => item.Hero = image);
+            return item;
         }
         catch (Exception ex)
         {
@@ -364,9 +399,18 @@ public static class NotificationService
         }
     }
 
-    /// <summary>Abre la app que envió la notificación y la quita, como al hacer clic en Windows.</summary>
+    /// <summary>
+    /// Hace lo que haría Windows al hacer clic y la quita. De un sitio del navegador (WhatsApp Web…):
+    /// su app web si está instalada; si no, el navegador recibe el clic como de Windows y la página
+    /// lo atiende (enfoca su pestaña y abre el chat). De las demás apps, se abre la app.
+    /// </summary>
     public static void Activate(StrataNotification item)
     {
+        if (BrowserActivation.TryActivate(item))
+        {
+            Dismiss(item);
+            return;
+        }
         if (item.AppId is { Length: > 0 } appId)
         {
             try

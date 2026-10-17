@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using Strata.Shell.Services;
@@ -29,7 +29,7 @@ public partial class NotificationFlyout : FlyoutWindow
 
     private void Item_Click(object sender, MouseButtonEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject d && IsInsideButton(d))
+        if (e.OriginalSource is DependencyObject d && (Controls.RichText.IsInsideLink(d) || d is System.Windows.Media.Visual && IsInsideButton(d)))
             return;
         if (sender is FrameworkElement { DataContext: StrataNotification item })
         {

@@ -112,6 +112,11 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   (sigue sin el argumento): por eso, un pedido de abrir el Hub de otra copia en el primer minuto se
   ignora (`App.OnOpenHubRequested`). Strata UI tiene su ícono en la bandeja (`Services/StrataTrayIcon`,
   `NotifyIcon` de WinForms; se ancla la primera vez en `TrayPromotion`).
+- **Clic en avisos de sitios** (`Services/Notifications/BrowserActivation`): su app web instalada (por
+  nombre) o el `launch` del aviso al navegador con `--notification-launch-id` (lo que hace el
+  activador de Chromium); así la página recibe el clic. Abrir el navegador por su AUMID solo abre una ventana.
+- **Emojis a color**: WPF los dibuja en blanco y negro; `Services/Emoji/EmojiRenderer` los dibuja con
+  DirectWrite (Vortice) y `Controls/RichText.Text` (en vez de `Text`) pone links y emojis en un TextBlock.
 - **Desinstalar desde Inicio** (`AppActions.UninstallAsync`): una app web de Chromium (`_crx_` en el ID o
   `--app-id=` en el acceso directo) usa `--uninstall-app-id`, nunca el desinstalador del navegador.
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y

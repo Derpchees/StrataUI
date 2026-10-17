@@ -6,6 +6,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.2.0] - 2026-10-17
+
+### Añadido
+- **Velocidad de internet** en la barra (bajada y subida en vivo) y como widget del escritorio. Cuenta
+  el adaptador que sale a internet, sin sumar dos veces el tráfico de VPN como Tailscale o ZeroTier.
+- **Notificaciones con emojis a color, links y stickers**: los emojis se ven como en Windows, los links
+  se abren con un clic y las imágenes del aviso (stickers, fotos) aparecen debajo del texto. También
+  llegan las fotos de contacto que las apps mandan por internet (WhatsApp).
+
+### Corregido
+- **Clic en una notificación de WhatsApp Web** (o de otro sitio) abría una pestaña nueva del
+  navegador. Ahora abre su app web si está instalada; si no, va a la pestaña que la envió, como en
+  Windows.
+
 ## [3.1.0] - 2026-10-17
 
 ### Añadido

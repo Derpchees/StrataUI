@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -176,8 +176,10 @@ public partial class NotificationBannerWindow : Window
 
     private void Banner_Click(object sender, MouseButtonEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject source && FindParent<System.Windows.Controls.Button>(source) != null)
-            return; // el clic fue en la X
+        // El clic fue en la X o en un link (los links se abren solos).
+        if (e.OriginalSource is DependencyObject source
+            && (Controls.RichText.IsInsideLink(source) || source is Visual && FindParent<System.Windows.Controls.Button>(source) != null))
+            return;
         if (sender is FrameworkElement { DataContext: StrataNotification item })
         {
             Remove(item);

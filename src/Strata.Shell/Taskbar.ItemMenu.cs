@@ -41,7 +41,7 @@ public partial class Taskbar
         var menu = new ContextMenu();
         foreach (var (label, uri) in WindowsSettings(item))
             menu.Items.Add(Entry(label, () => OpenUri(uri)));
-        if (item is BarItem.Cpu or BarItem.Gpu or BarItem.Ram)
+        if (item is BarItem.Cpu or BarItem.Gpu or BarItem.Ram or BarItem.NetSpeed)
             menu.Items.Add(Entry(Loc.T("Administrador de tareas"), ManagedShell.Common.Helpers.ShellHelper.StartTaskManager));
         menu.Items.Add(Entry(Loc.T("Opciones en Strata UI"), () => App.Current.OpenHub(HubPage(item))));
         menu.Items.Add(new Separator());
@@ -103,6 +103,7 @@ public partial class Taskbar
         BarItem.Tray => [(Loc.T("Configuración de la barra de tareas"), "ms-settings:taskbar")],
         BarItem.Fps => [(Loc.T("Configuración de gráficos"), "ms-settings:display-advancedgraphics")],
         BarItem.FreeRam => [(Loc.T("Configuración de almacenamiento"), "ms-settings:storagesense")],
+        BarItem.NetSpeed => [(Loc.T("Configuración de red"), "ms-settings:network")],
         _ => [],
     };
 

@@ -1,4 +1,4 @@
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
@@ -240,7 +240,7 @@ public partial class Taskbar : AppBarWindow
             button.Margin = new Thickness(4, 0, 4, 0);
         }
         // Medidores: dos líneas centradas, del ancho de la barra.
-        foreach (var meter in new Control[] { CpuButton, GpuButton, RamButton, FpsButton })
+        foreach (var meter in new Control[] { CpuButton, GpuButton, RamButton, FpsButton, NetSpeedButton })
         {
             meter.HorizontalAlignment = HorizontalAlignment.Stretch;
             meter.Margin = new Thickness(4, 1, 4, 1);
@@ -737,7 +737,34 @@ public partial class Taskbar : AppBarWindow
             }
         }
         UpdateMeters();
+        if (Has(BarItem.NetSpeed) != _netSpeedOn)
+        {
+            _netSpeedOn = !_netSpeedOn;
+            if (_netSpeedOn)
+            {
+                NetSpeed.Subscribe();
+                NetSpeed.Changed += UpdateNetSpeed;
+            }
+            else
+            {
+                NetSpeed.Unsubscribe();
+                NetSpeed.Changed -= UpdateNetSpeed;
+            }
+        }
+        UpdateNetSpeed();
         ScheduleContrast();
+    }
+
+    private bool _netSpeedOn;
+
+    /// <summary>Velocidad de internet: en vertical, corta ("1.2M") para que quepa.</summary>
+    private void UpdateNetSpeed()
+    {
+        if (!_netSpeedOn)
+            return;
+        NetDownText.Text = "↓ " + NetSpeed.Format(NetSpeed.DownBytesPerSecond, compact: IsVertical);
+        NetUpText.Text = "↑ " + NetSpeed.Format(NetSpeed.UpBytesPerSecond, compact: IsVertical);
+        NetSpeedButton.ToolTip = NetSpeed.Description();
     }
 
     private FrameworkElement? Element(BarItem item) => item switch
@@ -755,6 +782,7 @@ public partial class Taskbar : AppBarWindow
         BarItem.Ram => RamButton,
         BarItem.Fps => FpsButton,
         BarItem.FreeRam => FreeRamButton,
+        BarItem.NetSpeed => NetSpeedButton,
         BarItem.Clock => ClockButton,
         BarItem.Notifications => NotificationsButton,
         _ => null, // las apps abiertas son el área de las ventanas (TaskArea)

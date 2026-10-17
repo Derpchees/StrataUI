@@ -31,7 +31,7 @@ public static class BarLayout
     [
         BarItem.Start, BarItem.Apps, BarItem.Tray, BarItem.Media, BarItem.Network, BarItem.Bluetooth, BarItem.Volume,
         BarItem.Brightness, BarItem.Battery, BarItem.Clock, BarItem.Notifications, BarItem.Cpu, BarItem.Gpu, BarItem.Ram,
-        BarItem.Fps, BarItem.FreeRam,
+        BarItem.Fps, BarItem.FreeRam, BarItem.NetSpeed,
     ];
 
     /// <summary>
@@ -269,6 +269,7 @@ public static class BarLayout
         BarItem.Ram => Loc.T("Memoria RAM"),
         BarItem.Fps => Loc.T("Contador de FPS"),
         BarItem.FreeRam => Loc.T("Liberar RAM"),
+        BarItem.NetSpeed => Loc.T("Velocidad de internet"),
         BarItem.Clock => Loc.T("Reloj y calendario"),
         BarItem.Notifications => Loc.T("Notificaciones"),
         _ => item.ToString(),
@@ -291,6 +292,7 @@ public static class BarLayout
         BarItem.Ram => Wpf.Ui.Controls.SymbolRegular.Ram20,
         BarItem.Fps => Wpf.Ui.Controls.SymbolRegular.Games24,
         BarItem.FreeRam => Wpf.Ui.Controls.SymbolRegular.Broom24,
+        BarItem.NetSpeed => Wpf.Ui.Controls.SymbolRegular.ArrowBidirectionalUpDown24,
         BarItem.Clock => Wpf.Ui.Controls.SymbolRegular.Clock24,
         BarItem.Notifications => Wpf.Ui.Controls.SymbolRegular.Alert24,
         _ => Wpf.Ui.Controls.SymbolRegular.Circle24,

@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using Strata.Shell.Services.Modules;
 using Strata.Shell.Widgets;
 
@@ -126,7 +126,7 @@ public static class WidgetManager
         FrameworkElement content = config.Kind switch
         {
             WidgetKind.Visualizer => new VisualizerWidget(config),
-            WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps => new MeterWidget(config),
+            WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps or WidgetKind.NetSpeed => new MeterWidget(config),
             WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, config.Module) is { } module
                 ? new CustomWidget(config, module)
                 : CustomWidget.Missing(config.Module),

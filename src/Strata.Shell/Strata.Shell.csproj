@@ -50,6 +50,8 @@
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.8" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
     <PackageReference Include="System.Management" Version="10.0.12" />
+    <!-- Emojis a color en las notificaciones: DirectWrite los dibuja (WPF no sabe), ver Services/Emoji -->
+    <PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
   </ItemGroup>
 

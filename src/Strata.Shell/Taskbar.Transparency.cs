@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -226,6 +226,7 @@ public partial class Taskbar
         yield return RamButton;
         yield return FpsButton;
         yield return FreeRamButton;
+        yield return NetSpeedButton;
         yield return ClockButton;
         yield return ShowDesktopArea;
     }

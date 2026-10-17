@@ -977,5 +977,9 @@
   "Juntos: {0}": "Ensemble : {0}",
   "Inicio: {0}; apps: {1}": "Démarrer : {0} ; applications : {1}",
   "Abrir el Hub al iniciar con Windows": "Ouvrir le Hub au démarrage de Windows",
-  "Si está apagado, al iniciar sesión solo aparecen las barras. El Hub se abre desde el ícono de Strata UI en la bandeja.": "Désactivé, seules les barres apparaissent à l'ouverture de session. Le Hub s'ouvre depuis l'icône de Strata UI dans la zone de notification."
+  "Si está apagado, al iniciar sesión solo aparecen las barras. El Hub se abre desde el ícono de Strata UI en la bandeja.": "Désactivé, seules les barres apparaissent à l'ouverture de session. Le Hub s'ouvre depuis l'icône de Strata UI dans la zone de notification.",
+  "Velocidad de internet": "Vitesse Internet",
+  "Internet": "Internet",
+  "Bajada: {0}": "Réception : {0}",
+  "Subida: {0}": "Envoi : {0}"
 }

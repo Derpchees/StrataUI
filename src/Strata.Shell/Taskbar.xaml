@@ -268,6 +268,13 @@
                             <TextBlock x:Name="FpsDetail" Style="{StaticResource MeterDetail}" Text="FPS" />
                         </StackPanel>
                     </Button>
+                    <!-- Velocidad de internet: bajada arriba y subida abajo (ver Services/NetSpeed) -->
+                    <Button x:Name="NetSpeedButton" Style="{StaticResource MeterButton}" Click="Meter_Click">
+                        <StackPanel>
+                            <TextBlock x:Name="NetDownText" Style="{StaticResource MeterValue}" Text="↓ —" />
+                            <TextBlock x:Name="NetUpText" Style="{StaticResource MeterDetail}" Text="↑ —" />
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="FreeRamButton" Style="{StaticResource StatusButton}" ToolTip="{l:T 'Liberar RAM'}"
                             Click="FreeRam_Click">
                         <ui:SymbolIcon x:Name="FreeRamGlyph" Symbol="Broom24" FontSize="16"
