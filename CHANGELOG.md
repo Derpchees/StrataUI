@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.6.1] - 2026-10-18
+
+### Corregido
+- **Menú Inicio**: los anclados se pueden volver a mover. El arrastre "a la barra de tareas" del menú
+  se quedaba con el mouse antes que el de los anclados, y soltar en una celda vacía no hacía nada si
+  había anclada alguna app que ya no está instalada (la celda se contaba con las apps ocultas).
+- **Reloj**: sigue los cambios de zona horaria (la zona automática al viajar o cambiar de horario) y
+  de hora del sistema; antes se quedaba con la zona que había al abrir Strata UI. También se vuelve a
+  alinear al salir de la suspensión.
+
 ## [3.6.0] - 2026-10-17
 
 ### Añadido

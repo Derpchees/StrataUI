@@ -13,6 +13,7 @@ using ManagedShell.Common.Helpers;
 using ManagedShell.Interop;
 using ManagedShell.WindowsTasks;
 using ManagedShell.WindowsTray;
+using Microsoft.Win32;
 using Strata.Shell.Controls;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Themes;
@@ -495,6 +496,7 @@ public partial class Taskbar : AppBarWindow
     // muestran): sin segundos, Strata UI despierta una vez por minuto en lugar de cada segundo.
 
     private static DispatcherTimer? _sharedClock;
+    private static DateTime _zoneRead = DateTime.UtcNow;
     /// <summary>Cambio de minuto (o de segundo): también lo usan los widgets de reloj.</summary>
     internal static event Action? ClockTick;
 
@@ -505,11 +507,36 @@ public partial class Taskbar : AppBarWindow
         _sharedClock = new DispatcherTimer(DispatcherPriority.Normal);
         _sharedClock.Tick += (_, _) =>
         {
+            // Por si un cambio de zona no avisa (TimeChanged): se relee una vez por minuto.
+            if (DateTime.UtcNow - _zoneRead >= TimeSpan.FromMinutes(1))
+            {
+                _zoneRead = DateTime.UtcNow;
+                TimeZoneInfo.ClearCachedData();
+            }
             ScheduleNextTick();
             ClockTick?.Invoke();
         };
         ScheduleNextTick();
         _sharedClock.Start();
+        // .NET guarda la zona horaria la primera vez: si Windows la cambia (zona automática al
+        // viajar, cambio de horario) o ajusta la hora, DateTime.Now seguiría con la vieja.
+        SystemEvents.TimeChanged += (_, _) => App.Current.Dispatcher.BeginInvoke(RefreshClock);
+        // Al volver de la suspensión el temporizador puede ir tarde: se alinea de nuevo.
+        SystemEvents.PowerModeChanged += (_, e) =>
+        {
+            if (e.Mode == PowerModes.Resume)
+                App.Current.Dispatcher.BeginInvoke(RefreshClock);
+        };
+    }
+
+    /// <summary>Relee la zona horaria y el formato y vuelve a marcar la hora en todas las barras y widgets.</summary>
+    private static void RefreshClock()
+    {
+        TimeZoneInfo.ClearCachedData();
+        System.Globalization.CultureInfo.CurrentCulture.ClearCachedData();
+        RescheduleClock();
+        ClockTick?.Invoke();
+        Log.Info($"Hora del sistema cambiada: {DateTime.Now:G} ({TimeZoneInfo.Local.Id})");
     }
 
     private static void ScheduleNextTick()

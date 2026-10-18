@@ -105,21 +105,27 @@ public abstract class StartMenuBase : FlyoutWindow
         PreviewMouseLeftButtonDown += (_, e) =>
         {
             _pressedApp = null;
-            // Un Run de un texto no es Visual: su padre se busca en el árbol lógico.
+            // Un Run de un texto no es Visual: su padre se busca en el árbol lógico (y el de lo que
+            // está en un Popup, como una carpeta abierta, es el Popup).
             static DependencyObject? Parent(DependencyObject node) =>
-                node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node);
+                (node is Visual ? VisualTreeHelper.GetParent(node) : null) ?? LogicalTreeHelper.GetParent(node);
+            StartApp? pressed = null;
+            FrameworkElement? pressedElement = null;
             for (var node = e.OriginalSource as DependencyObject; node != null && !ReferenceEquals(node, this); node = Parent(node))
             {
+                // Los anclados tienen su propio arrastre (mover, carpetas y también a la barra): el
+                // mosaico se encuentra antes que la vista, así que hay que subir hasta el final.
                 if (node is PinnedLayoutView)
                     return;
-                if (node is FrameworkElement { DataContext: StartApp app } element and (Button or ListBoxItem or ContentPresenter))
+                if (pressed is null && node is FrameworkElement { DataContext: StartApp app } element and (Button or ListBoxItem or ContentPresenter))
                 {
-                    _pressedApp = app;
-                    _pressedElement = element;
-                    _pressPoint = e.GetPosition(this);
-                    return;
+                    pressed = app;
+                    pressedElement = element;
                 }
             }
+            _pressedApp = pressed;
+            _pressedElement = pressedElement;
+            _pressPoint = e.GetPosition(this);
         };
         PreviewMouseMove += (_, e) =>
         {

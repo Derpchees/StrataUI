@@ -9,6 +9,8 @@ public sealed class PinLayoutTests
     public PinLayoutTests()
     {
         Settings.SuppressSave = true;
+        // Sin catálogo de apps: todas cuentan como instaladas salvo las que la prueba diga.
+        PinLayout.IsAvailable = id => !id.StartsWith("missing", StringComparison.Ordinal);
         Settings.Current.StartLayout =
         [
             new PinSection { Id = "s1", Name = "Anclado", Items = [App("a"), App("b"), App("c")] },
@@ -180,6 +182,21 @@ public sealed class PinLayoutTests
         Assert.Equal(["a", "d", "b", "c"], Ids(0));
         PinLayout.PlaceAtCell("s1", 0, "e-c");               // ocupada: no cambia nada
         Assert.Equal(["a", "d", "b", "c"], Ids(0));
+    }
+
+    [Fact]
+    public void Cells_count_only_what_is_shown()
+    {
+        // Las apps no instaladas siguen en el diseño pero no ocupan celda: la celda 4 de la vista
+        // es la segunda después de "c" (antes se tomaba como índice del diseño y no pasaba nada).
+        Layout[0].Items.Add(App("missing1"));
+        Layout[0].Items.Insert(1, App("missing2"));          // a (missing2) b c (missing1)
+        PinLayout.PlaceAtCell("s1", 4, "e-d");
+        Assert.Equal(["a", "missing2", "b", "c", "missing1", "_", "d"], Ids(0));
+
+        // Una celda ocupada de la vista (la 1 es "b") no cambia nada.
+        PinLayout.PlaceAtCell("s1", 1, "e-a");
+        Assert.Equal(["a", "missing2", "b", "c", "missing1", "_", "d"], Ids(0));
     }
 
     [Fact]

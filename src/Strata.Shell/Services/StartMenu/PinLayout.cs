@@ -108,6 +108,15 @@ public static class PinLayout
         StartMenuService.ForgetFiles(AllAppIds().ToHashSet(StringComparer.OrdinalIgnoreCase));
     }
 
+    /// <summary>Si una app anclada está en el catálogo (o el archivo anclado existe). Las pruebas lo reemplazan.</summary>
+    internal static Func<string, bool> IsAvailable = id =>
+        StartMenuService.Apps.Any(a => a.Id == id) || StartMenuService.IsPathId(id) && StartMenuService.FileApp(id) != null;
+
+    /// <summary>Si el elemento ocupa una celda en el menú (lo mismo que decide <see cref="RebuildViews"/>).</summary>
+    private static bool IsShown(PinEntry entry) =>
+        entry.IsGap
+        || (entry.IsFolder ? entry.FolderApps!.Count == 0 || entry.FolderApps.Any(IsAvailable) : IsAvailable(entry.AppId!));
+
     public static IEnumerable<string> AllAppIds() =>
         Model.SelectMany(s => s.Items).SelectMany(e => e.IsFolder ? e.FolderApps! : [e.AppId!]).Where(id => id != null);
 
@@ -159,16 +168,24 @@ public static class PinLayout
     /// está después del último elemento, se rellena con huecos hasta ella. El lugar que deja el
     /// elemento queda como hueco, así nada se corre.
     /// </summary>
+    /// <remarks>
+    /// <paramref name="cell"/> es la celda de la vista: las apps ancladas que no están instaladas
+    /// (siguen en el diseño por si vuelven) no se ven, así que la celda se cuenta desde el final
+    /// de lo visible y no es un índice de <see cref="PinSection.Items"/>.
+    /// </remarks>
     public static void PlaceAtCell(string sectionId, int cell, string? entryId, string? fromFolderId = null, string? appId = null)
     {
         if (FindSection(sectionId) is not { } target || cell < 0)
             return;
-        if (cell < target.Items.Count)
+        var shown = target.Items.Where(IsShown).ToList();
+        if (cell < shown.Count)
         {
-            if (target.Items[cell].IsGap)
-                DropOnGap(target.Items[cell].Id, entryId, fromFolderId, appId);
+            if (shown[cell].IsGap)
+                DropOnGap(shown[cell].Id, entryId, fromFolderId, appId);
             return;
         }
+        // Celdas vacías entre lo último visible y la elegida (se cuentan antes de quitar el elemento).
+        int padding = cell - shown.Count;
 
         PinEntry entry;
         if (entryId != null)
@@ -192,7 +209,7 @@ public static class PinLayout
         {
             return;
         }
-        while (target.Items.Count < cell)
+        for (int i = 0; i < padding; i++)
             target.Items.Add(new PinEntry());
         target.Items.Add(entry);
         Commit();
