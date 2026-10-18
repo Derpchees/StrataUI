@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using NAudio.Wave;
@@ -97,13 +97,14 @@ public static class NotificationSound
     private const int Rate = 48000;
 
     /// <summary>
-    /// El sonido de Strata UI: un solo tono corto y redondo, Do5 (523 Hz), como de vibráfono: una
-    /// senoidal con una gemela apenas desafinada (calidez), armónicos muy suaves, ataque de 12 ms y
-    /// medio segundo de caída. Se arma en código (no hay archivo que distribuir) y se guarda una vez como .wav.
+    /// El sonido de Strata UI: un "tin" de vaso de vidrio, simple y rápido. Un golpe casi instantáneo
+    /// con un clic suave de impacto, el tono del cristal (~1,6 kHz) con una gemela apenas desafinada
+    /// (el leve vibrar del vidrio) y los parciales no armónicos de un vaso, que se apagan primero.
+    /// Menos de medio segundo. Se arma en código (no hay archivo que distribuir) y se guarda una vez como .wav.
     /// </summary>
     internal static string PrepareChime()
     {
-        const string name = "strata-chime-3.wav";
+        const string name = "strata-glass-2.wav";
         string target = Path.Combine(Folder, name);
         if (File.Exists(target))
             return target;
@@ -132,37 +133,43 @@ public static class NotificationSound
         return target;
     }
 
-    /// <summary>Las muestras de la campanita (mono, 48 kHz, pico en <see cref="TargetPeak"/>).</summary>
+    /// <summary>Las muestras del vaso (mono, 48 kHz, pico en <see cref="GlassPeak"/>).</summary>
     internal static float[] Chime()
     {
-        var samples = new float[(int)(Rate * 0.5)];
-        void Note(double frequency, double start, double decay, double level)
+        const double fundamental = 1568;   // Sol6: un vaso de cristal algo grande, no una copa fina
+        var samples = new float[(int)(Rate * 0.45)];
+        // Parciales del cristal: (proporción con el tono, nivel, caída en segundos). Los agudos se apagan antes.
+        (double Ratio, double Level, double Decay)[] partials =
+        [
+            (1.0, 1.0, 0.2),
+            (1.0021, 0.55, 0.2),    // gemela desafinada: el vibrar del vidrio
+            (2.73, 0.22, 0.05),
+            (5.38, 0.08, 0.02),
+        ];
+        var random = new Random(7); // siempre el mismo clic
+        for (int i = 0; i < samples.Length; i++)
         {
-            int from = (int)(start * Rate);
-            for (int i = from; i < samples.Length; i++)
-            {
-                double t = (double)(i - from) / Rate;
-                // Ataque suave (seno), sin el golpe metálico de una campana.
-                double attack = t < 0.012 ? Math.Sin(t / 0.012 * Math.PI / 2) : 1;
-                double envelope = attack * Math.Exp(-t / decay) * level;
-                double w = 2 * Math.PI * frequency * t;
-                double tone = Math.Sin(w)
-                              + 0.35 * Math.Sin(w * 1.0035)            // gemela desafinada: calidez
-                              + 0.10 * Math.Sin(2 * w) * Math.Exp(-t / 0.12) // brillo solo al principio
-                              + 0.025 * Math.Sin(3 * w) * Math.Exp(-t / 0.08);
-                samples[i] += (float)(tone * envelope);
-            }
+            double t = (double)i / Rate;
+            double attack = t < 0.0015 ? t / 0.0015 : 1; // golpe: 1,5 ms
+            double tone = 0;
+            foreach (var (ratio, level, decay) in partials)
+                tone += level * Math.Sin(2 * Math.PI * fundamental * ratio * t) * Math.Exp(-t / decay);
+            // El clic del impacto: un instante de ruido que se apaga en 3 ms.
+            double click = t < 0.006 ? (random.NextDouble() * 2 - 1) * 0.25 * Math.Exp(-t / 0.0015) : 0;
+            samples[i] = (float)(attack * tone + click);
         }
-        Note(523.25, 0, 0.16, 1.0);     // Do5: un solo tono, corto
-        // Final sin chasquido: los últimos 80 ms bajan a cero.
-        int fade = (int)(Rate * 0.08);
+        // Final sin chasquido: los últimos 60 ms bajan a cero.
+        int fade = (int)(Rate * 0.06);
         for (int i = 0; i < fade; i++)
             samples[samples.Length - 1 - i] *= (float)i / fade;
         float peak = samples.Max(Math.Abs);
         for (int i = 0; i < samples.Length; i++)
-            samples[i] *= TargetPeak / peak;
+            samples[i] *= GlassPeak / peak;
         return samples;
     }
+
+    /// <summary>Un poco más bajo que el resto: un agudo de cristal al máximo molesta.</summary>
+    private const float GlassPeak = 0.7f;
 
     /// <summary>El .wav preparado para ese sonido (se arma la primera vez o si cambió el original).</summary>
     internal static string Prepare(string source)

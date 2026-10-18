@@ -33,7 +33,34 @@ public partial class AppsPage : Page
     public AppsPage()
     {
         InitializeComponent();
-        Loaded += async (_, _) => await LoadAsync();
+        Loaded += async (_, _) =>
+        {
+            EdgeCard.Visibility = EdgeRemover.IsInstalled ? Visibility.Visible : Visibility.Collapsed;
+            await LoadAsync();
+        };
+    }
+
+    private async void RemoveEdge_Click(object sender, RoutedEventArgs e)
+    {
+        var confirm = new Wpf.Ui.Controls.MessageBox
+        {
+            Title = Loc.T("Desinstalar Edge"),
+            Content = Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Los enlaces se abrirán con tu navegador predeterminado. Para volver a tenerlo, se instala desde microsoft.com/edge."),
+            PrimaryButtonText = Loc.T("Desinstalar"),
+            CloseButtonText = Loc.T("Cancelar"),
+        };
+        if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            return;
+        EdgeButton.IsEnabled = false;
+        EdgeText.Text = Loc.T("Desinstalando Edge…");
+        int code = await Elevation.RunSelfAsync(EdgeRemover.Arg);
+        bool removed = !EdgeRemover.IsInstalled;
+        if (removed)
+            TweakEngine.Backup.AddRemovedApps(["Microsoft Edge"]);
+        EdgeText.Text = removed ? Loc.T("Listo: Edge ya no está instalado.")
+            : code == Elevation.Cancelled ? Loc.T("Cancelado.")
+            : Loc.T("Windows no dejó quitar Edge. Puede que una actualización lo esté usando: reinicia e inténtalo de nuevo.");
+        EdgeButton.IsEnabled = !removed;
     }
 
     private async Task LoadAsync()

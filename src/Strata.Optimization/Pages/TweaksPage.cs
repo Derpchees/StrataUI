@@ -200,5 +200,8 @@ public sealed class GamingPage() : TweaksPage(TweakCatalog.Gaming, Loc.T("Juegos
 public sealed class BrowsersPage() : TweaksPage(TweakCatalog.Browsers, Loc.T("Navegadores"),
     Loc.T("Funciones extra de los navegadores instalados."), SymbolRegular.Globe24);
 
+public sealed class MemoryPage() : TweaksPage(TweakCatalog.Memory, Loc.T("Memoria RAM"),
+    Loc.T("Menos procesos y servicios de Windows en memoria. Para liberar la RAM ahora, clic en el medidor de RAM de la barra."), SymbolRegular.Ram20);
+
 public sealed class PerformancePage() : TweaksPage(TweakCatalog.Performance, Loc.T("Rendimiento"),
     Loc.T("Respuesta más rápida de menús y ventanas, y más prioridad para lo que estás usando."), SymbolRegular.Flash24);

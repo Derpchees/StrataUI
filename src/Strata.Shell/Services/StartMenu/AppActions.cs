@@ -70,8 +70,8 @@ public static class AppActions
         Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms),
     ];
 
-    /// <summary>Siempre: las apps de la Tienda abren su carpeta o, si Windows no deja, la de Aplicaciones.</summary>
-    public static bool CanOpenLocation(StartApp app) => app.IsFile || IsPackaged(app) || TargetPath(app) != null || ShortcutPath(app) != null;
+    /// <summary>Hay un archivo que mostrar (las apps de la Tienda no tienen: como en Windows, no la ofrecen).</summary>
+    public static bool CanOpenLocation(StartApp app) => app.IsFile || TargetPath(app) != null || ShortcutPath(app) != null;
 
     public static bool CanRunAsAdmin(StartApp app) =>
         TargetPath(app) is { } path && path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
@@ -81,34 +81,8 @@ public static class AppActions
         // Un archivo o carpeta anclado se muestra seleccionado en su carpeta.
         var path = app.IsFile ? app.Id : ShortcutPath(app) ?? TargetPath(app);
         if (path is null)
-        {
-            if (IsPackaged(app))
-                OpenPackageFolder(app);
             return;
-        }
         Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
-    }
-
-    /// <summary>
-    /// Carpeta de una app de la Tienda: la de instalación si se puede entrar (las de WindowsApps
-    /// suelen estar cerradas) o, si no, la carpeta Aplicaciones de Windows.
-    /// </summary>
-    private static void OpenPackageFolder(StartApp app)
-    {
-        string? folder = null;
-        try
-        {
-            string family = app.Id[..app.Id.IndexOf('!')];
-            var package = new Windows.Management.Deployment.PackageManager().FindPackagesForUser("", family).FirstOrDefault();
-            folder = package?.InstalledLocation.Path;
-            if (folder != null)
-                Directory.EnumerateFileSystemEntries(folder).FirstOrDefault(); // ¿se puede entrar?
-        }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or COMException or ArgumentException)
-        {
-            folder = null;
-        }
-        Process.Start(new ProcessStartInfo("explorer.exe", folder != null ? $"\"{folder}\"" : "shell:AppsFolder") { UseShellExecute = true });
     }
 
     /// <summary>

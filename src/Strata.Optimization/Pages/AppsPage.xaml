@@ -16,6 +16,18 @@
 
         <StackPanel>
             <hub:PageHeader Icon="Delete24" Title="{l:T 'Apps preinstaladas'}" Subtitle="{l:T 'Quita las apps que vienen con Windows y no usas. Las marcadas como recomendadas son publicidad o servicios que casi nadie usa. Todas se pueden reinstalar desde Microsoft Store.'}" />
+            <!-- Edge no es una app de la Tienda: tiene su propio desinstalador (Tweaks/EdgeRemover) -->
+            <ui:CardControl x:Name="EdgeCard" Style="{StaticResource HubCard}" Margin="0,0,0,12" Visibility="Collapsed">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Globe24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Microsoft Edge" />
+                        <TextBlock x:Name="EdgeText" Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                                   Text="{l:T 'Quita el navegador Edge (WebView2, que usan otras apps, se queda) y evita que Windows Update lo reinstale. Se puede volver a instalar desde microsoft.com/edge.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button x:Name="EdgeButton" Appearance="Danger" Content="{l:T 'Desinstalar Edge'}" Click="RemoveEdge_Click" />
+            </ui:CardControl>
         </StackPanel>
 
         <Grid Grid.Row="1" Margin="0,0,0,8">

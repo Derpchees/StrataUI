@@ -73,6 +73,11 @@ public partial class App : Application
             Shutdown(Tweaks.TweakEngine.RunElevatedCommand(e.Args));
             return;
         }
+        if (e.Args.Length == 1 && e.Args[0] == Tweaks.EdgeRemover.Arg)
+        {
+            Shutdown(Tweaks.EdgeRemover.RunElevated());
+            return;
+        }
         if (e.Args.Length > 0 && e.Args[0] == Tweaks.ElevatedBroker.RemoveAppxArg)
         {
             Shutdown(Tweaks.AppxManager.RunElevatedRemove(e.Args));

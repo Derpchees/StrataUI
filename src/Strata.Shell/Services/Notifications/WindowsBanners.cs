@@ -1,4 +1,4 @@
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 
 namespace Strata.Shell.Services.Notifications;
 
@@ -46,6 +46,7 @@ public static class WindowsBanners
     public static void SuppressAll()
     {
         _active = true;
+        Watch();
         _soundsMuted = Settings.Current.MuteWindowsNotificationSounds;
         try
         {
@@ -53,7 +54,7 @@ public static class WindowsBanners
             if (root is null)
                 return;
             bool changed = false;
-            foreach (var app in root.GetSubKeyNames())
+            foreach (var app in AppKeys(root, ""))
                 changed |= SuppressCore(app);
             if (changed)
                 Settings.Save();
@@ -85,6 +86,66 @@ public static class WindowsBanners
         }
         SuppressAll();
     }
+
+    /// <summary>
+    /// Las claves de las apps. Las de escritorio sin identificador propio se llaman con su ruta
+    /// ("{carpeta}\Programa\app.exe") y en el registro quedan anidadas: la de la app es la del final
+    /// (las intermedias, sin valores, no son apps). Antes solo se apagaba el primer nivel y los avisos
+    /// de esos programas seguían saliendo.
+    /// </summary>
+    internal static IEnumerable<string> AppKeys(RegistryKey key, string path)
+    {
+        foreach (var name in key.GetSubKeyNames())
+        {
+            string child = path.Length == 0 ? name : path + "\\" + name;
+            using var sub = key.OpenSubKey(name);
+            if (sub is null)
+                continue;
+            if (sub.SubKeyCount == 0 || sub.ValueCount > 0)
+                yield return child;
+            foreach (var nested in AppKeys(sub, child))
+                yield return nested;
+        }
+    }
+
+    private static Thread? _watcher;
+
+    /// <summary>
+    /// Vigila la configuración de notificaciones de Windows: una app que notifica por primera vez
+    /// (Windows le crea su clave) o a la que Windows o ella misma le vuelve a encender los avisos (al
+    /// actualizarse) se apaga al momento. Antes se esperaba a que Strata UI leyera su notificación y
+    /// Windows alcanzaba a mostrarla.
+    /// </summary>
+    private static void Watch()
+    {
+        if (_watcher != null)
+            return;
+        _watcher = new Thread(() =>
+        {
+            using var root = Registry.CurrentUser.CreateSubKey(Root);
+            using var changed = new AutoResetEvent(false);
+            while (true)
+            {
+                if (RegNotifyChangeKeyValue(root.Handle.DangerousGetHandle(), true, RegNotifyName | RegNotifyLastSet,
+                                            changed.SafeWaitHandle.DangerousGetHandle(), true) != 0)
+                    return;
+                changed.WaitOne();
+                // Varios cambios seguidos (los propios también): una sola pasada un momento después.
+                Thread.Sleep(150);
+                System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    if (_active)
+                        SuppressAll();
+                });
+            }
+        }) { IsBackground = true, Name = "Strata: avisos de Windows" };
+        _watcher.Start();
+    }
+
+    private const int RegNotifyName = 0x1, RegNotifyLastSet = 0x4;
+
+    [System.Runtime.InteropServices.DllImport("advapi32.dll")]
+    private static extern int RegNotifyChangeKeyValue(IntPtr key, bool watchSubtree, int filter, IntPtr eventHandle, bool asynchronous);
 
     /// <summary>True si se cambió algo (para guardar el respaldo).</summary>
     private static bool SuppressCore(string app)

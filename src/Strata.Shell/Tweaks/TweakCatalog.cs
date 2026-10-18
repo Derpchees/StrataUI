@@ -21,6 +21,7 @@ public static class TweakCatalog
     public const string Browsers = "browsers";
     public const string Performance = "performance";
     public const string Hardware = "hardware";
+    public const string Memory = "memory";
 
     private const string ServicesKey = @"SYSTEM\CurrentControlSet\Services\";
 
@@ -305,6 +306,27 @@ public static class TweakCatalog
         new("search-indexing", Performance, Loc.T("Desactivar la indexación de búsqueda"),
             Loc.T("Menos uso de disco en segundo plano. La búsqueda del Explorador se vuelve más lenta (la de Inicio de Strata UI no cambia). Se aplica al reiniciar."),
             [LM(@"SYSTEM\CurrentControlSet\Services\WSearch", "Start", 2, 4)]),
+
+        // ── Memoria RAM: lo que Windows deja corriendo y casi nadie usa ─────────
+        new("svchost-grouping", Memory, Loc.T("Agrupar los servicios de Windows"),
+            Loc.T("Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar."),
+            [LM(@"SYSTEM\CurrentControlSet\Control", "SvcHostSplitThresholdInKB", 3670016, 268435456)]),
+        new("sysmain", Memory, Loc.T("Desactivar SysMain (precarga de apps)"),
+            Loc.T("Deja de cargar en memoria las apps que más usas antes de abrirlas. En discos SSD casi no se nota al abrirlas. Se aplica al reiniciar."),
+            [LM(ServicesKey + "SysMain", "Start", 2, 4)]),
+        new("diagtrack", Memory, Loc.T("Desactivar el servicio de telemetría"),
+            Loc.T("Detiene \"Experiencias del usuario y telemetría asociadas\" (DiagTrack), que corre siempre. Se aplica al reiniciar."),
+            [LM(ServicesKey + "DiagTrack", "Start", 2, 4)]),
+        new("widgets", Memory, Loc.T("Desactivar los Widgets de Windows"),
+            Loc.T("El panel de Widgets y sus noticias mantienen procesos web abiertos todo el tiempo."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Dsh", "AllowNewsAndInterests", 0)]),
+        new("edge-background", Memory, Loc.T("Edge sin procesos en segundo plano"),
+            Loc.T("Edge no se precarga al iniciar Windows ni sigue abierto después de cerrar su ventana."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Edge", "StartupBoostEnabled", 0),
+             PolicyLM(@"SOFTWARE\Policies\Microsoft\Edge", "BackgroundModeEnabled", 0)]),
+        new("phone-link", Memory, Loc.T("Desactivar Vincular teléfono"),
+            Loc.T("Phone Link deja de conectarse con el celular y de correr en segundo plano."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Windows\System", "EnableMmx", 0)]),
 
         // ── Hardware: servicios de los fabricantes (solo si están instalados) ──
         // Se desactivan en el registro (como el Administrador de servicios): rigen desde el próximo inicio.

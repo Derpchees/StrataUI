@@ -6,6 +6,25 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.6.0] - 2026-10-17
+
+### Añadido
+- **Optimización › Memoria RAM**: agrupar los servicios de Windows (menos procesos svchost), desactivar
+  SysMain, el servicio de telemetría, los Widgets, Vincular teléfono y los procesos de Edge en segundo
+  plano. Todo se puede deshacer en Respaldo.
+- **Desinstalar Microsoft Edge** (Optimización › Apps preinstaladas). WebView2 se queda y Windows
+  Update no lo reinstala.
+- **Sonido de notificación nuevo**: un "tin" de vaso de vidrio, corto y elegante.
+
+### Cambiado
+- Los menús y paneles ya no se ven opacos un instante al abrirse: aparecen cuando su vidrio ya está.
+- "Abrir ubicación del archivo" no se ofrece en las apps de la Tienda (no tienen un archivo que mostrar).
+
+### Corregido
+- **A veces salían los avisos de Windows junto a los de Strata UI**: los programas de escritorio sin
+  identificador propio no se apagaban (su ajuste de Windows está en otro nivel del registro), y una
+  app nueva o que Windows reactivaba tardaba en apagarse. Ahora se apagan todos y al momento.
+
 ## [3.5.0] - 2026-10-17
 
 ### Añadido

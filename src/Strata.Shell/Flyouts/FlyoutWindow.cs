@@ -217,17 +217,40 @@ public abstract class FlyoutWindow : FluentWindow
         if (FillWorkArea)
             SizeToContent = SizeToContent.Manual;
         BeforeShow();
+        // Se arma fuera de la pantalla: el Acrylic de Windows se dibuja con la ventana ya activa y el
+        // primer cuadro salía opaco. Se trae a su lugar un par de cuadros después.
+        Left = Top = -32000;
         Show();
         if (!FillWorkArea)
             LimitHeightToScreen(anchor);
-        PositionAbove(anchor);
-        // Si el contenido cambia de tamaño (secciones que se expanden, listas que terminan de cargar),
-        // se mantiene pegado a la barra. Se difiere hasta después del render: al disparar SizeChanged
-        // la ventana nativa todavía tiene el tamaño anterior.
-        SizeChanged += (_, _) => Dispatcher.BeginInvoke(() => PositionAbove(anchor),
-                                                        System.Windows.Threading.DispatcherPriority.Render);
         Activate();
-        AnimateIn();
+        AfterFrames(2, () =>
+        {
+            if (_closing)
+                return;
+            PositionAbove(anchor);
+            // Si el contenido cambia de tamaño (secciones que se expanden, listas que terminan de cargar),
+            // se mantiene pegado a la barra. Se difiere hasta después del render: al disparar SizeChanged
+            // la ventana nativa todavía tiene el tamaño anterior.
+            SizeChanged += (_, _) => Dispatcher.BeginInvoke(() => PositionAbove(anchor),
+                                                            System.Windows.Threading.DispatcherPriority.Render);
+            AnimateIn();
+        });
+    }
+
+    /// <summary>Ejecuta algo después de que WPF dibuje esa cantidad de cuadros.</summary>
+    private static void AfterFrames(int frames, Action action)
+    {
+        int left = frames;
+        EventHandler? handler = null;
+        handler = (_, _) =>
+        {
+            if (--left > 0)
+                return;
+            System.Windows.Media.CompositionTarget.Rendering -= handler;
+            action();
+        };
+        System.Windows.Media.CompositionTarget.Rendering += handler;
     }
 
     public void CloseFlyout()
