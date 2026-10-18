@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using Microsoft.Win32;
 
@@ -73,20 +73,23 @@ public static class FilePicker
         bool multiselect = flags.Contains('m');
 
         string[] paths = [];
+        // En el monitor del puntero (donde se pidió), no en el principal de Windows.
+        var anchor = DialogPlacement.PointerAnchor();
         if (args[1] == "file")
         {
             var dialog = new OpenFileDialog { Title = title, Multiselect = multiselect, DereferenceLinks = !flags.Contains('l') };
             if (filter.Length > 0)
                 dialog.Filter = filter;
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog(anchor) == true)
                 paths = dialog.FileNames;
         }
         else
         {
             var dialog = new OpenFolderDialog { Title = title, Multiselect = multiselect };
-            if (dialog.ShowDialog() == true)
+            if (dialog.ShowDialog(anchor) == true)
                 paths = dialog.FolderNames;
         }
+        anchor.Close();
         File.WriteAllLines(result, paths);
         return 0;
     }

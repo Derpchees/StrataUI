@@ -756,6 +756,7 @@ public partial class Taskbar : AppBarWindow
     }
 
     private bool _netSpeedOn;
+    private string? _lastFreed;
 
     /// <summary>Velocidad de internet: en vertical, corta ("1.2M") para que quepa.</summary>
     private void UpdateNetSpeed()
@@ -831,9 +832,11 @@ public partial class Taskbar : AppBarWindow
             ? string.Create(System.Globalization.CultureInfo.CurrentCulture,
                 $"{SystemMonitor.RamUsed / 1073741824.0:0.0}/{Math.Round(SystemMonitor.RamTotal / 1073741824.0):0} GB")
             : "";
-        RamButton.ToolTip = SystemMonitor.RamTotal > 0
+        RamButton.ToolTip = (SystemMonitor.RamTotal > 0
             ? Loc.F("Memoria en uso: {0:0.0} de {1:0.0} GB", SystemMonitor.RamUsed / 1073741824.0, SystemMonitor.RamTotal / 1073741824.0)
-            : Loc.T("Memoria RAM");
+            : Loc.T("Memoria RAM"))
+            + "\n" + (Settings.Current.RamClickFreesRam ? Loc.T("Clic para liberar RAM") : Loc.T("Clic para abrir el Administrador de tareas"))
+            + (_lastFreed is { } last ? "\n" + last : "");
 
         if (Has(BarItem.Fps))
         {
@@ -867,12 +870,23 @@ public partial class Taskbar : AppBarWindow
     /// Libera la RAM y lo dice junto a la barra (aviso en pantalla, como el volumen): al empezar,
     /// mientras Windows pide permiso, y al terminar con cuánto se liberó.
     /// </summary>
-    private async void FreeRam_Click(object sender, RoutedEventArgs e)
+    private void FreeRam_Click(object sender, RoutedEventArgs e) => FreeRam((Button)sender);
+
+    /// <summary>Clic en el medidor de RAM: la libera o abre el Administrador de tareas (clic derecho para elegir).</summary>
+    private void Ram_Click(object sender, RoutedEventArgs e)
+    {
+        if (Settings.Current.RamClickFreesRam)
+            FreeRam(RamButton);
+        else
+            ShellHelper.StartTaskManager();
+    }
+
+    private async void FreeRam(Button button)
     {
         string working = ((char)0xE895).ToString(); // Sync
         string done = ((char)0xE73E).ToString();    // CheckMark
-        FreeRamButton.IsEnabled = false;
-        FreeRamButton.Opacity = 0.5;
+        button.IsEnabled = false;
+        button.Opacity = 0.5;
         Notifications.OsdWindow.ShowMessage(working, Loc.T("Liberando RAM…"), Device);
         try
         {
@@ -888,12 +902,13 @@ public partial class Taskbar : AppBarWindow
             Log.Info($"RAM liberada: {freed:0.00} GB");
             Notifications.OsdWindow.ShowMessage(done,
                 freed >= 0.05 ? Loc.F("RAM liberada: {0:0.0} GB", freed) : Loc.T("La memoria ya estaba libre"), Device);
-            FreeRamButton.ToolTip = Loc.F("Última vez: {0:0.0} GB liberados", freed);
+            _lastFreed = Loc.F("Última vez: {0:0.0} GB liberados", freed);
+            FreeRamButton.ToolTip = _lastFreed;
         }
         finally
         {
-            FreeRamButton.IsEnabled = true;
-            FreeRamButton.Opacity = 1;
+            button.IsEnabled = true;
+            button.Opacity = 1;
         }
     }
 

@@ -255,7 +255,7 @@
                             <TextBlock x:Name="GpuDetail" Style="{StaticResource MeterDetail}" />
                         </StackPanel>
                     </Button>
-                    <Button x:Name="RamButton" Style="{StaticResource MeterButton}" Click="Meter_Click">
+                    <Button x:Name="RamButton" Style="{StaticResource MeterButton}" Click="Ram_Click">
                         <StackPanel>
                             <TextBlock x:Name="RamLabel" Style="{StaticResource MeterDetail}" />
                             <TextBlock x:Name="RamValue" Style="{StaticResource MeterValue}" Text="RAM" />

@@ -22,6 +22,8 @@ public abstract class StartMenuBase : FlyoutWindow
     protected StartMenuBase()
     {
         DataContext = Model;
+        // Lo instalado o quitado mientras tanto (las apps de la Tienda no avisan de otra forma).
+        StartMenuService.RefreshIfStale();
         // Clic derecho en un lugar vacío del menú: tamaño de los íconos y nombres (lo que tiene su
         // propio menú, como las apps o los anclados, lo muestra en lugar de este).
         ContextMenu = new ContextMenu { Items = { StartViewMenu.Create() } };

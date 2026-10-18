@@ -43,6 +43,8 @@ public partial class Taskbar
             menu.Items.Add(Entry(label, () => OpenUri(uri)));
         if (item is BarItem.Cpu or BarItem.Gpu or BarItem.Ram or BarItem.NetSpeed)
             menu.Items.Add(Entry(Loc.T("Administrador de tareas"), ManagedShell.Common.Helpers.ShellHelper.StartTaskManager));
+        foreach (var option in ItemShortcuts(item))
+            menu.Items.Add(option);
         menu.Items.Add(Entry(Loc.T("Opciones en Strata UI"), () => App.Current.OpenHub(HubPage(item))));
         menu.Items.Add(new Separator());
         // Posición a lo largo de la barra: izquierda/centro/derecha (arriba/centro/abajo en vertical).
@@ -60,6 +62,46 @@ public partial class Taskbar
         menu.Items.Add(new Separator());
         menu.Items.Add(Entry(Loc.T("Editar diseño…"), () => EditMode.EditSession.Start()));
         return menu;
+    }
+
+    /// <summary>Lo propio de cada elemento en su clic derecho: qué hace el clic de la RAM, la prueba y la unidad de la velocidad.</summary>
+    private IEnumerable<object> ItemShortcuts(BarItem item)
+    {
+        switch (item)
+        {
+            case BarItem.Ram:
+            {
+                yield return Entry(Loc.T("Liberar RAM ahora"), () => FreeRam(RamButton));
+                var toggle = Entry(Loc.T("Liberar RAM al hacer clic"), () => Settings.Update(s => s.RamClickFreesRam = !s.RamClickFreesRam));
+                toggle.IsCheckable = true;
+                toggle.IsChecked = Settings.Current.RamClickFreesRam;
+                yield return toggle;
+                break;
+            }
+            case BarItem.NetSpeed:
+            {
+                yield return Entry(SpeedTest.Running ? Loc.T("Cancelar la prueba") : Loc.T("Probar velocidad"), () =>
+                {
+                    if (SpeedTest.Running)
+                        SpeedTest.Cancel();
+                    else
+                    {
+                        SpeedTest.Start();
+                        Flyouts.FlyoutManager.Toggle<Flyouts.NetSpeedFlyout>(NetSpeedButton);
+                    }
+                });
+                var unit = new MenuItem { Header = Loc.T("Unidad") };
+                foreach (var (name, bits) in new[] { (Loc.T("Megabytes por segundo (MB/s)"), false), (Loc.T("Megabits por segundo (Mb/s)"), true) })
+                {
+                    var entry = Entry(name, () => Settings.Update(s => s.NetSpeedInBits = bits));
+                    entry.IsCheckable = true;
+                    entry.IsChecked = Settings.Current.NetSpeedInBits == bits;
+                    unit.Items.Add(entry);
+                }
+                yield return unit;
+                break;
+            }
+        }
     }
 
     private static MenuItem Entry(string header, Action action)

@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using Strata.Shell.Services;
@@ -241,7 +241,7 @@ public partial class AppearancePage : Page
 
     private static Brush Opaque(Brush brush, bool light, ThemeInfo theme)
     {
-        if (brush is not SolidColorBrush solid || theme.Backdrop != Backdrop.Acrylic)
+        if (brush is not SolidColorBrush solid || theme.Backdrop is not (Backdrop.Acrylic or Backdrop.Blur))
             return brush;
         // En la miniatura no hay Acrylic: se mezcla con el tono que tendría el desenfoque.
         var frosted = light ? Palette.Hex("#D8F0F0F5") : Palette.Hex("#D0202024");

@@ -881,7 +881,6 @@
   "Un tono con cada aviso": "Ein Ton bei jedem Banner",
   "Ver el formato": "Format ansehen",
   "{0:0.0} de {1:0.0} GB en uso": "{0:0.0} von {1:0.0} GB belegt",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles y menús llevan vidrio esmerilado para que se lean.": "Leiste ohne Hintergrund: nur Symbole und Text, hell oder dunkel je nach Hintergrund. Bereiche und Menüs nutzen Milchglas, damit sie lesbar bleiben.",
   "Estilo de la barra, los paneles y el Hub, y sus animaciones.": "Stil der Leiste, der Bereiche und des Hubs sowie deren Animationen.",
   "Transparente total": "Vollständig transparent",
   "Archivos .wav, .mp3, .m4a o .wma de hasta 5 MB. El que elijas suena con cada aviso en lugar del de Strata UI.": ".wav-, .mp3-, .m4a- oder .wma-Dateien bis 5 MB. Der gewählte Ton spielt bei jedem Banner statt des Strata UI-Tons.",
@@ -1002,5 +1001,13 @@
   "Prueba: bajada": "Test: Download",
   "Prueba: subida": "Test: Upload",
   "Prueba de velocidad": "Geschwindigkeitstest",
-  "Clic para la prueba de velocidad": "Klicken für den Geschwindigkeitstest"
+  "Clic para la prueba de velocidad": "Klicken für den Geschwindigkeitstest",
+  "Liberar RAM ahora": "RAM jetzt freigeben",
+  "Liberar RAM al hacer clic": "RAM beim Klicken freigeben",
+  "Unidad": "Einheit",
+  "Megabytes por segundo (MB/s)": "Megabyte pro Sekunde (MB/s)",
+  "Megabits por segundo (Mb/s)": "Megabit pro Sekunde (Mb/s)",
+  "Clic para liberar RAM": "Klicken, um RAM freizugeben",
+  "Clic para abrir el Administrador de tareas": "Klicken, um den Task-Manager zu öffnen",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean.": "Leiste ohne Hintergrund: nur Symbole und Text, hell oder dunkel je nach dem, was dahinter liegt. Bereiche, Benachrichtigungen und Menüs sind aus durchscheinendem Glas, damit sie lesbar bleiben."
 }

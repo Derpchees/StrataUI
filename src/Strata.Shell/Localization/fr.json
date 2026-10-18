@@ -881,7 +881,6 @@
   "Un tono con cada aviso": "Un son à chaque bannière",
   "Ver el formato": "Voir le format",
   "{0:0.0} de {1:0.0} GB en uso": "{0:0.0} sur {1:0.0} Go utilisés",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles y menús llevan vidrio esmerilado para que se lean.": "Barre sans fond : seulement des icônes et du texte, clairs ou foncés selon ce qu'il y a derrière. Les panneaux et menus utilisent du verre dépoli pour rester lisibles.",
   "Estilo de la barra, los paneles y el Hub, y sus animaciones.": "Style de la barre, des panneaux et du Hub, et leurs animations.",
   "Transparente total": "Totalement transparent",
   "Archivos .wav, .mp3, .m4a o .wma de hasta 5 MB. El que elijas suena con cada aviso en lugar del de Strata UI.": "Fichiers .wav, .mp3, .m4a ou .wma jusqu'à 5 Mo. Celui que vous choisissez joue à chaque bannière à la place de celui de Strata UI.",
@@ -1002,5 +1001,13 @@
   "Prueba: bajada": "Test : réception",
   "Prueba: subida": "Test : envoi",
   "Prueba de velocidad": "Test de vitesse",
-  "Clic para la prueba de velocidad": "Cliquez pour le test de vitesse"
+  "Clic para la prueba de velocidad": "Cliquez pour le test de vitesse",
+  "Liberar RAM ahora": "Libérer la RAM maintenant",
+  "Liberar RAM al hacer clic": "Libérer la RAM au clic",
+  "Unidad": "Unité",
+  "Megabytes por segundo (MB/s)": "Mégaoctets par seconde (Mo/s)",
+  "Megabits por segundo (Mb/s)": "Mégabits par seconde (Mb/s)",
+  "Clic para liberar RAM": "Cliquez pour libérer la RAM",
+  "Clic para abrir el Administrador de tareas": "Cliquez pour ouvrir le Gestionnaire des tâches",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean.": "Barre sans fond : seulement des icônes et du texte, clairs ou foncés selon ce qu'il y a derrière. Les panneaux, notifications et menus sont en verre translucide pour rester lisibles."
 }

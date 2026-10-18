@@ -217,6 +217,19 @@ public static class PinLayout
         Commit();
     }
 
+    /// <summary>Dos elementos cambian de lugar (también entre secciones); los demás no se mueven.</summary>
+    public static void Swap(string firstId, string secondId)
+    {
+        var (firstSection, first) = FindEntryWithSection(firstId);
+        var (secondSection, second) = FindEntryWithSection(secondId);
+        if (firstSection is null || first is null || secondSection is null || second is null || ReferenceEquals(first, second))
+            return;
+        int a = firstSection.Items.IndexOf(first), b = secondSection.Items.IndexOf(second);
+        firstSection.Items[a] = second;
+        secondSection.Items[b] = first;
+        Commit();
+    }
+
     /// <summary>Mueve un elemento a otra posición (de la misma u otra sección).</summary>
     public static void Move(string entryId, string sectionId, int index)
     {

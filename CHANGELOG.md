@@ -6,6 +6,36 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.5.0] - 2026-10-17
+
+### Añadido
+- **Velocidad de internet en Mb/s o MB/s** (clic derecho en el medidor › Unidad) y **Probar velocidad**
+  desde ese mismo clic derecho.
+- **Clic en el medidor de RAM: la libera** (clic derecho › "Liberar RAM al hacer clic" para volver a
+  abrir el Administrador de tareas, y "Liberar RAM ahora"). El botón aparte "Liberar RAM" ya no está:
+  donde estaba queda el medidor de RAM.
+- **Abrir ubicación del archivo** en todas las apps de Inicio (las de la Tienda abren su carpeta o la
+  de Aplicaciones de Windows).
+
+### Cambiado
+- **Transparente total**: los paneles, el menú Inicio y el Hub son de vidrio de verdad (casi sin tinte:
+  se ve el fondo); antes se veían casi como Mica.
+- **Avisos y avisos en pantalla (volumen, brillo) de vidrio** con los temas Translúcido y Transparente
+  total; con varios avisos, van juntos en un solo panel.
+- **Inicio: colocación libre de verdad.** Soltar una app al costado de otra las intercambia; nada más
+  se mueve. La celda donde caerá se marca.
+- **Las herramientas de Windows** (Servicios, Desfragmentar…) ya no salen en "Todas las apps": solo al
+  buscarlas.
+- **Los cuadros de diálogo** (confirmar una desinstalación, abrir un archivo…) salen en el monitor donde
+  se hizo la acción.
+- **Arrastrar elementos en la barra** se siente firme: lo que se arrastra va pegado al puntero, los
+  demás se deslizan en vez de saltar y el elemento ya no va y viene entre dos lugares.
+
+### Corregido
+- Inicio no se enteraba de lo instalado o desinstalado (sobre todo apps de la Tienda e instaladores que
+  no ponen accesos directos): ahora vigila la lista de programas instalados y vuelve a leer el catálogo
+  al abrirse.
+
 ## [3.4.0] - 2026-10-17
 
 ### Añadido

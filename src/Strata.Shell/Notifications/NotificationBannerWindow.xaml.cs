@@ -35,6 +35,19 @@ public partial class NotificationBannerWindow : Window
             SetWindowLong(hwnd, GwlExStyle, GetWindowLong(hwnd, GwlExStyle) | WsExNoActivate | WsExToolWindow);
         };
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(PlaceInCorner, DispatcherPriority.Render);
+        // Vidrio detrás de cada aviso con los temas translúcidos (también al cambiar de tema).
+        SourceInitialized += (_, _) => ApplyGlass();
+        // Cada aviso nuevo toma el aspecto (con o sin vidrio) al aparecer su tarjeta.
+        BannerList.LayoutUpdated += (_, _) =>
+        {
+            int count = Cards().Count();
+            if (count == _styledCards)
+                return;
+            _styledCards = count;
+            StyleCards();
+        };
+        Services.ThemeManager.ThemeChanged += ApplyGlass;
+        Closed += (_, _) => Services.ThemeManager.ThemeChanged -= ApplyGlass;
         // Si se cambia el monitor o la esquina con avisos en pantalla, se mueven ahí.
         Settings.Changed += OnSettingsChanged;
         Closed += (_, _) => Settings.Changed -= OnSettingsChanged;
@@ -70,6 +83,51 @@ public partial class NotificationBannerWindow : Window
 
     /// <summary>Esquina elegida para el monitor de los avisos.</summary>
     private static NotificationCorner Corner => Settings.Current.For(TargetScreen().DeviceName).NotificationCorner;
+
+    private int _styledCards;
+
+    /// <summary>
+    /// Vidrio con los temas translúcidos (Themes/GlassSurface): la ventana mide lo que los avisos,
+    /// apilados sin márgenes como un solo panel; Windows redondea sus esquinas. Si no, tarjetas
+    /// separadas con su margen.
+    /// </summary>
+    private void ApplyGlass()
+    {
+        StyleCards();
+        Services.Themes.GlassSurface.Apply(this);
+    }
+
+    private void StyleCards()
+    {
+        bool glass = Services.Themes.GlassSurface.Active;
+        BannerList.Margin = new Thickness(glass ? 0 : 8);
+        foreach (var card in Cards().OfType<System.Windows.Controls.Border>())
+        {
+            card.Margin = glass ? new Thickness(0, 0, 0, 1) : new Thickness(0, 4, 0, 4);
+            card.BorderThickness = new Thickness(glass ? 0 : 1);
+            if (glass)
+                card.CornerRadius = new CornerRadius(0);
+            else
+                card.SetResourceReference(System.Windows.Controls.Border.CornerRadiusProperty, "StrataLargeCornerRadius");
+        }
+    }
+
+    /// <summary>La tarjeta de cada aviso en pantalla.</summary>
+    private IEnumerable<FrameworkElement> Cards()
+    {
+        var stack = new Stack<DependencyObject>([BannerList]);
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            if (current is System.Windows.Controls.Border { Name: "Card" } card)
+            {
+                yield return card;
+                continue;
+            }
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(current); i++)
+                stack.Push(VisualTreeHelper.GetChild(current, i));
+        }
+    }
 
     private void Add(StrataNotification item)
     {

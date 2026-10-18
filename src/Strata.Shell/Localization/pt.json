@@ -881,7 +881,6 @@
   "Un tono con cada aviso": "Um tom a cada aviso",
   "Ver el formato": "Ver o formato",
   "{0:0.0} de {1:0.0} GB en uso": "{0:0.0} de {1:0.0} GB em uso",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles y menús llevan vidrio esmerilado para que se lean.": "Barra sem fundo: só ícones e texto, claros ou escuros conforme o que está atrás. Painéis e menus usam vidro fosco para continuarem legíveis.",
   "Estilo de la barra, los paneles y el Hub, y sus animaciones.": "Estilo da barra, dos painéis e do Hub, e suas animações.",
   "Transparente total": "Totalmente transparente",
   "Archivos .wav, .mp3, .m4a o .wma de hasta 5 MB. El que elijas suena con cada aviso en lugar del de Strata UI.": "Arquivos .wav, .mp3, .m4a ou .wma de até 5 MB. O que você escolher toca a cada aviso no lugar do som do Strata UI.",
@@ -1002,5 +1001,13 @@
   "Prueba: bajada": "Teste: download",
   "Prueba: subida": "Teste: upload",
   "Prueba de velocidad": "Teste de velocidade",
-  "Clic para la prueba de velocidad": "Clique para o teste de velocidade"
+  "Clic para la prueba de velocidad": "Clique para o teste de velocidade",
+  "Liberar RAM ahora": "Liberar RAM agora",
+  "Liberar RAM al hacer clic": "Liberar RAM ao clicar",
+  "Unidad": "Unidade",
+  "Megabytes por segundo (MB/s)": "Megabytes por segundo (MB/s)",
+  "Megabits por segundo (Mb/s)": "Megabits por segundo (Mb/s)",
+  "Clic para liberar RAM": "Clique para liberar RAM",
+  "Clic para abrir el Administrador de tareas": "Clique para abrir o Gerenciador de Tarefas",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean.": "Barra sem fundo: só ícones e texto, claros ou escuros conforme o que está atrás. Os painéis, avisos e menus são de vidro translúcido para serem legíveis."
 }

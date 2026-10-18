@@ -1,4 +1,4 @@
-<UserControl x:Class="Strata.Shell.StartMenu.PinnedLayoutView"
+﻿<UserControl x:Class="Strata.Shell.StartMenu.PinnedLayoutView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
@@ -166,7 +166,7 @@
 
         <!-- Contenido de una carpeta abierta -->
         <Popup x:Name="FolderPopup" StaysOpen="False" AllowsTransparency="True" Placement="Center" PopupAnimation="Fade">
-            <Border Width="360" Padding="16" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
+            <Border x:Name="FolderCard" Width="360" Padding="16" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
                     Background="{DynamicResource StrataPopupBackgroundBrush}"
                     BorderBrush="{DynamicResource StrataFlyoutBorderBrush}" BorderThickness="1">
                 <StackPanel>

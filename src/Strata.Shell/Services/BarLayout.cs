@@ -31,8 +31,39 @@ public static class BarLayout
     [
         BarItem.Start, BarItem.Apps, BarItem.Tray, BarItem.Media, BarItem.Network, BarItem.Bluetooth, BarItem.Volume,
         BarItem.Brightness, BarItem.Battery, BarItem.Clock, BarItem.Notifications, BarItem.Cpu, BarItem.Gpu, BarItem.Ram,
-        BarItem.Fps, BarItem.FreeRam, BarItem.NetSpeed,
+        BarItem.Fps, BarItem.NetSpeed,
     ];
+
+    /// <summary>
+    /// El botón "Liberar RAM" se fusionó con el medidor de RAM (su clic la libera): donde estaba
+    /// queda el medidor (si el monitor no lo tenía ya). Una vez. True si cambió algo.
+    /// </summary>
+    public static bool MergeFreeRam(StrataSettings s)
+    {
+        if (s.FreeRamMerged)
+            return false;
+        s.FreeRamMerged = true;
+        foreach (var layout in s.Layouts.Values)
+        {
+            bool hasRam = layout.Bars.Any(b => b.Items.Contains(BarItem.Ram));
+            foreach (var bar in layout.Bars)
+            {
+                int at = bar.Items.IndexOf(BarItem.FreeRam);
+                if (at < 0)
+                    continue;
+                var zone = ZoneOf(bar, BarItem.FreeRam);
+                bar.Items.RemoveAt(at);
+                bar.Zones.Remove(BarItem.FreeRam);
+                if (!hasRam)
+                {
+                    bar.Items.Insert(at, BarItem.Ram);
+                    SetZone(bar, BarItem.Ram, zone);
+                    hasRam = true;
+                }
+            }
+        }
+        return true;
+    }
 
     /// <summary>
     /// Lo de siempre (antes de poder elegirlo): Inicio y las apps en las barras con ventanas; el

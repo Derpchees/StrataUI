@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -41,8 +41,25 @@ public partial class OsdWindow : Window
             SetWindowLong(hwnd, GwlExStyle, GetWindowLong(hwnd, GwlExStyle) | WsExNoActivate | WsExToolWindow | WsExTransparent);
         };
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(Place, DispatcherPriority.Render);
+        // Vidrio con los temas translúcidos (Themes/GlassSurface).
+        SourceInitialized += (_, _) => OnThemeChanged();
+        Services.ThemeManager.ThemeChanged += OnThemeChanged;
+        Closed += (_, _) => Services.ThemeManager.ThemeChanged -= OnThemeChanged;
         _hideTimer = new DispatcherTimer { Interval = Visible };
         _hideTimer.Tick += (_, _) => HideAnimated();
+    }
+
+    /// <summary>
+    /// Con vidrio, la ventana mide lo que la cápsula (sin margen) y Windows redondea sus esquinas
+    /// (no tanto como la cápsula: el desenfoque no se puede recortar de otra forma).
+    /// </summary>
+    private void OnThemeChanged()
+    {
+        bool glass = Services.Themes.GlassSurface.Active;
+        Card.Margin = new Thickness(glass ? 0 : 16);
+        Card.CornerRadius = new CornerRadius(glass ? 8 : 26);
+        Card.BorderThickness = new Thickness(glass ? 0 : 1);
+        Services.Themes.GlassSurface.Apply(this);
     }
 
     private static readonly Dictionary<string, OsdWindow> Instances = new();

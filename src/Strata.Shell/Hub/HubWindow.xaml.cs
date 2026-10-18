@@ -96,7 +96,35 @@ public partial class HubWindow : FluentWindow
         }
     });
 
-    private void ApplyBackdrop() => WindowBackdropType = ThemeManager.WindowBackdrop;
+    private bool _blurred;
+
+    /// <summary>
+    /// El material del tema, también al cambiarlo con el Hub abierto. El desenfoque limpio (tema
+    /// Transparente total) lo pone la ventana: WPF-UI pinta su fondo sólido y se deja transparente.
+    /// </summary>
+    private void ApplyBackdrop()
+    {
+        bool blur = ThemeManager.Theme.Backdrop == Services.Themes.Backdrop.Blur;
+        if (blur)
+        {
+            WindowBackdropType = Wpf.Ui.Controls.WindowBackdropType.None;
+            Background = System.Windows.Media.Brushes.Transparent;
+            if (IsLoaded)
+                Services.Themes.WindowEffects.SetBlur(this, Services.Themes.Backdrop.Blur);
+            else
+                SourceInitialized += (_, _) => Services.Themes.WindowEffects.SetBlur(this, Services.Themes.Backdrop.Blur);
+        }
+        else
+        {
+            if (_blurred)
+            {
+                Services.Themes.WindowEffects.SetBlur(this, Services.Themes.Backdrop.Solid);
+                ClearValue(BackgroundProperty);
+            }
+            WindowBackdropType = ThemeManager.WindowBackdrop;
+        }
+        _blurred = blur;
+    }
 
     private static System.Windows.Controls.ScrollViewer? FindScroll(DependencyObject root)
     {

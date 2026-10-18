@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -15,9 +15,12 @@ public static class WindowEffects
     /// </summary>
     /// <remarks>Con <paramref name="clear"/> no hay desenfoque ni fondo: lo transparente de WPF deja
     /// ver tal cual lo que hay detrás (barra totalmente transparente).</remarks>
-    public static void SetBlur(Window window, Backdrop backdrop, bool clear = false)
+    public static void SetBlur(Window window, Backdrop backdrop, bool clear = false) =>
+        SetBlur(new WindowInteropHelper(window).Handle, backdrop, clear);
+
+    /// <summary>Lo mismo para cualquier ventana de WPF (también la de un Popup o un menú contextual).</summary>
+    public static void SetBlur(IntPtr hwnd, Backdrop backdrop, bool clear = false)
     {
-        var hwnd = new WindowInteropHelper(window).Handle;
         if (hwnd == IntPtr.Zero)
             return;
         bool enabled = clear || backdrop is Backdrop.Acrylic or Backdrop.Blur;

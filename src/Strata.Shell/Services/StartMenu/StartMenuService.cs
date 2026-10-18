@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -52,6 +52,10 @@ public sealed class StartApp : INotifyPropertyChanged
     public bool CanOpenLocation => AppActions.CanOpenLocation(this);
     public bool CanRunAsAdmin => AppActions.CanRunAsAdmin(this);
     public bool CanUninstall => !IsFile && _extra is null;
+
+    /// <summary>Herramienta de Windows (Servicios, Desfragmentar…): no va en "Todas las apps", sí en la búsqueda.</summary>
+    public bool IsSystemTool => _systemTool ??= !IsFile && _extra is null && SystemTools.IsTool(Id);
+    private bool? _systemTool;
 
     /// <summary>No viene de shell:AppsFolder (ver <see cref="ExtraApps"/>).</summary>
     public bool IsExtra => _extra != null;
@@ -199,6 +203,7 @@ public static class StartMenuService
                 app.NotifyIcon();
         };
         WatchStartFolders();
+        WatchUninstallKeys();
         ScanExtras();
     }
 
@@ -278,9 +283,67 @@ public static class StartMenuService
         _refreshTimer.Start();
     }
 
+    private static DateTime _lastRead = DateTime.UtcNow;
+
+    /// <summary>
+    /// Al abrir el menú: si el catálogo se leyó hace más de medio minuto, se vuelve a leer ya (las
+    /// apps de la Tienda se instalan sin tocar las carpetas que se vigilan).
+    /// </summary>
+    public static void RefreshIfStale()
+    {
+        if (_appsFolder is null || DateTime.UtcNow - _lastRead < TimeSpan.FromSeconds(30) || _refreshTimer?.IsEnabled == true)
+            return;
+        _secondPass = false;
+        OnRefreshTick(null, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// La lista de programas instalados del registro (la de "Aplicaciones instaladas"): la escribe
+    /// cualquier instalador o desinstalador, también los que no ponen accesos directos en Inicio.
+    /// </summary>
+    private static void WatchUninstallKeys()
+    {
+        var thread = new Thread(() =>
+        {
+            const string path = @"Software\Microsoft\Windows\CurrentVersion\Uninstall";
+            var keys = new List<Microsoft.Win32.RegistryKey>();
+            foreach (var (hive, view) in new[] { (Microsoft.Win32.RegistryHive.CurrentUser, Microsoft.Win32.RegistryView.Default),
+                                                 (Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry64),
+                                                 (Microsoft.Win32.RegistryHive.LocalMachine, Microsoft.Win32.RegistryView.Registry32) })
+            {
+                try
+                {
+                    if (Microsoft.Win32.RegistryKey.OpenBaseKey(hive, view).OpenSubKey(path) is { } key)
+                        keys.Add(key);
+                }
+                catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException)
+                {
+                }
+            }
+            if (keys.Count == 0)
+                return;
+            var events = keys.Select(_ => new AutoResetEvent(false)).ToArray();
+            while (true)
+            {
+                for (int i = 0; i < keys.Count; i++)
+                    RegNotifyChangeKeyValue(keys[i].Handle.DangerousGetHandle(), true, RegNotifyName | RegNotifyLastSet,
+                                            events[i].SafeWaitHandle.DangerousGetHandle(), true);
+                WaitHandle.WaitAny(events);
+                Application.Current?.Dispatcher.BeginInvoke(Refresh);
+            }
+        }) { IsBackground = true, Name = "Strata: programas instalados" };
+        thread.Start();
+    }
+
+    private const int RegNotifyName = 0x1, RegNotifyLastSet = 0x4;
+
+    [DllImport("advapi32.dll")]
+    private static extern int RegNotifyChangeKeyValue(IntPtr key, bool watchSubtree, int filter, IntPtr eventHandle, bool asynchronous);
+
     private static void OnRefreshTick(object? sender, EventArgs e)
     {
-        _refreshTimer!.Stop();
+        _refreshTimer?.Stop();
+        _lastRead = DateTime.UtcNow;
         ScanExtras();
         _pendingFolder?.Dispose();
         _swapTimer ??= CreateSwapTimer();
@@ -289,7 +352,12 @@ public static class StartMenuService
             _swapTimer.Stop();
             _swapTimer.Start();
         });
+        // Si la carpeta nueva carga sin avisar cambios, igual se cambia (hasta ~5 s de espera).
+        _swapTries = 0;
+        _swapTimer.Start();
     }
+
+    private static int _swapTries;
 
     private static System.Windows.Threading.DispatcherTimer CreateSwapTimer()
     {
@@ -297,8 +365,14 @@ public static class StartMenuService
         timer.Tick += (_, _) =>
         {
             timer.Stop();
-            if (_pendingFolder is not { } fresh || fresh.Files.Count == 0)
+            if (_pendingFolder is not { } fresh)
                 return;
+            if (fresh.Files.Count == 0)
+            {
+                if (++_swapTries < 10)
+                    timer.Start(); // todavía cargando
+                return;
+            }
             var old = _appsFolder;
             _pendingFolder = null;
             _appsFolder = fresh;

@@ -123,16 +123,21 @@ public static class NetSpeed
         }
     }
 
-    /// <summary>"850 KB/s", "12.4 MB/s" (en bytes, como los navegadores y Steam).</summary>
-    public static string Format(double? bytesPerSecond, bool compact = false)
+    /// <summary>
+    /// "850 KB/s", "12.4 MB/s" (en bytes, como los navegadores y Steam) o, con <see cref="StrataSettings.NetSpeedInBits"/>,
+    /// "6.8 Mb/s" (en bits, como los planes de internet y las pruebas de velocidad).
+    /// </summary>
+    public static string Format(double? bytesPerSecond, bool compact = false, bool? bits = null)
     {
+        bool inBits = bits ?? Settings.Current.NetSpeedInBits;
+        string kUnit = inBits ? "kb/s" : "KB/s", mUnit = inBits ? "Mb/s" : "MB/s";
         if (bytesPerSecond is not { } value)
-            return compact ? "—" : "— KB/s";
+            return compact ? "—" : "— " + kUnit;
         var culture = System.Globalization.CultureInfo.CurrentCulture;
-        double kb = value / 1024, mb = kb / 1024;
-        if (mb >= 1)
-            return compact ? mb.ToString("0.#", culture) + "M" : mb.ToString(mb >= 100 ? "0" : "0.0", culture) + " MB/s";
-        return kb.ToString("0", culture) + (compact ? "K" : " KB/s");
+        double k = (inBits ? value * 8 / 1000 : value / 1024), m = inBits ? k / 1000 : k / 1024;
+        if (m >= 1)
+            return compact ? m.ToString("0.#", culture) + "M" : m.ToString(m >= 100 ? "0" : "0.0", culture) + " " + mUnit;
+        return k.ToString("0", culture) + (compact ? "K" : " " + kUnit);
     }
 
     /// <summary>Lo que muestra el tooltip del medidor.</summary>

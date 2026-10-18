@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 namespace Strata.Shell.Services.Themes;
@@ -34,7 +34,7 @@ public static class Palette
             // Esquema de color (Nord, Dracula…) sobre el estilo elegido: opacos en los estilos sólidos y
             // Mica; sobre vidrio o transparencia, translúcidos para que se siga viendo el efecto.
             // (Con menos, el material de Windows lo aclaraba tanto que el esquema no se reconocía.)
-            (byte barAlpha, byte panelAlpha) = theme.Glass ? ((byte)0xB3, (byte)0xCC)
+            (byte barAlpha, byte panelAlpha) = theme.Glass || theme.Backdrop == Backdrop.Blur ? ((byte)0xB3, (byte)0xCC)
                 : theme.Backdrop == Backdrop.Acrylic ? ((byte)0xE6, (byte)0xD9)
                 : ((byte)0xFF, (byte)0xFF);
             background = WithAlpha(Hex(scheme.Bar), barAlpha);
@@ -79,12 +79,22 @@ public static class Palette
             foreground = light ? Hex("#111114") : Colors.White;
             secondary = light ? Hex("#4A4A52") : Hex("#D0D0D6");
         }
+        else if (theme.Backdrop == Backdrop.Blur)
+        {
+            // Desenfoque limpio (Transparente total): se ve el fondo detrás, con un tinte que basta
+            // para leer. Sin los bordes de luz de los temas de vidrio.
+            flyout = light ? Hex("#80F3F3F6") : Hex("#73141418");
+            surface = light ? Hex("#4DFFFFFF") : Hex("#14FFFFFF");
+            flyoutBorder = light ? Hex("#40FFFFFF") : Hex("#24FFFFFF");
+            hubTint = light ? Hex("#66F3F3F6") : Hex("#5C141418");
+        }
         else if (theme.Backdrop == Backdrop.Acrylic)
         {
-            // Translúcido: el mismo color base, semitransparente sobre el Acrylic.
+            // Translúcido: el mismo color base, semitransparente sobre el Acrylic. En Transparente total
+            // casi sin tinte: el Acrylic solo ya se lee y así se ve el fondo (con más parecía Mica).
             background = WithAlpha(background, light ? (byte)0xB3 : (byte)0x99);
-            flyout = WithAlpha(flyout, 0x66);
-            hubTint = WithAlpha(flyout, 0x33);
+            flyout = WithAlpha(flyout, theme.ClearBar ? (byte)0x1F : (byte)0x66);
+            hubTint = WithAlpha(flyout, theme.ClearBar ? (byte)0x0F : (byte)0x33);
         }
 
         // Colores propios encima del tema: el texto de cada parte sale de su color para que se lea.
@@ -126,6 +136,12 @@ public static class Palette
             ["StrataFlyoutBorderBrush"] = Brush(flyoutBorder),
             // Popups de WPF no tienen Acrylic detrás: necesitan un fondo opaco para ser legibles.
             ["StrataPopupBackgroundBrush"] = Brush(WithAlpha(theme.Tonal || theme.Scheme != null ? flyout : light ? Hex("#F9F9F9") : Hex("#2B2B2B"), 0xF5)),
+            // Avisos, OSD, la carpeta de Inicio: con los temas translúcidos van sobre vidrio
+            // (Themes/GlassSurface) y llevan el tinte de los paneles; si no, el fondo opaco.
+            // (Sobre el Acrylic del aviso, un poco más de tinte que en los paneles: se lee de un vistazo.)
+            ["StrataGlassPopupBrush"] = theme.Backdrop is Backdrop.Acrylic or Backdrop.Blur
+                ? Brush(flyout.A < 0x40 ? WithAlpha(flyout, 0x40) : flyout)
+                : Brush(WithAlpha(theme.Tonal || theme.Scheme != null ? flyout : light ? Hex("#F9F9F9") : Hex("#2B2B2B"), 0xF5)),
             ["StrataSurfaceBrush"] = Brush(surface),
             ["StrataHubTintBrush"] = Brush(hubTint),
             ["StrataAccentBrush"] = Brush(accentShown),
@@ -161,7 +177,7 @@ public static class Palette
     {
         Color card, cardHover, cardBorder, control, controlHover, controlPressed, input, popup, popupBorder, selected, appBackground;
 
-        if (theme.Glass)
+        if (theme.Glass || theme.Backdrop == Backdrop.Blur)
         {
             card = light ? Hex("#59FFFFFF") : Hex("#1FFFFFFF");
             cardHover = light ? Hex("#80FFFFFF") : Hex("#2EFFFFFF");

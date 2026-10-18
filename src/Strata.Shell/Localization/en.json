@@ -881,7 +881,6 @@
   "Un tono con cada aviso": "A tone with each banner",
   "Ver el formato": "See the format",
   "{0:0.0} de {1:0.0} GB en uso": "{0:0.0} of {1:0.0} GB in use",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles y menús llevan vidrio esmerilado para que se lean.": "A bar with no background: just icons and text, light or dark depending on what's behind them. Panels and menus use frosted glass so they stay readable.",
   "Estilo de la barra, los paneles y el Hub, y sus animaciones.": "Style of the bar, panels and Hub, and their animations.",
   "Transparente total": "Fully transparent",
   "Archivos .wav, .mp3, .m4a o .wma de hasta 5 MB. El que elijas suena con cada aviso en lugar del de Strata UI.": ".wav, .mp3, .m4a or .wma files up to 5 MB. The one you choose plays with each banner instead of Strata UI's.",
@@ -1002,5 +1001,13 @@
   "Prueba: bajada": "Test: download",
   "Prueba: subida": "Test: upload",
   "Prueba de velocidad": "Speed test",
-  "Clic para la prueba de velocidad": "Click for the speed test"
+  "Clic para la prueba de velocidad": "Click for the speed test",
+  "Liberar RAM ahora": "Free RAM now",
+  "Liberar RAM al hacer clic": "Free RAM on click",
+  "Unidad": "Unit",
+  "Megabytes por segundo (MB/s)": "Megabytes per second (MB/s)",
+  "Megabits por segundo (Mb/s)": "Megabits per second (Mb/s)",
+  "Clic para liberar RAM": "Click to free RAM",
+  "Clic para abrir el Administrador de tareas": "Click to open Task Manager",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean.": "Bar without a background: just icons and text, light or dark depending on what's behind them. Panels, notifications and menus are translucent glass so they stay readable."
 }

@@ -191,6 +191,7 @@ public partial class App : Application
         MainWindow = new Window { ShowInTaskbar = false, ShowActivated = false };
 
         ThemeManager.Initialize();
+        DialogPlacement.Watch();
         Services.Themes.WindowsTheming.Initialize();
         Services.Themes.Motion.Initialize();
 

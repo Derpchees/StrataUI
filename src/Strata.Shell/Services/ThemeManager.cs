@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
@@ -140,10 +140,13 @@ public static class ThemeManager
     public static bool FollowsWindowsAccent =>
         !UsesWallpaperAccent && TryParseColor(Settings.Current.AccentColor) is null && Theme.Scheme?.Accent is null;
 
-    /// <summary>Material para ventanas FluentWindow (Hub, paneles) según el tema.</summary>
+    /// <summary>
+    /// Material para ventanas FluentWindow (Hub, paneles) según el tema. El desenfoque limpio
+    /// (<see cref="Backdrop.Blur"/>) no es de WPF-UI: esas ventanas lo ponen ellas (ver HubWindow).
+    /// </summary>
     public static WindowBackdropType WindowBackdrop => Theme.Backdrop switch
     {
-        Backdrop.Acrylic or Backdrop.Blur => WindowBackdropType.Acrylic,
+        Backdrop.Acrylic => WindowBackdropType.Acrylic,
         Backdrop.Mica => WindowBackdropType.Mica,
         _ => WindowBackdropType.None,
     };

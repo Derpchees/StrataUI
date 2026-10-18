@@ -171,6 +171,12 @@ public sealed class StrataSettings
     public bool StartAppsZoned { get; set; }
     /// <summary>Al iniciar con Windows también se abre el Hub (por defecto, solo las barras).</summary>
     public bool HubAtStartup { get; set; }
+    /// <summary>Clic en el medidor de RAM: la libera (si no, abre el Administrador de tareas). Clic derecho para cambiarlo.</summary>
+    public bool RamClickFreesRam { get; set; } = true;
+    /// <summary>La velocidad de internet en bits (Mb/s, como los planes de internet) en vez de bytes (MB/s).</summary>
+    public bool NetSpeedInBits { get; set; }
+    /// <summary>"Liberar RAM" ya es el clic del medidor de RAM: el elemento aparte pasó a ser el medidor.</summary>
+    public bool FreeRamMerged { get; set; }
     /// <summary>La última prueba de velocidad (panel de la velocidad de internet).</summary>
     public SpeedTestResult? LastSpeedTest { get; set; }
 
@@ -518,6 +524,8 @@ public static class Settings
         LegacyLayouts.Convert(s, LegacyLayouts.CurrentMainDevice(s));
         // Inicio y las apps abiertas iban donde decía la alineación: ahora tienen zona como lo demás.
         BarLayout.ZoneStartAndApps(s);
+        // "Liberar RAM" era un botón aparte: ahora es el clic del medidor de RAM.
+        BarLayout.MergeFreeRam(s);
         // El tamaño de los íconos de Inicio era chico, mediano o grande: ahora es libre.
         if (s.StartIconPixels <= 0)
             s.StartIconPixels = StartMenu.StartMenuService.PixelsOf(s.StartIconSize);

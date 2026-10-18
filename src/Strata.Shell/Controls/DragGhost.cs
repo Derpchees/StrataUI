@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -80,6 +80,8 @@ public static class DragGhost
             };
             _window.Show();
             Move();
+            // En cada cuadro, no solo con los eventos del mouse: así no se queda atrás del puntero.
+            CompositionTarget.Rendering += OnRendering;
 
             // Se "levanta": crece un poco y vuelve, con la velocidad elegida.
             if (Settings.Current.PanelAnimation != PanelAnimation.None)
@@ -107,8 +109,11 @@ public static class DragGhost
                      SwpNoSize | SwpNoZOrder | SwpNoActivate);
     }
 
+    private static void OnRendering(object? sender, EventArgs e) => Move();
+
     public static void End()
     {
+        CompositionTarget.Rendering -= OnRendering;
         _window?.Close();
         _window = null;
     }

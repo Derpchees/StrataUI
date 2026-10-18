@@ -1,4 +1,4 @@
-using Strata.Shell.Services.Localization;
+﻿using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services.Themes;
 
@@ -65,10 +65,10 @@ public static class ThemeCatalog
         new(StrataTheme.Transparent, Loc.T("Translúcido"), Loc.T("Vidrio esmerilado que deja ver el fondo."), null, Backdrop.Acrylic, Radius: 6),
         new(StrataTheme.Material, "Material", Loc.T("Material Design: superficies tonales con tu acento."), null, Backdrop.Solid,
             Tonal: true, Radius: 14, PanelRadius: 16),
-        // Solo la barra va sin fondo (Taskbar.Transparency); los paneles, el menú Inicio y los menús
-        // llevan el vidrio esmerilado de Translúcido, que se lee sobre cualquier fondo.
+        // Solo la barra va sin fondo (Taskbar.Transparency); los paneles, el menú Inicio, los avisos y
+        // el Hub llevan el Acrylic de Windows casi sin tinte encima (Palette): translúcidos, pero se leen.
         new(StrataTheme.Clear, Loc.T("Transparente total"),
-            Loc.T("Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles y menús llevan vidrio esmerilado para que se lean."),
+            Loc.T("Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean."),
             null, Backdrop.Acrylic, Radius: 6, ClearBar: true),
 
         // ── Esquemas: claro u oscuro con los colores del estilo ────────────────

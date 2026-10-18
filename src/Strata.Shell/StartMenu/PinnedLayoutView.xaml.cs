@@ -134,20 +134,28 @@ public partial class PinnedLayoutView : UserControl
                 SetHint(_hintTile, 1, 0);
             _hintTile = tile;
         }
+        Rect? hintCell = null;
         if (tile != null)
         {
-            // Pista visual: agrandar = crear carpeta; desplazar = hacer hueco a ese lado.
+            // Pista visual: agrandar = crear carpeta (o entrar en ella); si no, se marca la celda
+            // donde quedará (las dos apps intercambian lugar: nada más se mueve).
             var zone = ZoneOf(tile, TranslatePoint(position, tile), _drag!);
-            SetHint(tile, zone == DropZone.Merge ? 1.12 : 1, zone switch { DropZone.Before => 8, DropZone.After => -8, _ => 0 });
+            bool merge = zone == DropZone.Merge && tile.DataContext is not PinGapView;
+            SetHint(tile, merge ? 1.12 : 1, 0);
+            if (!merge && EntryIdOf(tile.DataContext) != _drag!.EntryId)
+                hintCell = tile.TransformToVisual(this).TransformBounds(new Rect(0, 0, tile.ActualWidth, tile.ActualHeight));
         }
-
-        // Fuera de los mosaicos: se marca la celda vacía donde caería.
-        if (tile is null && CellAt(position) is { } cell)
+        // Fuera de los mosaicos: la celda vacía donde caería.
+        else if (CellAt(position) is { } cell)
         {
-            Canvas.SetLeft(CellHint, cell.Bounds.X);
-            Canvas.SetTop(CellHint, cell.Bounds.Y);
-            CellHint.Width = cell.Bounds.Width;
-            CellHint.Height = cell.Bounds.Height;
+            hintCell = cell.Bounds;
+        }
+        if (hintCell is { } bounds)
+        {
+            Canvas.SetLeft(CellHint, bounds.X);
+            Canvas.SetTop(CellHint, bounds.Y);
+            CellHint.Width = bounds.Width;
+            CellHint.Height = bounds.Height;
             CellHint.Visibility = Visibility.Visible;
         }
         else
@@ -385,6 +393,13 @@ public partial class PinnedLayoutView : UserControl
             return;
         }
 
+        // Al costado de otra: cambian de lugar (colocación libre, como en un teléfono: nada se corre).
+        if (drag.EntryId != null)
+        {
+            PinLayout.Swap(drag.EntryId, targetId);
+            return;
+        }
+        // Una app que sale de una carpeta: ocupa ese lugar y la otra pasa a la celda de al lado.
         int index = target.Index + (zone == DropZone.After ? 1 : 0);
         Place(drag, target.SectionId, index);
     }

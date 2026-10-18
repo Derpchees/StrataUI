@@ -117,6 +117,12 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   activador de Chromium); así la página recibe el clic. Abrir el navegador por su AUMID solo abre una ventana.
 - **Emojis a color**: WPF los dibuja en blanco y negro; `Services/Emoji/EmojiRenderer` los dibuja con
   DirectWrite (Vortice) y `Controls/RichText.Text` (en vez de `Text`) pone links y emojis en un TextBlock.
+- **Vidrio en ventanas pequeñas** (`Services/Themes/GlassSurface`): el desenfoque de DWM cubre toda la
+  ventana (una región no lo recorta) y en una ventana en capas (`AllowsTransparency`) además no hay
+  región. Por eso los avisos y el OSD son ventanas normales que, con vidrio, miden lo que su tarjeta y
+  DWM redondea las esquinas; los menús contextuales y los Popup no llevan vidrio.
+- **Cuadros de diálogo**: `DialogPlacement` centra todo `MessageBox` de WPF-UI en el monitor del
+  puntero; el diálogo de abrir archivo usa `DialogPlacement.PointerAnchor()` de dueña.
 - **Desinstalar desde Inicio** (`AppActions.UninstallAsync`): una app web de Chromium (`_crx_` en el ID o
   `--app-id=` en el acceso directo) usa `--uninstall-app-id`, nunca el desinstalador del navegador.
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y

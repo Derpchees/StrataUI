@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -24,6 +24,8 @@ public sealed class StartMenuModel : INotifyPropertyChanged
         var source = new CollectionViewSource { Source = StartMenuService.Apps };
         source.GroupDescriptions.Add(new PropertyGroupDescription(nameof(StartApp.Group)));
         AllApps = source.View;
+        // Las herramientas de Windows (Servicios, Desfragmentar…) no van en la lista: solo al buscarlas.
+        AllApps.Filter = item => item is StartApp { IsSystemTool: false };
         Recent = Settings.Current.StartShowRecent ? StartMenuService.GetRecent(8) : [];
     }
 

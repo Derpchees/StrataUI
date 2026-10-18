@@ -6,7 +6,7 @@
         xmlns:controls="clr-namespace:Strata.Shell.Controls"
         Title="{l:T 'Notificaciones'}"
         Width="380" SizeToContent="Height"
-        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="False" Background="Transparent"
         ShowInTaskbar="False" ShowActivated="False" Topmost="True" UseLayoutRounding="True"
         FontFamily="{StaticResource UiFont}">
     <Window.Resources>
@@ -24,12 +24,9 @@
         <ItemsControl.ItemTemplate>
             <DataTemplate>
                 <Border x:Name="Card" Margin="0,4" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
-                        Background="{DynamicResource StrataPopupBackgroundBrush}"
+                        Background="{DynamicResource StrataGlassPopupBrush}"
                         BorderBrush="{DynamicResource StrataFlyoutBorderBrush}" BorderThickness="1"
                         Cursor="Hand" MouseLeftButtonUp="Banner_Click">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="18" ShadowDepth="2" Opacity="0.25" />
-                    </Border.Effect>
                     <Grid Margin="14,12,10,14">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />

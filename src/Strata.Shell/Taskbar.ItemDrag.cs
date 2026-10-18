@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using Strata.Shell.Services;
 
 namespace Strata.Shell;
@@ -101,6 +102,11 @@ public partial class Taskbar
         if (!ReferenceEquals(target, owner) && (item == BarItem.Tray || target.Has(item)
             || target.Device != owner.Device && App.Current.Taskbars.Any(bar => bar.Device == target.Device && bar.Has(item))))
             return;
+        // Mientras el puntero siga sobre el propio elemento, no se mueve: si no, al correrse los
+        // vecinos el puntero quedaba del otro lado de su mitad y el elemento iba y venía.
+        if (ReferenceEquals(target, owner) && target.Element(item) is { IsVisible: true } self && ScreenRect(self, -2).Contains(point))
+            return;
+        var before = target.ItemPositions();
 
         var targetItems = target.Items.ToList();
         var (index, zone) = target.IndexAt(point, item);
@@ -132,7 +138,68 @@ public partial class Taskbar
         BarLayout.SetItems(Settings.Current, target.BarId, targetItems);
         target.ApplyLayout();
         target.SetDragging(item, true);
+        target.SlideFrom(before, item);
         _itemOwner = target;
+    }
+
+    private static readonly Duration SlideDuration = TimeSpan.FromMilliseconds(160);
+    private static readonly IEasingFunction SlideEasing = new QuadraticEase { EasingMode = EasingMode.EaseOut };
+
+    /// <summary>Dónde está cada elemento de la barra ahora (con lo que lleve de su animación).</summary>
+    private Dictionary<FrameworkElement, Point> ItemPositions()
+    {
+        var positions = new Dictionary<FrameworkElement, Point>();
+        foreach (var other in _items)
+        {
+            if (Element(other) is not { IsVisible: true } element)
+                continue;
+            try
+            {
+                positions[element] = element.TranslatePoint(default, BarBorder);
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        }
+        return positions;
+    }
+
+    /// <summary>
+    /// Los vecinos que cambiaron de lugar se deslizan desde donde estaban, en vez de saltar (el que
+    /// se arrastra no: lo representa la imagen en la mano).
+    /// </summary>
+    private void SlideFrom(Dictionary<FrameworkElement, Point> before, BarItem moving)
+    {
+        if (Settings.Current.PanelAnimation == PanelAnimation.None)
+            return;
+        UpdateLayout();
+        var dragged = Element(moving);
+        foreach (var (element, old) in before)
+        {
+            if (ReferenceEquals(element, dragged) || !element.IsVisible)
+                continue;
+            Point now;
+            try
+            {
+                now = element.TranslatePoint(default, BarBorder);
+            }
+            catch (InvalidOperationException)
+            {
+                continue;
+            }
+            double dx = old.X - now.X, dy = old.Y - now.Y;
+            if (Math.Abs(dx) < 0.5 && Math.Abs(dy) < 0.5)
+                continue;
+            if (element.RenderTransform is not TranslateTransform slide)
+            {
+                if (element.RenderTransform is { } other && !other.Value.IsIdentity)
+                    continue; // tiene otra transformación (no se toca)
+                element.RenderTransform = slide = new TranslateTransform();
+            }
+            // Desde donde se ve ahora (el desplazamiento animado ya está en "old").
+            slide.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(slide.X + dx, 0, SlideDuration) { EasingFunction = SlideEasing });
+            slide.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(slide.Y + dy, 0, SlideDuration) { EasingFunction = SlideEasing });
+        }
     }
 
     /// <summary>

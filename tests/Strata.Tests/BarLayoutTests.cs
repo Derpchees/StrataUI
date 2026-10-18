@@ -169,6 +169,23 @@ public class BarLayoutTests
     }
 
     [Fact]
+    public void Free_ram_becomes_the_ram_meter_once()
+    {
+        var bar = new BarConfig { Items = [BarItem.Clock, BarItem.FreeRam] };
+        BarLayout.SetZone(bar, BarItem.FreeRam, BarZone.Start);
+        var s = With(D1, bar);
+        Assert.True(BarLayout.MergeFreeRam(s));
+        Assert.Equal([BarItem.Clock, BarItem.Ram], bar.Items);
+        Assert.Equal(BarZone.Start, BarLayout.ZoneOf(bar, BarItem.Ram));
+        Assert.False(BarLayout.MergeFreeRam(s));
+
+        // Con el medidor ya puesto, el botón solo se quita.
+        var both = new BarConfig { Items = [BarItem.Ram, BarItem.FreeRam] };
+        Assert.True(BarLayout.MergeFreeRam(With(D1, both)));
+        Assert.Equal([BarItem.Ram], both.Items);
+    }
+
+    [Fact]
     public void Start_and_apps_stay_after_what_was_already_at_the_start()
     {
         // Antes la zona de inicio iba delante de Inicio y las apps.

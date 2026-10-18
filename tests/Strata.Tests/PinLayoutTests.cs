@@ -1,4 +1,4 @@
-using Strata.Shell.Services;
+﻿using Strata.Shell.Services;
 using Strata.Shell.Services.StartMenu;
 
 namespace Strata.Tests;
@@ -35,6 +35,17 @@ public sealed class PinLayoutTests
         PinLayout.Move("e-a", "s2", 1);
         Assert.Equal(["c", "b"], Ids(0));
         Assert.Equal(["d", "a"], Ids(1));
+    }
+
+    [Fact]
+    public void Swapping_moves_only_the_two_apps()
+    {
+        PinLayout.Swap("e-a", "e-c");
+        Assert.Equal(["c", "b", "a"], Ids(0));
+
+        PinLayout.Swap("e-b", "e-d");
+        Assert.Equal(["c", "d", "a"], Ids(0));
+        Assert.Equal(["b"], Ids(1));
     }
 
     [Fact]

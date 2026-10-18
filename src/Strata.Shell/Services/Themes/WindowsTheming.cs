@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Media;
 using Strata.Shell.Tweaks;
@@ -144,7 +144,7 @@ public static class WindowsTheming
             await ApplyTweakAsync("dark-apps", light ? 0 : 1);
             await ApplyTweakAsync("dark-system", light ? 0 : 1);
         }
-        if (theme.Backdrop == Backdrop.Acrylic)
+        if (theme.Backdrop is Backdrop.Acrylic or Backdrop.Blur)
             await ApplyTweakAsync("no-transparency", 0); // transparencia de Windows activada
     }
 
@@ -161,7 +161,7 @@ public static class WindowsTheming
         WindowEffects.SetDarkMode(hwnd, !ThemeManager.IsLight);
         WindowEffects.SetSystemBackdrop(hwnd, theme.Backdrop switch
         {
-            Backdrop.Acrylic => WindowEffects.BackdropAcrylic,
+            Backdrop.Acrylic or Backdrop.Blur => WindowEffects.BackdropAcrylic,
             Backdrop.Mica => WindowEffects.BackdropMica,
             _ => WindowEffects.BackdropNone,
         });

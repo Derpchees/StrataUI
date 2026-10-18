@@ -207,7 +207,7 @@ public class AccentAndToastTests
         System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
         try
         {
-            Assert.Equal(expected, NetSpeed.Format(bytes, compact));
+            Assert.Equal(expected, NetSpeed.Format(bytes, compact, bits: false));
         }
         finally
         {
