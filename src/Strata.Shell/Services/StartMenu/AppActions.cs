@@ -16,6 +16,38 @@ public static class AppActions
     /// <summary>App de la Tienda (o empaquetada): su ID es "Familia_editor!App".</summary>
     public static bool IsPackaged(StartApp app) => app.Id.Contains('!') && !app.Id.Contains('\\');
 
+    private static readonly Dictionary<string, bool> RemovableFamilies = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Se puede desinstalar: las apps empaquetadas que son parte de Windows ("Introducción", que es
+    /// MicrosoftWindows.Client.CBS) no se dejan quitar (0x80073CFA), así que no se ofrece.
+    /// </summary>
+    public static bool CanUninstall(StartApp app)
+    {
+        if (!IsPackaged(app))
+            return true;
+        string family = app.Id[..app.Id.IndexOf('!')];
+        if (RemovableFamilies.TryGetValue(family, out bool removable))
+            return removable;
+        try
+        {
+            var package = new Windows.Management.Deployment.PackageManager().FindPackagesForUser("", family).FirstOrDefault();
+            removable = package is not null && package.SignatureKind != Windows.ApplicationModel.PackageSignatureKind.System;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo leer el paquete de {app.Name}", ex);
+            removable = true;
+        }
+        return RemovableFamilies[family] = removable;
+    }
+
+    /// <summary>El comando desinstala el navegador Edge (su setup.exe, no una app web suya).</summary>
+    internal static bool IsEdgeUninstaller(string command) =>
+        command.Contains(@"\Microsoft\Edge\Application\", StringComparison.OrdinalIgnoreCase)
+        && command.Contains("setup.exe", StringComparison.OrdinalIgnoreCase)
+        && !command.Contains("--uninstall-app-id", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Ejecutable (o archivo) al que apunta la app; null en apps empaquetadas o direcciones web.</summary>
     public static string? TargetPath(StartApp app)
     {
@@ -129,6 +161,12 @@ public static class AppActions
         // App web de un navegador (Brave, Chrome, Edge): su ejecutable es el del navegador, así que
         // buscar por carpeta daba con el desinstalador del navegador entero.
         string? command = WebAppId(app) is { } webApp ? WebAppUninstaller(app, webApp) : FindUninstaller(app);
+        // Edge no se deja quitar con su desinstalador a secas (ver EdgeRemover): va por el proceso elevado.
+        if (command != null && IsEdgeUninstaller(command))
+        {
+            await UninstallEdgeAsync();
+            return;
+        }
         if (command != null)
         {
             Log.Info($"Desinstalando {app.Name}: {command}");
@@ -147,6 +185,36 @@ public static class AppActions
             return;
         }
         Process.Start(new ProcessStartInfo("ms-settings:appsfeatures") { UseShellExecute = true });
+    }
+
+    private static async Task UninstallEdgeAsync()
+    {
+        var confirm = new Wpf.Ui.Controls.MessageBox
+        {
+            Title = Loc.T("Desinstalar Edge"),
+            Content = Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado."),
+            PrimaryButtonText = Loc.T("Desinstalar"),
+            CloseButtonText = Loc.T("Cancelar"),
+        };
+        if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            return;
+        int code = await Tweaks.Elevation.RunSelfAsync(Tweaks.EdgeRemover.Arg);
+        if (code == Tweaks.Elevation.Cancelled)
+            return;
+        StartMenuService.Refresh();
+        if (!Tweaks.EdgeRemover.IsInstalled)
+        {
+            Tweaks.TweakEngine.Backup.AddRemovedApps(["Microsoft Edge"]);
+            return;
+        }
+        await new Wpf.Ui.Controls.MessageBox
+        {
+            Title = Loc.T("Desinstalar Edge"),
+            Content = Tweaks.EdgeRemover.IsDisabled
+                ? Loc.T("Windows no deja desinstalar Edge en tu región, así que se desactivó: ya no sale en Inicio ni corre en segundo plano. Se restaura en el Hub, en Apps preinstaladas.")
+                : Loc.T("Windows no dejó quitar Edge. Puede que una actualización lo esté usando: reinicia e inténtalo de nuevo."),
+            CloseButtonText = Loc.T("Cerrar"),
+        }.ShowDialogAsync();
     }
 
     // ── Apps web de navegadores Chromium ────────────────────────────────────

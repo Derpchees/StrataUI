@@ -35,17 +35,84 @@ public partial class AppsPage : Page
         InitializeComponent();
         Loaded += async (_, _) =>
         {
-            EdgeCard.Visibility = EdgeRemover.IsInstalled ? Visibility.Visible : Visibility.Collapsed;
+            ShowEdge();
+            ShowGameBar();
             await LoadAsync();
         };
     }
 
+    /// <summary>Instalada: se ofrece quitarla; ya quitada pero con restos: limpiarlos; si no, no se muestra.</summary>
+    private void ShowGameBar()
+    {
+        bool installed = GameBarRemover.IsInstalled;
+        bool leftovers = !installed && GameBarRemover.NeedsCleanup;
+        GameBarCard.Visibility = installed || leftovers ? Visibility.Visible : Visibility.Collapsed;
+        GameBarText.Text = installed
+            ? Loc.T("Quita la Game Bar de Xbox (Win+G) y la grabación de juegos en segundo plano, sin que Windows pida otra app al abrir un juego. Se puede volver a instalar desde Microsoft Store.")
+            : Loc.T("La Game Bar ya no está, pero Windows puede pedir una app para abrir sus vínculos al iniciar un juego y seguir grabando en segundo plano.");
+        GameBarButton.Content = installed ? Loc.T("Desinstalar Game Bar") : Loc.T("Quitar sus restos");
+        GameBarButton.IsEnabled = true;
+    }
+
+    private async void RemoveGameBar_Click(object sender, RoutedEventArgs e)
+    {
+        if (!GameBarRemover.IsInstalled)
+        {
+            GameBarRemover.CleanUp();
+            GameBarText.Text = Loc.T("Listo: la Game Bar ya no deja restos.");
+            GameBarButton.IsEnabled = false;
+            return;
+        }
+        var confirm = new Wpf.Ui.Controls.MessageBox
+        {
+            Title = Loc.T("Desinstalar Game Bar"),
+            Content = Loc.T("Se quitará la Game Bar de Xbox de tu usuario y se apagará la grabación de juegos en segundo plano. Para volver a tenerla, se instala desde Microsoft Store."),
+            PrimaryButtonText = Loc.T("Desinstalar"),
+            CloseButtonText = Loc.T("Cancelar"),
+        };
+        if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            return;
+        GameBarButton.IsEnabled = false;
+        GameBarText.Text = Loc.T("Desinstalando Game Bar…");
+        bool removed = await GameBarRemover.RemoveAsync();
+        if (removed)
+            TweakEngine.Backup.AddRemovedApps(["Xbox Game Bar"]);
+        GameBarText.Text = removed ? Loc.T("Listo: la Game Bar ya no está instalada.")
+            : Loc.T("Windows no dejó quitar la Game Bar. Ciérrala (y los juegos abiertos) e inténtalo de nuevo.");
+        GameBarButton.IsEnabled = !removed;
+        await LoadAsync(); // ya no está en la lista
+    }
+
+    /// <summary>Instalado: se ofrece quitarlo; desactivado (Windows no dejó quitarlo): restaurarlo.</summary>
+    private void ShowEdge()
+    {
+        bool disabled = EdgeRemover.IsDisabled;
+        EdgeCard.Visibility = EdgeRemover.IsInstalled ? Visibility.Visible : Visibility.Collapsed;
+        EdgeText.Text = disabled
+            ? Loc.T("Edge está desactivado: Windows no deja desinstalarlo en tu región. No tiene accesos directos ni corre en segundo plano, y sigue ahí para lo que lo necesite.")
+            : Loc.T("Quita el navegador Edge (WebView2, que usan otras apps, se queda) y evita que Windows Update lo reinstale. Se puede volver a instalar desde microsoft.com/edge.");
+        EdgeButton.Content = disabled ? Loc.T("Restaurar Edge") : Loc.T("Desinstalar Edge");
+        EdgeButton.Appearance = disabled ? Wpf.Ui.Controls.ControlAppearance.Secondary : Wpf.Ui.Controls.ControlAppearance.Danger;
+        EdgeButton.IsEnabled = true;
+    }
+
     private async void RemoveEdge_Click(object sender, RoutedEventArgs e)
     {
+        if (EdgeRemover.IsDisabled)
+        {
+            EdgeButton.IsEnabled = false;
+            int restored = await Elevation.RunSelfAsync(EdgeRemover.RestoreArg);
+            ShowEdge();
+            if (restored == Elevation.Cancelled)
+                EdgeText.Text = Loc.T("Cancelado.");
+            else if (!EdgeRemover.IsDisabled)
+                EdgeText.Text = Loc.T("Listo: Edge volvió a como estaba.");
+            return;
+        }
         var confirm = new Wpf.Ui.Controls.MessageBox
         {
             Title = Loc.T("Desinstalar Edge"),
-            Content = Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Los enlaces se abrirán con tu navegador predeterminado. Para volver a tenerlo, se instala desde microsoft.com/edge."),
+            Content = Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado."),
             PrimaryButtonText = Loc.T("Desinstalar"),
             CloseButtonText = Loc.T("Cancelar"),
         };
@@ -56,11 +123,16 @@ public partial class AppsPage : Page
         int code = await Elevation.RunSelfAsync(EdgeRemover.Arg);
         bool removed = !EdgeRemover.IsInstalled;
         if (removed)
+        {
             TweakEngine.Backup.AddRemovedApps(["Microsoft Edge"]);
-        EdgeText.Text = removed ? Loc.T("Listo: Edge ya no está instalado.")
-            : code == Elevation.Cancelled ? Loc.T("Cancelado.")
-            : Loc.T("Windows no dejó quitar Edge. Puede que una actualización lo esté usando: reinicia e inténtalo de nuevo.");
-        EdgeButton.IsEnabled = !removed;
+            EdgeText.Text = Loc.T("Listo: Edge ya no está instalado.");
+            return;
+        }
+        ShowEdge();
+        if (code == Elevation.Cancelled)
+            EdgeText.Text = Loc.T("Cancelado.");
+        else if (!EdgeRemover.IsDisabled)
+            EdgeText.Text = Loc.T("Windows no dejó quitar Edge. Puede que una actualización lo esté usando: reinicia e inténtalo de nuevo.");
     }
 
     private async Task LoadAsync()

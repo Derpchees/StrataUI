@@ -1028,5 +1028,19 @@
   "Listo: Edge ya no está instalado.": "Done: Edge is no longer installed.",
   "Windows no dejó quitar Edge. Puede que una actualización lo esté usando: reinicia e inténtalo de nuevo.": "Windows didn't allow removing Edge. An update may be using it: restart and try again.",
   "Menos procesos y servicios de Windows en memoria. Para liberar la RAM ahora, clic en el medidor de RAM de la barra.": "Fewer Windows processes and services in memory. To free RAM right now, click the RAM meter on the bar.",
-  "Quita el navegador Edge (WebView2, que usan otras apps, se queda) y evita que Windows Update lo reinstale. Se puede volver a instalar desde microsoft.com/edge.": "Removes the Edge browser (WebView2, which other apps use, stays) and keeps Windows Update from reinstalling it. It can be reinstalled from microsoft.com/edge."
+  "Quita el navegador Edge (WebView2, que usan otras apps, se queda) y evita que Windows Update lo reinstale. Se puede volver a instalar desde microsoft.com/edge.": "Removes the Edge browser (WebView2, which other apps use, stays) and keeps Windows Update from reinstalling it. It can be reinstalled from microsoft.com/edge.",
+  "Quita la Game Bar de Xbox (Win+G) y la grabación de juegos en segundo plano, sin que Windows pida otra app al abrir un juego. Se puede volver a instalar desde Microsoft Store.": "Removes the Xbox Game Bar (Win+G) and background game recording, without Windows asking for another app when a game starts. You can reinstall it from Microsoft Store.",
+  "La Game Bar ya no está, pero Windows puede pedir una app para abrir sus vínculos al iniciar un juego y seguir grabando en segundo plano.": "The Game Bar is gone, but Windows may still ask for an app to open its links when a game starts, and keep recording in the background.",
+  "Desinstalar Game Bar": "Uninstall Game Bar",
+  "Quitar sus restos": "Remove leftovers",
+  "Listo: la Game Bar ya no deja restos.": "Done: the Game Bar leaves nothing behind.",
+  "Se quitará la Game Bar de Xbox de tu usuario y se apagará la grabación de juegos en segundo plano. Para volver a tenerla, se instala desde Microsoft Store.": "The Xbox Game Bar will be removed from your account and background game recording turned off. To get it back, install it from Microsoft Store.",
+  "Desinstalando Game Bar…": "Uninstalling Game Bar…",
+  "Listo: la Game Bar ya no está instalada.": "Done: the Game Bar is no longer installed.",
+  "Windows no dejó quitar la Game Bar. Ciérrala (y los juegos abiertos) e inténtalo de nuevo.": "Windows didn't let the Game Bar be removed. Close it (and any open games) and try again.",
+  "Edge está desactivado: Windows no deja desinstalarlo en tu región. No tiene accesos directos ni corre en segundo plano, y sigue ahí para lo que lo necesite.": "Edge is turned off: Windows doesn't allow uninstalling it in your region. It has no shortcuts and doesn't run in the background, and stays there for whatever needs it.",
+  "Restaurar Edge": "Restore Edge",
+  "Listo: Edge volvió a como estaba.": "Done: Edge is back to how it was.",
+  "Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado.": "Microsoft Edge will be removed from this PC for all users. If Windows doesn't allow it in your region, it gets turned off instead: no shortcuts and no background processes. Links will open in your default browser.",
+  "Windows no deja desinstalar Edge en tu región, así que se desactivó: ya no sale en Inicio ni corre en segundo plano. Se restaura en el Hub, en Apps preinstaladas.": "Windows doesn't allow uninstalling Edge in your region, so it was turned off: it no longer shows in Start or runs in the background. You can restore it in the Hub, under Preinstalled apps."
 }

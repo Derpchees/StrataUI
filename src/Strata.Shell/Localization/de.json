@@ -1028,5 +1028,19 @@
   "Listo: Edge ya no está instalado.": "Fertig: Edge ist nicht mehr installiert.",
   "Windows no dejó quitar Edge. Puede que una actualización lo esté usando: reinicia e inténtalo de nuevo.": "Windows hat das Entfernen von Edge nicht zugelassen. Vielleicht nutzt ein Update es: neu starten und erneut versuchen.",
   "Menos procesos y servicios de Windows en memoria. Para liberar la RAM ahora, clic en el medidor de RAM de la barra.": "Weniger Windows-Prozesse und -Dienste im Speicher. Um RAM sofort freizugeben, auf die RAM-Anzeige der Leiste klicken.",
-  "Quita el navegador Edge (WebView2, que usan otras apps, se queda) y evita que Windows Update lo reinstale. Se puede volver a instalar desde microsoft.com/edge.": "Entfernt den Edge-Browser (WebView2, das andere Apps nutzen, bleibt) und verhindert die Neuinstallation durch Windows Update. Über microsoft.com/edge wieder installierbar."
+  "Quita el navegador Edge (WebView2, que usan otras apps, se queda) y evita que Windows Update lo reinstale. Se puede volver a instalar desde microsoft.com/edge.": "Entfernt den Edge-Browser (WebView2, das andere Apps nutzen, bleibt) und verhindert die Neuinstallation durch Windows Update. Über microsoft.com/edge wieder installierbar.",
+  "Quita la Game Bar de Xbox (Win+G) y la grabación de juegos en segundo plano, sin que Windows pida otra app al abrir un juego. Se puede volver a instalar desde Microsoft Store.": "Entfernt die Xbox Game Bar (Win+G) und die Hintergrundaufnahme von Spielen, ohne dass Windows beim Spielstart nach einer anderen App fragt. Sie lässt sich über den Microsoft Store neu installieren.",
+  "La Game Bar ya no está, pero Windows puede pedir una app para abrir sus vínculos al iniciar un juego y seguir grabando en segundo plano.": "Die Game Bar ist entfernt, aber Windows fragt beim Spielstart womöglich nach einer App für ihre Links und nimmt weiter im Hintergrund auf.",
+  "Desinstalar Game Bar": "Game Bar deinstallieren",
+  "Quitar sus restos": "Reste entfernen",
+  "Listo: la Game Bar ya no deja restos.": "Fertig: Von der Game Bar bleibt nichts mehr zurück.",
+  "Se quitará la Game Bar de Xbox de tu usuario y se apagará la grabación de juegos en segundo plano. Para volver a tenerla, se instala desde Microsoft Store.": "Die Xbox Game Bar wird aus deinem Konto entfernt und die Hintergrundaufnahme von Spielen ausgeschaltet. Um sie zurückzubekommen, installiere sie aus dem Microsoft Store.",
+  "Desinstalando Game Bar…": "Game Bar wird deinstalliert…",
+  "Listo: la Game Bar ya no está instalada.": "Fertig: Die Game Bar ist nicht mehr installiert.",
+  "Windows no dejó quitar la Game Bar. Ciérrala (y los juegos abiertos) e inténtalo de nuevo.": "Windows hat das Entfernen der Game Bar nicht zugelassen. Schließe sie (und offene Spiele) und versuche es erneut.",
+  "Edge está desactivado: Windows no deja desinstalarlo en tu región. No tiene accesos directos ni corre en segundo plano, y sigue ahí para lo que lo necesite.": "Edge ist deaktiviert: Windows erlaubt in deiner Region keine Deinstallation. Es hat keine Verknüpfungen, läuft nicht im Hintergrund und bleibt für alles, was es braucht.",
+  "Restaurar Edge": "Edge wiederherstellen",
+  "Listo: Edge volvió a como estaba.": "Fertig: Edge ist wieder wie vorher.",
+  "Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado.": "Microsoft Edge wird für alle Benutzer von diesem PC entfernt. Erlaubt Windows das in deiner Region nicht, wird es stattdessen deaktiviert: ohne Verknüpfungen und Hintergrundprozesse. Links öffnen sich in deinem Standardbrowser.",
+  "Windows no deja desinstalar Edge en tu región, así que se desactivó: ya no sale en Inicio ni corre en segundo plano. Se restaura en el Hub, en Apps preinstaladas.": "Windows erlaubt in deiner Region keine Deinstallation von Edge, deshalb wurde es deaktiviert: Es erscheint nicht mehr im Start und läuft nicht im Hintergrund. Wiederherstellen kannst du es im Hub unter Vorinstallierte Apps."
 }

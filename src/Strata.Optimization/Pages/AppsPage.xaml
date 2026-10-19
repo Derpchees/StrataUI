@@ -28,6 +28,17 @@
                 </ui:CardControl.Header>
                 <ui:Button x:Name="EdgeButton" Appearance="Danger" Content="{l:T 'Desinstalar Edge'}" Click="RemoveEdge_Click" />
             </ui:CardControl>
+            <!-- La Game Bar es de la Tienda, pero sin ella quedan restos que molestan (Tweaks/GameBarRemover) -->
+            <ui:CardControl x:Name="GameBarCard" Style="{StaticResource HubCard}" Margin="0,0,0,12" Visibility="Collapsed">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="XboxController24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="Xbox Game Bar" />
+                        <TextBlock x:Name="GameBarText" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button x:Name="GameBarButton" Appearance="Danger" Click="RemoveGameBar_Click" />
+            </ui:CardControl>
         </StackPanel>
 
         <Grid Grid.Row="1" Margin="0,0,0,8">

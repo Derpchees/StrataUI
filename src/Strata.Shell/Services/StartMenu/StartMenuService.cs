@@ -51,7 +51,7 @@ public sealed class StartApp : INotifyPropertyChanged
     // Para el menú contextual (se consultan al abrirlo).
     public bool CanOpenLocation => AppActions.CanOpenLocation(this);
     public bool CanRunAsAdmin => AppActions.CanRunAsAdmin(this);
-    public bool CanUninstall => !IsFile && _extra is null;
+    public bool CanUninstall => !IsFile && _extra is null && AppActions.CanUninstall(this);
 
     /// <summary>Herramienta de Windows (Servicios, Desfragmentar…): no va en "Todas las apps", sí en la búsqueda.</summary>
     public bool IsSystemTool => _systemTool ??= !IsFile && _extra is null && SystemTools.IsTool(Id);

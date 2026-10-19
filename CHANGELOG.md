@@ -6,16 +6,30 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
-## [3.6.2] - 2026-10-18
+## [3.7.0] - 2026-10-18
+
+### Añadido
+- **Desinstalar la Game Bar de Xbox** (Optimización › Apps preinstaladas): quita la Game Bar y la
+  grabación de juegos en segundo plano, y Windows deja de pedir "una aplicación para abrir este
+  vínculo ms-gamingoverlay" al iniciar un juego. Si ya se había quitado, ofrece limpiar esos restos;
+  si se reinstala desde la Tienda, sus vínculos vuelven a abrirla.
+- **Desactivar Edge** donde Windows no deja desinstalarlo (fuera del Espacio Económico Europeo):
+  queda sin accesos directos, sin arranque rápido ni procesos en segundo plano, y sus actualizaciones
+  no vuelven a crear accesos directos. Un botón lo restaura como estaba.
 
 ### Cambiado
 - **Arrastrar íconos de la bandeja** se siente como el resto de la barra: el ícono va en la mano con
   su marco de acento, queda tenue en su lugar y los demás se deslizan en vez de saltar (también en el
   panel de ocultos, que ya no tapa la imagen al abrirse).
+- **README** nuevo, más ordenado y sin emojis.
 
 ### Corregido
 - Un ícono de la bandeja arrastrado hacia la derecha quedaba uno o más lugares antes de donde se
   soltó (la posición se contaba con los anclados que no se ven, como el volumen de Windows).
+- **Desinstalar Edge desde Inicio** no hacía nada: ahora usa el mismo camino que Optimización
+  (desinstalar o, si Windows no deja, desactivar).
+- Inicio ya no ofrece "Desinstalar" en las partes de Windows que no se pueden quitar ("Introducción"
+  daba un error).
 
 ## [3.6.1] - 2026-10-18
 

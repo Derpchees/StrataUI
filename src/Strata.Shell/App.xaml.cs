@@ -78,6 +78,11 @@ public partial class App : Application
             Shutdown(Tweaks.EdgeRemover.RunElevated());
             return;
         }
+        if (e.Args.Length == 1 && e.Args[0] == Tweaks.EdgeRemover.RestoreArg)
+        {
+            Shutdown(Tweaks.EdgeRemover.RunElevatedRestore());
+            return;
+        }
         if (e.Args.Length > 0 && e.Args[0] == Tweaks.ElevatedBroker.RemoveAppxArg)
         {
             Shutdown(Tweaks.AppxManager.RunElevatedRemove(e.Args));
@@ -249,6 +254,7 @@ public partial class App : Application
                 bar.Items.Contains(BarItem.Fps) || bar.Items.Contains(BarItem.Cpu) || bar.Items.Contains(BarItem.Gpu)))
             _ = Sensors.StartAsync(automatic: true);
         _ = Task.Run(AutoStart.Migrate);
+        _ = Task.Run(Tweaks.GameBarRemover.RepairIfReinstalled);
         // El menú Inicio, armado una vez cuando ya cargó el catálogo de apps: así la primera apertura es rápida.
         _ = Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
         {
