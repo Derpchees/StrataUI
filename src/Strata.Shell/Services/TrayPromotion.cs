@@ -93,10 +93,23 @@ public static class TrayPromotion
             SaveOrder();
     }
 
-    /// <summary>Ancla un ícono en esa posición de la barra (o lo mueve si ya estaba anclado).</summary>
+    /// <summary>
+    /// Ancla un ícono en esa posición de la barra (o lo mueve si ya estaba anclado). La posición es
+    /// la de la lista que se ve; ManagedShell cuenta en la suya (<see cref="NotificationArea.PinnedNotifyIcons"/>),
+    /// que lleva también los anclados que no se ven (volumen, red y energía de Windows, apps cerradas):
+    /// se traduce por el vecino junto al que debe quedar.
+    /// </summary>
     public static void MoveToPinned(NotifyIcon icon, int index, bool save = true)
     {
-        icon.Pin(index);
+        var shown = _tray?.PinnedIcons.OfType<NotifyIcon>().Where(i => !ReferenceEquals(i, icon)).ToList() ?? [];
+        index = Math.Clamp(index, 0, shown.Count);
+        // Pin(n) lo inserta antes del que está ahora en n (y después lo quita de donde estaba).
+        if (index < shown.Count)
+            icon.Pin(shown[index].PinOrder); // justo antes del que queda después
+        else if (shown.Count > 0)
+            icon.Pin(shown[^1].PinOrder + 1); // justo después del último
+        else if (!icon.IsPinned)
+            icon.Pin();
         if (save)
             SaveOrder();
     }

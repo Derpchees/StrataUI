@@ -6,6 +6,17 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.6.2] - 2026-10-18
+
+### Cambiado
+- **Arrastrar íconos de la bandeja** se siente como el resto de la barra: el ícono va en la mano con
+  su marco de acento, queda tenue en su lugar y los demás se deslizan en vez de saltar (también en el
+  panel de ocultos, que ya no tapa la imagen al abrirse).
+
+### Corregido
+- Un ícono de la bandeja arrastrado hacia la derecha quedaba uno o más lugares antes de donde se
+  soltó (la posición se contaba con los anclados que no se ven, como el volumen de Windows).
+
 ## [3.6.1] - 2026-10-18
 
 ### Corregido

@@ -35,7 +35,84 @@ public partial class Taskbar
             EndTrayDrag();
             return;
         }
-        Mouse.OverrideCursor = Cursors.Hand;
+        Mouse.OverrideCursor = Cursors.SizeAll;
+        Controls.DragGhost.Begin(source); // antes de atenuarlo: la imagen lo muestra entero
+        MarkTrayDragging();
+    }
+
+    /// <summary>
+    /// El ícono que se arrastra se ve tenue en su lugar. Los íconos se regeneran al reordenarse:
+    /// se marca por el ícono de la app, no por el control, cada vez que cambia el orden.
+    /// </summary>
+    private void MarkTrayDragging()
+    {
+        foreach (var list in new[] { PinnedTray, HiddenTray })
+        {
+            foreach (var tray in TrayIcons(list))
+                tray.Opacity = _trayDrag != null && ReferenceEquals(tray.NotifyIcon, _trayDrag) ? 0.55 : 1;
+        }
+    }
+
+    private static IEnumerable<TrayIcon> TrayIcons(ItemsControl list)
+    {
+        for (int i = 0; i < list.Items.Count; i++)
+        {
+            if (list.ItemContainerGenerator.ContainerFromIndex(i) is DependencyObject container
+                && FindTrayIcon(container) is { } tray)
+                yield return tray;
+        }
+    }
+
+    private static TrayIcon? FindTrayIcon(DependencyObject parent)
+    {
+        if (parent is TrayIcon tray)
+            return tray;
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            if (FindTrayIcon(System.Windows.Media.VisualTreeHelper.GetChild(parent, i)) is { } found)
+                return found;
+        }
+        return null;
+    }
+
+    /// <summary>Dónde se ve cada ícono de la lista ahora (en pantalla, con lo que lleve de su animación).</summary>
+    private static Dictionary<ShellNotifyIcon, Point> TrayPositions(ItemsControl list)
+    {
+        var positions = new Dictionary<ShellNotifyIcon, Point>();
+        foreach (var tray in TrayIcons(list))
+        {
+            if (tray.NotifyIcon is { } icon && tray.IsVisible && PresentationSource.FromVisual(tray) != null)
+                positions[icon] = tray.PointToScreen(default);
+        }
+        return positions;
+    }
+
+    /// <summary>
+    /// Los demás íconos se deslizan desde donde estaban, en vez de saltar (el arrastrado no: lo
+    /// representa la imagen en la mano). Igual que <see cref="SlideFrom"/>, pero por ícono.
+    /// </summary>
+    private void SlideTray(ItemsControl list, Dictionary<ShellNotifyIcon, Point> before)
+    {
+        if (Settings.Current.PanelAnimation == PanelAnimation.None)
+            return;
+        list.UpdateLayout();
+        foreach (var tray in TrayIcons(list))
+        {
+            if (tray.NotifyIcon is not { } icon || ReferenceEquals(icon, _trayDrag) || !before.TryGetValue(icon, out var old)
+                || !tray.IsVisible || PresentationSource.FromVisual(tray) is null)
+                continue;
+            var now = tray.PointToScreen(default);
+            double dpi = System.Windows.Media.VisualTreeHelper.GetDpi(tray).PixelsPerDip;
+            double dx = (old.X - now.X) / dpi, dy = (old.Y - now.Y) / dpi;
+            if (Math.Abs(dx) < 0.5 && Math.Abs(dy) < 0.5)
+                continue;
+            if (tray.RenderTransform is not System.Windows.Media.TranslateTransform slide)
+                tray.RenderTransform = slide = new System.Windows.Media.TranslateTransform();
+            slide.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty,
+                new System.Windows.Media.Animation.DoubleAnimation(slide.X + dx, 0, SlideDuration) { EasingFunction = SlideEasing });
+            slide.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty,
+                new System.Windows.Media.Animation.DoubleAnimation(slide.Y + dy, 0, SlideDuration) { EasingFunction = SlideEasing });
+        }
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -96,6 +173,8 @@ public partial class Taskbar
             && ScreenRect(ChevronButton, 2).Contains(new Point(cursor.X, cursor.Y)))
             TrayPromotion.MoveToHidden(dropped, TrayPromotion.HiddenIcons().Count, save: false);
         _trayDrag = null;
+        Controls.DragGhost.End();
+        MarkTrayDragging();
         Mouse.OverrideCursor = null;
         if (IsMouseCaptured)
             ReleaseMouseCapture();
@@ -106,12 +185,19 @@ public partial class Taskbar
 
     private void TrayDragMove(ShellNotifyIcon icon)
     {
+        Controls.DragGhost.Move();
         GetCursorPos(out var cursor);
         var point = new Point(cursor.X, cursor.Y);
 
         if (!HiddenTrayPopup.IsOpen && ScreenRect(ChevronButton, 2).Contains(point))
         {
             HiddenTrayPopup.IsOpen = true;
+            // Ya abierto: la imagen en la mano vuelve encima del panel y el ícono, si está ahí, se ve tenue.
+            Dispatcher.BeginInvoke(() =>
+            {
+                Controls.DragGhost.BringToFront();
+                MarkTrayDragging();
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
             return;
         }
 
@@ -120,15 +206,26 @@ public partial class Taskbar
             var hidden = TrayPromotion.HiddenIcons();
             int target = IndexUnder(HiddenTray, point, hidden.Count);
             if (target >= 0 && (icon.IsPinned || hidden.IndexOf(icon) != target))
-                TrayPromotion.MoveToHidden(icon, target, save: false);
+                MoveTrayIcon(() => TrayPromotion.MoveToHidden(icon, target, save: false));
         }
         else if (ScreenRect(TrayArea, 16).Contains(point))
         {
             var pinned = _shell.NotificationArea.PinnedIcons.OfType<ShellNotifyIcon>().ToList();
             int target = IndexUnder(PinnedTray, point, pinned.Count);
             if (target >= 0 && (!icon.IsPinned || pinned.IndexOf(icon) != target))
-                TrayPromotion.MoveToPinned(icon, target, save: false);
+                MoveTrayIcon(() => TrayPromotion.MoveToPinned(icon, target, save: false));
         }
+    }
+
+    /// <summary>Cambia el orden y lo hace ver: los vecinos se deslizan y el arrastrado sigue tenue.</summary>
+    private void MoveTrayIcon(Action move)
+    {
+        var pinned = TrayPositions(PinnedTray);
+        var hidden = TrayPositions(HiddenTray);
+        move();
+        SlideTray(PinnedTray, pinned);
+        SlideTray(HiddenTray, hidden);
+        MarkTrayDragging();
     }
 
     /// <summary>

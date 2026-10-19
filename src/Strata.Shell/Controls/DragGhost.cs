@@ -109,6 +109,14 @@ public static class DragGhost
                      SwpNoSize | SwpNoZOrder | SwpNoActivate);
     }
 
+    /// <summary>La vuelve a poner encima (algo que se abrió durante el arrastre, como un Popup, la tapaba).</summary>
+    public static void BringToFront()
+    {
+        if (_window is null)
+            return;
+        SetWindowPos(new WindowInteropHelper(_window).Handle, HwndTopmost, 0, 0, 0, 0, SwpNoSize | SwpNoMove | SwpNoActivate);
+    }
+
     private static void OnRendering(object? sender, EventArgs e) => Move();
 
     public static void End()
@@ -134,7 +142,8 @@ public static class DragGhost
 
     private const int GwlExStyle = -20;
     private const int WsExTransparent = 0x20, WsExToolWindow = 0x80, WsExNoActivate = 0x08000000;
-    private const uint SwpNoSize = 0x0001, SwpNoZOrder = 0x0004, SwpNoActivate = 0x0010;
+    private const uint SwpNoSize = 0x0001, SwpNoMove = 0x0002, SwpNoZOrder = 0x0004, SwpNoActivate = 0x0010;
+    private static readonly IntPtr HwndTopmost = new(-1);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct NativePoint { public int X, Y; }
