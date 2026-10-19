@@ -111,9 +111,11 @@ public sealed class LegacyLayoutsTests
               "TaskbarMainScreen": "\\\\.\\DISPLAY1",
               "TaskbarPositions": { "\\\\.\\DISPLAY1": "Left" },
               "BarItems": { "\\\\.\\DISPLAY1|1": [ "Start", "Clock" ] },
-              "NotificationBellAdded": true
+              "NotificationBellAdded": true,
+              "Screens": { "\\\\.\\DISPLAY1": { "TaskbarAlignment": "Left" } }
             }
             """;
+        // (Alineación fija: "Igual que Windows" depende de la barra de Windows del equipo que corre la prueba.)
         var s = Settings.Deserialize(json);
         var bar = s.Layouts[D1].Bars.Single();
         Assert.Equal(TaskbarPosition.Left, bar.Edge);

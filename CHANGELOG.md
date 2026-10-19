@@ -6,6 +6,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.7.1] - 2026-10-18
+
+### Corregido
+- **Juegos repetidos en el menú Inicio**: un juego de Steam con signos en el nombre ("Black Myth: Wukong",
+  "Warhammer 40,000: Space Marine 2") salía dos veces, porque su acceso directo no puede llevar ":" y
+  se llama distinto. Ahora los nombres se comparan sin puntuación ni acentos y queda una sola entrada,
+  con el ícono del juego.
+
 ## [3.7.0] - 2026-10-18
 
 ### Añadido

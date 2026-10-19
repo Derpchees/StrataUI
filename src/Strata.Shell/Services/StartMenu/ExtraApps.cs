@@ -26,7 +26,21 @@ public static partial class ExtraApps
         Try("GOG", () => apps.AddRange(Gog()));
         Try("escritorio", () => apps.AddRange(DesktopShortcuts()));
         // Un juego puede venir de su biblioteca y de su acceso directo: queda el primero (la biblioteca).
-        return apps.DistinctBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        return apps.DistinctBy(a => NameKey(a.Name)).ToList();
+    }
+
+    /// <summary>
+    /// Clave para comparar nombres: solo letras y números, sin acentos ni mayúsculas. Un acceso directo
+    /// no puede llevar ":" en el nombre ("Black Myth Wukong.url"), pero Steam sí ("Black Myth: Wukong").
+    /// </summary>
+    public static string NameKey(string name)
+    {
+        var text = name.Normalize(System.Text.NormalizationForm.FormD);
+        var key = new System.Text.StringBuilder(text.Length);
+        foreach (char c in text)
+            if (char.IsLetterOrDigit(c))
+                key.Append(char.ToLowerInvariant(c));
+        return key.Length > 0 ? key.ToString() : name;
     }
 
     /// <summary>"Monitor ASD (1)": la copia de un acceso directo se llama como el original.</summary>

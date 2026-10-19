@@ -536,10 +536,10 @@ public static class StartMenuService
             .Where(a => !IsNoise(a.Name))
             .ToList();
         // Lo que no está en el catálogo de Windows (juegos de Steam, Epic y GOG, accesos directos del
-        // escritorio), salvo que ya haya una app con ese nombre.
-        var names = catalog.Select(a => a.Name).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
+        // escritorio), salvo que ya haya una app con ese nombre (sin contar la puntuación).
+        var names = catalog.Select(a => ExtraApps.NameKey(a.Name)).ToHashSet();
         foreach (var extra in _extraFound)
-            if (names.Add(extra.Name) && ExtraStartApp(extra) is { } app)
+            if (names.Add(ExtraApps.NameKey(extra.Name)) && ExtraStartApp(extra) is { } app)
                 catalog.Add(app);
         var items = catalog.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
 
