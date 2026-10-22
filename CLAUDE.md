@@ -216,7 +216,8 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
    `0.x`, funciones nuevas suben la menor (0.7.0 → 0.8.0) y solo correcciones, el parche.
 2. En [CHANGELOG.md](CHANGELOG.md), renombrar `## [Sin publicar]` a `## [X.Y.Z] - AAAA-MM-DD`
    (secciones Añadido / Cambiado / Corregido) y dejar un `## [Sin publicar]` vacío arriba.
-3. Actualizar la tabla "Features" del README (en inglés) si cambió lo que hace un componente.
+3. Actualizar el README (en inglés) si cambió lo que hace un componente: la cuadrícula "Highlights" y
+   su sección en "Features" (cada sección lleva su ícono de `docs/icons`).
 4. Commit `feat(área): resumen (vX.Y.Z)` y **etiqueta anotada**:
    `git tag -a vX.Y.Z -m "Strata UI vX.Y.Z: resumen"` (no etiquetas simples).
    Generar también el instalador (`build-installer.ps1`). Las actualizaciones del Hub buscan

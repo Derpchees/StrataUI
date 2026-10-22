@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.7.2] - 2026-10-22
+
+### Corregido
+- **Clic en las notificaciones de Thunderbird** (y otras apps de escritorio con su propio activador,
+  como Firefox): no pasaba nada. Ahora el clic llega a la app como desde Windows y abre el correo o
+  la conversación del aviso.
+
 ## [3.7.1] - 2026-10-18
 
 ### Corregido

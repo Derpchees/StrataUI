@@ -1,24 +1,32 @@
 <div align="center">
 
-<img src="docs/logo.png" width="104" alt="Strata UI logo" />
+<img src="docs/logo.png" width="120" alt="Strata UI logo" />
 
 # Strata UI
 
-### A new layer on top of Windows 11
+**A new layer on top of Windows 11**
 
 Your own taskbar, system tray, Start menu, flyouts and notification center,<br />
 plus a Hub to customize and optimize Windows. All in one app.
 
 <br />
 
-[![Latest release](https://img.shields.io/github/v/release/Derpchees/StrataUI?label=download&style=for-the-badge&color=8b5cf6)](https://github.com/Derpchees/StrataUI/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/Derpchees/StrataUI/total?style=for-the-badge&color=ec4899)](https://github.com/Derpchees/StrataUI/releases)
+[![Latest release](https://img.shields.io/github/v/release/Derpchees/StrataUI?label=download&style=for-the-badge&logo=github&color=7c6cf0)](https://github.com/Derpchees/StrataUI/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Derpchees/StrataUI/total?style=for-the-badge&logo=windows11&logoColor=white&color=3f6fdc)](https://github.com/Derpchees/StrataUI/releases)
 
-![Windows 11](https://img.shields.io/badge/Windows-11-0078d4?style=flat-square&logo=windows11&logoColor=white)
-![.NET 10](https://img.shields.io/badge/.NET-10-512bd4?style=flat-square&logo=dotnet&logoColor=white)
-![Languages](https://img.shields.io/badge/languages-EN%20%C2%B7%20ES%20%C2%B7%20PT%20%C2%B7%20FR%20%C2%B7%20DE-334155?style=flat-square)
+[![Windows 11](https://img.shields.io/badge/Windows-11-0078d4?style=flat-square&logo=windows11&logoColor=white)](#requirements)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512bd4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![WPF](https://img.shields.io/badge/UI-WPF%20%2B%20Fluent-5c2d91?style=flat-square&logo=dotnet&logoColor=white)](https://github.com/lepoco/wpfui)
+[![Languages](https://img.shields.io/badge/languages-EN%20%C2%B7%20ES%20%C2%B7%20PT%20%C2%B7%20FR%20%C2%B7%20DE-334155?style=flat-square&logo=googletranslate&logoColor=white)](#modules-and-languages)
+[![Last commit](https://img.shields.io/github/last-commit/Derpchees/StrataUI?style=flat-square&logo=git&logoColor=white&color=334155)](https://github.com/Derpchees/StrataUI/commits/main)
 
-**[Download](#download)** &nbsp;·&nbsp; **[Features](#features)** &nbsp;·&nbsp; **[FAQ](#faq)** &nbsp;·&nbsp; **[Build from source](#building-from-source)** &nbsp;·&nbsp; **[Changelog](CHANGELOG.md)**
+<br />
+
+[**Download**](#download) &nbsp;&middot;&nbsp;
+[**Features**](#features) &nbsp;&middot;&nbsp;
+[**FAQ**](#faq) &nbsp;&middot;&nbsp;
+[**Build from source**](#building-from-source) &nbsp;&middot;&nbsp;
+[**Changelog**](CHANGELOG.md)
 
 </div>
 
@@ -32,33 +40,99 @@ and everything goes back to normal.
 > Formerly known as **WINX** (up to v1.3). Updating from WINX keeps your settings, pins and
 > startup options.
 
-## Download
+<br />
+
+## Highlights
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/icons/taskbar.svg" width="40" align="left" alt="" />
+      <b><a href="#taskbar">Taskbar</a></b><br />
+      Up to four bars per monitor, any size and style, live previews, groups and pins.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/icons/edit.svg" width="40" align="left" alt="" />
+      <b><a href="#edit-mode">Edit mode</a></b><br />
+      Lay out every monitor on screen, with a live preview, before applying anything.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/icons/start.svg" width="40" align="left" alt="" />
+      <b><a href="#start-menu">Start menu</a></b><br />
+      Seven styles, folders, sections, free placement and every game launcher.
+    </td>
+    <td valign="top">
+      <img src="docs/icons/notifications.svg" width="40" align="left" alt="" />
+      <b><a href="#notifications">Notifications</a></b><br />
+      Its own center and banners, with pictures, color emojis and clickable links.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/icons/flyouts.svg" width="40" align="left" alt="" />
+      <b><a href="#flyouts-and-media">Flyouts</a></b><br />
+      Sound, network, Bluetooth, brightness for every monitor, battery and media.
+    </td>
+    <td valign="top">
+      <img src="docs/icons/performance.svg" width="40" align="left" alt="" />
+      <b><a href="#performance">Performance</a></b><br />
+      CPU, GPU and RAM usage, temperatures, an FPS counter and RAM cleanup.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/icons/widgets.svg" width="40" align="left" alt="" />
+      <b><a href="#widgets">Widgets</a></b><br />
+      Clock, music visualizer and big performance readouts on the desktop.
+    </td>
+    <td valign="top">
+      <img src="docs/icons/themes.svg" width="40" align="left" alt="" />
+      <b><a href="#themes-and-colors">Themes</a></b><br />
+      Four styles, a dozen color schemes, wallpaper accent and six animation styles.
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <img src="docs/icons/optimization.svg" width="40" align="left" alt="" />
+      <b><a href="#optimization">Optimization</a></b><br />
+      Cleanup, performance, privacy and preinstalled apps, always undoable.
+    </td>
+    <td valign="top">
+      <img src="docs/icons/modules.svg" width="40" align="left" alt="" />
+      <b><a href="#modules-and-languages">Modules</a></b><br />
+      Themes, animations, widgets and Start menu looks you can import and share.
+    </td>
+  </tr>
+</table>
+
+<br />
+
+<a id="download"></a>
+
+## <img src="docs/icons/download.svg" width="32" align="center" alt="" /> Download
 
 1. Grab `StrataUI-Setup-X.Y.Z.exe` from the [latest release](https://github.com/Derpchees/StrataUI/releases/latest).
 2. Run it and follow the wizard. Install it just for you (no admin rights needed) or for every user.
 3. Done. Everything it needs is bundled, so there is nothing else to install, and the Hub keeps it
    up to date for you.
 
+### Requirements
+
+| | |
+|---|---|
+| **System** | Windows 11, 64-bit |
+| **Rights** | None to install for yourself; admin only to install for every user |
+| **Extras** | Nothing: the .NET runtime and every library ship with the installer |
+
 <br />
 
 ## Features
 
-### At a glance
+<a id="taskbar"></a>
 
-| | |
-|---|---|
-| **Taskbar** | Up to four bars per monitor, any size and style, live previews, groups and pins |
-| **Edit mode** | Lay out every monitor on screen, with a live preview, before applying anything |
-| **Start menu** | Seven styles, folders, sections, free placement and every game launcher |
-| **Notifications** | Its own center and banners, with pictures, color emojis and clickable links |
-| **Flyouts** | Sound, network, Bluetooth, brightness for every monitor, battery |
-| **Performance** | CPU, GPU and RAM usage, temperatures, an FPS counter and RAM cleanup |
-| **Widgets** | Clock, music visualizer and big performance readouts on the desktop |
-| **Themes** | Four styles, a dozen color schemes, wallpaper accent and six animation styles |
-| **Optimization** | Cleanup, performance, privacy and preinstalled apps, always undoable |
-| **Modules** | Themes, animations, widgets and Start menu looks you can import and share |
-
-### Taskbar
+### <img src="docs/icons/taskbar.svg" width="28" align="center" alt="" /> Taskbar
 
 - Up to **four bars per monitor**, one on each edge (top and bottom bars keep the corners), at any size.
 - Each bar has its own style: the theme's, **fully transparent** (text adapts to the wallpaper behind
@@ -69,7 +143,7 @@ and everything goes back to normal.
 - **Drag to reorder** windows, pins, bar items and tray icons: what you drag follows the pointer and
   everything else slides out of the way.
 
-### Bar items
+**Bar items**
 
 - Choose what each bar shows, in which order, and where: the **start, center or end** of the bar.
   Start and open apps are items too, so alignment is simply where you put them.
@@ -79,7 +153,9 @@ and everything goes back to normal.
 - Rearrange them in edit mode or right on the bar; tray icons move between the bar and the hidden
   ones the same way.
 
-### Edit mode
+<a id="edit-mode"></a>
+
+### <img src="docs/icons/edit.svg" width="28" align="center" alt="" /> Edit mode
 
 - An overlay on every monitor shows your wallpaper with the bars, widgets and a sample notification
   exactly as they will look.
@@ -90,7 +166,9 @@ and everything goes back to normal.
 - Nothing changes until you apply it, and Esc cancels. Open it from the taskbar's right-click menu
   (*Edit layout...*) or with `StrataUI.exe --edit`.
 
-### Start menu
+<a id="start-menu"></a>
+
+### <img src="docs/icons/start.svg" width="28" align="center" alt="" /> Start menu
 
 - **Seven styles**: Windows 11, Profile, List, Full screen, Compact, Search only and Icons. All resizable.
 - Pinned apps with **folders** (drop one app on another), sections, free placement and icons of any size.
@@ -103,34 +181,49 @@ and everything goes back to normal.
 - Update and shut down, or update and restart, when updates are pending. Opens on the monitor your
   mouse is on.
 
-### Notifications
+<a id="notifications"></a>
+
+### <img src="docs/icons/notifications.svg" width="28" align="center" alt="" /> Notifications
 
 - Its own **notification center** behind a bell on the taskbar (Win+N), with Do not disturb and a
   calendar on the clock.
 - Banners on the monitor and corner you choose, with icons and pictures for every notification
   (web apps included), **color emojis**, clickable links, stickers and photos.
-- Clicking a website's notification opens its installed web app or the tab that sent it, the way
-  Windows does.
+- Clicking a notification takes you where Windows would: a website's opens its installed web app
+  or the tab that sent it, and desktop apps such as Thunderbird open the email or conversation.
 - Its own notification sound (or one you import), with Windows' per-app sounds muted so you only
   hear one.
 
-### Flyouts, media and performance
+<a id="flyouts-and-media"></a>
+
+### <img src="docs/icons/flyouts.svg" width="28" align="center" alt="" /> Flyouts and media
 
 - **Sound**: output, input, per-app volume and device options. **Network and Wi-Fi** with a
   show-password button, **Bluetooth**, **battery**.
 - **Brightness for every monitor** over DDC/CI, with Windows Night light.
 - **Media**: album art, title and artist on the bar for any app that reports media (Spotify,
   browsers, Media Player...), with optional controls.
-- **Performance**: CPU, GPU and RAM usage, temperatures and an FPS counter that understands frame
-  generation (DLSS FG, FSR FG, Lossless Scaling...), plus one-click RAM cleanup.
 
-### Widgets
+<a id="performance"></a>
+
+### <img src="docs/icons/performance.svg" width="28" align="center" alt="" /> Performance
+
+- CPU, GPU and RAM usage on the bar or as big desktop readouts.
+- Temperatures and an **FPS counter** that understands frame generation (DLSS FG, FSR FG,
+  Lossless Scaling...).
+- One-click **RAM cleanup** and internet speed with a built-in speed test.
+
+<a id="widgets"></a>
+
+### <img src="docs/icons/widgets.svg" width="28" align="center" alt="" /> Widgets
 
 A digital clock (with or without the date), a music visualizer and big CPU, GPU, FPS and internet
 speed readouts on your desktop. Add, move and resize them in edit mode on any monitor; they stay
 visible with Show desktop.
 
-### Themes and colors
+<a id="themes-and-colors"></a>
+
+### <img src="docs/icons/themes.svg" width="28" align="center" alt="" /> Themes and colors
 
 - **Four styles**: Mica, Translucent, Material and Fully transparent.
 - **Color schemes** that stay when you switch style: Follow Windows, Light, Dark, Midnight OLED,
@@ -140,21 +233,28 @@ visible with Show desktop.
 - **Six animation styles** and three speeds for flyouts, the Start menu, notifications, menus, the
   tray, previews and taskbar buttons. Windows' own window animations follow your choice.
 
-### Optimization
+<a id="optimization"></a>
+
+### <img src="docs/icons/optimization.svg" width="28" align="center" alt="" /> Optimization
 
 An optional module, installed from the Hub with one click. Every change is backed up, so everything
 can be undone.
 
-- **Cleanup**: temp files, crash dumps, update caches and more. Never the Recycle Bin.
-- **Performance and memory**: fewer svchost processes, SysMain, Widgets and other background services.
-- **Preinstalled apps**: remove what you don't use, plus dedicated cards for **Microsoft Edge** and
-  the **Xbox Game Bar**. Where Windows doesn't allow uninstalling Edge (outside the EEA), it is
-  turned off instead (no shortcuts, no background processes) and can be restored with one click.
-  Removing the Game Bar also stops Windows asking for an app to open its links when a game starts.
-- **Privacy, AI features, Windows Update, Explorer** and more.
+| Area | What it does |
+|---|---|
+| **Cleanup** | Temp files, crash dumps, update caches and more. Never the Recycle Bin. |
+| **Performance and memory** | Fewer svchost processes, SysMain, Widgets and other background services. |
+| **Preinstalled apps** | Remove what you don't use, with dedicated cards for **Microsoft Edge** and the **Xbox Game Bar**. |
+| **Privacy and more** | Privacy, AI features, Windows Update, Explorer and more. |
+
+- Where Windows doesn't allow uninstalling Edge (outside the EEA), it is turned off instead (no
+  shortcuts, no background processes) and can be restored with one click.
+- Removing the Game Bar also stops Windows asking for an app to open its links when a game starts.
 - Installed for all users, it applies changes without UAC prompts.
 
-### Modules and languages
+<a id="modules-and-languages"></a>
+
+### <img src="docs/icons/modules.svg" width="28" align="center" alt="" /> Modules and languages
 
 - Import **themes, animations, desktop widgets and Start menu looks** (small declarative JSON files
   that can't run code) and notification sounds from one place in the Hub. See the
@@ -165,7 +265,9 @@ can be undone.
 
 <br />
 
-## FAQ
+<a id="faq"></a>
+
+## <img src="docs/icons/faq.svg" width="32" align="center" alt="" /> FAQ
 
 <details>
 <summary><b>How do I get the Windows taskbar back?</b></summary>
@@ -203,7 +305,13 @@ those tasks no longer ask each time.
 
 <br />
 
-## Building from source
+<a id="building-from-source"></a>
+
+## <img src="docs/icons/build.svg" width="32" align="center" alt="" /> Building from source
+
+[![.NET 10 SDK](https://img.shields.io/badge/.NET%20SDK-10-512bd4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download)
+[![Inno Setup 6](https://img.shields.io/badge/Inno%20Setup-6-264b99?style=flat-square)](https://jrsoftware.org/isinfo.php)
+[![xUnit](https://img.shields.io/badge/tests-xUnit-5e2a84?style=flat-square)](https://xunit.net/)
 
 Requirements: Windows 11 and the [.NET 10 SDK](https://dotnet.microsoft.com/download)
 (`winget install Microsoft.DotNet.SDK.10`). The installer needs [Inno Setup 6](https://jrsoftware.org/isinfo.php).
@@ -248,18 +356,32 @@ src/Strata.Optimization/     Optional module with the Optimization pages
 src/Strata.ContextMenu/      "Pin to Start" in the Windows 11 right-click menu
 tests/Strata.Tests/          xUnit tests
 installer/                   Inno Setup script and the context menu package
-scripts/                     run.ps1, build-installer.ps1, build-context-menu.ps1
-docs/modules/                Module format and examples
+scripts/                     run.ps1, build-installer.ps1, build-context-menu.ps1, build-logo.ps1
+docs/                        Logo, README icons, module format and examples
 ```
 
 Versions follow [semantic versioning](https://semver.org/). Every release is listed in the
 [changelog](CHANGELOG.md) (in Spanish) and tagged `vX.Y.Z`.
 
-## Credits
+<br />
 
-- [ManagedShell](https://github.com/cairoshell/ManagedShell): taskbar, tray and AppBar plumbing.
-- [WPF-UI](https://github.com/lepoco/wpfui): Fluent controls for the Hub and flyouts.
-- [NAudio](https://github.com/naudio/NAudio): Core Audio access.
-- [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor): temperatures.
-- [Vortice](https://github.com/amerkoleci/Vortice.Windows): DirectWrite for color emojis.
-- Optimization options inspired by [Win11Debloat](https://github.com/Raphire/Win11Debloat) (MIT).
+<a id="credits"></a>
+
+## <img src="docs/icons/credits.svg" width="32" align="center" alt="" /> Credits
+
+| Project | Used for |
+|---|---|
+| [ManagedShell](https://github.com/cairoshell/ManagedShell) | Taskbar, tray and AppBar plumbing |
+| [WPF-UI](https://github.com/lepoco/wpfui) | Fluent controls for the Hub and flyouts |
+| [NAudio](https://github.com/naudio/NAudio) | Core Audio access |
+| [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) | Temperatures |
+| [Vortice](https://github.com/amerkoleci/Vortice.Windows) | DirectWrite for color emojis |
+| [Win11Debloat](https://github.com/Raphire/Win11Debloat) (MIT) | Inspiration for the optimization options |
+
+<br />
+
+<div align="center">
+  <img src="docs/logo.png" width="40" alt="" />
+  <br />
+  <sub><b>Strata UI</b> &middot; A new layer on top of Windows 11 &middot; <a href="CHANGELOG.md">Changelog</a> &middot; <a href="https://github.com/Derpchees/StrataUI/releases/latest">Latest release</a></sub>
+</div>

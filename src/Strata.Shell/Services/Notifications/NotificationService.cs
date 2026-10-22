@@ -402,11 +402,12 @@ public static class NotificationService
     /// <summary>
     /// Hace lo que haría Windows al hacer clic y la quita. De un sitio del navegador (WhatsApp Web…):
     /// su app web si está instalada; si no, el navegador recibe el clic como de Windows y la página
-    /// lo atiende (enfoca su pestaña y abre el chat). De las demás apps, se abre la app.
+    /// lo atiende (enfoca su pestaña y abre el chat). De las apps con activador propio (Thunderbird…),
+    /// el activador recibe el clic. De las demás, se abre la app.
     /// </summary>
     public static void Activate(StrataNotification item)
     {
-        if (BrowserActivation.TryActivate(item))
+        if (BrowserActivation.TryActivate(item) || ToastActivator.TryActivate(item))
         {
             Dismiss(item);
             return;
