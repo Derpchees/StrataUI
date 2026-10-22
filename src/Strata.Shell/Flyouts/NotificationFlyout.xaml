@@ -9,105 +9,139 @@
     <flyouts:FlyoutWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
-        <!-- Una notificación (contexto: StrataNotification) -->
-        <DataTemplate x:Key="NotificationCard">
-            <Border Margin="0,0,0,6" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
-                    Background="{DynamicResource StrataSurfaceBrush}" Cursor="Hand" MouseLeftButtonUp="Item_Click">
-                <Grid Margin="12,10,6,12">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Border Grid.Row="1" Grid.RowSpan="2" Style="{StaticResource NotificationPicture}">
-                        <Border.Background><ImageBrush ImageSource="{Binding Picture}" Stretch="UniformToFill" /></Border.Background>
-                    </Border>
-                    <Grid Grid.ColumnSpan="2">
+        <!-- Texto de una notificación: imagen a la izquierda, título, cuerpo y la imagen grande debajo
+             (contexto: StrataNotification). Va dentro de la tarjeta de su app. -->
+        <DataTemplate x:Key="NotificationMessage">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.RowSpan="2" Style="{StaticResource NotificationPicture}" Margin="0,2,10,0">
+                    <Border.Background><ImageBrush ImageSource="{Binding Picture}" Stretch="UniformToFill" /></Border.Background>
+                </Border>
+                <TextBlock Grid.Column="1" Style="{StaticResource FlyoutText}" FontWeight="SemiBold"
+                           TextWrapping="Wrap" controls:RichText.Text="{Binding Title}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,2,0,0" Style="{StaticResource FlyoutHint}" TextWrapping="Wrap"
+                           TextTrimming="CharacterEllipsis" MaxHeight="72" controls:RichText.Text="{Binding Body}" />
+                <!-- Imagen del contenido (sticker, foto), debajo del texto -->
+                <Image Grid.Row="2" Grid.Column="1" Margin="0,8,0,0" MaxHeight="180" HorizontalAlignment="Left"
+                       Stretch="Uniform" Source="{Binding Hero}" RenderOptions.BitmapScalingMode="HighQuality"
+                       Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}" />
+            </Grid>
+        </DataTemplate>
+
+        <!-- Fila clicable dentro de la tarjeta: resaltado redondeado al pasar el mouse -->
+        <Style x:Key="NotificationRow" TargetType="Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <EventSetter Event="MouseLeftButtonUp" Handler="Item_Click" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource StrataHoverBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Las demás de la app, ya desplegada: separador, el texto y la hora (la X al pasar el mouse) -->
+        <DataTemplate x:Key="NotificationOther">
+            <StackPanel>
+                <Border Height="1" Margin="12,0" Background="{DynamicResource StrataFlyoutBorderBrush}" />
+                <Border x:Name="Row" Style="{StaticResource NotificationRow}" Margin="4,2" Padding="8,8,4,8">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource NotificationMessage}" />
+                        <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Top">
+                            <TextBlock x:Name="Time" Style="{StaticResource FlyoutHint}" FontSize="11" Margin="0,2,4,0"
+                                       Text="{Binding TimeText}" HorizontalAlignment="Right" />
+                            <Button x:Name="Close" Style="{StaticResource FlyoutIconButton}" Width="24" Height="24" Padding="0"
+                                    Click="Dismiss_Click" ToolTip="{l:T 'Quitar'}" Visibility="Hidden">
+                                <ui:SymbolIcon Symbol="Dismiss24" FontSize="10" />
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Time" Property="Visibility" Value="Hidden" />
+                    <Setter TargetName="Close" Property="Visibility" Value="Visible" />
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Tarjeta de una app: encabezado (ícono, nombre, hora, cuántas y quitar), la más reciente y,
+             desplegada, las demás debajo. Una sola notificación usa la misma tarjeta, sin la cuenta. -->
+        <DataTemplate x:Key="NotificationGroupTemplate">
+            <Border Margin="0,0,0,8" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
+                    Background="{DynamicResource StrataSurfaceBrush}">
+                <StackPanel Margin="0,0,0,4">
+                    <Grid Margin="12,8,6,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Grid Width="16" Height="16" Margin="0,0,8,0">
                             <ui:SymbolIcon Symbol="Alert24" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                            <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                            <Image Source="{Binding Latest.Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
                         </Grid>
                         <TextBlock Grid.Column="1" Style="{StaticResource FlyoutHint}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
-                            <Run Text="{Binding AppName, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TimeText, Mode=OneWay}" />
+                            <Run Text="{Binding Latest.AppName, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Latest.TimeText, Mode=OneWay}" />
                         </TextBlock>
-                        <Button Grid.Column="2" Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Padding="0"
-                                Click="Dismiss_Click" ToolTip="{l:T 'Quitar'}">
+                        <!-- Cuántas: píldora que despliega y pliega -->
+                        <Button x:Name="CountPill" Grid.Column="2" Cursor="Hand" Margin="6,0,2,0" VerticalAlignment="Center"
+                                Click="Expand_Click" ToolTip="{l:T 'Ver todas'}"
+                                Visibility="{Binding IsGroup, Converter={StaticResource BoolToVis}}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" CornerRadius="10" Padding="8,2,7,2" Background="{DynamicResource StrataHoverBrush}">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource StrataPressedBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource FlyoutText}" FontSize="11" FontWeight="SemiBold" Text="{Binding Count}"
+                                           VerticalAlignment="Center" />
+                                <ui:SymbolIcon x:Name="Chevron" Symbol="ChevronDown12" FontSize="9" Margin="5,1,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="3" Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Padding="0"
+                                Click="DismissGroup_Click" ToolTip="{Binding DismissText}">
                             <ui:SymbolIcon Symbol="Dismiss24" FontSize="11" />
                         </Button>
                     </Grid>
-                    <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,4,6,0" Style="{StaticResource FlyoutText}" FontWeight="SemiBold"
-                               TextWrapping="Wrap" controls:RichText.Text="{Binding Title}" />
-                    <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,2,6,0" Style="{StaticResource FlyoutHint}" TextWrapping="Wrap"
-                               TextTrimming="CharacterEllipsis" MaxHeight="72" controls:RichText.Text="{Binding Body}" />
-                    <!-- Imagen del contenido (sticker, foto), debajo del texto -->
-                    <Image Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" MaxHeight="180" HorizontalAlignment="Left"
-                           Stretch="Uniform" Source="{Binding Hero}" RenderOptions.BitmapScalingMode="HighQuality"
-                           Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}" />
-                </Grid>
+
+                    <!-- La más reciente -->
+                    <Border Style="{StaticResource NotificationRow}" Margin="4,2,4,0" Padding="8,4,8,8" DataContext="{Binding Latest}">
+                        <ContentControl Content="{Binding}" ContentTemplate="{StaticResource NotificationMessage}" />
+                    </Border>
+
+                    <!-- Desplegada: las demás, en la misma tarjeta -->
+                    <ItemsControl ItemsSource="{Binding Others}" ItemTemplate="{StaticResource NotificationOther}"
+                                  Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"
+                                  IsVisibleChanged="Others_IsVisibleChanged" />
+                </StackPanel>
             </Border>
-        </DataTemplate>
-
-        <!-- Las notificaciones de una app: plegadas, la más reciente con la pila detrás; desplegadas, todas -->
-        <DataTemplate x:Key="NotificationGroupTemplate">
-            <StackPanel>
-                <!-- Encabezado del grupo (solo con varias): app, cuántas, plegar/desplegar y quitarlas -->
-                <Grid Margin="4,2,0,6" Visibility="{Binding IsGroup, Converter={StaticResource BoolToVis}}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <Grid Width="16" Height="16" Margin="0,0,8,0">
-                        <ui:SymbolIcon Symbol="Alert24" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <Image Source="{Binding Latest.Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
-                    </Grid>
-                    <TextBlock Grid.Column="1" Style="{StaticResource FlyoutText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
-                        <Run Text="{Binding Latest.AppName, Mode=OneWay}" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextFillColorPrimaryBrush}" /><Run Text="  " /><Run
-                             Text="{Binding CountText, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    </TextBlock>
-                    <Button Grid.Column="2" Style="{StaticResource FlyoutRow}" Padding="8,4" Margin="4,0,0,0" Click="Expand_Click">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="ExpandText" Style="{StaticResource FlyoutHint}" Text="{l:T 'Ver todas'}" VerticalAlignment="Center" />
-                            <ui:SymbolIcon x:Name="ExpandIcon" Symbol="ChevronDown12" FontSize="10" Margin="6,1,0,0" />
-                        </StackPanel>
-                    </Button>
-                    <Button Grid.Column="3" Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Padding="0"
-                            Click="DismissGroup_Click" ToolTip="{l:T 'Quitar todas'}">
-                        <ui:SymbolIcon Symbol="Dismiss24" FontSize="11" />
-                    </Button>
-                </Grid>
-
-                <!-- Plegado: la más reciente y, debajo, una o dos capas que asoman (solo por debajo: la tarjeta
-                     puede ser translúcida y se verían a través). La tarjeta deja 6 px libres abajo. -->
-                <Grid Margin="0,0,0,12" Visibility="{Binding IsStacked, Converter={StaticResource BoolToVis}}">
-                    <Border Height="5" VerticalAlignment="Bottom" Margin="22,0,22,-5" Opacity="0.4" CornerRadius="0,0,8,8"
-                            Background="{DynamicResource StrataSurfaceBrush}"
-                            Visibility="{Binding HasSecondLayer, Converter={StaticResource BoolToVis}}" />
-                    <Border Height="6" VerticalAlignment="Bottom" Margin="11,0,11,0" Opacity="0.75" CornerRadius="0,0,9,9"
-                            Background="{DynamicResource StrataSurfaceBrush}" />
-                    <ContentControl Content="{Binding Latest}" ContentTemplate="{StaticResource NotificationCard}" />
-                </Grid>
-
-                <!-- Desplegado (o una sola): todas -->
-                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource NotificationCard}"
-                              Visibility="{Binding ShowsAll, Converter={StaticResource BoolToVis}}" />
-            </StackPanel>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding IsExpanded}" Value="True">
-                    <Setter TargetName="ExpandText" Property="Text" Value="{l:T 'Ver menos'}" />
-                    <Setter TargetName="ExpandIcon" Property="Symbol" Value="ChevronUp12" />
+                    <Setter TargetName="CountPill" Property="ToolTip" Value="{l:T 'Ver menos'}" />
+                    <Setter TargetName="Chevron" Property="Symbol" Value="ChevronUp12" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -134,7 +168,7 @@
             </StackPanel>
         </Border>
 
-        <!-- Agrupadas por app, sitio o app web (como en el celular) -->
+        <!-- Una tarjeta por app, sitio o app web (como en el celular) -->
         <ItemsControl x:Name="NotificationList" ItemTemplate="{StaticResource NotificationGroupTemplate}" />
 
         <TextBlock x:Name="EmptyText" Style="{StaticResource FlyoutHint}" Margin="4,8,0,12" HorizontalAlignment="Center"

@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Cambiado
+- **Notificaciones agrupadas, más limpias**: cada app es una sola tarjeta con su ícono, nombre, hora
+  y una píldora con cuántas hay; al desplegarla, las demás aparecen dentro de la misma tarjeta, con
+  su hora y una X al pasar el mouse. Un clic en el mensaje lo abre.
+
+### Corregido
+- **Clic en notificaciones de apps que viven en la bandeja** (Thunderbird minimizado a la bandeja y
+  otras): la app recibía el clic pero seguía oculta. Ahora, si no se muestra, Strata UI hace clic en
+  su ícono de la bandeja (o muestra su ventana) y queda al frente.
+
 ## [3.8.0] - 2026-10-22
 
 ### Añadido

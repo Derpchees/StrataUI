@@ -5,7 +5,7 @@ namespace Strata.Shell.Services.Notifications;
 
 /// <summary>
 /// Las notificaciones de una misma app (o sitio, o app web) en el centro de notificaciones, como en
-/// el celular: plegadas muestran la más reciente con las demás apiladas detrás; desplegadas, todas.
+/// el celular: una tarjeta con la más reciente; desplegada, las demás debajo en la misma tarjeta.
 /// </summary>
 public sealed class NotificationGroup : INotifyPropertyChanged
 {
@@ -20,11 +20,11 @@ public sealed class NotificationGroup : INotifyPropertyChanged
     /// <summary>De la más reciente a la más vieja.</summary>
     public IReadOnlyList<StrataNotification> Items { get; }
     public StrataNotification Latest => Items[0];
+    /// <summary>Las demás (se ven al desplegar).</summary>
+    public IEnumerable<StrataNotification> Others => Items.Skip(1);
     public int Count => Items.Count;
     public bool IsGroup => Count > 1;
-    /// <summary>Hay al menos tres: se ven dos capas detrás de la primera.</summary>
-    public bool HasSecondLayer => Count > 2;
-    public string CountText => Loc.F("{0} notificaciones", Count);
+    public string DismissText => IsGroup ? Loc.T("Quitar todas") : Loc.T("Quitar");
 
     private bool _isExpanded;
     public bool IsExpanded
@@ -35,15 +35,9 @@ public sealed class NotificationGroup : INotifyPropertyChanged
             if (_isExpanded == value)
                 return;
             _isExpanded = value;
-            foreach (var name in new[] { nameof(IsExpanded), nameof(IsStacked), nameof(ShowsAll) })
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
         }
     }
-
-    /// <summary>Plegado con varias: la primera y la pila.</summary>
-    public bool IsStacked => IsGroup && !_isExpanded;
-    /// <summary>Desplegado (o una sola): todas en la lista.</summary>
-    public bool ShowsAll => !IsStacked;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

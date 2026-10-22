@@ -1,15 +1,17 @@
 ﻿using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Notifications;
 
 namespace Strata.Shell.Flyouts;
 
 /// <summary>
-/// Centro de notificaciones de Strata UI (la campana): las notificaciones agrupadas por app y "No
-/// molestar". Un grupo con varias se ve plegado (la más reciente con la pila detrás) hasta que se
-/// despliega; queda desplegado mientras el panel siga abierto.
+/// Centro de notificaciones de Strata UI (la campana): una tarjeta por app y "No molestar". Una app
+/// con varias muestra la más reciente y su cuenta; la píldora despliega las demás en la misma tarjeta
+/// (quedan desplegadas mientras el panel siga abierto).
 /// </summary>
 public partial class NotificationFlyout : FlyoutWindow
 {
@@ -41,12 +43,6 @@ public partial class NotificationFlyout : FlyoutWindow
             return;
         if (sender is not FrameworkElement { DataContext: StrataNotification item })
             return;
-        // Un clic en la pila la despliega, como en el celular; ya desplegada, abre la notificación.
-        if (_groups.FirstOrDefault(g => g.Items.Contains(item)) is { IsStacked: true } group)
-        {
-            SetExpanded(group, true);
-            return;
-        }
         CloseFlyout();
         NotificationService.Activate(item);
     }
@@ -64,6 +60,19 @@ public partial class NotificationFlyout : FlyoutWindow
         else
             _expanded.Remove(group.Key);
         group.IsExpanded = expanded;
+    }
+
+    /// <summary>Las demás aparecen deslizándose un poco desde la más reciente.</summary>
+    private void Others_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is not FrameworkElement list || !list.IsVisible)
+            return;
+        var duration = TimeSpan.FromMilliseconds(220);
+        var move = new TranslateTransform(0, -8);
+        list.RenderTransform = move;
+        move.BeginAnimation(TranslateTransform.YProperty,
+                           new DoubleAnimation(0, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        list.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration));
     }
 
     private void DismissGroup_Click(object sender, RoutedEventArgs e)

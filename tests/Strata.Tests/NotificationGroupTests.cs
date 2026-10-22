@@ -31,10 +31,10 @@ public class NotificationGroupTests
         var groups = NotificationGroup.Build(items, new HashSet<string>());
         Assert.Equal(["WhatsApp", "Outlook"], groups.Select(g => g.Latest.AppName));
         Assert.Equal([1u, 3u, 4u], groups[0].Items.Select(n => n.Id));
-        Assert.True(groups[0].IsStacked);
-        Assert.True(groups[0].HasSecondLayer);
+        Assert.Equal([3u, 4u], groups[0].Others.Select(n => n.Id));
+        Assert.False(groups[0].IsExpanded);
         Assert.False(groups[1].IsGroup);
-        Assert.True(groups[1].ShowsAll);
+        Assert.Empty(groups[1].Others);
     }
 
     [Fact]
@@ -59,8 +59,7 @@ public class NotificationGroupTests
         var groups = NotificationGroup.Build(items, new HashSet<string> { key });
         Assert.Equal(2, groups.Count);
         Assert.True(groups[0].IsExpanded);
-        Assert.False(groups[0].IsStacked);
-        Assert.False(groups[0].HasSecondLayer);
+        Assert.False(groups[1].IsExpanded);
     }
 
     [Fact]

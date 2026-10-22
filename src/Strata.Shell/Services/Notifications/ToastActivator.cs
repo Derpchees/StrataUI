@@ -17,7 +17,7 @@ namespace Strata.Shell.Services.Notifications;
 /// </summary>
 internal static class ToastActivator
 {
-    private static readonly Dictionary<string, Guid?> PackagedCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, (Guid? Clsid, string? Folder)> PackagedCache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>True si el activador recibió el clic; false para que quien llama abra la app de otra forma.</summary>
     public static async Task<bool> TryActivateAsync(StrataNotification item)
@@ -26,13 +26,14 @@ internal static class ToastActivator
             return false;
         uint context;
         Guid clsid;
+        string? folder;
         if (Registered(appId) is { } registered)
         {
-            (clsid, context) = (registered, ClsctxInprocServer | ClsctxLocalServer);
+            (clsid, context, folder) = (registered, ClsctxInprocServer | ClsctxLocalServer, AppWakeUp.FolderOfClsid(registered));
         }
-        else if (await Task.Run(() => Packaged(appId)) is { } packaged)
+        else if (await Task.Run(() => Packaged(appId)) is { Clsid: { } packaged } package)
         {
-            (clsid, context) = (packaged, ClsctxLocalServer);
+            (clsid, context, folder) = (packaged, ClsctxLocalServer, package.Folder);
         }
         else
         {
@@ -71,7 +72,10 @@ internal static class ToastActivator
             }
         });
         // Una app que tarda en arrancar ya recibió el pedido: no se abre otra vez por otro camino.
-        return await Task.WhenAny(activation, Task.Delay(TimeSpan.FromSeconds(8))) != activation || activation.Result;
+        bool delivered = await Task.WhenAny(activation, Task.Delay(TimeSpan.FromSeconds(8))) != activation || activation.Result;
+        if (delivered && folder != null)
+            _ = AppWakeUp.EnsureShownAsync(folder, item.AppName);
+        return delivered;
     }
 
     /// <summary>El CLSID que una app de escritorio registró para recibir los clics de sus notificaciones.</summary>
@@ -88,16 +92,16 @@ internal static class ToastActivator
 
     /// <summary>
     /// El activador que declara el manifiesto de una app empaquetada ("Familia_editor!App"), si es un
-    /// servidor aparte (com:ExeServer) y no una DLL.
+    /// servidor aparte (com:ExeServer) y no una DLL, y la carpeta del paquete.
     /// </summary>
-    private static Guid? Packaged(string appId)
+    private static (Guid? Clsid, string? Folder) Packaged(string appId)
     {
         lock (PackagedCache)
         {
             if (PackagedCache.TryGetValue(appId, out var cached))
                 return cached;
         }
-        Guid? result = null;
+        (Guid?, string?) result = (null, null);
         int bang = appId.IndexOf('!');
         if (bang > 0)
         {
@@ -106,7 +110,10 @@ internal static class ToastActivator
                 var package = new Windows.Management.Deployment.PackageManager()
                     .FindPackagesForUser("", appId[..bang]).FirstOrDefault();
                 if (package != null)
-                    result = FromManifest(Path.Combine(package.InstalledLocation.Path, "AppxManifest.xml"), appId[(bang + 1)..]);
+                {
+                    string location = package.InstalledLocation.Path;
+                    result = (FromManifest(Path.Combine(location, "AppxManifest.xml"), appId[(bang + 1)..]), location);
+                }
             }
             catch (Exception ex)
             {
