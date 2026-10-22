@@ -66,7 +66,7 @@ and everything goes back to normal.
     <td valign="top">
       <img src="docs/icons/notifications.svg" width="40" align="left" alt="" />
       <b><a href="#notifications">Notifications</a></b><br />
-      Its own center and banners, with pictures, color emojis and clickable links.
+      Its own center, grouped by app like on your phone, with pictures, color emojis and links.
     </td>
   </tr>
   <tr>
@@ -103,6 +103,13 @@ and everything goes back to normal.
       <img src="docs/icons/modules.svg" width="40" align="left" alt="" />
       <b><a href="#modules-and-languages">Modules</a></b><br />
       Themes, animations, widgets and Start menu looks you can import and share.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" valign="top">
+      <img src="docs/icons/files.svg" width="40" align="left" alt="" />
+      <b><a href="#files">Files</a></b><br />
+      A clean file explorer in your theme: folders, drives, recents, thumbnails and Windows' own copy engine.
     </td>
   </tr>
 </table>
@@ -187,10 +194,14 @@ and everything goes back to normal.
 
 - Its own **notification center** behind a bell on the taskbar (Win+N), with Do not disturb and a
   calendar on the clock.
+- **Grouped by app** like on your phone: several notifications from the same app, website or web
+  app fold into one stack with the newest on top. Tap the stack to see them all, or clear the
+  whole group at once.
 - Banners on the monitor and corner you choose, with icons and pictures for every notification
   (web apps included), **color emojis**, clickable links, stickers and photos.
 - Clicking a notification takes you where Windows would: a website's opens its installed web app
-  or the tab that sent it, and desktop apps such as Thunderbird open the email or conversation.
+  or the tab that sent it, and apps with their own activator (WhatsApp, Spotify, Thunderbird...)
+  open the chat, song or email. Other apps come to the front if they're open, or start.
 - Its own notification sound (or one you import), with Windows' per-app sounds muted so you only
   hear one.
 
@@ -203,6 +214,20 @@ and everything goes back to normal.
 - **Brightness for every monitor** over DDC/CI, with Windows Night light.
 - **Media**: album art, title and artist on the bar for any app that reports media (Spotify,
   browsers, Media Player...), with optional controls.
+
+<a id="files"></a>
+
+### <img src="docs/icons/files.svg" width="28" align="center" alt="" /> Files
+
+- A **file explorer** that matches the rest of Strata UI: a home page with your folders, drives (with
+  free space) and recent files, and every folder as a list or a grid with picture thumbnails.
+- Breadcrumb path you can also type into (Ctrl+L), search in the folder, sorting, hidden files,
+  back/forward with the mouse side buttons and the usual keyboard shortcuts.
+- Copy, cut, paste, rename, new folder and Recycle Bin use Windows' own engine (progress, conflict
+  questions and Ctrl+Z in File Explorer). Clipboard and drag and drop work with File Explorer and
+  any other app.
+- Open it from the Strata UI tray icon, the *Strata UI Files* button in the Start menu footer, or
+  `StrataUI.exe --files [folder]`. File Explorer stays as it is.
 
 <a id="performance"></a>
 
@@ -330,6 +355,7 @@ dotnet test tests\Strata.Tests -c Release   # tests (xUnit)
 | `--autostart` | Used when Windows starts: doesn't open the Hub (unless *Open the Hub when Windows starts* is on). |
 | `--hub <page>` | Opens the Hub on a page: `Dashboard`, `Taskbar`, `Tray`, `Flyouts`, `Start`, `Notifications`, `Appearance`, `Import`, `General`, `Updates`, `Privacy`, `Backup`... |
 | `--edit` | Opens edit mode (in the running instance, or right after starting). |
+| `--files [folder]` | Opens a Files window, on that folder or on the home page. |
 | `--exit` | Cleanly closes the running instance and waits for it. |
 | `--restore-taskbar` | Emergency: shows the Windows taskbar again if Strata UI didn't close properly. |
 
@@ -345,6 +371,7 @@ src/Strata.Shell/            The app (StrataUI.exe)
   EditMode/                  On-screen layout editor
   StartMenu/                 Start menu styles, pins with folders and sections
   Flyouts/                   Sound, network, Bluetooth, brightness, battery, notification center
+  Files/                     File explorer window
   Notifications/             Banners and on-screen indicators (OSD)
   Widgets/                   Desktop widgets
   Hub/                       Settings window and its pages

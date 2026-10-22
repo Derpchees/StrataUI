@@ -1099,5 +1099,8 @@
   "{0} elementos cortados": "{0} items cut",
   "{0} libres de {1}": "{0} free of {1}",
   "{0} seleccionados": "{0} selected",
-  "{0} unidades": "{0} drives"
+  "{0} unidades": "{0} drives",
+  "Ver todas": "Show all",
+  "Ver menos": "Show less",
+  "Quitar todas": "Clear all"
 }

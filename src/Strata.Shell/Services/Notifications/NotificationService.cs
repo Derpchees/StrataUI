@@ -400,31 +400,89 @@ public static class NotificationService
     }
 
     /// <summary>
-    /// Hace lo que haría Windows al hacer clic y la quita. De un sitio del navegador (WhatsApp Web…):
-    /// su app web si está instalada; si no, el navegador recibe el clic como de Windows y la página
-    /// lo atiende (enfoca su pestaña y abre el chat). De las apps con activador propio (Thunderbird…),
-    /// el activador recibe el clic. De las demás, se abre la app.
+    /// Hace lo que haría Windows al hacer clic y la quita. En orden:
+    /// <list type="number">
+    /// <item>De un sitio del navegador (WhatsApp Web…): su app web si está instalada; si no, el
+    /// navegador recibe el clic como de Windows y la página lo atiende (ver <see cref="BrowserActivation"/>).</item>
+    /// <item>De una app con activador propio (WhatsApp, Spotify, Thunderbird…): el activador recibe el
+    /// clic y la app abre el chat, el correo o la canción (ver <see cref="ToastActivator"/>).</item>
+    /// <item>Si no, la ventana de la app al frente si está abierta, o se abre la app.</item>
+    /// </list>
     /// </summary>
-    public static void Activate(StrataNotification item)
+    public static async void Activate(StrataNotification item)
     {
-        if (BrowserActivation.TryActivate(item) || ToastActivator.TryActivate(item))
-        {
-            Dismiss(item);
-            return;
-        }
-        if (item.AppId is { Length: > 0 } appId)
-        {
-            try
-            {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{appId}") { UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"No se pudo abrir {item.AppName}", ex);
-            }
-        }
         Dismiss(item);
+        // El clic fue en Strata UI: la app que se abre puede pasar al frente (si no, Windows solo hace
+        // parpadear su botón en la barra).
+        AllowSetForegroundWindow(AsfwAny);
+        try
+        {
+            if (BrowserActivation.TryActivate(item) || await ToastActivator.TryActivateAsync(item) || OpenApp(item))
+                return;
+            Log.Info($"Notificación de {item.AppName} ({item.AppId ?? "sin identidad"}): no se encontró cómo abrir la app");
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo abrir {item.AppName}", ex);
+        }
     }
+
+    /// <summary>
+    /// Sin activador: su ventana al frente (por identidad o por ejecutable) o la app desde el catálogo
+    /// de Inicio (por identidad o por nombre). Abrir por <c>shell:AppsFolder</c> una identidad que no
+    /// está ahí abría una ventana del Explorador.
+    /// </summary>
+    private static bool OpenApp(StrataNotification item)
+    {
+        string? appId = item.AppId;
+        try
+        {
+            var window = App.Current.Shell.Tasks.GroupedWindows.OfType<ManagedShell.WindowsTasks.ApplicationWindow>()
+                .FirstOrDefault(w => appId != null && (string.Equals(w.AppUserModelID, appId, StringComparison.OrdinalIgnoreCase)
+                                                       || string.Equals(Path.GetFileName(w.WinFileName), appId, StringComparison.OrdinalIgnoreCase)));
+            if (window != null)
+            {
+                window.BringToFront();
+                return true;
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            // El shell aún no arrancó.
+        }
+        var apps = StartMenu.StartMenuService.Apps;
+        var app = (appId is null ? null : apps.FirstOrDefault(a => a.Id.Equals(appId, StringComparison.OrdinalIgnoreCase)))
+                  ?? apps.FirstOrDefault(a => a.Name.Equals(item.AppName, StringComparison.CurrentCultureIgnoreCase));
+        if (app != null)
+        {
+            app.Launch();
+            return true;
+        }
+        // Empaquetada pero fuera del catálogo (aún cargando): Windows la sabe abrir igual.
+        if (appId is { } id && id.Contains('!'))
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{id}") { UseShellExecute = true })?.Dispose();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Quita varias de una vez (un grupo del centro de notificaciones).</summary>
+    public static void Dismiss(IReadOnlyList<StrataNotification> items)
+    {
+        foreach (var item in items)
+        {
+            Items.Remove(item);
+            if (!item.IsLocal)
+                Remove(item.Id);
+        }
+        Changed?.Invoke();
+    }
+
+    private const int AsfwAny = -1;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool AllowSetForegroundWindow(int processId);
 
     /// <summary>Aviso propio de Strata UI (p. ej. cuánta RAM se liberó); el texto llega ya traducido.</summary>
     public static void ShowLocal(string title, string body) => Arrived?.Invoke(new StrataNotification

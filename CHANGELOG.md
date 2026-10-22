@@ -6,6 +6,8 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.8.0] - 2026-10-22
+
 ### Añadido
 - **Archivos**, un explorador de archivos propio con el tema de Strata UI: portada con tus carpetas,
   unidades (con el espacio usado) y archivos recientes; cada carpeta en lista o en cuadrícula con
@@ -15,6 +17,18 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   el portapapeles y el arrastre funcionan con el Explorador y las demás apps. Se abre desde el menú
   del ícono de Strata UI en la bandeja, con el botón "Archivos de Strata UI" del pie de Inicio o con
   `StrataUI.exe --files [carpeta]`.
+- **Notificaciones agrupadas por app**, como en el celular: varias de la misma app, sitio o app web
+  se pliegan en una pila con la más reciente arriba y las demás asomando detrás. Un clic en la pila
+  (o en "Ver todas") las despliega, y la X del grupo las quita todas juntas. Así el centro de
+  notificaciones ya no se alarga con cada mensaje.
+
+### Corregido
+- **Clic en las notificaciones de apps de la Tienda** (WhatsApp, Spotify y otras empaquetadas): solo
+  abría la app, sin ir al chat o a la canción. Ahora el clic llega a su activador, como desde Windows.
+  Además, la app que se abre pasa al frente en lugar de solo parpadear en la barra.
+- **Clic en notificaciones de apps sin activador**: si la app ya está abierta, se trae su ventana al
+  frente en vez de abrir otra; y si Windows no la sabe abrir por su identidad, se busca en el menú
+  Inicio por su nombre.
 
 ## [3.7.2] - 2026-10-22
 

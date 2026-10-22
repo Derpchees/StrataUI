@@ -6,13 +6,19 @@ using Strata.Shell.Services.Notifications;
 
 namespace Strata.Shell.Flyouts;
 
-/// <summary>Centro de notificaciones de Strata UI (la campana): solo notificaciones y "No molestar".</summary>
+/// <summary>
+/// Centro de notificaciones de Strata UI (la campana): las notificaciones agrupadas por app y "No
+/// molestar". Un grupo con varias se ve plegado (la más reciente con la pila detrás) hasta que se
+/// despliega; queda desplegado mientras el panel siga abierto.
+/// </summary>
 public partial class NotificationFlyout : FlyoutWindow
 {
+    private readonly HashSet<string> _expanded = new();
+    private List<NotificationGroup> _groups = [];
+
     public NotificationFlyout()
     {
         InitializeComponent();
-        NotificationList.ItemsSource = NotificationService.Items;
         DndSwitch.IsChecked = Settings.Current.NotificationDoNotDisturb;
         NotificationService.Changed += Refresh;
         Closed += (_, _) => NotificationService.Changed -= Refresh;
@@ -21,6 +27,8 @@ public partial class NotificationFlyout : FlyoutWindow
 
     private void Refresh()
     {
+        _groups = NotificationGroup.Build(NotificationService.Items, _expanded);
+        NotificationList.ItemsSource = _groups;
         bool any = NotificationService.Items.Count > 0;
         EmptyText.Visibility = any || NotificationService.AccessDenied ? Visibility.Collapsed : Visibility.Visible;
         ClearButton.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
@@ -31,11 +39,37 @@ public partial class NotificationFlyout : FlyoutWindow
     {
         if (e.OriginalSource is DependencyObject d && (Controls.RichText.IsInsideLink(d) || d is System.Windows.Media.Visual && IsInsideButton(d)))
             return;
-        if (sender is FrameworkElement { DataContext: StrataNotification item })
+        if (sender is not FrameworkElement { DataContext: StrataNotification item })
+            return;
+        // Un clic en la pila la despliega, como en el celular; ya desplegada, abre la notificación.
+        if (_groups.FirstOrDefault(g => g.Items.Contains(item)) is { IsStacked: true } group)
         {
-            CloseFlyout();
-            NotificationService.Activate(item);
+            SetExpanded(group, true);
+            return;
         }
+        CloseFlyout();
+        NotificationService.Activate(item);
+    }
+
+    private void Expand_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: NotificationGroup group })
+            SetExpanded(group, !group.IsExpanded);
+    }
+
+    private void SetExpanded(NotificationGroup group, bool expanded)
+    {
+        if (expanded)
+            _expanded.Add(group.Key);
+        else
+            _expanded.Remove(group.Key);
+        group.IsExpanded = expanded;
+    }
+
+    private void DismissGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: NotificationGroup group })
+            NotificationService.Dismiss(group.Items);
     }
 
     private static bool IsInsideButton(DependencyObject d)

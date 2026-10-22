@@ -8,6 +8,109 @@
                       Title="{l:T 'Notificaciones'}" Width="384">
     <flyouts:FlyoutWindow.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- Una notificación (contexto: StrataNotification) -->
+        <DataTemplate x:Key="NotificationCard">
+            <Border Margin="0,0,0,6" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
+                    Background="{DynamicResource StrataSurfaceBrush}" Cursor="Hand" MouseLeftButtonUp="Item_Click">
+                <Grid Margin="12,10,6,12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Row="1" Grid.RowSpan="2" Style="{StaticResource NotificationPicture}">
+                        <Border.Background><ImageBrush ImageSource="{Binding Picture}" Stretch="UniformToFill" /></Border.Background>
+                    </Border>
+                    <Grid Grid.ColumnSpan="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Width="16" Height="16" Margin="0,0,8,0">
+                            <ui:SymbolIcon Symbol="Alert24" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Grid>
+                        <TextBlock Grid.Column="1" Style="{StaticResource FlyoutHint}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding AppName, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TimeText, Mode=OneWay}" />
+                        </TextBlock>
+                        <Button Grid.Column="2" Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Padding="0"
+                                Click="Dismiss_Click" ToolTip="{l:T 'Quitar'}">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="11" />
+                        </Button>
+                    </Grid>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,4,6,0" Style="{StaticResource FlyoutText}" FontWeight="SemiBold"
+                               TextWrapping="Wrap" controls:RichText.Text="{Binding Title}" />
+                    <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,2,6,0" Style="{StaticResource FlyoutHint}" TextWrapping="Wrap"
+                               TextTrimming="CharacterEllipsis" MaxHeight="72" controls:RichText.Text="{Binding Body}" />
+                    <!-- Imagen del contenido (sticker, foto), debajo del texto -->
+                    <Image Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" MaxHeight="180" HorizontalAlignment="Left"
+                           Stretch="Uniform" Source="{Binding Hero}" RenderOptions.BitmapScalingMode="HighQuality"
+                           Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- Las notificaciones de una app: plegadas, la más reciente con la pila detrás; desplegadas, todas -->
+        <DataTemplate x:Key="NotificationGroupTemplate">
+            <StackPanel>
+                <!-- Encabezado del grupo (solo con varias): app, cuántas, plegar/desplegar y quitarlas -->
+                <Grid Margin="4,2,0,6" Visibility="{Binding IsGroup, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="16" Height="16" Margin="0,0,8,0">
+                        <ui:SymbolIcon Symbol="Alert24" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <Image Source="{Binding Latest.Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Grid>
+                    <TextBlock Grid.Column="1" Style="{StaticResource FlyoutText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                        <Run Text="{Binding Latest.AppName, Mode=OneWay}" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextFillColorPrimaryBrush}" /><Run Text="  " /><Run
+                             Text="{Binding CountText, Mode=OneWay}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </TextBlock>
+                    <Button Grid.Column="2" Style="{StaticResource FlyoutRow}" Padding="8,4" Margin="4,0,0,0" Click="Expand_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="ExpandText" Style="{StaticResource FlyoutHint}" Text="{l:T 'Ver todas'}" VerticalAlignment="Center" />
+                            <ui:SymbolIcon x:Name="ExpandIcon" Symbol="ChevronDown12" FontSize="10" Margin="6,1,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="3" Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Padding="0"
+                            Click="DismissGroup_Click" ToolTip="{l:T 'Quitar todas'}">
+                        <ui:SymbolIcon Symbol="Dismiss24" FontSize="11" />
+                    </Button>
+                </Grid>
+
+                <!-- Plegado: la más reciente y, debajo, una o dos capas que asoman (solo por debajo: la tarjeta
+                     puede ser translúcida y se verían a través). La tarjeta deja 6 px libres abajo. -->
+                <Grid Margin="0,0,0,12" Visibility="{Binding IsStacked, Converter={StaticResource BoolToVis}}">
+                    <Border Height="5" VerticalAlignment="Bottom" Margin="22,0,22,-5" Opacity="0.4" CornerRadius="0,0,8,8"
+                            Background="{DynamicResource StrataSurfaceBrush}"
+                            Visibility="{Binding HasSecondLayer, Converter={StaticResource BoolToVis}}" />
+                    <Border Height="6" VerticalAlignment="Bottom" Margin="11,0,11,0" Opacity="0.75" CornerRadius="0,0,9,9"
+                            Background="{DynamicResource StrataSurfaceBrush}" />
+                    <ContentControl Content="{Binding Latest}" ContentTemplate="{StaticResource NotificationCard}" />
+                </Grid>
+
+                <!-- Desplegado (o una sola): todas -->
+                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource NotificationCard}"
+                              Visibility="{Binding ShowsAll, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                    <Setter TargetName="ExpandText" Property="Text" Value="{l:T 'Ver menos'}" />
+                    <Setter TargetName="ExpandIcon" Property="Symbol" Value="ChevronUp12" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </flyouts:FlyoutWindow.Resources>
     <StackPanel Margin="14,14,14,12">
         <Grid Margin="4,0,0,8">
@@ -31,56 +134,8 @@
             </StackPanel>
         </Border>
 
-        <ItemsControl x:Name="NotificationList">
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Border Margin="0,0,0,6" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
-                            Background="{DynamicResource StrataSurfaceBrush}" Cursor="Hand" MouseLeftButtonUp="Item_Click">
-                        <Grid Margin="12,10,6,12">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Row="1" Grid.RowSpan="2" Style="{StaticResource NotificationPicture}">
-                                <Border.Background><ImageBrush ImageSource="{Binding Picture}" Stretch="UniformToFill" /></Border.Background>
-                            </Border>
-                            <Grid Grid.ColumnSpan="2">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Grid Width="16" Height="16" Margin="0,0,8,0">
-                                    <ui:SymbolIcon Symbol="Alert24" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    <Image Source="{Binding Icon}" RenderOptions.BitmapScalingMode="HighQuality" />
-                                </Grid>
-                                <TextBlock Grid.Column="1" Style="{StaticResource FlyoutHint}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
-                                    <Run Text="{Binding AppName, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding TimeText, Mode=OneWay}" />
-                                </TextBlock>
-                                <Button Grid.Column="2" Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Padding="0"
-                                        Click="Dismiss_Click" ToolTip="{l:T 'Quitar'}">
-                                    <ui:SymbolIcon Symbol="Dismiss24" FontSize="11" />
-                                </Button>
-                            </Grid>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Margin="0,4,6,0" Style="{StaticResource FlyoutText}" FontWeight="SemiBold"
-                                       TextWrapping="Wrap" controls:RichText.Text="{Binding Title}" />
-                            <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,2,6,0" Style="{StaticResource FlyoutHint}" TextWrapping="Wrap"
-                                       TextTrimming="CharacterEllipsis" MaxHeight="72" controls:RichText.Text="{Binding Body}" />
-                            <!-- Imagen del contenido (sticker, foto), debajo del texto -->
-                            <Image Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" MaxHeight="180" HorizontalAlignment="Left"
-                                   Stretch="Uniform" Source="{Binding Hero}" RenderOptions.BitmapScalingMode="HighQuality"
-                                   Visibility="{Binding HasHero, Converter={StaticResource BoolToVis}}" />
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <!-- Agrupadas por app, sitio o app web (como en el celular) -->
+        <ItemsControl x:Name="NotificationList" ItemTemplate="{StaticResource NotificationGroupTemplate}" />
 
         <TextBlock x:Name="EmptyText" Style="{StaticResource FlyoutHint}" Margin="4,8,0,12" HorizontalAlignment="Center"
                    Text="{l:T 'No hay notificaciones nuevas'}" />

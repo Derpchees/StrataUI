@@ -1099,5 +1099,8 @@
   "{0} elementos cortados": "{0} Elemente ausgeschnitten",
   "{0} libres de {1}": "{0} frei von {1}",
   "{0} seleccionados": "{0} ausgewählt",
-  "{0} unidades": "{0} Laufwerke"
+  "{0} unidades": "{0} Laufwerke",
+  "Ver todas": "Alle anzeigen",
+  "Ver menos": "Weniger anzeigen",
+  "Quitar todas": "Alle entfernen"
 }
