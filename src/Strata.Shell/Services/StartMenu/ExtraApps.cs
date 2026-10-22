@@ -190,7 +190,7 @@ public static partial class ExtraApps
         File.ReadLines(file).FirstOrDefault(l => l.StartsWith("URL=", StringComparison.OrdinalIgnoreCase))?[4..].Trim();
 
     /// <summary>Destino de un .lnk (null si no se puede leer).</summary>
-    private static string? ShortcutTarget(string link)
+    internal static string? ShortcutTarget(string link)
     {
         try
         {

@@ -22,6 +22,9 @@ public partial class App : Application
     private const string EditArg = "--edit";
     /// <summary>Pedido de otra instancia (en hub-request.txt): abrir el modo edición en lugar del Hub.</summary>
     private const string EditRequest = "::edit";
+    /// <summary>Pedido de otra instancia: abrir el explorador de archivos (seguido de la ruta, si hay).</summary>
+    private const string FilesRequest = "::files ";
+    private const string FilesArg = "--files";
 
     private static readonly string HubRequestPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrataUI", "hub-request.txt");
@@ -163,7 +166,9 @@ public partial class App : Application
             {
                 // "--hub Privacy" abre directamente esa página del Hub; "--edit", el modo edición.
                 int hubArg = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
+                int filesArg = Array.FindIndex(e.Args, a => a.Equals(FilesArg, StringComparison.OrdinalIgnoreCase));
                 string? request = e.Args.Contains(EditArg, StringComparer.OrdinalIgnoreCase) ? EditRequest
+                    : filesArg >= 0 ? FilesRequest + (filesArg + 1 < e.Args.Length ? e.Args[filesArg + 1] : "")
                     : hubArg >= 0 && hubArg + 1 < e.Args.Length ? e.Args[hubArg + 1] : null;
                 if (request != null)
                 {
@@ -281,6 +286,9 @@ public partial class App : Application
         // Con las barras ya ubicadas (su tamaño define el escritorio que se dibuja).
         if (e.Args.Contains(EditArg, StringComparer.OrdinalIgnoreCase))
             Dispatcher.BeginInvoke(EditMode.EditSession.Start, DispatcherPriority.ApplicationIdle);
+        int filesIndex = Array.FindIndex(e.Args, a => a.Equals(FilesArg, StringComparison.OrdinalIgnoreCase));
+        if (filesIndex >= 0)
+            OpenFiles(filesIndex + 1 < e.Args.Length ? e.Args[filesIndex + 1] : null);
 
         // ManagedShell termina de inicializar los estados de las ventanas de forma asíncrona.
         var activeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -650,10 +658,17 @@ public partial class App : Application
         {
             try
             {
-                if (File.ReadAllText(HubRequestPath).Trim() == EditRequest)
+                string request = File.ReadAllText(HubRequestPath);
+                if (request.Trim() == EditRequest)
                 {
                     File.Delete(HubRequestPath);
                     EditMode.EditSession.Start();
+                    return;
+                }
+                if (request.StartsWith(FilesRequest, StringComparison.Ordinal))
+                {
+                    File.Delete(HubRequestPath);
+                    OpenFiles(request[FilesRequest.Length..].Trim() is { Length: > 0 } path ? path : null);
                     return;
                 }
             }
@@ -688,6 +703,19 @@ public partial class App : Application
         _hub.Topmost = true;
         _hub.Activate();
         _hub.Topmost = false;
+    }
+
+    /// <summary>Abre una ventana nueva del explorador de archivos (en esa carpeta o en Este equipo).</summary>
+    public void OpenFiles(string? path = null)
+    {
+        if (_exiting)
+            return;
+        var window = new Files.FilesWindow(path);
+        window.Show();
+        // Topmost momentáneo, como el Hub: queda encima aunque Windows niegue el foco.
+        window.Topmost = true;
+        window.Activate();
+        window.Topmost = false;
     }
 
     private const int AsfwAny = -1;

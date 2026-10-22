@@ -145,7 +145,7 @@ A preset of the Start menu options. Applying it changes only what the file inclu
 }
 ```
 
-Footer buttons: `Power`, `Lock`, `Sleep`, `Restart`, `Shutdown`, `SignOut`, `Explorer`, `Documents`,
+Footer buttons: `Power`, `Lock`, `Sleep`, `Restart`, `Shutdown`, `SignOut`, `Explorer`, `StrataFiles`, `Documents`,
 `Downloads`, `Pictures`, `Music`, `Videos`, `Settings`, `ControlPanel`, `TaskManager`, `Terminal`,
 `StrataSettings`. Unknown ones are ignored.
 

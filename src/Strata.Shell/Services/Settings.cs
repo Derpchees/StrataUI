@@ -244,6 +244,12 @@ public sealed class StrataSettings
     /// <summary>Tamaño elegido por el usuario para cada estilo de menú: [ancho, alto] en DIP.</summary>
     public Dictionary<string, double[]> StartMenuSizes { get; set; } = new();
 
+    // Archivos (explorador de Strata UI)
+    /// <summary>Vista del explorador: lista con detalles o cuadrícula con miniaturas.</summary>
+    public bool FilesGridView { get; set; }
+    /// <summary>El explorador muestra los archivos y carpetas ocultos.</summary>
+    public bool FilesShowHidden { get; set; }
+
     // Módulos del área de estado
     public bool ShowNetworkModule { get; set; } = true;
     public bool ShowBluetoothModule { get; set; } = true;

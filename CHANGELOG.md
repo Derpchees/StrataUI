@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+- **Archivos**, un explorador de archivos propio con el tema de Strata UI: portada con tus carpetas,
+  unidades (con el espacio usado) y archivos recientes; cada carpeta en lista o en cuadrícula con
+  miniaturas; ruta en migas que también se puede escribir (Ctrl+L), búsqueda en la carpeta, orden
+  por nombre, fecha, tipo o tamaño y archivos ocultos a un clic. Copiar, cortar, pegar, cambiar el
+  nombre, nueva carpeta y mandar a la Papelera usan el motor de Windows (con su progreso y Ctrl+Z), y
+  el portapapeles y el arrastre funcionan con el Explorador y las demás apps. Se abre desde el menú
+  del ícono de Strata UI en la bandeja, con el botón "Archivos de Strata UI" del pie de Inicio o con
+  `StrataUI.exe --files [carpeta]`.
+
 ## [3.7.2] - 2026-10-22
 
 ### Corregido
