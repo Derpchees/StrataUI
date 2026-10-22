@@ -6,6 +6,7 @@
                       xmlns:flyouts="clr-namespace:Strata.Shell.Flyouts"
                       Title="{l:T 'Volumen'}" Width="372">
     <flyouts:FlyoutWindow.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
         <!-- Dispositivo como mosaico cuadrado: clic para usarlo; "…" para sus opciones -->
         <DataTemplate x:Key="DeviceTile">
             <Grid Width="104" Height="112" Margin="0,0,8,8">
@@ -191,6 +192,63 @@
         <StackPanel x:Name="OutputDevices" Margin="0,6,0,0" Visibility="Collapsed">
             <ItemsControl x:Name="OutputList" ItemTemplate="{StaticResource DeviceTile}" ItemsPanel="{StaticResource TilePanel}" />
             <ContentControl x:Name="OutputOptions" ContentTemplate="{StaticResource DeviceOptions}" Visibility="Collapsed" />
+        </StackPanel>
+
+        <!-- Sonar también en otra salida (los parlantes de los dos monitores a la vez) -->
+        <Grid Margin="0,1,8,1">
+            <Button x:Name="MirrorHeader" Style="{StaticResource FlyoutRow}" Click="MirrorHeader_Click">
+                <Grid Margin="0,0,56,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ui:SymbolIcon Symbol="DesktopSpeaker24" FontSize="16" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Sonar también en'}" />
+                        <TextBlock x:Name="MirrorText" Style="{StaticResource FlyoutHint}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
+            </Button>
+            <ui:ToggleSwitch x:Name="MirrorSwitch" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,4,0"
+                             Click="MirrorSwitch_Click" />
+        </Grid>
+        <StackPanel x:Name="MirrorPanel" Margin="0,2,8,4" Visibility="Collapsed">
+            <TextBlock x:Name="NoMirrorText" Style="{StaticResource FlyoutHint}" Margin="40,0,0,6" TextWrapping="Wrap" Visibility="Collapsed"
+                       Text="{l:T 'Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.'}" />
+            <ItemsControl x:Name="MirrorList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource FlyoutRow}" Click="MirrorDevice_Click">
+                            <Grid Margin="28,0,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="15" Margin="0,0,10,0" />
+                                <StackPanel Grid.Column="1">
+                                    <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Adapter}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <ui:SymbolIcon Grid.Column="2" Symbol="Checkmark24" FontSize="14" Foreground="{DynamicResource StrataAccentBrush}"
+                                               Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}}" />
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Volumen de la segunda salida (el suyo en Windows) -->
+            <Grid x:Name="MirrorVolumeRow" Margin="0,4,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon Symbol="Speaker124" FontSize="16" Margin="11,0,3,0" />
+                <Slider x:Name="MirrorSlider" Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
+                        Minimum="0" Maximum="100" IsMoveToPointEnabled="True" ValueChanged="MirrorSlider_ValueChanged" />
+                <TextBlock x:Name="MirrorPercent" Grid.Column="2" Style="{StaticResource FlyoutPercent}" />
+            </Grid>
         </StackPanel>
 
         <!-- ── Entrada ── -->

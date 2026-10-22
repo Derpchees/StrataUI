@@ -243,6 +243,9 @@ public partial class App : Application
         ExplorerWatch.Start();
         _ = Services.Brightness.BrightnessService.RefreshAsync();
         Services.Media.MediaService.Initialize();
+        _audioMirror = Settings.Current.AudioMirrorDevice;
+        if (_audioMirror != null)
+            StartAudioMirror();
         Services.Notifications.NotificationService.Arrived += OnNotificationArrived;
         // La prueba de velocidad sigue con el panel cerrado: entonces avisa al terminar.
         SpeedTest.Finished += result =>
@@ -564,9 +567,28 @@ public partial class App : Application
         ?? _taskbars.FirstOrDefault(t => t.IsMain)
         ?? _taskbars.FirstOrDefault();
 
+    private string? _audioMirror;
+    private bool _audioMirrorWatching;
+
+    /// <summary>"Sonar también en": aplica la salida elegida y la sigue cuando cambian los dispositivos.</summary>
+    private void StartAudioMirror()
+    {
+        if (!_audioMirrorWatching)
+        {
+            Audio.DevicesChanged += Services.Audio.AudioMirror.Update;
+            _audioMirrorWatching = true;
+        }
+        Services.Audio.AudioMirror.Update();
+    }
+
     private void OnSettingsChanged()
     {
         UpdateKeyHook();
+        if (Settings.Current.AudioMirrorDevice != _audioMirror)
+        {
+            _audioMirror = Settings.Current.AudioMirrorDevice;
+            StartAudioMirror();
+        }
         if (Settings.Current.StartExplorerMenu != _explorerMenu)
         {
             _explorerMenu = Settings.Current.StartExplorerMenu;
@@ -760,6 +782,7 @@ public partial class App : Application
         }
         Services.Themes.WindowsTheming.Shutdown();
         ThemeManager.Shutdown();
+        Services.Audio.AudioMirror.Stop();
         _audio?.Dispose();
         Services.Brightness.BrightnessService.Shutdown();
         SystemStatus.Shutdown();

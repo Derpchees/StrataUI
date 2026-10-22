@@ -257,6 +257,10 @@ public sealed class StrataSettings
     /// <summary>Carpetas de red visitadas (\\servidor\recurso), para la barra lateral de Archivos.</summary>
     public List<string> FilesNetworkPlaces { get; set; } = [];
 
+    // Sonido
+    /// <summary>"Sonar también en": la segunda salida que repite lo que suena (ID de Windows); null = apagado.</summary>
+    public string? AudioMirrorDevice { get; set; }
+
     // Módulos del área de estado
     public bool ShowNetworkModule { get; set; } = true;
     public bool ShowBluetoothModule { get; set; } = true;

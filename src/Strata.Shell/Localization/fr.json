@@ -1129,5 +1129,10 @@
   "Visor": "Visionneuse",
   "Win+E, el botón Explorador y las carpetas del menú Inicio y de Win+X abren Archivos. Apagado, abren el Explorador de Windows.": "Win+E, le bouton Explorateur et les dossiers du menu Démarrer et de Win+X ouvrent Fichiers. Désactivé, ils ouvrent l'Explorateur Windows.",
   "Windows no tiene el códec para reproducir este formato.": "Windows n'a pas le codec pour lire ce format.",
-  "{0} de {1}": "{0} sur {1}"
+  "{0} de {1}": "{0} sur {1}",
+  "Apagado": "Désactivé",
+  "Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.": "Branchez une autre sortie (un écran avec haut-parleurs, un casque…) pour jouer sur les deux.",
+  "En pausa: es la salida principal": "En pause : c'est la sortie principale",
+  "La salida elegida no está conectada": "La sortie choisie n'est pas connectée",
+  "Sonar también en": "Jouer aussi sur"
 }

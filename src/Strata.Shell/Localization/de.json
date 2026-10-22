@@ -1129,5 +1129,10 @@
   "Visor": "Anzeige",
   "Win+E, el botón Explorador y las carpetas del menú Inicio y de Win+X abren Archivos. Apagado, abren el Explorador de Windows.": "Win+E, die Explorer-Schaltfläche und die Ordner im Startmenü und in Win+X öffnen Dateien. Aus: Sie öffnen den Windows-Explorer.",
   "Windows no tiene el códec para reproducir este formato.": "Windows fehlt der Codec, um dieses Format abzuspielen.",
-  "{0} de {1}": "{0} von {1}"
+  "{0} de {1}": "{0} von {1}",
+  "Apagado": "Aus",
+  "Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.": "Schließe eine weitere Ausgabe an (einen Monitor mit Lautsprechern, Kopfhörer…), um auf beiden abzuspielen.",
+  "En pausa: es la salida principal": "Pausiert: Das ist die Hauptausgabe",
+  "La salida elegida no está conectada": "Die gewählte Ausgabe ist nicht verbunden",
+  "Sonar también en": "Auch abspielen auf"
 }

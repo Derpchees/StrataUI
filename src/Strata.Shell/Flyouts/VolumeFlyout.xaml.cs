@@ -30,6 +30,7 @@ public partial class VolumeFlyout : FlyoutWindow
         _audio.Output.Changed += UpdateVolumes;
         _audio.Input.Changed += UpdateVolumes;
         _audio.DevicesChanged += UpdateDevices;
+        AudioMirror.Changed += UpdateMirror;
         _refreshTimer.Tick += (_, _) => RefreshApps();
         _levelTimer.Tick += (_, _) => _options?.UpdateLevel();
         Closed += (_, _) =>
@@ -38,6 +39,7 @@ public partial class VolumeFlyout : FlyoutWindow
             _audio.Output.Changed -= UpdateVolumes;
             _audio.Input.Changed -= UpdateVolumes;
             _audio.DevicesChanged -= UpdateDevices;
+            AudioMirror.Changed -= UpdateMirror;
             CloseOptions();
             DisposeRows();
         };
@@ -96,6 +98,7 @@ public partial class VolumeFlyout : FlyoutWindow
         NoInputText.Visibility = inputs.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ShowCurrent(outputs, OutputDeviceText, OutputDeviceIcon);
         ShowCurrent(inputs, InputDeviceText, InputDeviceIcon);
+        UpdateMirror();
 
         // Las opciones abiertas siguen al dispositivo (cambia la marca de "llamadas"); si se
         // desconectó, se cierran.
@@ -116,6 +119,85 @@ public partial class VolumeFlyout : FlyoutWindow
         text.Text = current?.Name ?? Loc.T("Sin dispositivo");
         if (current != null)
             icon.Symbol = current.Symbol;
+    }
+
+    // ── Sonar también en ────────────────────────────────────────────────────
+
+    /// <summary>Una salida que puede repetir el sonido (todas menos la principal).</summary>
+    public sealed record MirrorOption(AudioDevice Device, SymbolRegular Symbol, bool IsSelected)
+    {
+        public string Name => Device.Name;
+        public string Adapter => Device.Adapter;
+    }
+
+    private bool _updatingMirror;
+
+    private void UpdateMirror()
+    {
+        string? chosen = Settings.Current.AudioMirrorDevice;
+        var outputs = _audio.GetDevices(input: false);
+        var options = outputs.Where(d => !d.IsDefault)
+            .Select(d => new MirrorOption(d, new DeviceTile(d, false).Symbol, d.Id == chosen)).ToList();
+        MirrorList.ItemsSource = options;
+        NoMirrorText.Visibility = options.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        MirrorSwitch.IsChecked = chosen != null;
+        var device = outputs.FirstOrDefault(d => d.Id == chosen);
+        MirrorText.Text = chosen is null ? Loc.T("Apagado")
+            : device is null ? Loc.T("La salida elegida no está conectada")
+            : device.IsDefault ? Loc.T("En pausa: es la salida principal")
+            : device.Name;
+        bool active = AudioMirror.ActiveTarget is { } target && target == chosen;
+        MirrorVolumeRow.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+        if (active && AudioMirror.GetVolume(chosen!) is { } volume)
+        {
+            _updatingMirror = true;
+            MirrorSlider.Value = Math.Round(volume * 100);
+            _updatingMirror = false;
+            MirrorPercent.Text = $"{MirrorSlider.Value:0}";
+        }
+    }
+
+    private void MirrorHeader_Click(object sender, RoutedEventArgs e) =>
+        MirrorPanel.Visibility = MirrorPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+
+    /// <summary>
+    /// Encender elige la salida de antes o, la primera vez, la de un monitor (lo más común: que suenen
+    /// los dos monitores) o cualquier otra; y despliega la lista para cambiarla.
+    /// </summary>
+    private void MirrorSwitch_Click(object sender, RoutedEventArgs e)
+    {
+        if (MirrorSwitch.IsChecked != true)
+        {
+            Settings.Update(s => s.AudioMirrorDevice = null);
+            UpdateMirror();
+            return;
+        }
+        var others = _audio.GetDevices(input: false).Where(d => !d.IsDefault).ToList();
+        var pick = others.FirstOrDefault(d => d.Kind == AudioDeviceKind.Display) ?? others.FirstOrDefault();
+        MirrorPanel.Visibility = Visibility.Visible;
+        if (pick is null)
+        {
+            MirrorSwitch.IsChecked = false;
+            return;
+        }
+        Settings.Update(s => s.AudioMirrorDevice = pick.Id);
+        UpdateMirror();
+    }
+
+    private void MirrorDevice_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: MirrorOption option })
+        {
+            Settings.Update(s => s.AudioMirrorDevice = option.Device.Id);
+            UpdateMirror();
+        }
+    }
+
+    private void MirrorSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        MirrorPercent.Text = $"{e.NewValue:0}";
+        if (!_updatingMirror && AudioMirror.ActiveTarget is { } target)
+            AudioMirror.SetVolume(target, (float)(e.NewValue / 100));
     }
 
     private void DevicesHeader_Click(object sender, RoutedEventArgs e)

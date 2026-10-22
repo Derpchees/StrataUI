@@ -1129,5 +1129,10 @@
   "Visor": "Viewer",
   "Win+E, el botón Explorador y las carpetas del menú Inicio y de Win+X abren Archivos. Apagado, abren el Explorador de Windows.": "Win+E, the Explorer button and the folders in the Start menu and Win+X open Files. When off, they open Windows File Explorer.",
   "Windows no tiene el códec para reproducir este formato.": "Windows doesn't have the codec to play this format.",
-  "{0} de {1}": "{0} of {1}"
+  "{0} de {1}": "{0} of {1}",
+  "Apagado": "Off",
+  "Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.": "Connect another output (a monitor with speakers, headphones…) to play on both.",
+  "En pausa: es la salida principal": "Paused: it's the main output",
+  "La salida elegida no está conectada": "The chosen output isn't connected",
+  "Sonar también en": "Also play on"
 }

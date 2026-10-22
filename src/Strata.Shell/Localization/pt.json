@@ -1129,5 +1129,10 @@
   "Visor": "Visualizador",
   "Win+E, el botón Explorador y las carpetas del menú Inicio y de Win+X abren Archivos. Apagado, abren el Explorador de Windows.": "Win+E, o botão Explorador e as pastas do menu Iniciar e do Win+X abrem os Arquivos. Desligado, abrem o Explorador de Arquivos do Windows.",
   "Windows no tiene el códec para reproducir este formato.": "O Windows não tem o codec para reproduzir este formato.",
-  "{0} de {1}": "{0} de {1}"
+  "{0} de {1}": "{0} de {1}",
+  "Apagado": "Desligado",
+  "Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.": "Conecte outra saída (um monitor com alto-falantes, fones…) para tocar nas duas.",
+  "En pausa: es la salida principal": "Em pausa: é a saída principal",
+  "La salida elegida no está conectada": "A saída escolhida não está conectada",
+  "Sonar también en": "Tocar também em"
 }

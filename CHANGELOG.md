@@ -7,6 +7,9 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [Sin publicar]
 
 ### Añadido
+- **Sonar también en** (panel de Sonido): lo que suena en la salida principal se oye además en otra,
+  por ejemplo los parlantes de los dos monitores. Un interruptor, la lista de salidas (sugiere la de
+  un monitor) y el volumen de la segunda; sigue a la salida principal si cambia.
 - **Archivos reemplaza al Explorador dentro de Strata UI**: Win+E, el botón Explorador y las carpetas
   del menú Inicio y de Win+X abren Archivos (Hub › General para volver al Explorador de Windows).
 - **Visor de Archivos** para imágenes, video y audio: la imagen se ajusta a la ventana, la rueda
@@ -17,7 +20,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   barra lateral, con el estado de cada archivo (solo en línea, en el equipo o siempre en el
   dispositivo) y "Mantener siempre en este dispositivo" / "Liberar espacio". Las miniaturas no
   descargan archivos que están solo en la nube.
-- **Red en Archivos**: carpetas compartidas (`\servidorecurso`, y escribir `\servidor` lista sus
+- **Red en Archivos**: carpetas compartidas (`\\servidor\recurso`, y escribir `\\servidor` lista sus
   carpetas), unidades de red y "Conectar unidad de red"; las carpetas de red visitadas quedan en la
   barra lateral.
 
