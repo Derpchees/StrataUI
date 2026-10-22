@@ -235,6 +235,7 @@ public partial class App : Application
         Services.StartMenu.WinKeyHook.WinPressed += OnWinKey;
         Services.StartMenu.WinKeyHook.WinXPressed += () => AppsTaskbar?.ShowWinXMenu();
         Services.StartMenu.WinKeyHook.WinNPressed += () => StatusTaskbar?.ToggleNotificationCenter();
+        Services.StartMenu.WinKeyHook.WinEPressed += () => OpenFiles();
         UpdateKeyHook();
         OpenTaskbars();
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
@@ -534,7 +535,8 @@ public partial class App : Application
     }
 
     private static void UpdateKeyHook() =>
-        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, AnyVolumeOsd());
+        Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, AnyVolumeOsd(),
+                                             Settings.Current.FilesReplaceExplorer);
 
     /// <summary>Barra con el botón Inicio en el monitor del mouse (null si ese monitor no tiene).</summary>
     private Taskbar? MouseMonitorStartTaskbar()

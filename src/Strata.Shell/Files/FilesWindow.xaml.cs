@@ -51,7 +51,7 @@ public partial class FilesWindow : FluentWindow
     private bool _descending;
     private readonly Place _home;
     private readonly List<Place> _folders;
-    private List<Place> _drives = [];
+    private List<Place> _drives = [], _cloud = [], _network = [];
     private DateTime _drivesRead;
     private HashSet<string> _cutPaths = new(StringComparer.OrdinalIgnoreCase);
     private string? _selectAfterLoad;
@@ -118,6 +118,12 @@ public partial class FilesWindow : FluentWindow
             MemoryTrim.Schedule(TimeSpan.FromSeconds(3));
         };
         Loaded += (_, _) => Motion.In(Root, Root, TaskbarPosition.Bottom, 0.8);
+        // Un archivo: su carpeta, con él seleccionado (como "Mostrar en la carpeta").
+        if (path != null && File.Exists(path))
+        {
+            _selectAfterLoad = System.IO.Path.GetFullPath(path);
+            path = System.IO.Path.GetDirectoryName(_selectAfterLoad);
+        }
         Navigate(path);
     }
 
@@ -163,16 +169,26 @@ public partial class FilesWindow : FluentWindow
             return;
         // Al subir queda marcada la carpeta de la que se venía, como en el Explorador.
         _selectAfterLoad = _path;
-        Navigate(Directory.GetParent(_path.TrimEnd('\\'))?.FullName is { } parent && !SamePath(parent, _path) ? parent : null);
+        // De "\\servidor\recurso" se sube a "\\servidor" (sus carpetas compartidas).
+        if (Places.ShareRoot(_path) is { } share && SamePath(share, _path))
+        {
+            Navigate(share[..share.LastIndexOf('\\')]);
+            return;
+        }
+        Navigate(Places.IsServer(_path) ? null
+                 : Directory.GetParent(_path.TrimEnd('\\'))?.FullName is { } parent && !SamePath(parent, _path) ? parent : null);
     }
 
     private static string? Normalize(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
             return null;
+        path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"')).TrimEnd('\\');
+        if (Places.IsServer(path))
+            return path;
         try
         {
-            path = System.IO.Path.GetFullPath(Environment.ExpandEnvironmentVariables(path.Trim().Trim('"')));
+            path = System.IO.Path.GetFullPath(path);
             // "C:" es la carpeta actual de esa unidad; la raíz es "C:\".
             return System.IO.Path.GetPathRoot(path) is { } root && path.Length <= root.Length ? root.TrimEnd('\\') + "\\" : path.TrimEnd('\\');
         }
@@ -205,10 +221,11 @@ public partial class FilesWindow : FluentWindow
         }
 
         bool hidden = Settings.Current.FilesShowHidden;
+        bool inCloud = CloudPlace(path) != null;
         List<FileEntry> fresh;
         try
         {
-            fresh = await Task.Run(() => Read(path, hidden), cts.Token);
+            fresh = await Task.Run(() => Places.IsServer(path) ? ReadServer(path) : Read(path, hidden, inCloud), cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -259,10 +276,43 @@ public partial class FilesWindow : FluentWindow
             _renameAfterLoad = false;
         }
         UpdateStatus();
-        FileIcons.Load(toLoad, Settings.Current.FilesGridView, Dispatcher, cts.Token);
+        FileIcons.Load(toLoad, Settings.Current.FilesGridView && Thumbnails(path), Dispatcher, cts.Token);
+        RememberNetwork(path);
     }
 
-    private static List<FileEntry> Read(string path, bool hidden)
+    /// <summary>Las carpetas compartidas de un servidor de la red.</summary>
+    private static List<FileEntry> ReadServer(string server)
+    {
+        string type = Loc.T("Carpeta compartida");
+        return Places.Shares(server).Select(share => new FileEntry(share, server + "\\" + share, type)).ToList();
+    }
+
+    /// <summary>La carpeta de la nube que contiene esta ruta (null si no es de la nube).</summary>
+    private Place? CloudPlace(string? path) =>
+        path is null ? null
+        : _cloud.FirstOrDefault(p => p.Path is { } root && (SamePath(root, path)
+                                     || path.StartsWith(root.TrimEnd('\\') + "\\", StringComparison.OrdinalIgnoreCase)));
+
+    /// <summary>
+    /// Sin miniaturas en Google Drive (su unidad descarga lo que se lee). En las demás nubes, los
+    /// archivos solo en línea ya se saltan uno por uno (<see cref="FileIcons.IsPicture"/>).
+    /// </summary>
+    private bool Thumbnails(string path) =>
+        CloudPlace(path) is not { } cloud || System.IO.Path.GetPathRoot(cloud.Path!)?.TrimEnd('\\') != cloud.Path!.TrimEnd('\\');
+
+    /// <summary>Una carpeta de red que se pudo abrir queda en la barra lateral (su "\\servidor\recurso").</summary>
+    private void RememberNetwork(string path)
+    {
+        if (Places.ShareRoot(path) is not { } share || Settings.Current.FilesNetworkPlaces.Contains(share, StringComparer.OrdinalIgnoreCase))
+            return;
+        Settings.Update(s => s.FilesNetworkPlaces = s.FilesNetworkPlaces.Prepend(share).Take(10).ToList());
+        _ = LoadDrivesAsync();
+    }
+
+    private void ForgetNetwork(Place place) =>
+        Settings.Update(s => s.FilesNetworkPlaces = s.FilesNetworkPlaces.Where(p => !SamePath(p, place.Path)).ToList());
+
+    private static List<FileEntry> Read(string path, bool hidden, bool inCloud)
     {
         var folder = new DirectoryInfo(path);
         if (!folder.Exists)
@@ -276,7 +326,7 @@ public partial class FilesWindow : FluentWindow
             if ((isHidden && isSystem) || (!hidden && (isHidden || isSystem)))
                 continue;
             bool isFolder = info is DirectoryInfo;
-            list.Add(new FileEntry(info, FileIcons.TypeName(isFolder ? "" : info.Extension, isFolder)));
+            list.Add(new FileEntry(info, FileIcons.TypeName(isFolder ? "" : info.Extension, isFolder), inCloud));
         }
         return list;
     }
@@ -318,7 +368,7 @@ public partial class FilesWindow : FluentWindow
         _watcher?.Dispose();
         _watcher = null;
         _watchedPath = path;
-        if (path is null)
+        if (path is null || Places.IsServer(path))
             return;
         try
         {
@@ -349,17 +399,24 @@ public partial class FilesWindow : FluentWindow
     private async Task LoadDrivesAsync()
     {
         _drivesRead = DateTime.UtcNow;
+        var remembered = Settings.Current.FilesNetworkPlaces.ToList();
+        StorageView storage;
         try
         {
-            _drives = await FileIcons.RunAsync(Places.Drives);
+            storage = await FileIcons.RunAsync(() => Places.Storage(remembered));
         }
         catch (Exception ex)
         {
             Log.Error("Archivos: no se pudieron leer las unidades", ex);
             return;
         }
-        SideDrives.ItemsSource = _drives;
-        HomeDrives.ItemsSource = _drives;
+        (_drives, _cloud, _network) = (storage.Drives, storage.Cloud, storage.Network);
+        SideDrives.ItemsSource = HomeDrives.ItemsSource = _drives;
+        SideCloud.ItemsSource = HomeCloud.ItemsSource = _cloud;
+        SideNetwork.ItemsSource = HomeNetwork.ItemsSource = _network;
+        var cloudVisible = _cloud.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        SideCloudTitle.Visibility = HomeCloudTitle.Visibility = cloudVisible;
+        HomeNetworkTitle.Visibility = HomeNetwork.Visibility = _network.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         UpdateCurrentPlace();
     }
 
@@ -385,8 +442,18 @@ public partial class FilesWindow : FluentWindow
         if (_path != null)
         {
             var parts = new List<string>();
-            for (var dir = new DirectoryInfo(_path); dir != null; dir = dir.Parent)
-                parts.Insert(0, dir.FullName);
+            if (Places.IsServer(_path))
+            {
+                parts.Add(_path);
+            }
+            else
+            {
+                for (var dir = new DirectoryInfo(_path); dir != null; dir = dir.Parent)
+                    parts.Insert(0, dir.FullName);
+                // En la red, el servidor antes de su carpeta compartida.
+                if (Places.ShareRoot(_path) is { } share)
+                    parts.Insert(0, share[..share.LastIndexOf('\\')]);
+            }
             crumbs.AddRange(parts.Select(p => new Crumb(Places.NameOf(p), p, false, true)));
         }
         Crumbs.ItemsSource = crumbs;
@@ -397,7 +464,7 @@ public partial class FilesWindow : FluentWindow
 
     private void UpdateCurrentPlace()
     {
-        foreach (var place in _folders.Append(_home).Concat(_drives))
+        foreach (var place in _folders.Append(_home).Concat(_drives).Concat(_cloud).Concat(_network))
             place.IsCurrent = SamePath(place.Path, _path);
     }
 
@@ -614,6 +681,14 @@ public partial class FilesWindow : FluentWindow
                 return;
             }
         }
+        // Una imagen, un video o un audio: el visor, con los demás de la carpeta en el orden de la vista.
+        if (entries is [var single] && MediaKinds.Of(single.FullPath) != MediaKind.None && _view != null)
+        {
+            var media = _view.Cast<FileEntry>().Where(e => !e.IsFolder && MediaKinds.Of(e.FullPath) != MediaKind.None)
+                             .Select(e => e.FullPath).ToList();
+            MediaViewerWindow.Open(media, media.IndexOf(single.FullPath));
+            return;
+        }
         foreach (var entry in entries)
         {
             if (!FileOperations.Open(entry.FullPath))
@@ -823,6 +898,30 @@ public partial class FilesWindow : FluentWindow
         _ = LoadAsync(merge: true);
     }
 
+    /// <summary>
+    /// Fijar (siempre en este dispositivo) o liberar espacio: los mismos atributos que pone el
+    /// Explorador (attrib +P / +U); OneDrive y las demás nubes descargan o liberan solas.
+    /// </summary>
+    private void SetCloudPin(IReadOnlyList<FileEntry> entries, bool keep)
+    {
+        const FileAttributes pinned = (FileAttributes)0x80000, unpinned = (FileAttributes)0x100000;
+        foreach (var entry in entries)
+        {
+            try
+            {
+                var attributes = File.GetAttributes(entry.FullPath) & ~(pinned | unpinned);
+                File.SetAttributes(entry.FullPath, attributes | (keep ? pinned : unpinned));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                ShowMessage(Loc.F("No se pudo cambiar {0}", entry.Name));
+                Log.Error($"Archivos: no se pudo cambiar el estado en la nube de {entry.FullPath}", ex);
+            }
+        }
+        _reload.Stop();
+        _ = LoadAsync(merge: true);
+    }
+
     // ── Menús ───────────────────────────────────────────────────────────────
 
     private static MenuItem Item(string header, SymbolRegular? icon, Action action, bool enabled = true, bool bold = false)
@@ -902,6 +1001,12 @@ public partial class FilesWindow : FluentWindow
                 menu.Items.Add(Item(Loc.T("Pegar en esta carpeta"), SymbolRegular.ClipboardPaste24, () => _ = PasteAsync(first.FullPath)));
             menu.Items.Add(Item(Loc.T("Copiar ruta"), SymbolRegular.DocumentCopy24, () =>
                 Clipboard.SetText(string.Join(Environment.NewLine, selected.Select(s => $"\"{s.FullPath}\"")))));
+            if (CloudPlace(folder) != null && selected.Any(s => s.HasCloudState))
+            {
+                menu.Items.Add(new Separator());
+                menu.Items.Add(Item(Loc.T("Mantener siempre en este dispositivo"), SymbolRegular.CloudCheckmark24, () => SetCloudPin(selected, true)));
+                menu.Items.Add(Item(Loc.T("Liberar espacio"), SymbolRegular.Cloud24, () => SetCloudPin(selected, false)));
+            }
             menu.Items.Add(new Separator());
             menu.Items.Add(Item(Loc.T("Cambiar nombre"), SymbolRegular.Rename24, () => StartRename(first), enabled: selected.Count == 1));
             menu.Items.Add(Item(Loc.T("Enviar a la Papelera"), SymbolRegular.Delete24, () => _ = RecycleSelectionAsync()));
@@ -1182,6 +1287,27 @@ public partial class FilesWindow : FluentWindow
         if (((FrameworkElement)sender).DataContext is Place place)
             Navigate(place.Path);
     }
+
+    /// <summary>Clic derecho en una ubicación de red recordada: quitarla de la lista.</summary>
+    private void Place_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        var button = (FrameworkElement)sender;
+        if (button.DataContext is not Place { CanForget: true } place)
+        {
+            e.Handled = true;
+            return;
+        }
+        button.ContextMenu!.Items.Clear();
+        button.ContextMenu.Items.Add(Item(Loc.T("Quitar de la lista"), SymbolRegular.Dismiss24, () =>
+        {
+            ForgetNetwork(place);
+            _ = LoadDrivesAsync();
+        }));
+    }
+
+    /// <summary>"Conectar unidad de red" de Windows, en su propio proceso.</summary>
+    private void ConnectDrive_Click(object sender, RoutedEventArgs e) =>
+        FileOperations.ConnectNetworkDrive();
 
     private void Recent_Click(object sender, RoutedEventArgs e)
     {

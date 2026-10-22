@@ -6,6 +6,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Añadido
+- **Archivos reemplaza al Explorador dentro de Strata UI**: Win+E, el botón Explorador y las carpetas
+  del menú Inicio y de Win+X abren Archivos (Hub › General para volver al Explorador de Windows).
+- **Visor de Archivos** para imágenes, video y audio: la imagen se ajusta a la ventana, la rueda
+  acerca donde está el mouse, se arrastra para moverla, doble clic para el tamaño real, girar y la
+  orientación de las fotos del celular. Video y audio con controles que se ocultan solos, volumen y
+  pantalla completa. Las flechas pasan al anterior o al siguiente de la carpeta.
+- **Nube en Archivos**: OneDrive (personal y de trabajo), Google Drive, Dropbox e iCloud Drive en la
+  barra lateral, con el estado de cada archivo (solo en línea, en el equipo o siempre en el
+  dispositivo) y "Mantener siempre en este dispositivo" / "Liberar espacio". Las miniaturas no
+  descargan archivos que están solo en la nube.
+- **Red en Archivos**: carpetas compartidas (`\servidorecurso`, y escribir `\servidor` lista sus
+  carpetas), unidades de red y "Conectar unidad de red"; las carpetas de red visitadas quedan en la
+  barra lateral.
+
 ### Cambiado
 - **Notificaciones agrupadas, más limpias**: cada app es una sola tarjeta con su ícono, nombre, hora
   y una píldora con cuántas hay; al desplegarla, las demás aparecen dentro de la misma tarjeta, con

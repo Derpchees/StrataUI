@@ -171,6 +171,25 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Marca del estado en la nube sobre el ícono: nube (solo en línea) o visto verde (en el equipo;
+             relleno si está fijado), como en el Explorador -->
+        <Style x:Key="CloudBadge" TargetType="ui:SymbolIcon">
+            <Setter Property="Symbol" Value="CheckmarkCircle24" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+            <Setter Property="Visibility" Value="{Binding HasCloudState, Converter={StaticResource BoolToVis}}" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Bottom" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Cloud}" Value="OnlineOnly">
+                    <Setter Property="Symbol" Value="Cloud24" />
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Cloud}" Value="Pinned">
+                    <Setter Property="Filled" Value="True" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
         <Style x:Key="RenameBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
             <Setter Property="Padding" Value="6,3" />
             <Setter Property="MinHeight" Value="0" />
@@ -188,8 +207,11 @@
                     <ColumnDefinition Width="170" />
                     <ColumnDefinition Width="90" />
                 </Grid.ColumnDefinitions>
-                <Image Source="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Left"
-                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <Grid Width="24" Height="22" HorizontalAlignment="Left">
+                    <Image Source="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Left" VerticalAlignment="Top"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="11" Margin="0,0,-1,-1" />
+                </Grid>
                 <Grid Margin="32,0,12,0">
                     <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
@@ -227,6 +249,7 @@
                         Visibility="{Binding HasThumbnail, Converter={StaticResource BoolToVis}}" ClipToBounds="True">
                     <Image Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                 </Border>
+                <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="16" Margin="0,0,14,6" />
                 <Grid Grid.Row="1" Margin="0,8,0,0">
                     <TextBlock Text="{Binding Name}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="34"
                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
@@ -236,9 +259,28 @@
             </Grid>
         </DataTemplate>
 
+        <!-- Mosaico de la portada: carpeta del usuario, de la nube o de la red -->
+        <DataTemplate x:Key="HomeFolderTemplate">
+            <Button Style="{StaticResource HubTile}" Width="196" Click="Place_Click" ToolTip="{Binding Path}">
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="38" Height="38" CornerRadius="10" Margin="0,0,12,0"
+                            Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                        <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="19" Foreground="{DynamicResource StrataAccentBrush}" />
+                    </Border>
+                    <TextBlock Text="{Binding Name}" FontSize="14" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" MaxWidth="110"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+
         <!-- Lugar de la barra lateral: carpeta con su símbolo o unidad con su ícono y el espacio usado -->
         <DataTemplate x:Key="SidePlaceTemplate">
-            <Button Style="{StaticResource SideItem}" Click="Place_Click" ToolTip="{Binding Path}">
+            <Button Style="{StaticResource SideItem}" Click="Place_Click" ToolTip="{Binding Path}"
+                    ContextMenuOpening="Place_ContextMenuOpening">
+                <Button.ContextMenu>
+                    <ContextMenu />
+                </Button.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -279,9 +321,24 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
                 <StackPanel Margin="12,4,8,16">
                     <ItemsControl x:Name="SideFolders" ItemTemplate="{StaticResource SidePlaceTemplate}" />
+                    <TextBlock x:Name="SideCloudTitle" Text="{l:T 'Nube'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                    <ItemsControl x:Name="SideCloud" ItemTemplate="{StaticResource SidePlaceTemplate}" />
                     <TextBlock Text="{l:T 'Unidades'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     <ItemsControl x:Name="SideDrives" ItemTemplate="{StaticResource SidePlaceTemplate}" />
+                    <TextBlock Text="{l:T 'Red'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ItemsControl x:Name="SideNetwork" ItemTemplate="{StaticResource SidePlaceTemplate}" />
+                    <Button Style="{StaticResource SideItem}" Click="ConnectDrive_Click"
+                            ToolTip="{l:T 'Asigna una letra a una carpeta compartida de la red. También puedes escribir \\\\servidor en la ruta.'}">
+                        <StackPanel Orientation="Horizontal" Margin="0,9">
+                            <ui:SymbolIcon Symbol="PlugConnected24" FontSize="17" Margin="0,0,12,0"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{l:T 'Conectar unidad de red'}" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </ScrollViewer>
 
@@ -433,27 +490,22 @@
                             <StackPanel Margin="24,18,24,24">
                                 <TextBlock Text="{l:T 'Carpetas'}" FontSize="14" FontWeight="SemiBold" Margin="2,0,0,10"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                <ItemsControl x:Name="HomeFolders">
+                                <ItemsControl x:Name="HomeFolders" ItemTemplate="{StaticResource HomeFolderTemplate}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <WrapPanel />
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource HubTile}" Width="196" Click="Place_Click" ToolTip="{Binding Path}">
-                                                <StackPanel Orientation="Horizontal">
-                                                    <Border Width="38" Height="38" CornerRadius="10" Margin="0,0,12,0"
-                                                            Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                                                        <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="19" Foreground="{DynamicResource StrataAccentBrush}" />
-                                                    </Border>
-                                                    <TextBlock Text="{Binding Name}" FontSize="14" VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis" MaxWidth="110"
-                                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                </StackPanel>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock x:Name="HomeCloudTitle" Text="{l:T 'Nube'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,10"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" Visibility="Collapsed" />
+                                <ItemsControl x:Name="HomeCloud" ItemTemplate="{StaticResource HomeFolderTemplate}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
                                 </ItemsControl>
 
                                 <TextBlock Text="{l:T 'Unidades'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,10"
@@ -494,6 +546,16 @@
                                             </Button>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock x:Name="HomeNetworkTitle" Text="{l:T 'Red'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,10"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" Visibility="Collapsed" />
+                                <ItemsControl x:Name="HomeNetwork" ItemTemplate="{StaticResource HomeFolderTemplate}" Visibility="Collapsed">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
                                 </ItemsControl>
 
                                 <TextBlock x:Name="RecentTitle" Text="{l:T 'Recientes'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,8"

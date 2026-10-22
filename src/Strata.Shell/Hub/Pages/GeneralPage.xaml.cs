@@ -16,6 +16,7 @@ public partial class GeneralPage : Page
         InitializeComponent();
         AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
         HubAtStartupSwitch.IsChecked = Settings.Current.HubAtStartup;
+        ReplaceExplorerSwitch.IsChecked = Settings.Current.FilesReplaceExplorer;
         VersionText.Text = $"Strata UI v{App.Version}";
         DataPathText.Text = DataFolder;
         foreach (var code in Services.Localization.Loc.Translated)
@@ -64,6 +65,9 @@ public partial class GeneralPage : Page
 
     private void HubAtStartup_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.HubAtStartup = HubAtStartupSwitch.IsChecked == true);
+
+    private void ReplaceExplorer_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.FilesReplaceExplorer = ReplaceExplorerSwitch.IsChecked == true);
 
     private void OpenData_Click(object sender, RoutedEventArgs e)
     {

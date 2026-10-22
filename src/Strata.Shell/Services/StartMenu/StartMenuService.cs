@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using Strata.Shell.Services.Files;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -693,11 +694,30 @@ public static class StartMenuService
         }
     }
 
-    public static void OpenFolder(Environment.SpecialFolder folder) =>
-        Process.Start(new ProcessStartInfo(Environment.GetFolderPath(folder)) { UseShellExecute = true });
+    public static void OpenFolder(Environment.SpecialFolder folder) => OpenPath(Environment.GetFolderPath(folder));
 
-    public static void OpenDownloads() =>
-        Process.Start(new ProcessStartInfo("shell:Downloads") { UseShellExecute = true });
+    public static void OpenDownloads() => OpenPath("shell:Downloads");
+
+    /// <summary>
+    /// Abre una carpeta (o muestra un archivo seleccionado en la suya) en Archivos de Strata UI o, si
+    /// se eligió el de Windows (o es una ruta shell: que Archivos no lee), en el Explorador.
+    /// </summary>
+    public static void OpenPath(string? path, bool select = false)
+    {
+        if (path is "shell:Downloads" && Settings.Current.FilesReplaceExplorer)
+            path = Places.Downloads;
+        if (Settings.Current.FilesReplaceExplorer && (path is null || !path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase)))
+        {
+            App.Current.OpenFiles(path);
+            return;
+        }
+        if (path is null)
+            Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+        else if (select)
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+        else
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+    }
 
     // ── Energía ─────────────────────────────────────────────────────────────
 

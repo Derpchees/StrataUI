@@ -7,10 +7,13 @@ using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services.Files;
 
+/// <summary>Estado de un archivo en una carpeta de la nube (OneDrive, Google Drive…).</summary>
+public enum CloudState { None, OnlineOnly, Local, Pinned }
+
 /// <summary>Un archivo o carpeta del explorador de Strata UI. El ícono y la miniatura llegan después.</summary>
 public sealed class FileEntry : INotifyPropertyChanged
 {
-    public FileEntry(FileSystemInfo info, string typeName)
+    public FileEntry(FileSystemInfo info, string typeName, bool inCloud = false)
     {
         Name = info.Name;
         FullPath = info.FullName;
@@ -19,7 +22,38 @@ public sealed class FileEntry : INotifyPropertyChanged
         Modified = info.LastWriteTime;
         Attributes = info.Attributes;
         TypeName = typeName;
+        Cloud = CloudOf(Attributes, inCloud);
     }
+
+    /// <summary>Una carpeta compartida de un servidor (\\servidor\recurso): sin fecha ni tamaño.</summary>
+    public FileEntry(string name, string path, string typeName)
+    {
+        Name = name;
+        FullPath = path;
+        IsFolder = true;
+        Size = -1;
+        Attributes = FileAttributes.Directory;
+        TypeName = typeName;
+    }
+
+    // Atributos de los archivos de la nube (los mismos que mira el Explorador).
+    private const FileAttributes Pinned = (FileAttributes)0x80000, RecallOnOpen = (FileAttributes)0x40000,
+                                 RecallOnDataAccess = (FileAttributes)0x400000;
+
+    /// <summary>
+    /// Solo en línea si leerlo lo descargaría; "siempre en este dispositivo" si está fijado; si no, y
+    /// la carpeta es de la nube, disponible en el equipo.
+    /// </summary>
+    internal static CloudState CloudOf(FileAttributes attributes, bool inCloud) =>
+        (attributes & (RecallOnDataAccess | RecallOnOpen | FileAttributes.Offline)) != 0 ? CloudState.OnlineOnly
+        : (attributes & Pinned) != 0 ? CloudState.Pinned
+        : inCloud ? CloudState.Local
+        : CloudState.None;
+
+    public CloudState Cloud { get; }
+    /// <summary>Leerlo lo descargaría: no se leen su miniatura ni su ícono propio.</summary>
+    public bool IsOnlineOnly => Cloud == CloudState.OnlineOnly;
+    public bool HasCloudState => Cloud != CloudState.None;
 
     public string Name { get; }
     public string FullPath { get; }
@@ -33,7 +67,7 @@ public sealed class FileEntry : INotifyPropertyChanged
     public bool IsHidden => (Attributes & FileAttributes.Hidden) != 0;
 
     public string SizeText => IsFolder ? "" : FormatSize(Size);
-    public string ModifiedText => Modified.ToString("g", CultureInfo.CurrentCulture);
+    public string ModifiedText => Modified == default ? "" : Modified.ToString("g", CultureInfo.CurrentCulture);
 
     private ImageSource? _icon;
     public ImageSource? Icon

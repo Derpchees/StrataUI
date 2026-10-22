@@ -114,7 +114,7 @@ public static class AppActions
         var path = app.IsFile ? app.Id : ShortcutPath(app) ?? TargetPath(app);
         if (path is null)
             return;
-        Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+        StartMenuService.OpenPath(path, select: true);
     }
 
     /// <summary>

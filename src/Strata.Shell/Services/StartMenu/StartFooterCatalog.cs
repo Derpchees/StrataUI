@@ -28,7 +28,7 @@ public static class StartFooterCatalog
         new("Restart", Loc.T("Reiniciar"), SymbolRegular.ArrowClockwise24, StartMenuService.Restart),
         new("Shutdown", Loc.T("Apagar"), SymbolRegular.Power24, StartMenuService.PowerOff),
         new("SignOut", Loc.T("Cerrar sesión"), SymbolRegular.SignOut24, StartMenuService.SignOut),
-        new("Explorer", Loc.T("Explorador de archivos"), SymbolRegular.Folder24, () => Open("explorer.exe")),
+        new("Explorer", Loc.T("Explorador de archivos"), SymbolRegular.Folder24, () => StartMenuService.OpenPath(null)),
         new("StrataFiles", Loc.T("Archivos de Strata UI"), SymbolRegular.FolderOpen24, () => App.Current.OpenFiles()),
         new("Documents", Loc.T("Documentos"), SymbolRegular.Document24, () => StartMenuService.OpenFolder(Environment.SpecialFolder.MyDocuments)),
         new("Downloads", Loc.T("Descargas"), SymbolRegular.ArrowDownload24, StartMenuService.OpenDownloads),

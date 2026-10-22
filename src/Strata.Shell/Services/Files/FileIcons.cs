@@ -86,8 +86,9 @@ public static class FileIcons
         return result.Task;
     }
 
+    /// <summary>Una imagen que se puede leer sin descargarla de la nube.</summary>
     public static bool IsPicture(FileEntry entry) =>
-        !entry.IsFolder && Pictures.Contains(entry.Extension) && entry.Size is > 0 and < MaxThumbnailBytes;
+        !entry.IsFolder && !entry.IsOnlineOnly && Pictures.Contains(entry.Extension) && entry.Size is > 0 and < MaxThumbnailBytes;
 
     private static void Deliver(List<(FileEntry Entry, ImageSource? Icon, ImageSource? Thumbnail)> batch, Dispatcher ui, CancellationToken token)
     {
@@ -120,9 +121,10 @@ public static class FileIcons
     private static ImageSource? IconOf(FileEntry entry)
     {
         // Las carpetas con desktop.ini (solo lectura o de sistema) pueden tener su propio ícono.
-        bool own = entry.IsFolder
+        // Solo en línea: leer su ícono propio lo descargaría (el de su tipo alcanza).
+        bool own = !entry.IsOnlineOnly && (entry.IsFolder
             ? (entry.Attributes & (FileAttributes.ReadOnly | FileAttributes.System)) != 0
-            : PerFile.Contains(entry.Extension);
+            : PerFile.Contains(entry.Extension));
         string key = own ? entry.FullPath : entry.IsFolder ? "<carpeta>" : entry.Extension is { Length: > 0 } ext ? ext : "<sin extensión>";
         if (Icons.TryGetValue(key, out var cached))
             return cached;

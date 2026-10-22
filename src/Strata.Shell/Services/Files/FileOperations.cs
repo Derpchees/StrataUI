@@ -122,6 +122,9 @@ public static class FileOperations
     /// <summary>"Abrir con…" de Windows, en su propio proceso.</summary>
     public static void OpenWith(string path) => Start("rundll32.exe", $"shell32.dll,OpenAs_RunDLL {path}");
 
+    /// <summary>"Conectar unidad de red" de Windows (asignar una letra a \\servidor\recurso).</summary>
+    public static void ConnectNetworkDrive() => Start("rundll32.exe", "shell32.dll,SHHelpShortcuts_RunDLL Connect");
+
     /// <summary>Muestra la carpeta (o el archivo seleccionado) en el Explorador de Windows.</summary>
     public static void ShowInExplorer(string path, bool select) =>
         Start("explorer.exe", select ? $"/select,\"{path}\"" : $"\"{path}\"");

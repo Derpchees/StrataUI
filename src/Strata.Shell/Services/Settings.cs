@@ -249,6 +249,13 @@ public sealed class StrataSettings
     public bool FilesGridView { get; set; }
     /// <summary>El explorador muestra los archivos y carpetas ocultos.</summary>
     public bool FilesShowHidden { get; set; }
+    /// <summary>
+    /// Win+E, el botón Explorador y las carpetas de Inicio y Win+X abren Archivos en lugar del
+    /// Explorador de Windows (fuera de Strata UI, Windows sigue usando el suyo).
+    /// </summary>
+    public bool FilesReplaceExplorer { get; set; } = true;
+    /// <summary>Carpetas de red visitadas (\\servidor\recurso), para la barra lateral de Archivos.</summary>
+    public List<string> FilesNetworkPlaces { get; set; } = [];
 
     // Módulos del área de estado
     public bool ShowNetworkModule { get; set; } = true;

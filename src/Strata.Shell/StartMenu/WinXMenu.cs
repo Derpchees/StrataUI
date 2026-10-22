@@ -31,7 +31,7 @@ public static class WinXMenu
         menu.Items.Add(new Separator());
         Add(menu, Loc.T("Administrador de tareas"), () => Open("taskmgr.exe"));
         Add(menu, Loc.T("Configuración"), () => Open("ms-settings:"));
-        Add(menu, Loc.T("Explorador de archivos"), () => Open("explorer.exe"));
+        Add(menu, Loc.T("Explorador de archivos"), () => Services.StartMenu.StartMenuService.OpenPath(null));
         Add(menu, Loc.T("Buscar"), () => StartMenuLauncher.Toggle(startButton));
         Add(menu, Loc.T("Ejecutar"), RunDialog);
         menu.Items.Add(new Separator());

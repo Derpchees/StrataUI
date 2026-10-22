@@ -33,6 +33,17 @@
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="FolderOpen24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Usar Archivos de Strata UI como explorador'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Win+E, el botón Explorador y las carpetas del menú Inicio y de Win+X abren Archivos. Apagado, abren el Explorador de Windows.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="ReplaceExplorerSwitch" Click="ReplaceExplorer_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="LocalLanguage24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>

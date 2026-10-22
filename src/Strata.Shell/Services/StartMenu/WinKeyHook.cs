@@ -18,7 +18,7 @@ public static class WinKeyHook
 {
     private const int WhKeyboardLl = 13;
     private const int WmKeyDown = 0x0100, WmKeyUp = 0x0101, WmSysKeyDown = 0x0104, WmSysKeyUp = 0x0105;
-    private const int VkLWin = 0x5B, VkRWin = 0x5C, VkMask = 0xFF, VkX = 0x58, VkN = 0x4E;
+    private const int VkLWin = 0x5B, VkRWin = 0x5C, VkMask = 0xFF, VkX = 0x58, VkN = 0x4E, VkE = 0x45;
     private const int VkCapital = 0x14, VkNumLock = 0x90, VkScroll = 0x91;
     private const int VkVolumeMute = 0xAD, VkVolumeDown = 0xAE, VkVolumeUp = 0xAF;
     private const uint LlkhfInjected = 0x10;
@@ -35,6 +35,7 @@ public static class WinKeyHook
     private static bool _maskOnRelease;
     private static volatile bool _handleWin;
     private static volatile bool _handleWinN;
+    private static volatile bool _handleWinE;
     private static volatile bool _watchLocks;
 
     /// <summary>Win se pulsó y soltó sola (se invoca en el hilo de la UI).</summary>
@@ -45,6 +46,9 @@ public static class WinKeyHook
 
     /// <summary>Win+N: el centro de notificaciones (se invoca en el hilo de la UI).</summary>
     public static event Action? WinNPressed;
+
+    /// <summary>Win+E con Archivos en lugar del Explorador.</summary>
+    public static event Action? WinEPressed;
 
     /// <summary>Se soltó Bloq Mayús, Bloq Num o Bloq Despl (código de tecla; en el hilo de la UI).</summary>
     public static event Action<int>? LockKeyPressed;
@@ -64,12 +68,14 @@ public static class WinKeyHook
     /// <param name="winKey">Tecla Windows sola y Win+X (menú Inicio de Strata UI).</param>
     /// <param name="winN">Win+N (centro de notificaciones de Strata UI).</param>
     /// <param name="lockKeys">OSD: avisar de las teclas de bloqueo (sin interceptarlas) y atender las de volumen.</param>
-    public static void Update(bool winKey, bool winN, bool lockKeys = false)
+    /// <param name="winE">Win+E (Archivos de Strata UI).</param>
+    public static void Update(bool winKey, bool winN, bool lockKeys = false, bool winE = false)
     {
         _handleWin = winKey;
         _handleWinN = winN;
+        _handleWinE = winE;
         _watchLocks = lockKeys;
-        bool enabled = winKey || winN || lockKeys;
+        bool enabled = winKey || winN || lockKeys || winE;
         if (enabled && _thread == null)
         {
             var ready = new ManualResetEventSlim();
@@ -145,6 +151,13 @@ public static class WinKeyHook
                     // Igual que Win+X: la N no llega a Windows y se enmascara al soltar Win.
                     _comboUsed = _maskOnRelease = true;
                     System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => WinNPressed?.Invoke());
+                    return (IntPtr)1;
+                }
+                else if (!isWin && down && _winDown && info.VkCode == VkE && _handleWinE)
+                {
+                    // Como Win+N: la E no llega a Windows (no abre su Explorador).
+                    _comboUsed = _maskOnRelease = true;
+                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => WinEPressed?.Invoke());
                     return (IntPtr)1;
                 }
                 else if (!isWin && down && _winDown && info.VkCode == VkX && _handleWin)
