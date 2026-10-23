@@ -122,6 +122,20 @@ public static class Places
                 // Una lectora sin disco o una unidad de red caída: no se muestra.
             }
         }
+        var connected = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Network)
+                                 .Select(d => d.Name[..1].ToUpperInvariant()).ToHashSet();
+        try
+        {
+            foreach (var saved in SavedNetwork(connected))
+            {
+                if (!network.Any(p => string.Equals(p.Path, saved.Path, StringComparison.OrdinalIgnoreCase)))
+                    network.Add(saved);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            Log.Info($"Archivos: no se pudieron leer las ubicaciones de red ({ex.Message.Trim()})");
+        }
         foreach (var unc in rememberedNetwork)
         {
             if (network.Any(p => string.Equals(p.Path, unc, StringComparison.OrdinalIgnoreCase)))
@@ -132,53 +146,76 @@ public static class Places
     }
 
     /// <summary>
-    /// Carpetas sincronizadas con la nube: OneDrive (personal y de cada cuenta de trabajo), Dropbox e
-    /// iCloud Drive. Google Drive monta su propia unidad (ver <see cref="Storage"/>).
+    /// Carpetas sincronizadas con la nube: las que un proveedor instalado (OneDrive, Dropbox, iCloud,
+    /// Box…) registró como raíz de sincronización de Windows. Si se desinstala, su carpeta queda en
+    /// el disco pero sale del registro, y ya no se muestra como nube. Google Drive monta su propia
+    /// unidad (ver <see cref="Storage"/>).
     /// </summary>
     public static List<Place> CloudFolders()
     {
-        var found = new List<(string Name, string Path)>();
+        var found = new List<string>();
         try
         {
-            using var accounts = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\OneDrive\Accounts");
-            foreach (var name in accounts?.GetSubKeyNames() ?? [])
+            string? user = System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value;
+            using var manager = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\SyncRootManager");
+            foreach (var name in manager?.GetSubKeyNames() ?? [])
             {
-                using var account = accounts!.OpenSubKey(name);
-                if (account?.GetValue("UserFolder") is string folder && folder.Length > 0)
-                    found.Add((name.Equals("Personal", StringComparison.OrdinalIgnoreCase) ? "OneDrive" : Path.GetFileName(folder), folder));
+                using var roots = manager!.OpenSubKey(name + @"\UserSyncRoots");
+                if (roots is null)
+                    continue;
+                foreach (var value in roots.GetValueNames())
+                {
+                    if ((user is null || value.Equals(user, StringComparison.OrdinalIgnoreCase))
+                        && roots.GetValue(value) is string folder && folder.Length > 0)
+                        found.Add(folder);
+                }
             }
         }
         catch (Exception ex) when (ex is System.Security.SecurityException or IOException or UnauthorizedAccessException)
         {
         }
-        foreach (var variable in new[] { "OneDriveConsumer", "OneDriveCommercial", "OneDrive" })
+        return found.Where(Directory.Exists)
+                    .DistinctBy(f => f.TrimEnd('\\').ToLowerInvariant())
+                    .Select(f => new Place(CloudName(f), f.TrimEnd('\\'), SymbolRegular.Cloud24) { IsCloud = true })
+                    .ToList();
+    }
+
+    /// <summary>"OneDrive", "OneDrive - Empresa", "Dropbox"…: el nombre de su carpeta, salvo los que lo abrevian.</summary>
+    internal static string CloudName(string folder) => Path.GetFileName(folder.TrimEnd('\\')) switch
+    {
+        "iCloudDrive" => "iCloud Drive",
+        var name => name,
+    };
+
+    /// <summary>
+    /// Ubicaciones de red de Este equipo (accesos directos de "Network Shortcuts") y unidades de red
+    /// que Windows recuerda pero no están conectadas. No se comprueban: se ve al abrirlas.
+    /// </summary>
+    private static IEnumerable<Place> SavedNetwork(IReadOnlyCollection<string> connectedLetters)
+    {
+        string shortcuts = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                                        "Microsoft", "Windows", "Network Shortcuts");
+        if (Directory.Exists(shortcuts))
         {
-            if (Environment.GetEnvironmentVariable(variable) is { Length: > 0 } folder)
-                found.Add((variable == "OneDriveCommercial" ? Path.GetFileName(folder) : "OneDrive", folder));
-        }
-        // Dropbox anota sus carpetas (personal y de empresa) en info.json.
-        try
-        {
-            string info = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Dropbox", "info.json");
-            if (File.Exists(info))
+            foreach (var folder in Directory.EnumerateDirectories(shortcuts))
             {
-                using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(info));
-                foreach (var account in doc.RootElement.EnumerateObject())
-                {
-                    if (account.Value.TryGetProperty("path", out var path) && path.GetString() is { Length: > 0 } folder)
-                        found.Add((Path.GetFileName(folder), folder));
-                }
+                string link = Path.Combine(folder, "target.lnk");
+                if (File.Exists(link) && StartMenu.ExtraApps.ShortcutTarget(link) is { Length: > 2 } target && target.StartsWith(@"\\"))
+                    yield return new Place(Path.GetFileName(folder), target, SymbolRegular.Globe24) { Detail = target };
             }
         }
-        catch (Exception ex) when (ex is IOException or System.Text.Json.JsonException or UnauthorizedAccessException or InvalidOperationException)
+        using var mapped = Registry.CurrentUser.OpenSubKey("Network");
+        foreach (var letter in mapped?.GetSubKeyNames() ?? [])
         {
+            if (connectedLetters.Contains(letter.ToUpperInvariant()))
+                continue;
+            using var drive = mapped!.OpenSubKey(letter);
+            if (drive?.GetValue("RemotePath") is string remote && remote.StartsWith(@"\\"))
+                yield return new Place($"{NameOf(remote)} ({letter.ToUpperInvariant()}:)", remote, SymbolRegular.Server24)
+                {
+                    Detail = Loc.T("Desconectada"),
+                };
         }
-        found.Add(("iCloud Drive", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "iCloudDrive")));
-
-        return found.Where(f => Directory.Exists(f.Path))
-                    .DistinctBy(f => f.Path.TrimEnd('\\').ToLowerInvariant())
-                    .Select(f => new Place(f.Name, f.Path.TrimEnd('\\'), SymbolRegular.Cloud24) { IsCloud = true })
-                    .ToList();
     }
 
     /// <summary>Ruta de red "\\servidor" (sin recurso): se listan sus carpetas compartidas.</summary>

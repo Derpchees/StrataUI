@@ -130,6 +130,18 @@ public partial class App : Application
             Shutdown(Services.StartMenu.ExplorerMenu.RunRequest(e.Args));
             return;
         }
+        // Carátulas de Archivos (video, música, PDF…), en un proceso aparte.
+        if (e.Args.Length > 0 && e.Args[0] == Services.Files.ThumbnailHost.Arg)
+        {
+            Shutdown(Services.Files.ThumbnailHost.Run());
+            return;
+        }
+        // Menú contextual de Windows de Archivos ("Mostrar más opciones"), en un proceso aparte.
+        if (e.Args.Length > 0 && e.Args[0] == Services.Files.ShellMenu.Arg)
+        {
+            Shutdown(Services.Files.ShellMenu.Run(e.Args));
+            return;
+        }
         // Diálogo de abrir archivo o carpeta en un proceso aparte (ver Services/FilePicker).
         if (e.Args.Length > 0 && e.Args[0] == FilePicker.Arg)
         {

@@ -63,6 +63,7 @@ public partial class FilesWindow : FluentWindow
     {
         InitializeComponent();
         FluentBackdrop.Follow(this);
+        SourceInitialized += (_, _) => Controls.FilesIcon.ApplyAppId(new WindowInteropHelper(this).Handle);
         _home = new Place(Loc.T("Este equipo"), null, SymbolRegular.Home24);
         _folders = Places.Folders();
         SideFolders.ItemsSource = new[] { _home }.Concat(_folders).ToList();
@@ -83,6 +84,8 @@ public partial class FilesWindow : FluentWindow
 
         BuildHeader();
         HiddenToggle.IsChecked = Settings.Current.FilesShowHidden;
+        FileEntry.ShowExtensions = Settings.Current.FilesShowExtensions;
+        ExtensionsToggle.IsChecked = FileEntry.ShowExtensions;
         ApplyView();
         foreach (var list in new[] { DetailsList, GridList })
         {
@@ -222,10 +225,21 @@ public partial class FilesWindow : FluentWindow
 
         bool hidden = Settings.Current.FilesShowHidden;
         bool inCloud = CloudPlace(path) != null;
+        RetryButton.Visibility = Visibility.Collapsed;
         List<FileEntry> fresh;
         try
         {
-            fresh = await Task.Run(() => Places.IsServer(path) ? ReadServer(path) : Read(path, hidden, inCloud), cts.Token);
+            var read = Task.Run(() => Places.IsServer(path) ? ReadServer(path) : Read(path, hidden, inCloud), cts.Token);
+            // Una carpeta de red sin conexión puede tardar mucho en fallar: se avisa y se deja de esperar.
+            if (await Task.WhenAny(read, Task.Delay(400, cts.Token)) != read && !merge && !cts.IsCancellationRequested)
+                ShowConnecting(path);
+            if (await Task.WhenAny(read, Task.Delay(TimeSpan.FromSeconds(10), cts.Token)) != read)
+            {
+                if (!cts.IsCancellationRequested)
+                    ShowNoResponse(path);
+                return;
+            }
+            fresh = await read;
         }
         catch (OperationCanceledException)
         {
@@ -477,6 +491,8 @@ public partial class FilesWindow : FluentWindow
         CutButton.IsEnabled = CopyButton.IsEnabled = DeleteButton.IsEnabled = selected > 0;
         RenameButton.IsEnabled = selected == 1;
         SortButton.IsEnabled = inFolder;
+        // En Este equipo no hay orden ni vista que cambiar.
+        ViewControls.Visibility = inFolder ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ShowHome(bool animate)
@@ -505,6 +521,30 @@ public partial class FilesWindow : FluentWindow
         if (animate)
             Motion.In(Body, Body, TaskbarPosition.Bottom, 0.5);
     }
+
+    /// <summary>El host de una ruta de red ("10.50.0.200" de "\\\\10.50.0.200\\Compartida"); null si es local.</summary>
+    private static string? HostOf(string path) =>
+        path.StartsWith(@"\\") ? path[2..].Split('\\')[0] : null;
+
+    private void ShowConnecting(string path)
+    {
+        HomePanel.Visibility = DetailsPanel.Visibility = GridList.Visibility = Visibility.Collapsed;
+        EmptyIcon.Symbol = SymbolRegular.PlugConnected24;
+        EmptyTitle.Text = HostOf(path) is { } host ? Loc.F("Conectando con {0}…", host) : Loc.T("Abriendo…");
+        EmptyText.Text = "";
+        EmptyState.Visibility = Visibility.Visible;
+        StatusText.Text = "";
+    }
+
+    private void ShowNoResponse(string path)
+    {
+        ShowError(HostOf(path) is { } host
+            ? Loc.F("{0} no responde. Revisa que estés en la misma red (o conectado a la VPN) y vuelve a intentar.", host)
+            : Loc.T("La carpeta tarda demasiado en responder."));
+        RetryButton.Visibility = Visibility.Visible;
+    }
+
+    private void Retry_Click(object sender, RoutedEventArgs e) => _ = LoadAsync(merge: false);
 
     private void ShowError(string message)
     {
@@ -797,6 +837,9 @@ public partial class FilesWindow : FluentWindow
             return;
         entry.IsRenaming = false;
         string name = box.Text.Trim();
+        // Con la extensión oculta se escribió el nombre sin ella: se conserva la que tenía.
+        if (name.Length > 0 && entry.DisplayName != entry.Name)
+            name += entry.Extension;
         // Devuelve el foco a la lista para seguir con el teclado.
         Dispatcher.BeginInvoke(() => (ActiveList.ItemContainerGenerator.ContainerFromItem(entry) as ListBoxItem ?? (UIElement)ActiveList).Focus(),
                                DispatcherPriority.Input);
@@ -985,6 +1028,8 @@ public partial class FilesWindow : FluentWindow
             return;
         }
         bool onItem = Ancestor<ListBoxItem>(e.OriginalSource as DependencyObject) != null;
+        // El menú de Windows ("Mostrar más opciones") sale donde se abrió este.
+        var (x, y) = ShellMenu.Cursor();
         if (!onItem)
             list.UnselectAll();
         var selected = SelectedEntries;
@@ -1013,6 +1058,9 @@ public partial class FilesWindow : FluentWindow
             menu.Items.Add(new Separator());
             menu.Items.Add(Item(Loc.T("Mostrar en el Explorador de Windows"), SymbolRegular.FolderOpen24,
                                 () => FileOperations.ShowInExplorer(first.FullPath, select: true)));
+            menu.Items.Add(new Separator());
+            menu.Items.Add(Item(Loc.T("Mostrar más opciones"), SymbolRegular.MoreHorizontal24,
+                                () => ShellMenu.Show(selected.Select(s => s.FullPath).ToList(), background: false, x, y)));
         }
         else
         {
@@ -1031,11 +1079,20 @@ public partial class FilesWindow : FluentWindow
             var hidden = Item(Loc.T("Mostrar archivos ocultos"), SymbolRegular.Eye24, () => SetShowHidden(!Settings.Current.FilesShowHidden));
             hidden.IsChecked = Settings.Current.FilesShowHidden;
             menu.Items.Add(hidden);
+            var extensions = Item(Loc.T("Mostrar las extensiones de los archivos"), null, () => SetShowExtensions(!FileEntry.ShowExtensions));
+            extensions.IsChecked = FileEntry.ShowExtensions;
+            menu.Items.Add(extensions);
             menu.Items.Add(Item(Loc.T("Actualizar"), SymbolRegular.ArrowClockwise24, () => _ = LoadAsync(merge: true)));
             menu.Items.Add(new Separator());
             menu.Items.Add(Item(Loc.T("Abrir en el Explorador de Windows"), SymbolRegular.FolderOpen24,
                                 () => FileOperations.ShowInExplorer(folder, select: false)));
             menu.Items.Add(Item(Loc.T("Abrir terminal aquí"), SymbolRegular.WindowConsole20, () => FileOperations.OpenTerminal(folder)));
+            if (!Places.IsServer(folder))
+            {
+                menu.Items.Add(new Separator());
+                menu.Items.Add(Item(Loc.T("Mostrar más opciones"), SymbolRegular.MoreHorizontal24,
+                                    () => ShellMenu.Show([folder], background: true, x, y)));
+            }
         }
     }
 
@@ -1267,6 +1324,20 @@ public partial class FilesWindow : FluentWindow
     private void DetailsView_Click(object sender, RoutedEventArgs e) => SetGridView(false);
     private void GridView_Click(object sender, RoutedEventArgs e) => SetGridView(true);
     private void Hidden_Click(object sender, RoutedEventArgs e) => SetShowHidden(HiddenToggle.IsChecked == true);
+    private void Extensions_Click(object sender, RoutedEventArgs e) => SetShowExtensions(ExtensionsToggle.IsChecked == true);
+
+    /// <summary>Muestra u oculta las extensiones en todas las ventanas abiertas de Archivos.</summary>
+    private static void SetShowExtensions(bool show)
+    {
+        FileEntry.ShowExtensions = show;
+        Settings.Update(s => s.FilesShowExtensions = show);
+        foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
+        {
+            window.ExtensionsToggle.IsChecked = show;
+            foreach (var entry in window._entries)
+                entry.RefreshName();
+        }
+    }
 
     private void Rename_Click(object sender, RoutedEventArgs e)
     {
@@ -1377,12 +1448,14 @@ public partial class FilesWindow : FluentWindow
     {
         if (sender is not TextBox box || !box.IsVisible || box.DataContext is not FileEntry entry)
             return;
-        box.Text = entry.Name;
+        box.Text = entry.DisplayName;
         Dispatcher.BeginInvoke(() =>
         {
             box.Focus();
             // Sin la extensión, para no cambiarla sin querer.
-            int length = entry.IsFolder || entry.Extension.Length == 0 ? entry.Name.Length : entry.Name.Length - entry.Extension.Length;
+            int length = entry.IsFolder || entry.DisplayName != entry.Name || entry.Extension.Length == 0
+                ? entry.DisplayName.Length
+                : entry.Name.Length - entry.Extension.Length;
             box.Select(0, length);
         }, DispatcherPriority.Input);
     }

@@ -1134,5 +1134,12 @@
   "Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.": "Conecte outra saída (um monitor com alto-falantes, fones…) para tocar nas duas.",
   "En pausa: es la salida principal": "Em pausa: é a saída principal",
   "La salida elegida no está conectada": "A saída escolhida não está conectada",
-  "Sonar también en": "Tocar também em"
+  "Sonar también en": "Tocar também em",
+  "Mostrar más opciones": "Mostrar mais opções",
+  "Abriendo…": "Abrindo…",
+  "Conectando con {0}…": "Conectando a {0}…",
+  "Desconectada": "Desconectada",
+  "La carpeta tarda demasiado en responder.": "A pasta está demorando demais para responder.",
+  "Mostrar las extensiones de los archivos": "Mostrar extensões de nomes de arquivos",
+  "{0} no responde. Revisa que estés en la misma red (o conectado a la VPN) y vuelve a intentar.": "{0} não responde. Verifique se você está na mesma rede (ou conectado à VPN) e tente de novo."
 }

@@ -1134,5 +1134,12 @@
   "Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.": "Connect another output (a monitor with speakers, headphones…) to play on both.",
   "En pausa: es la salida principal": "Paused: it's the main output",
   "La salida elegida no está conectada": "The chosen output isn't connected",
-  "Sonar también en": "Also play on"
+  "Sonar también en": "Also play on",
+  "Mostrar más opciones": "Show more options",
+  "Abriendo…": "Opening…",
+  "Conectando con {0}…": "Connecting to {0}…",
+  "Desconectada": "Disconnected",
+  "La carpeta tarda demasiado en responder.": "The folder is taking too long to respond.",
+  "Mostrar las extensiones de los archivos": "Show file name extensions",
+  "{0} no responde. Revisa que estés en la misma red (o conectado a la VPN) y vuelve a intentar.": "{0} isn't responding. Check that you're on the same network (or connected to the VPN) and try again."
 }

@@ -1134,5 +1134,12 @@
   "Conecta otra salida (un monitor con parlantes, unos audífonos…) para que suene en las dos.": "Schließe eine weitere Ausgabe an (einen Monitor mit Lautsprechern, Kopfhörer…), um auf beiden abzuspielen.",
   "En pausa: es la salida principal": "Pausiert: Das ist die Hauptausgabe",
   "La salida elegida no está conectada": "Die gewählte Ausgabe ist nicht verbunden",
-  "Sonar también en": "Auch abspielen auf"
+  "Sonar también en": "Auch abspielen auf",
+  "Mostrar más opciones": "Weitere Optionen anzeigen",
+  "Abriendo…": "Wird geöffnet…",
+  "Conectando con {0}…": "Verbindung mit {0}…",
+  "Desconectada": "Getrennt",
+  "La carpeta tarda demasiado en responder.": "Der Ordner braucht zu lange, um zu antworten.",
+  "Mostrar las extensiones de los archivos": "Dateinamenerweiterungen anzeigen",
+  "{0} no responde. Revisa que estés en la misma red (o conectado a la VPN) y vuelve a intentar.": "{0} antwortet nicht. Prüfe, ob du im selben Netzwerk (oder mit dem VPN verbunden) bist, und versuche es erneut."
 }

@@ -249,6 +249,8 @@ public sealed class StrataSettings
     public bool FilesGridView { get; set; }
     /// <summary>El explorador muestra los archivos y carpetas ocultos.</summary>
     public bool FilesShowHidden { get; set; }
+    /// <summary>El explorador muestra las extensiones (".pdf") en los nombres.</summary>
+    public bool FilesShowExtensions { get; set; } = true;
     /// <summary>
     /// Win+E, el botón Explorador y las carpetas de Inicio y Win+X abren Archivos en lugar del
     /// Explorador de Windows (fuera de Strata UI, Windows sigue usando el suyo).

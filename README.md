@@ -194,9 +194,8 @@ and everything goes back to normal.
 
 - Its own **notification center** behind a bell on the taskbar (Win+N), with Do not disturb and a
   calendar on the clock.
-- **Grouped by app** like on your phone: several notifications from the same app, website or web
-  app fold into one stack with the newest on top. Tap the stack to see them all, or clear the
-  whole group at once.
+- **Grouped by app** like on your phone: each app, website or web app is one card with the newest
+  notification and a count; expand it to see the rest in the same card, or clear them all at once.
 - Banners on the monitor and corner you choose, with icons and pictures for every notification
   (web apps included), **color emojis**, clickable links, stickers and photos.
 - Clicking a notification takes you where Windows would: a website's opens its installed web app
@@ -209,7 +208,8 @@ and everything goes back to normal.
 
 ### <img src="docs/icons/flyouts.svg" width="28" align="center" alt="" /> Flyouts and media
 
-- **Sound**: output, input, per-app volume and device options. **Network and Wi-Fi** with a
+- **Sound**: output, input, per-app volume and device options, and **Also play on** to hear
+  everything on a second output too (both monitors' speakers, for example). **Network and Wi-Fi** with a
   show-password button, **Bluetooth**, **battery**.
 - **Brightness for every monitor** over DDC/CI, with Windows Night light.
 - **Media**: album art, title and artist on the bar for any app that reports media (Spotify,
@@ -225,9 +225,18 @@ and everything goes back to normal.
   back/forward with the mouse side buttons and the usual keyboard shortcuts.
 - Copy, cut, paste, rename, new folder and Recycle Bin use Windows' own engine (progress, conflict
   questions and Ctrl+Z in File Explorer). Clipboard and drag and drop work with File Explorer and
-  any other app.
-- Open it from the Strata UI tray icon, the *Strata UI Files* button in the Start menu footer, or
-  `StrataUI.exe --files [folder]`. File Explorer stays as it is.
+  any other app. *Show more options* opens the classic Windows menu (7-Zip, Send to, Properties,
+  New...) in a separate process, so a broken shell extension can't take Strata UI down.
+- A built-in **viewer** for pictures, video and music: zoom where the mouse is, drag to pan, real
+  size with a double click, phone photos the right way up, playback controls that hide on their
+  own, full screen, and the arrow keys to go through the folder.
+- **Cloud and network**: OneDrive (personal and work), Google Drive, Dropbox and iCloud Drive in the
+  sidebar with each file's status (online-only, on this PC, always keep) and *Free up space*;
+  thumbnails never download online-only files. Shared folders (`\\server\share`, or just
+  `\\server` to list them), mapped drives and *Map network drive*.
+- Within Strata UI it replaces File Explorer: Win+E, the Explorer button and the Start menu and
+  Win+X folders open Files (switch it off in Hub > General). Everything else in Windows keeps using
+  File Explorer. You can also open it with `StrataUI.exe --files [folder]`.
 
 <a id="performance"></a>
 

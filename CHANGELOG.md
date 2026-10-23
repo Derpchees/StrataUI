@@ -6,6 +6,8 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.9.0] - 2026-10-22
+
 ### Añadido
 - **Sonar también en** (panel de Sonido): lo que suena en la salida principal se oye además en otra,
   por ejemplo los parlantes de los dos monitores. Un interruptor, la lista de salidas (sugiere la de
@@ -23,6 +25,9 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - **Red en Archivos**: carpetas compartidas (`\\servidor\recurso`, y escribir `\\servidor` lista sus
   carpetas), unidades de red y "Conectar unidad de red"; las carpetas de red visitadas quedan en la
   barra lateral.
+- **"Mostrar más opciones"** en el menú de Archivos: el menú clásico de Windows, con las opciones
+  de otras apps (7-Zip, Abrir con Code, Enviar a, Propiedades, Nuevo…), en un proceso aparte para
+  que una extensión que falle no cierre Strata UI.
 
 ### Cambiado
 - **Notificaciones agrupadas, más limpias**: cada app es una sola tarjeta con su ícono, nombre, hora

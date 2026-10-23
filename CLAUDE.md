@@ -187,6 +187,20 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   en `OptimizationPages`; sus textos se traducen en los `.json` de la app. En desarrollo, compilar
   la solución copia el módulo junto a `StrataUI.exe` (así se carga sin descargar; para ver la
   entrada "Instalar", sacar esa copia).
+- **Archivos** (`Files/FilesWindow`, `Services/Files/`): explorador propio. Lee con System.IO,
+  íconos con `SHGetFileInfo` en un hilo STA aparte (`FileIcons`) y miniaturas decodificadas por WPF;
+  nunca extensiones del Shell dentro del proceso (el menú de Windows va en otro proceso:
+  `ShellMenu`, `--shell-menu`). Copiar/mover/Papelera con `SHFileOperation` (`FileOperations`).
+  Nube por atributos (`FileEntry.CloudOf`): un archivo "solo en línea" no se lee (ni miniatura ni
+  ícono propio) porque leerlo lo descarga. Red: `\\servidor` lista sus recursos (`Places.Shares`).
+  Las carpetas que abre Strata UI pasan por `StartMenuService.OpenPath` (Archivos o el Explorador
+  según `FilesReplaceExplorer`). Visor de medios: `Files/MediaViewerWindow`.
+- **Clic en notificaciones**: `BrowserActivation` (sitios), `ToastActivator` (activador COM del
+  registro o del AppxManifest de apps empaquetadas, solo `com:ExeServer`) y, si no, la ventana o la
+  app. Después de un activador, `AppWakeUp` muestra la app si quedó oculta en la bandeja (Thunderbird
+  toma el foco con una ventana invisible).
+- **Sonar también en** (`Services/Audio/AudioMirror`): captura de bucle de la salida principal →
+  otra salida; `Settings.AudioMirrorDevice`, se reaplica con `AudioService.DevicesChanged`.
 - **Consumo**: nada de temporizadores por barra; usar eventos (`SystemStatus.Changed`, el reloj
   compartido de `Taskbar`) y `MemoryTrim.Schedule(...)` después de crear muchos objetos de golpe.
 

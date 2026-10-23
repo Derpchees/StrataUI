@@ -5,7 +5,7 @@
                  xmlns:controls="clr-namespace:Strata.Shell.Controls"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  Title="{l:T 'Archivos'}"
-                 Icon="pack://application:,,,/Assets/strataui.ico"
+                 Icon="{x:Static controls:FilesIcon.Bitmap}"
                  Width="1120" Height="720" MinWidth="680" MinHeight="440"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
@@ -213,7 +213,7 @@
                     <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="11" Margin="0,0,-1,-1" />
                 </Grid>
                 <Grid Margin="32,0,12,0">
-                    <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                     <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Center"
                              Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
@@ -249,9 +249,27 @@
                         Visibility="{Binding HasThumbnail, Converter={StaticResource BoolToVis}}" ClipToBounds="True">
                     <Image Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
                 </Border>
+                <!-- Video: el botón de reproducir sobre su carátula -->
+                <Border Width="26" Height="26" CornerRadius="13" Background="#99000000" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsVideo}" Value="True" />
+                                        <Condition Binding="{Binding HasThumbnail}" Value="True" />
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <ui:SymbolIcon Symbol="Play24" Filled="True" FontSize="13" Foreground="White" Margin="2,0,0,0" />
+                </Border>
                 <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="16" Margin="0,0,14,6" />
                 <Grid Grid.Row="1" Margin="0,8,0,0">
-                    <TextBlock Text="{Binding Name}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="34"
+                    <TextBlock Text="{Binding DisplayName}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="34"
                                TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                     <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Top"
                              Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
@@ -307,7 +325,7 @@
 
         <ui:TitleBar x:Name="WindowTitleBar" Grid.Row="0" Title="{l:T 'Archivos'}">
             <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="{x:Static controls:Logo.Image}" />
+                <ui:ImageIcon Source="{x:Static controls:FilesIcon.Image}" />
             </ui:TitleBar.Icon>
         </ui:TitleBar>
 
@@ -452,7 +470,7 @@
                             <ui:SymbolIcon Symbol="Delete24" FontSize="16" />
                         </Button>
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <StackPanel x:Name="ViewControls" Grid.Column="1" Orientation="Horizontal">
                         <Button x:Name="SortButton" Style="{StaticResource CommandButton}" Click="Sort_Click">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="ArrowSort24" FontSize="16" Margin="0,0,8,0" />
@@ -462,6 +480,10 @@
                         <Border Padding="2" CornerRadius="8" Margin="8,0,0,0" VerticalAlignment="Center"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
                             <StackPanel Orientation="Horizontal">
+                                <ToggleButton x:Name="ExtensionsToggle" Style="{StaticResource ViewToggle}" Click="Extensions_Click"
+                                              ToolTip="{l:T 'Mostrar las extensiones de los archivos'}" Margin="0,0,2,0">
+                                    <TextBlock Text=".ext" FontSize="11" FontWeight="SemiBold" />
+                                </ToggleButton>
                                 <ToggleButton x:Name="HiddenToggle" Style="{StaticResource ViewToggle}" Click="Hidden_Click"
                                               ToolTip="{l:T 'Mostrar archivos ocultos'}" Margin="0,0,2,0">
                                     <ui:SymbolIcon Symbol="Eye24" FontSize="15" />
@@ -618,6 +640,10 @@
                                 </ItemsPanelTemplate>
                             </ListBox.ItemsPanel>
                         </ListBox>
+
+                        <!-- Reintentar (una carpeta de red que no respondió) -->
+                        <ui:Button x:Name="RetryButton" Content="{l:T 'Reintentar'}" Appearance="Primary" Visibility="Collapsed"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,190,0,0" Click="Retry_Click" />
 
                         <!-- Carpeta vacía, sin resultados o sin acceso -->
                         <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"

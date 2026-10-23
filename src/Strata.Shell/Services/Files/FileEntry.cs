@@ -65,6 +65,21 @@ public sealed class FileEntry : INotifyPropertyChanged
     public string TypeName { get; }
     public string Extension => IsFolder ? "" : Path.GetExtension(Name);
     public bool IsHidden => (Attributes & FileAttributes.Hidden) != 0;
+    /// <summary>Video: su carátula lleva el botón de reproducir.</summary>
+    public bool IsVideo => !IsFolder && MediaKinds.Of(Name) == MediaKind.Video;
+
+    /// <summary>Mostrar las extensiones (".pdf") en los nombres; lo cambia el botón de Archivos.</summary>
+    public static bool ShowExtensions { get; set; } = true;
+
+    /// <summary>El nombre como se ve: sin extensión si se ocultan (los accesos directos nunca la muestran).</summary>
+    public string DisplayName =>
+        IsFolder || (ShowExtensions && !Extension.Equals(".lnk", StringComparison.OrdinalIgnoreCase)
+                     && !Extension.Equals(".url", StringComparison.OrdinalIgnoreCase))
+            ? Name
+            : Path.GetFileNameWithoutExtension(Name);
+
+    /// <summary>Cambió <see cref="ShowExtensions"/>: el nombre se vuelve a mostrar.</summary>
+    public void RefreshName() => Changed(nameof(DisplayName));
 
     public string SizeText => IsFolder ? "" : FormatSize(Size);
     public string ModifiedText => Modified == default ? "" : Modified.ToString("g", CultureInfo.CurrentCulture);

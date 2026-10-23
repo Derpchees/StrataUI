@@ -36,7 +36,7 @@ public static class FileIcons
     private static readonly ConcurrentDictionary<string, string> TypeNames = new(StringComparer.OrdinalIgnoreCase);
     private static readonly BlockingCollection<Action> Jobs = new();
     private static Thread? _worker;
-    private static IntPtr _imageList;
+    private static IntPtr _imageList, _jumboList;
 
     /// <summary>Carga los íconos (y, en la cuadrícula, las miniaturas) de una carpeta hasta que se cancele.</summary>
     public static void Load(IReadOnlyList<FileEntry> entries, bool thumbnails, Dispatcher ui, CancellationToken token)
@@ -52,8 +52,15 @@ public static class FileIcons
                     return;
                 var icon = entry.Icon ?? IconOf(entry);
                 ImageSource? thumbnail = null;
-                if (thumbnails && entry.Thumbnail is null && IsPicture(entry))
-                    thumbnail = AppIcons.Load(entry.FullPath, 192);
+                if (thumbnails && entry.Thumbnail is null)
+                {
+                    // Las imágenes las decodifica WPF; lo demás (video, música, PDF, Office…) pide su
+                    // carátula a Windows en el proceso aparte.
+                    if (IsPicture(entry))
+                        thumbnail = AppIcons.Load(entry.FullPath, 192);
+                    else if (HasShellThumbnail(entry))
+                        thumbnail = ThumbnailHost.Get(entry.FullPath, 192, cachedOnly: entry.IsOnlineOnly);
+                }
                 batch.Add((entry, icon, thumbnail));
                 // Se entregan de a poco: lo visible aparece enseguida y la ventana no se traba.
                 if (watch.ElapsedMilliseconds > 60)
@@ -85,6 +92,16 @@ public static class FileIcons
         });
         return result.Task;
     }
+
+    /// <summary>Tipos sin carátula (programas, accesos directos, texto): no vale la pena preguntar.</summary>
+    private static readonly HashSet<string> NoThumbnail = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".exe", ".lnk", ".url", ".dll", ".sys", ".ini", ".txt", ".log", ".json", ".xml", ".cs", ".js", ".ts", ".css",
+        ".html", ".md", ".bat", ".cmd", ".ps1", ".zip", ".7z", ".rar", ".tmp", ".msi", ".cab", ".ico", ".cur", ".ani",
+    };
+
+    private static bool HasShellThumbnail(FileEntry entry) =>
+        !entry.IsFolder && entry.Size > 0 && entry.Extension.Length > 0 && !NoThumbnail.Contains(entry.Extension);
 
     /// <summary>Una imagen que se puede leer sin descargarla de la nube.</summary>
     public static bool IsPicture(FileEntry entry) =>
@@ -164,15 +181,56 @@ public static class FileIcons
             : path;
     }
 
+    private const int IconPixels = 96;
+
+    /// <summary>
+    /// El ícono a 96 px (nítido en la cuadrícula y en pantallas a 125-200 %): el de 256 de Windows
+    /// reducido. Los tipos sin uno grande vienen dibujados chicos en una esquina del de 256; para
+    /// esos, el de 48.
+    /// </summary>
     private static ImageSource? FromImageList(int index)
     {
         if (_imageList == IntPtr.Zero)
         {
             var iid = new Guid("46EB5926-582E-4017-9FDF-E8998DAA0950"); // IImageList (sirve como HIMAGELIST)
-            if (SHGetImageList(ShilExtraLarge, ref iid, out _imageList) != 0)
+            if (SHGetImageList(ShilJumbo, ref iid, out _jumboList) != 0 || SHGetImageList(ShilExtraLarge, ref iid, out _imageList) != 0)
                 return null;
         }
-        IntPtr hIcon = ImageList_GetIcon(_imageList, index, IldTransparent);
+        if (Icon(_jumboList, index) is { } jumbo && !DrawnSmall(jumbo))
+        {
+            var scaled = new TransformedBitmap(jumbo, new ScaleTransform((double)IconPixels / jumbo.PixelWidth, (double)IconPixels / jumbo.PixelHeight));
+            // Se copia: si no, la imagen reducida guarda la de 256 entera en memoria.
+            var pixels = new byte[IconPixels * IconPixels * 4];
+            new FormatConvertedBitmap(scaled, PixelFormats.Bgra32, null, 0).CopyPixels(pixels, IconPixels * 4, 0);
+            var small = BitmapSource.Create(IconPixels, IconPixels, 96, 96, PixelFormats.Bgra32, null, pixels, IconPixels * 4);
+            small.Freeze();
+            return small;
+        }
+        return Icon(_imageList, index);
+    }
+
+    /// <summary>Lo visible del ícono cabe en la esquina de arriba a la izquierda (un ícono chico en la lista de 256).</summary>
+    private static bool DrawnSmall(BitmapSource jumbo)
+    {
+        var source = new FormatConvertedBitmap(jumbo, PixelFormats.Bgra32, null, 0);
+        int width = source.PixelWidth, height = source.PixelHeight, stride = width * 4;
+        var pixels = new byte[stride * height];
+        source.CopyPixels(pixels, stride, 0);
+        int limit = width / 4; // 64 de 256
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = y < limit ? limit : 0; x < width; x++)
+            {
+                if (pixels[y * stride + x * 4 + 3] != 0)
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    private static BitmapSource? Icon(IntPtr list, int index)
+    {
+        IntPtr hIcon = ImageList_GetIcon(list, index, IldTransparent);
         if (hIcon == IntPtr.Zero)
             return null;
         try
@@ -215,7 +273,7 @@ public static class FileIcons
 
     private const uint ShgfiSysIconIndex = 0x4000, ShgfiUseFileAttributes = 0x10, ShgfiTypeName = 0x400, ShgfiDisplayName = 0x200;
     private const uint AttributeNormal = 0x80, AttributeDirectory = 0x10;
-    private const int ShilExtraLarge = 2;
+    private const int ShilExtraLarge = 2, ShilJumbo = 4;
     private const uint IldTransparent = 1;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
