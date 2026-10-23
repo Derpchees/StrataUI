@@ -280,13 +280,16 @@ public partial class FolderPane : UserControl
                  : Directory.GetParent(_path.TrimEnd('\\'))?.FullName is { } parent && !SamePath(parent, _path) ? parent : null);
     }
 
-    private static string? Normalize(string? path)
+    public static string? Normalize(string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
             return null;
         path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"')).TrimEnd('\\');
         if (Places.IsServer(path))
             return path;
+        // "C:" solo (o "C:\" sin su barra) es la raíz de la unidad, no la carpeta actual del proceso en ella.
+        if (path.Length == 2 && path[1] == ':' && char.IsLetter(path[0]))
+            return char.ToUpperInvariant(path[0]) + @":\";
         if (path.Equals(Places.RecycleBin, StringComparison.OrdinalIgnoreCase))
             return Places.RecycleBin;
         try
@@ -1348,10 +1351,12 @@ public partial class FolderPane : UserControl
         var item = Ancestor<ListBoxItem>(source);
         if (item is null)
         {
-            // Clic en el espacio libre: nada seleccionado.
-            list.UnselectAll();
-            list.Focus();
+            // Clic en el espacio libre: nada seleccionado (con Ctrl se suma a lo que ya había) y empieza el recuadro.
             _dragStart = null;
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == 0)
+                list.UnselectAll();
+            list.Focus();
+            BeginMarquee(list, e);
             return;
         }
         _dragStart = e.GetPosition(this);
@@ -1366,6 +1371,7 @@ public partial class FolderPane : UserControl
 
     private void List_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
+        EndMarquee();
         if (_clickedSelected is { } entry)
             ((ListBox)sender).SelectedItem = entry;
         _clickedSelected = null;
@@ -1375,6 +1381,11 @@ public partial class FolderPane : UserControl
     /// <summary>Arrastrar la selección afuera (a otra app, al escritorio, al otro panel) o a una carpeta de aquí.</summary>
     private void List_PreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (_marquee is { } marquee)
+        {
+            UpdateMarquee(e.GetPosition(marquee.Scroll));
+            return;
+        }
         if (_dragStart is not { } start || e.LeftButton != MouseButtonState.Pressed)
             return;
         var delta = e.GetPosition(this) - start;
@@ -1396,6 +1407,141 @@ public partial class FolderPane : UserControl
         }
     }
 
+    // ── Recuadro de selección ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Un recuadro en curso. El ancla va en coordenadas del contenido (con el desplazamiento) para que
+    /// siga en su lugar si la lista se desplaza. Con la virtualización solo existen los elementos a la
+    /// vista: los que salen conservan lo que tenían la última vez que se vieron.
+    /// </summary>
+    private sealed class MarqueeState(ListBox list, ScrollViewer scroll, Point anchor, List<FileEntry> initial)
+    {
+        public ListBox List { get; } = list;
+        public ScrollViewer Scroll { get; } = scroll;
+        public Point Anchor { get; } = anchor;
+        public List<FileEntry> Initial { get; } = initial;
+        public HashSet<FileEntry> Hits { get; } = [];
+        public Point Last { get; set; }
+    }
+
+    private MarqueeState? _marquee;
+    private DispatcherTimer? _marqueeScroll;
+
+    private static Vector Offset(ScrollViewer scroll) => new(scroll.HorizontalOffset, scroll.VerticalOffset);
+
+    private void BeginMarquee(ListBox list, MouseButtonEventArgs e)
+    {
+        if (Descendant<ScrollViewer>(list) is not { } scroll)
+            return;
+        var point = e.GetPosition(scroll);
+        _marquee = new MarqueeState(list, scroll, point + Offset(scroll), list.SelectedItems.OfType<FileEntry>().ToList()) { Last = point };
+        list.CaptureMouse();
+        list.LostMouseCapture += Marquee_LostMouseCapture;
+        e.Handled = true;
+    }
+
+    private void Marquee_LostMouseCapture(object sender, MouseEventArgs e) => EndMarquee();
+
+    private void EndMarquee()
+    {
+        if (_marquee is not { } marquee)
+            return;
+        _marquee = null;
+        _marqueeScroll?.Stop();
+        marquee.List.LostMouseCapture -= Marquee_LostMouseCapture;
+        marquee.List.ReleaseMouseCapture();
+        Marquee.Visibility = Visibility.Collapsed;
+    }
+
+    private void UpdateMarquee(Point point)
+    {
+        if (_marquee is not { } marquee)
+            return;
+        marquee.Last = point;
+        var scroll = marquee.Scroll;
+        var offset = Offset(scroll);
+        var area = new Rect(marquee.Anchor, point + offset);
+
+        // El dibujo, en la capa de encima de la lista.
+        var topLeft = scroll.TranslatePoint(area.TopLeft - offset, MarqueeLayer);
+        Canvas.SetLeft(Marquee, topLeft.X);
+        Canvas.SetTop(Marquee, topLeft.Y);
+        Marquee.Width = area.Width;
+        Marquee.Height = area.Height;
+        Marquee.Visibility = area.Width > 2 || area.Height > 2 ? Visibility.Visible : Visibility.Collapsed;
+
+        // Los elementos a la vista que toca.
+        if (Descendant<VirtualizingPanel>(marquee.List) is { } panel)
+        {
+            foreach (var container in panel.Children.OfType<ListBoxItem>())
+            {
+                if (container.DataContext is not FileEntry entry || !container.IsVisible)
+                    continue;
+                var bounds = container.TransformToAncestor(scroll).TransformBounds(new Rect(container.RenderSize));
+                bounds.Offset(offset);
+                if (bounds.IntersectsWith(area))
+                    marquee.Hits.Add(entry);
+                else
+                    marquee.Hits.Remove(entry);
+            }
+        }
+        var wanted = new HashSet<FileEntry>(marquee.Initial);
+        wanted.UnionWith(marquee.Hits);
+        var selected = marquee.List.SelectedItems;
+        foreach (var entry in selected.OfType<FileEntry>().Where(s => !wanted.Contains(s)).ToList())
+            selected.Remove(entry);
+        foreach (var entry in wanted.Where(w => !selected.Contains(w)))
+            selected.Add(entry);
+
+        // Fuera de la lista (arriba o abajo), se desplaza sola. ActualHeight: el panel en cuadrícula no da su
+        // ViewportHeight en píxeles de pantalla.
+        bool outside = point.Y < 0 || point.Y > scroll.ActualHeight;
+        if (outside)
+        {
+            _marqueeScroll ??= CreateMarqueeScroll();
+            _marqueeScroll.Start();
+        }
+        else
+        {
+            _marqueeScroll?.Stop();
+        }
+    }
+
+    private DispatcherTimer CreateMarqueeScroll()
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        timer.Tick += (_, _) =>
+        {
+            if (_marquee is not { } marquee)
+            {
+                timer.Stop();
+                return;
+            }
+            var scroll = marquee.Scroll;
+            double y = marquee.Last.Y;
+            double distance = y < 0 ? y : y > scroll.ActualHeight ? y - scroll.ActualHeight : 0;
+            if (distance == 0)
+                return;
+            scroll.ScrollToVerticalOffset(scroll.VerticalOffset + Math.Clamp(distance / 2, -40, 40));
+            scroll.UpdateLayout();
+            UpdateMarquee(marquee.Last);
+        };
+        return timer;
+    }
+
+    private static T? Descendant<T>(DependencyObject node) where T : DependencyObject
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++)
+        {
+            var child = VisualTreeHelper.GetChild(node, i);
+            if (child is T found)
+                return found;
+            if (Descendant<T>(child) is { } deeper)
+                return deeper;
+        }
+        return null;
+    }
+
     /// <summary>Dónde cae lo que se suelta: la carpeta bajo el puntero o la actual.</summary>
     private string? DropTarget(DragEventArgs e) =>
         Ancestor<ListBoxItem>(e.OriginalSource as DependencyObject)?.DataContext is FileEntry { IsFolder: true } folder
@@ -1403,7 +1549,7 @@ public partial class FolderPane : UserControl
             : _path;
 
     /// <summary>Como el Explorador: misma unidad mueve, otra copia; Ctrl copia y Mayús mueve.</summary>
-    private static DragDropEffects DropEffect(DragEventArgs e, string target, string[] files)
+    internal static DragDropEffects DropEffect(DragEventArgs e, string target, string[] files)
     {
         if (files.Any(f => SamePath(f, target) || SamePath(System.IO.Path.GetDirectoryName(f), target)))
             return DragDropEffects.None;

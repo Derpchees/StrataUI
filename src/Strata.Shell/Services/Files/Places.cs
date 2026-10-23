@@ -87,6 +87,15 @@ public static class Places
         ? s.FilesPinnedFolders.Append(path).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
         : s.FilesPinnedFolders.Where(p => !string.Equals(p.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)).ToList());
 
+    /// <summary>Mueve una carpeta anclada antes de otra (arrastrándola en la barra lateral).</summary>
+    public static void MovePinned(string path, string before) => Settings.Update(s =>
+    {
+        var list = s.FilesPinnedFolders.Where(p => !string.Equals(p.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)).ToList();
+        int index = list.FindIndex(p => string.Equals(p.TrimEnd('\\'), before.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase));
+        list.Insert(index < 0 ? list.Count : index, path);
+        s.FilesPinnedFolders = list;
+    });
+
     /// <summary>Carpetas del usuario (las que existen), en el orden del Explorador.</summary>
     public static List<Place> Folders()
     {

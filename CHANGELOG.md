@@ -6,6 +6,19 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.9.1] - 2026-10-22
+
+### Añadido
+- **Seleccionar con un recuadro** en Archivos: arrastrar desde el espacio libre (o entre las
+  carátulas) marca todo lo que toca; con Ctrl se suma a lo ya seleccionado, y al llegar al borde la
+  lista se desplaza sola.
+- **Arrastrar y soltar en la barra lateral de Archivos**: soltar archivos sobre una carpeta (anclada,
+  del usuario, unidad o red) los mueve o copia ahí, sobre la Papelera los manda a la Papelera, y
+  soltar una carpeta en el espacio libre de la barra la ancla. Las ancladas se ordenan arrastrándolas.
+
+### Corregido
+- **La raíz de una unidad** (por ejemplo, `C:\`) abría la carpeta de Strata UI en lugar de la raíz.
+
 ## [3.9.0] - 2026-10-22
 
 ### Añadido

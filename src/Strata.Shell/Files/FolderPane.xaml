@@ -318,6 +318,14 @@
                     </ListBox.ItemsPanel>
                 </ListBox>
 
+                <!-- Recuadro de selección (arrastrar desde el espacio libre) -->
+                <Canvas x:Name="MarqueeLayer" IsHitTestVisible="False" ClipToBounds="True">
+                    <Grid x:Name="Marquee" Visibility="Collapsed">
+                        <Border CornerRadius="3" Background="{DynamicResource StrataAccentBrush}" Opacity="0.18" />
+                        <Border CornerRadius="3" BorderThickness="1" BorderBrush="{DynamicResource StrataAccentBrush}" />
+                    </Grid>
+                </Canvas>
+
                 <!-- Reintentar (una carpeta de red que no respondió) -->
                 <ui:Button x:Name="RetryButton" Content="{l:T 'Reintentar'}" Appearance="Primary" Visibility="Collapsed"
                            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,190,0,0" Click="Retry_Click" />

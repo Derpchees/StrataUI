@@ -19,7 +19,9 @@
             <!-- Lugar de la barra lateral: carpeta con su símbolo o unidad con el espacio usado -->
             <DataTemplate x:Key="SidePlaceTemplate">
                 <Button Style="{StaticResource SideItem}" Click="Place_Click" ToolTip="{Binding Path}"
-                        PreviewMouseDown="Place_PreviewMouseDown" ContextMenuOpening="Place_ContextMenuOpening">
+                        PreviewMouseDown="Place_PreviewMouseDown" ContextMenuOpening="Place_ContextMenuOpening"
+                        PreviewMouseLeftButtonDown="Place_PreviewMouseLeftButtonDown" PreviewMouseMove="Place_PreviewMouseMove"
+                        AllowDrop="True" DragOver="Place_DragOver" DragLeave="Place_DragLeave" Drop="Place_Drop">
                     <Button.ContextMenu>
                         <ContextMenu />
                     </Button.ContextMenu>
@@ -110,7 +112,8 @@
             </Grid.ColumnDefinitions>
 
             <!-- Barra lateral: Este equipo, carpetas, nube, unidades y red -->
-            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False" controls:SmoothScroll.Enabled="True">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False" controls:SmoothScroll.Enabled="True"
+                          Background="Transparent" AllowDrop="True" DragOver="Sidebar_DragOver" Drop="Sidebar_Drop">
                 <StackPanel Margin="12,4,8,16">
                     <ItemsControl x:Name="SideFolders" ItemTemplate="{StaticResource SidePlaceTemplate}" />
                     <TextBlock x:Name="SidePinnedTitle" Text="{l:T 'Ancladas'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"

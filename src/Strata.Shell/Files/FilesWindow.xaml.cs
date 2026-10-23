@@ -485,8 +485,7 @@ public partial class FilesWindow : FluentWindow
             menu.Items.Add(FolderPane.Item(Loc.T("Desanclar de la barra lateral"), SymbolRegular.PinOff24, () =>
             {
                 Places.SetPinned(place.Path!, false);
-                foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
-                    window.UpdatePinned();
+                RefreshPinned();
             }));
         }
         if (place.CanForget)
@@ -497,6 +496,122 @@ public partial class FilesWindow : FluentWindow
                 _ = LoadPlacesAsync();
             }));
         }
+    }
+
+    // ── Arrastrar y soltar en la barra lateral ──────────────────────────────
+
+    /// <summary>Formato de una carpeta anclada que se arrastra para cambiarla de lugar.</summary>
+    private const string PinnedFormat = "StrataUI.PinnedPlace";
+
+    private Point? _placeDragStart;
+
+    private void Place_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
+        _placeDragStart = ((FrameworkElement)sender).DataContext is Place { CanUnpin: true } ? e.GetPosition(this) : null;
+
+    /// <summary>Una carpeta anclada se arrastra para ordenarla entre las demás.</summary>
+    private void Place_PreviewMouseMove(object sender, MouseEventArgs e)
+    {
+        if (_placeDragStart is not { } start || e.LeftButton != MouseButtonState.Pressed
+            || ((FrameworkElement)sender).DataContext is not Place { CanUnpin: true, Path: { } path })
+            return;
+        var delta = e.GetPosition(this) - start;
+        if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
+            return;
+        _placeDragStart = null;
+        ((UIElement)sender).ReleaseMouseCapture(); // si no, el botón queda presionado
+        DragDrop.DoDragDrop((DependencyObject)sender, new DataObject(PinnedFormat, path), DragDropEffects.Move);
+    }
+
+    /// <summary>Qué pasa al soltar sobre un lugar: ordenar las ancladas, mandar a la Papelera, o mover/copiar dentro.</summary>
+    private static DragDropEffects PlaceDropEffect(DragEventArgs e, Place place)
+    {
+        if (e.Data.GetData(PinnedFormat) is string pinned)
+            return place.CanUnpin && !FolderPane.SamePath(pinned, place.Path) ? DragDropEffects.Move : DragDropEffects.None;
+        if (place.Path is not { } target || Places.IsServer(target) || e.Data.GetData(DataFormats.FileDrop) is not string[] files)
+            return DragDropEffects.None;
+        if (target == Places.RecycleBin)
+            return DragDropEffects.Move;
+        return FolderPane.DropEffect(e, target, files);
+    }
+
+    private void Place_DragOver(object sender, DragEventArgs e)
+    {
+        var button = (FrameworkElement)sender;
+        try
+        {
+            e.Effects = button.DataContext is Place place ? PlaceDropEffect(e, place) & e.AllowedEffects : DragDropEffects.None;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Archivos: falló el arrastre", ex);
+            e.Effects = DragDropEffects.None;
+        }
+        button.Tag = e.Effects != DragDropEffects.None ? "drop" : null;
+        e.Handled = true;
+    }
+
+    private void Place_DragLeave(object sender, DragEventArgs e) => ((FrameworkElement)sender).Tag = null;
+
+    private async void Place_Drop(object sender, DragEventArgs e)
+    {
+        var button = (FrameworkElement)sender;
+        button.Tag = null;
+        if (button.DataContext is not Place { Path: { } target } place)
+            return;
+        e.Handled = true;
+        try
+        {
+            var effect = PlaceDropEffect(e, place) & e.AllowedEffects;
+            if (effect == DragDropEffects.None)
+                return;
+            if (e.Data.GetData(PinnedFormat) is string pinned)
+            {
+                Places.MovePinned(pinned, target);
+                RefreshPinned();
+                return;
+            }
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
+            var handle = new WindowInteropHelper(this).Handle;
+            if (target == Places.RecycleBin)
+                await FileOperations.RecycleAsync(files, handle);
+            else if (effect == DragDropEffects.Move)
+                await FileOperations.MoveAsync(files, target, handle);
+            else if (effect == DragDropEffects.Copy)
+                await FileOperations.CopyAsync(files, target, handle);
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Archivos: falló al soltar en la barra lateral", ex);
+        }
+    }
+
+    /// <summary>Carpetas soltadas en la barra lateral (fuera de un lugar): se anclan.</summary>
+    private static string[] FoldersToPin(DragEventArgs e) =>
+        e.Data.GetData(DataFormats.FileDrop) is string[] files
+            ? files.Where(f => System.IO.Directory.Exists(f) && !Places.IsPinned(f)).ToArray()
+            : [];
+
+    private void Sidebar_DragOver(object sender, DragEventArgs e)
+    {
+        e.Effects = FoldersToPin(e).Length > 0 ? DragDropEffects.Link & e.AllowedEffects : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void Sidebar_Drop(object sender, DragEventArgs e)
+    {
+        var folders = FoldersToPin(e);
+        if (folders.Length == 0)
+            return;
+        e.Handled = true;
+        foreach (var folder in folders)
+            Places.SetPinned(folder, true);
+        RefreshPinned();
+    }
+
+    private static void RefreshPinned()
+    {
+        foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
+            window.UpdatePinned();
     }
 
     /// <summary>"Conectar unidad de red" de Windows, en su propio proceso.</summary>
