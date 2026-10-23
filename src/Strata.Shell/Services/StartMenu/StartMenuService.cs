@@ -429,6 +429,13 @@ public static class StartMenuService
         }
     }
 
+    /// <summary>Desancla de Inicio un archivo, acceso directo o carpeta.</summary>
+    public static void UnpinPath(string path)
+    {
+        if (IsPathId(path) && FileApp(path) is { } app)
+            SetPinned(app, false);
+    }
+
     /// <summary>Ancla archivos, accesos directos o carpetas en Inicio.</summary>
     public static void PinPaths(IEnumerable<string> paths)
     {

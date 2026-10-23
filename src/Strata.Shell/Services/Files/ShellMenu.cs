@@ -1,59 +1,175 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Strata.Shell.Services.Files;
 
+/// <summary>Una opción del menú contextual de Windows, ya leída (texto, ícono, submenú).</summary>
+public sealed record NativeMenuItem(int Id, string Text, string? Icon, bool Enabled, bool Checked, bool Separator,
+                                   List<NativeMenuItem>? Children);
+
 /// <summary>
-/// "Mostrar más opciones": el menú contextual clásico de Windows (con las extensiones de otras apps:
-/// 7-Zip, Abrir con Code, Enviar a, Propiedades…) en un proceso aparte
-/// (<c>StrataUI.exe --shell-menu</c>), como los diálogos de <see cref="FilePicker"/>. Las extensiones
-/// del Shell se cargan dentro de quien muestra el menú; si una falla, solo se cae ese proceso, no las
-/// barras. Sigue vivo mientras tenga ventanas abiertas (Propiedades) y se cierra solo.
+/// Las opciones que Windows y las apps agregan al menú contextual (NanaZip, un lector de PDF, Enviar
+/// a, Propiedades, Nuevo…), mezcladas en el menú de Archivos. Las extensiones del Shell se cargan
+/// dentro de quien arma el menú: por eso lo arma un proceso aparte (<c>StrataUI.exe --shell-menu</c>)
+/// que devuelve la lista de opciones y, si se elige una, la ejecuta; si una extensión falla, solo se
+/// cae ese proceso. Sigue vivo mientras tenga ventanas abiertas (Propiedades) y se cierra solo.
 /// </summary>
-public static class ShellMenu
+public sealed class ShellMenuSession : IDisposable
 {
     public const string Arg = "--shell-menu";
 
-    /// <summary>Muestra el menú de <paramref name="paths"/> (o el del fondo de la carpeta) en el punto de la pantalla, en píxeles.</summary>
-    public static void Show(IReadOnlyList<string> paths, bool background, int x, int y)
+    /// <summary>Lo que ya ofrece Archivos (o no sirve fuera del Explorador): no se repite.</summary>
+    private static readonly HashSet<string> SkippedVerbs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "open", "explore", "opennewwindow", "opennewprocess", "opennewtab", "cut", "copy", "paste", "delete",
+        "rename", "copyaspath", "pintohome", "pintostartscreen", "unpinfromhome", "refresh", "undo", "redo", "view",
+        "arrange", "groupby",
+    };
+
+    private readonly Process _process;
+    private bool _invoked;
+
+    /// <summary>Las opciones de Windows (vacía si no se pudieron leer a tiempo).</summary>
+    public Task<List<NativeMenuItem>> Items { get; }
+
+    private ShellMenuSession(Process process, string request)
+    {
+        _process = process;
+        Items = ReadItemsAsync(request);
+    }
+
+    /// <summary>Empieza a leer el menú de Windows de esos elementos (o del fondo de la carpeta).</summary>
+    public static ShellMenuSession? Start(IReadOnlyList<string> paths, bool background)
     {
         try
         {
-            // El clic fue en Strata UI: el proceso del menú puede pasar al frente (si no, el menú no se cierra bien).
-            AllowSetForegroundWindow(-1);
-            var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
-            foreach (var arg in new[] { Arg, x.ToString(), y.ToString(), background ? "background" : "items" }.Concat(paths))
-                start.ArgumentList.Add(arg);
-            Process.Start(start)?.Dispose();
+            var start = new ProcessStartInfo(Environment.ProcessPath!)
+            {
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                StandardInputEncoding = new UTF8Encoding(false),
+                StandardOutputEncoding = new UTF8Encoding(false),
+                CreateNoWindow = true,
+            };
+            start.ArgumentList.Add(Arg);
+            var process = Process.Start(start);
+            if (process is null)
+                return null;
+            string request = JsonSerializer.Serialize(new Request(paths.ToList(), background, (GetKeyState(VkShift) & 0x8000) != 0));
+            return new ShellMenuSession(process, request);
         }
         catch (Exception ex)
         {
-            Log.Error("No se pudo abrir el menú de Windows", ex);
+            Log.Error("Archivos: no se pudo abrir el menú de Windows", ex);
+            return null;
         }
     }
 
-    /// <summary>Cursor en píxeles de la pantalla (donde se abrió el menú de Archivos).</summary>
-    public static (int X, int Y) Cursor()
+    private async Task<List<NativeMenuItem>> ReadItemsAsync(string request)
     {
-        GetCursorPos(out var point);
-        return (point.X, point.Y);
+        try
+        {
+            await _process.StandardInput.WriteLineAsync(request);
+            await _process.StandardInput.FlushAsync();
+            var line = await _process.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(6));
+            return line is { Length: > 0 } ? JsonSerializer.Deserialize<List<NativeMenuItem>>(line) ?? [] : [];
+        }
+        catch (Exception ex) when (ex is IOException or TimeoutException or JsonException or InvalidOperationException)
+        {
+            Log.Info($"Archivos: el menú de Windows no respondió ({ex.Message.Trim()})");
+            return [];
+        }
     }
+
+    /// <summary>Ejecuta la opción elegida (el proceso la ejecuta y sigue mientras tenga ventanas).</summary>
+    public void Invoke(int id)
+    {
+        if (_invoked)
+            return;
+        _invoked = true;
+        try
+        {
+            // El clic fue en Strata UI: lo que abra la opción (Propiedades, NanaZip) puede pasar al frente.
+            AllowSetForegroundWindow(_process.Id);
+            GetCursorPos(out var point);
+            _process.StandardInput.WriteLine($"invoke {id} {point.X} {point.Y}");
+            _process.StandardInput.Close();
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException)
+        {
+            Log.Error("Archivos: no se pudo ejecutar la opción del menú de Windows", ex);
+        }
+    }
+
+    /// <summary>Se cerró el menú sin elegir una opción de Windows: el proceso termina.</summary>
+    public void Dispose()
+    {
+        if (!_invoked)
+        {
+            try
+            {
+                _process.StandardInput.Close();
+            }
+            catch (Exception)
+            {
+            }
+        }
+        _process.Dispose();
+    }
+
+    /// <summary>Un ícono de una opción (PNG en base64) como imagen.</summary>
+    public static ImageSource? IconOf(NativeMenuItem item)
+    {
+        if (item.Icon is null)
+            return null;
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.StreamSource = new MemoryStream(Convert.FromBase64String(item.Icon));
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch (Exception ex) when (ex is FormatException or NotSupportedException or IOException)
+        {
+            return null;
+        }
+    }
+
+    private sealed record Request(List<string> Paths, bool Background, bool Extended);
 
     // ── Proceso aparte ──────────────────────────────────────────────────────
 
-    /// <summary>Muestra el menú y ejecuta lo elegido. Solo acepta rutas completas que existen.</summary>
-    internal static int Run(string[] args)
+    /// <summary>Arma el menú, devuelve sus opciones y, si se elige una, la ejecuta. Solo rutas completas que existen.</summary>
+    internal static int Run()
     {
-        if (args.Length < 5 || !int.TryParse(args[1], out int x) || !int.TryParse(args[2], out int y)
-            || args[3] is not ("items" or "background"))
+        using var input = new StreamReader(Console.OpenStandardInput(), new UTF8Encoding(false), true);
+        using var output = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true };
+        Request? request;
+        try
+        {
+            request = JsonSerializer.Deserialize<Request>(input.ReadLine() ?? "");
+        }
+        catch (JsonException)
+        {
             return 2;
-        var paths = args.Skip(4).ToList();
-        if (paths.Any(p => !Path.IsPathFullyQualified(p) || (!File.Exists(p) && !Directory.Exists(p))))
+        }
+        if (request is null || request.Paths.Count == 0
+            || request.Paths.Any(p => !Path.IsPathFullyQualified(p) || (!File.Exists(p) && !Directory.Exists(p)))
+            || (request.Background && request.Paths.Count != 1))
+        {
+            output.WriteLine("[]");
             return 2;
-        bool background = args[3] == "background";
-        if (background && paths.Count != 1)
-            return 2;
+        }
 
         var owner = new OwnerWindow();
         var pidls = new List<IntPtr>();
@@ -61,28 +177,45 @@ public static class ShellMenu
         IntPtr hmenu = IntPtr.Zero;
         try
         {
-            menu = background ? BackgroundMenu(paths[0], owner.Handle, pidls) : ItemsMenu(paths, owner.Handle, pidls);
+            menu = request.Background ? BackgroundMenu(request.Paths[0], owner.Handle, pidls) : ItemsMenu(request.Paths, owner.Handle, pidls);
             if (menu is null)
+            {
+                output.WriteLine("[]");
                 return 1;
+            }
             owner.Menu = menu;
             hmenu = CreatePopupMenu();
-            uint flags = CmfNormal | CmfExplore | ((GetKeyState(VkShift) & 0x8000) != 0 ? CmfExtendedVerbs : 0);
-            if (menu.QueryContextMenu(hmenu, 0, FirstCommand, 0x7FFF, flags) < 0)
+            uint flags = CmfNormal | CmfExplore | (request.Extended ? CmfExtendedVerbs : 0);
+            if (menu.QueryContextMenu(hmenu, 0, FirstCommand, LastCommand, flags) < 0)
+            {
+                output.WriteLine("[]");
                 return 1;
-            SetForegroundWindow(owner.Handle);
-            int command = TrackPopupMenuEx(hmenu, TpmReturnCmd | TpmRightButton, x, y, owner.Handle, IntPtr.Zero);
-            PostMessage(owner.Handle, 0, IntPtr.Zero, IntPtr.Zero); // cierra bien el menú (documentado en TrackPopupMenu)
-            if (command <= 0)
+            }
+            output.WriteLine(JsonSerializer.Serialize(Read(menu, owner, hmenu)));
+
+            // Espera la respuesta atendiendo los mensajes (algunas extensiones los necesitan).
+            var answer = Task.Run(input.ReadLine);
+            while (!answer.IsCompleted)
+            {
+                System.Windows.Forms.Application.DoEvents();
+                Thread.Sleep(15);
+            }
+            var parts = answer.Result?.Split(' ') ?? [];
+            if (parts is not ["invoke", var idText, var xText, var yText]
+                || !int.TryParse(idText, out int id) || id < FirstCommand || id > LastCommand)
                 return 0;
+            int.TryParse(xText, out int x);
+            int.TryParse(yText, out int y);
             var invoke = new CmInvokeCommandInfoEx
             {
                 cbSize = Marshal.SizeOf<CmInvokeCommandInfoEx>(),
                 fMask = CmicMaskUnicode | CmicMaskPtInvoke,
                 hwnd = owner.Handle,
-                lpVerb = (IntPtr)(command - FirstCommand),
-                lpVerbW = (IntPtr)(command - FirstCommand),
+                lpVerb = (IntPtr)(id - FirstCommand),
+                lpVerbW = (IntPtr)(id - FirstCommand),
                 nShow = SwShowNormal,
-                ptInvoke = new Point { X = x, Y = y },
+                ptInvoke = new NativePoint { X = x, Y = y },
+                lpDirectoryW = request.Background ? request.Paths[0] : Path.GetDirectoryName(request.Paths[0]),
             };
             menu.InvokeCommand(ref invoke);
             WaitForWindows();
@@ -102,6 +235,127 @@ public static class ShellMenu
             pidls.ForEach(Marshal.FreeCoTaskMem);
             owner.DestroyHandle();
         }
+    }
+
+    /// <summary>Recorre el menú (y sus submenús, que algunas extensiones llenan recién al abrirse).</summary>
+    private static List<NativeMenuItem> Read(IContextMenu menu, OwnerWindow owner, IntPtr hmenu)
+    {
+        var items = new List<NativeMenuItem>();
+        int count = GetMenuItemCount(hmenu);
+        for (int i = 0; i < count; i++)
+        {
+            var info = new MenuItemInfo
+            {
+                cbSize = (uint)Marshal.SizeOf<MenuItemInfo>(),
+                fMask = MiimFType | MiimState | MiimId | MiimSubMenu | MiimString | MiimBitmap,
+            };
+            var text = new StringBuilder(256);
+            info.dwTypeData = Marshal.AllocCoTaskMem(512 * 2);
+            info.cch = 511;
+            try
+            {
+                if (!GetMenuItemInfo(hmenu, (uint)i, true, ref info))
+                    continue;
+                if ((info.fType & MftSeparator) != 0)
+                {
+                    items.Add(new NativeMenuItem(0, "", null, false, false, true, null));
+                    continue;
+                }
+                string label = Marshal.PtrToStringUni(info.dwTypeData) ?? "";
+                if ((info.fType & MftOwnerDraw) != 0 && label.Length == 0)
+                    continue; // dibujada por la extensión: no hay texto que mostrar
+                // "Anclar a Inicio de Strata UI" (el menú del Explorador de Strata UI): Archivos ya lo tiene.
+                if (label.Contains("Strata UI", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (info.wID >= FirstCommand && info.wID <= LastCommand && Verb(menu, info.wID - FirstCommand) is { } verb
+                    && SkippedVerbs.Contains(verb))
+                    continue;
+                List<NativeMenuItem>? children = null;
+                if (info.hSubMenu != IntPtr.Zero)
+                {
+                    owner.Forward(WmInitMenuPopup, info.hSubMenu, (IntPtr)i);
+                    children = Read(menu, owner, info.hSubMenu);
+                    if (children.Count == 0)
+                        continue;
+                }
+                items.Add(new NativeMenuItem((int)info.wID, Clean(label), Png(info.hbmpItem),
+                                             (info.fState & (MfsDisabled | MfsGrayed)) == 0, (info.fState & MfsChecked) != 0, false, children));
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(info.dwTypeData);
+            }
+        }
+        // Sin separadores repetidos ni en los bordes.
+        var tidy = new List<NativeMenuItem>();
+        foreach (var item in items)
+        {
+            if (item.Separator && (tidy.Count == 0 || tidy[^1].Separator))
+                continue;
+            tidy.Add(item);
+        }
+        while (tidy.Count > 0 && tidy[^1].Separator)
+            tidy.RemoveAt(tidy.Count - 1);
+        return tidy;
+    }
+
+    /// <summary>"&amp;Propiedades\tAlt+Entrar" → "Propiedades".</summary>
+    private static string Clean(string label)
+    {
+        int tab = label.IndexOf('\t');
+        if (tab >= 0)
+            label = label[..tab];
+        return label.Replace("&&", "\u0001").Replace("&", "").Replace('\u0001', '&').Trim();
+    }
+
+    private static string? Verb(IContextMenu menu, uint offset)
+    {
+        var buffer = Marshal.AllocCoTaskMem(512);
+        try
+        {
+            return menu.GetCommandString((UIntPtr)offset, GcsVerbW, IntPtr.Zero, buffer, 255) >= 0
+                ? Marshal.PtrToStringUni(buffer)
+                : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+        finally
+        {
+            Marshal.FreeCoTaskMem(buffer);
+        }
+    }
+
+    /// <summary>El ícono de la opción (si es un mapa de bits de verdad, no uno de los de sistema) como PNG en base64.</summary>
+    private static string? Png(IntPtr bitmap)
+    {
+        if ((long)bitmap is >= -1 and <= 11)
+            return null;
+        if (GetObject(bitmap, Marshal.SizeOf<NativeBitmap>(), out var info) == 0 || info.Width is <= 0 or > 64 || info.Height is <= 0 or > 64)
+            return null;
+        int width = info.Width, height = info.Height, stride = width * 4;
+        var pixels = new byte[stride * height];
+        var header = new BitmapInfoHeader { Size = Marshal.SizeOf<BitmapInfoHeader>(), Width = width, Height = -height, Planes = 1, BitCount = 32 };
+        IntPtr dc = CreateCompatibleDC(IntPtr.Zero);
+        try
+        {
+            if (GetDIBits(dc, bitmap, 0, (uint)height, pixels, ref header, 0) == 0)
+                return null;
+        }
+        finally
+        {
+            DeleteDC(dc);
+        }
+        bool hasAlpha = false;
+        for (int i = 3; i < pixels.Length && !hasAlpha; i += 4)
+            hasAlpha = pixels[i] != 0;
+        var source = BitmapSource.Create(width, height, 96, 96, hasAlpha ? PixelFormats.Pbgra32 : PixelFormats.Bgr32, null, pixels, stride);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(source));
+        using var stream = new MemoryStream();
+        encoder.Save(stream);
+        return Convert.ToBase64String(stream.ToArray());
     }
 
     /// <summary>Menú de los elementos elegidos (todos de la misma carpeta).</summary>
@@ -126,7 +380,7 @@ public static class ShellMenu
             : menu as IContextMenu;
     }
 
-    /// <summary>Menú del espacio libre de una carpeta (Nuevo, Pegar, Propiedades de la carpeta…).</summary>
+    /// <summary>Menú del espacio libre de una carpeta (Nuevo, Propiedades de la carpeta…).</summary>
     private static IContextMenu? BackgroundMenu(string folder, IntPtr owner, List<IntPtr> pidls)
     {
         if (SHParseDisplayName(folder, IntPtr.Zero, out var pidl, 0, out _) < 0)
@@ -183,6 +437,15 @@ public static class ShellMenu
 
         public OwnerWindow() => CreateHandle(new System.Windows.Forms.CreateParams());
 
+        /// <summary>Un mensaje como si viniera del menú (para que una extensión llene su submenú).</summary>
+        public void Forward(int message, IntPtr wParam, IntPtr lParam)
+        {
+            if (Menu is IContextMenu3 menu3)
+                menu3.HandleMenuMsg2((uint)message, wParam, lParam, out _);
+            else if (Menu is IContextMenu2 menu2)
+                menu2.HandleMenuMsg((uint)message, wParam, lParam);
+        }
+
         protected override void WndProc(ref System.Windows.Forms.Message m)
         {
             if (m.Msg is WmInitMenuPopup or WmDrawItem or WmMeasureItem or WmMenuChar)
@@ -202,16 +465,42 @@ public static class ShellMenu
         }
     }
 
-    private const int FirstCommand = 1;
-    private const uint CmfNormal = 0, CmfExplore = 0x4, CmfExtendedVerbs = 0x100;
-    private const uint TpmReturnCmd = 0x100, TpmRightButton = 0x2;
+    private const uint FirstCommand = 1, LastCommand = 0x7FFF;
+    private const uint CmfNormal = 0, CmfExplore = 0x4, CmfExtendedVerbs = 0x100, GcsVerbW = 4;
     private const int CmicMaskUnicode = 0x4000, CmicMaskPtInvoke = 0x20000000, SwShowNormal = 1;
     private const int WmInitMenuPopup = 0x117, WmDrawItem = 0x2B, WmMeasureItem = 0x2C, WmMenuChar = 0x120, VkShift = 0x10;
+    private const uint MiimState = 0x1, MiimId = 0x2, MiimSubMenu = 0x4, MiimString = 0x40, MiimBitmap = 0x80, MiimFType = 0x100;
+    private const uint MftSeparator = 0x800, MftOwnerDraw = 0x100, MfsDisabled = 0x2, MfsGrayed = 0x1, MfsChecked = 0x8;
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct Point
+    private struct NativePoint
     {
         public int X, Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MenuItemInfo
+    {
+        public uint cbSize, fMask, fType, fState, wID;
+        public IntPtr hSubMenu, hbmpChecked, hbmpUnchecked, dwItemData, dwTypeData;
+        public uint cch;
+        public IntPtr hbmpItem;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeBitmap
+    {
+        public int Type, Width, Height, WidthBytes;
+        public ushort Planes, BitsPixel;
+        public IntPtr Bits;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BitmapInfoHeader
+    {
+        public int Size, Width, Height;
+        public ushort Planes, BitCount;
+        public int Compression, SizeImage, XPelsPerMeter, YPelsPerMeter, ClrUsed, ClrImportant;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -231,7 +520,7 @@ public static class ShellMenu
         public string? lpParametersW;
         public string? lpDirectoryW;
         public string? lpTitleW;
-        public Point ptInvoke;
+        public NativePoint ptInvoke;
     }
 
     [ComImport, Guid("000214E6-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -286,13 +575,18 @@ public static class ShellMenu
     private static extern int SHBindToObject(IntPtr parent, IntPtr pidl, IntPtr bindContext, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object result);
     [DllImport("user32.dll")] private static extern IntPtr CreatePopupMenu();
     [DllImport("user32.dll")] private static extern bool DestroyMenu(IntPtr menu);
-    [DllImport("user32.dll")] private static extern int TrackPopupMenuEx(IntPtr menu, uint flags, int x, int y, IntPtr hwnd, IntPtr parameters);
-    [DllImport("user32.dll")] private static extern bool PostMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
-    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern int GetMenuItemCount(IntPtr menu);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool GetMenuItemInfo(IntPtr menu, uint item, bool byPosition, ref MenuItemInfo info);
     [DllImport("user32.dll")] private static extern bool AllowSetForegroundWindow(int processId);
     [DllImport("user32.dll")] private static extern short GetKeyState(int key);
-    [DllImport("user32.dll")] private static extern bool GetCursorPos(out Point point);
+    [DllImport("user32.dll")] private static extern bool GetCursorPos(out NativePoint point);
     [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr param);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("gdi32.dll")] private static extern int GetObject(IntPtr handle, int size, out NativeBitmap bitmap);
+    [DllImport("gdi32.dll")] private static extern IntPtr CreateCompatibleDC(IntPtr dc);
+    [DllImport("gdi32.dll")] private static extern bool DeleteDC(IntPtr dc);
+    [DllImport("gdi32.dll")]
+    private static extern int GetDIBits(IntPtr dc, IntPtr bitmap, uint start, uint lines, [Out] byte[] bits, ref BitmapInfoHeader info, uint usage);
 }

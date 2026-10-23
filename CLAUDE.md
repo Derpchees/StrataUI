@@ -189,8 +189,12 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   entrada "Instalar", sacar esa copia).
 - **Archivos** (`Files/FilesWindow`, `Services/Files/`): explorador propio. Lee con System.IO,
   íconos con `SHGetFileInfo` en un hilo STA aparte (`FileIcons`) y miniaturas decodificadas por WPF;
-  nunca extensiones del Shell dentro del proceso (el menú de Windows va en otro proceso:
-  `ShellMenu`, `--shell-menu`). Copiar/mover/Papelera con `SHFileOperation` (`FileOperations`).
+  nunca extensiones del Shell dentro del proceso: el menú de Windows (`ShellMenuSession`,
+  `--shell-menu`: devuelve sus opciones en JSON y ejecuta la elegida) y las carátulas
+  (`ThumbnailHost`, `--thumbnails`, UTF-8 por la entrada y la salida estándar) van en otro proceso.
+  Cada pestaña tiene uno o dos `FolderPane` (vista doble); la ventana solo tiene la barra lateral,
+  las pestañas y los comandos del panel activo. La Papelera se lee de `$Recycle.Bin` (`RecycleBin`,
+  fichas `$I`) y los comprimidos se abren con el compresor instalado (`Archivers`). Copiar/mover/Papelera con `SHFileOperation` (`FileOperations`).
   Nube por atributos (`FileEntry.CloudOf`): un archivo "solo en línea" no se lee (ni miniatura ni
   ícono propio) porque leerlo lo descarga. Red: `\\servidor` lista sus recursos (`Places.Shares`).
   Las carpetas que abre Strata UI pasan por `StartMenuService.OpenPath` (Archivos o el Explorador

@@ -9,6 +9,17 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [3.9.0] - 2026-10-22
 
 ### Añadido
+- **Pestañas y vista doble en Archivos**: pestañas en la barra de título (Ctrl+T, Ctrl+W, Ctrl+Tab,
+  clic con la rueda para abrir una carpeta en otra pestaña o cerrar una) y dos carpetas lado a lado
+  en la misma pestaña (Ctrl+Mayús+D), para arrastrar de una a otra.
+- **Carátulas en Archivos**: videos, música, PDF y documentos muestran su vista previa (las pide a
+  Windows un proceso aparte), con el botón de reproducir sobre los videos; íconos más nítidos en la
+  cuadrícula, y los nombres largos ya no corren ni cortan las carátulas.
+- **Anclar carpetas** a la barra lateral de Archivos (clic derecho) y la **Papelera de reciclaje**
+  en la barra lateral, con "Vaciar la Papelera".
+- **Mostrar u ocultar las extensiones** de los archivos con un botón.
+- **Ícono propio de Archivos** (una carpeta): su botón en la barra ya no se mezcla con el del Hub.
+- **Desplazamiento suave** con la rueda en Archivos.
 - **Sonar también en** (panel de Sonido): lo que suena en la salida principal se oye además en otra,
   por ejemplo los parlantes de los dos monitores. Un interruptor, la lista de salidas (sugiere la de
   un monitor) y el volumen de la segunda; sigue a la salida principal si cambia.
@@ -18,16 +29,24 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   acerca donde está el mouse, se arrastra para moverla, doble clic para el tamaño real, girar y la
   orientación de las fotos del celular. Video y audio con controles que se ocultan solos, volumen y
   pantalla completa. Las flechas pasan al anterior o al siguiente de la carpeta.
-- **Nube en Archivos**: OneDrive (personal y de trabajo), Google Drive, Dropbox e iCloud Drive en la
-  barra lateral, con el estado de cada archivo (solo en línea, en el equipo o siempre en el
+- **Nube en Archivos**: OneDrive, Google Drive, Dropbox, iCloud Drive y demás (solo si están
+  instalados: una carpeta que quedó de una app desinstalada ya no sale como nube) en la barra lateral, con el estado de cada archivo (solo en línea, en el equipo o siempre en el
   dispositivo) y "Mantener siempre en este dispositivo" / "Liberar espacio". Las miniaturas no
   descargan archivos que están solo en la nube.
-- **Red en Archivos**: carpetas compartidas (`\\servidor\recurso`, y escribir `\\servidor` lista sus
+- **Red en Archivos**: las ubicaciones de red de Este equipo y las unidades de red desconectadas; si
+  una no responde, un aviso claro con "Reintentar" en lugar de quedarse cargando. Carpetas compartidas (`\\servidor\recurso`, y escribir `\\servidor` lista sus
   carpetas), unidades de red y "Conectar unidad de red"; las carpetas de red visitadas quedan en la
   barra lateral.
-- **"Mostrar más opciones"** en el menú de Archivos: el menú clásico de Windows, con las opciones
-  de otras apps (7-Zip, Abrir con Code, Enviar a, Propiedades, Nuevo…), en un proceso aparte para
-  que una extensión que falle no cierre Strata UI.
+- **El menú contextual de Windows dentro del de Archivos**: las opciones que agregan Windows y tus
+  apps (NanaZip, 7-Zip, Abrir con, Enviar a, Defender, Propiedades, Nuevo…), con sus íconos y
+  submenús, también las de programas que instales después. Se leen en un proceso aparte para que
+  una extensión que falle no cierre Strata UI.
+- **Papelera de reciclaje dentro de Archivos**: lo borrado con su fecha y su ubicación original,
+  Restaurar, Eliminar definitivamente y Vaciar la Papelera; soltar archivos encima los manda ahí.
+- **Anclar a Inicio** desde el menú de Archivos.
+- **Comprimidos con tu compresor**: se abren con el que tengas instalado (NanaZip, 7-Zip, WinRAR,
+  PeaZip, Bandizip), zip incluido, en lugar de la carpeta comprimida de Windows; y "Extraer en una
+  carpeta" con su ventana de progreso.
 
 ### Cambiado
 - **Notificaciones agrupadas, más limpias**: cada app es una sola tarjeta con su ícono, nombre, hora

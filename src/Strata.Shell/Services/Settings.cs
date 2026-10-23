@@ -249,6 +249,8 @@ public sealed class StrataSettings
     public bool FilesGridView { get; set; }
     /// <summary>El explorador muestra los archivos y carpetas ocultos.</summary>
     public bool FilesShowHidden { get; set; }
+    /// <summary>Carpetas ancladas a la barra lateral de Archivos, en orden.</summary>
+    public List<string> FilesPinnedFolders { get; set; } = [];
     /// <summary>El explorador muestra las extensiones (".pdf") en los nombres.</summary>
     public bool FilesShowExtensions { get; set; } = true;
     /// <summary>

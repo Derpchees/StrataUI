@@ -34,6 +34,8 @@ public sealed class Place : INotifyPropertyChanged
     public bool IsCloud { get; init; }
     /// <summary>Ubicación de red recordada: se puede quitar de la lista.</summary>
     public bool CanForget { get; init; }
+    /// <summary>Carpeta anclada a la barra lateral: se puede desanclar.</summary>
+    public bool CanUnpin { get; init; }
 
     /// <summary>Espacio usado de una unidad (0–100); -1 si no es una unidad.</summary>
     public double UsedPercent { get; init; } = -1;
@@ -67,6 +69,23 @@ public sealed record StorageView(List<Place> Drives, List<Place> Cloud, List<Pla
 public static class Places
 {
     public static string? Downloads => KnownFolder(new Guid("374DE290-123F-4565-9164-39C4925E467B"));
+
+    /// <summary>La Papelera (carpeta virtual): se abre la de Windows.</summary>
+    public const string RecycleBin = "shell:RecycleBinFolder";
+
+    /// <summary>Las carpetas ancladas que siguen existiendo.</summary>
+    public static List<Place> Pinned() =>
+        Settings.Current.FilesPinnedFolders
+            .Where(Directory.Exists)
+            .Select(p => new Place(NameOf(p), p, SymbolRegular.Folder24) { CanUnpin = true })
+            .ToList();
+
+    public static bool IsPinned(string path) =>
+        Settings.Current.FilesPinnedFolders.Any(p => string.Equals(p.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase));
+
+    public static void SetPinned(string path, bool pinned) => Settings.Update(s => s.FilesPinnedFolders = pinned
+        ? s.FilesPinnedFolders.Append(path).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+        : s.FilesPinnedFolders.Where(p => !string.Equals(p.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)).ToList());
 
     /// <summary>Carpetas del usuario (las que existen), en el orden del Explorador.</summary>
     public static List<Place> Folders()

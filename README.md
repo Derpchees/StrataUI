@@ -220,20 +220,28 @@ and everything goes back to normal.
 ### <img src="docs/icons/files.svg" width="28" align="center" alt="" /> Files
 
 - A **file explorer** that matches the rest of Strata UI: a home page with your folders, drives (with
-  free space) and recent files, and every folder as a list or a grid with picture thumbnails.
+  free space) and recent files, and every folder as a list or a grid with previews of pictures,
+  videos, music, PDFs and documents.
+- **Tabs** in the title bar (Ctrl+T, middle-click a folder to open it in a new tab) and a **dual
+  pane** view with two folders side by side (Ctrl+Shift+D) to drag files between them.
+- Pin your own folders to the sidebar, the Recycle Bin is one click away, file extensions can be
+  shown or hidden, and scrolling is smooth.
 - Breadcrumb path you can also type into (Ctrl+L), search in the folder, sorting, hidden files,
   back/forward with the mouse side buttons and the usual keyboard shortcuts.
 - Copy, cut, paste, rename, new folder and Recycle Bin use Windows' own engine (progress, conflict
   questions and Ctrl+Z in File Explorer). Clipboard and drag and drop work with File Explorer and
-  any other app. *Show more options* opens the classic Windows menu (7-Zip, Send to, Properties,
-  New...) in a separate process, so a broken shell extension can't take Strata UI down.
+  any other app. The right-click menu also includes everything Windows and your apps add (NanaZip,
+  7-Zip, Open with, Send to, Properties, New...), read in a separate process so a broken shell
+  extension can't take Strata UI down. Archives open in your installed archiver, the Recycle Bin
+  (restore, delete, empty) lives inside Files, and anything can be pinned to Start.
 - A built-in **viewer** for pictures, video and music: zoom where the mouse is, drag to pan, real
   size with a double click, phone photos the right way up, playback controls that hide on their
   own, full screen, and the arrow keys to go through the folder.
 - **Cloud and network**: OneDrive (personal and work), Google Drive, Dropbox and iCloud Drive in the
   sidebar with each file's status (online-only, on this PC, always keep) and *Free up space*;
   thumbnails never download online-only files. Shared folders (`\\server\share`, or just
-  `\\server` to list them), mapped drives and *Map network drive*.
+  `\\server` to list them), your saved network locations, mapped drives (also disconnected ones)
+  and *Map network drive*; an unreachable server says so instead of hanging.
 - Within Strata UI it replaces File Explorer: Win+E, the Explorer button and the Start menu and
   Win+X folders open Files (switch it off in Hub > General). Everything else in Windows keeps using
   File Explorer. You can also open it with `StrataUI.exe --files [folder]`.

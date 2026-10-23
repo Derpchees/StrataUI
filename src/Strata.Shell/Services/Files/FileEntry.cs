@@ -25,6 +25,22 @@ public sealed class FileEntry : INotifyPropertyChanged
         Cloud = CloudOf(Attributes, inCloud);
     }
 
+    /// <summary>Algo de la Papelera: su nombre de antes; la fecha es la de borrado y el "tipo", la carpeta de donde salió.</summary>
+    public FileEntry(RecycledItem item)
+    {
+        Name = item.Name;
+        FullPath = item.DataPath;
+        IsFolder = item.IsFolder;
+        Size = item.IsFolder ? -1 : item.Size;
+        Modified = item.Deleted;
+        Attributes = item.IsFolder ? FileAttributes.Directory : FileAttributes.Normal;
+        TypeName = item.OriginalFolder;
+        Recycled = item;
+    }
+
+    /// <summary>Si está en la Papelera, de dónde salió (para restaurarlo).</summary>
+    public RecycledItem? Recycled { get; }
+
     /// <summary>Una carpeta compartida de un servidor (\\servidor\recurso): sin fecha ni tamaño.</summary>
     public FileEntry(string name, string path, string typeName)
     {
@@ -100,6 +116,9 @@ public sealed class FileEntry : INotifyPropertyChanged
     }
 
     public bool HasThumbnail => _thumbnail != null;
+
+    /// <summary>Ya se buscó su carátula (tenga o no): no se vuelve a pedir.</summary>
+    public bool ThumbnailTried { get; set; }
     public ImageSource? Preview => _thumbnail ?? _icon;
 
     private bool _isCut;

@@ -44,33 +44,47 @@ public static class FileIcons
         EnsureWorker();
         Jobs.Add(() =>
         {
+            // Primero todos los íconos (son rápidos) y después las carátulas, que pueden tardar: así
+            // nunca queda un archivo sin ícono esperando la carátula de otro.
             var batch = new List<(FileEntry, ImageSource?, ImageSource?)>();
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            foreach (var entry in entries)
+            foreach (var pass in new[] { false, true })
             {
-                if (token.IsCancellationRequested)
-                    return;
-                var icon = entry.Icon ?? IconOf(entry);
-                ImageSource? thumbnail = null;
-                if (thumbnails && entry.Thumbnail is null)
+                if (pass && !thumbnails)
+                    break;
+                foreach (var entry in entries)
                 {
-                    // Las imágenes las decodifica WPF; lo demás (video, música, PDF, Office…) pide su
-                    // carátula a Windows en el proceso aparte.
-                    if (IsPicture(entry))
-                        thumbnail = AppIcons.Load(entry.FullPath, 192);
-                    else if (HasShellThumbnail(entry))
-                        thumbnail = ThumbnailHost.Get(entry.FullPath, 192, cachedOnly: entry.IsOnlineOnly);
+                    if (token.IsCancellationRequested)
+                        return;
+                    ImageSource? icon = null, thumbnail = null;
+                    if (!pass)
+                    {
+                        icon = entry.Icon ?? IconOf(entry);
+                    }
+                    else if (entry.Thumbnail is null && !entry.ThumbnailTried)
+                    {
+                        entry.ThumbnailTried = true;
+                        // Las imágenes las decodifica WPF; lo demás (video, música, PDF, Office…) pide su
+                        // carátula a Windows en el proceso aparte.
+                        if (IsPicture(entry))
+                            thumbnail = AppIcons.Load(entry.FullPath, 192);
+                        else if (HasShellThumbnail(entry))
+                            thumbnail = ThumbnailHost.Get(entry.FullPath, 192, cachedOnly: entry.IsOnlineOnly);
+                        if (thumbnail is null)
+                            continue;
+                    }
+                    batch.Add((entry, icon, thumbnail));
+                    // Se entregan de a poco: lo visible aparece enseguida y la ventana no se traba.
+                    if (watch.ElapsedMilliseconds > 60)
+                    {
+                        Deliver(batch, ui, token);
+                        batch = [];
+                        watch.Restart();
+                    }
                 }
-                batch.Add((entry, icon, thumbnail));
-                // Se entregan de a poco: lo visible aparece enseguida y la ventana no se traba.
-                if (watch.ElapsedMilliseconds > 60)
-                {
-                    Deliver(batch, ui, token);
-                    batch = [];
-                    watch.Restart();
-                }
+                Deliver(batch, ui, token);
+                batch = [];
             }
-            Deliver(batch, ui, token);
         });
     }
 

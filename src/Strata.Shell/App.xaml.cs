@@ -137,9 +137,9 @@ public partial class App : Application
             return;
         }
         // Menú contextual de Windows de Archivos ("Mostrar más opciones"), en un proceso aparte.
-        if (e.Args.Length > 0 && e.Args[0] == Services.Files.ShellMenu.Arg)
+        if (e.Args.Length > 0 && e.Args[0] == Services.Files.ShellMenuSession.Arg)
         {
-            Shutdown(Services.Files.ShellMenu.Run(e.Args));
+            Shutdown(Services.Files.ShellMenuSession.Run());
             return;
         }
         // Diálogo de abrir archivo o carpeta en un proceso aparte (ver Services/FilePicker).

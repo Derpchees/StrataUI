@@ -27,6 +27,27 @@ public class FilesTests
     public void Cloud_state_from_attributes(int attributes, bool inCloud, CloudState expected) =>
         Assert.Equal(expected, FileEntry.CloudOf((FileAttributes)attributes, inCloud));
 
+    [Fact]
+    public void Recycle_bin_info_file_version_2_is_read()
+    {
+        const string original = @"C:\Users\ana\Documents\factura.pdf";
+        var when = new DateTime(2026, 10, 22, 12, 30, 0, DateTimeKind.Local);
+        var data = new List<byte>();
+        data.AddRange(BitConverter.GetBytes(2L));
+        data.AddRange(BitConverter.GetBytes(4096L));
+        data.AddRange(BitConverter.GetBytes(when.ToFileTime()));
+        data.AddRange(BitConverter.GetBytes(original.Length + 1));
+        data.AddRange(System.Text.Encoding.Unicode.GetBytes(original + "\0"));
+
+        var parsed = RecycleBin.Parse(data.ToArray());
+
+        Assert.NotNull(parsed);
+        Assert.Equal(original, parsed.Value.Path);
+        Assert.Equal(4096L, parsed.Value.Size);
+        Assert.Equal(when, parsed.Value.Deleted);
+        Assert.Null(RecycleBin.Parse(new byte[10]));
+    }
+
     [Theory]
     [InlineData(@"\\nas", true)]
     [InlineData(@"\\nas\fotos", false)]

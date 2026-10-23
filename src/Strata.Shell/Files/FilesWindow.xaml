@@ -6,315 +6,73 @@
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  Title="{l:T 'Archivos'}"
                  Icon="{x:Static controls:FilesIcon.Bitmap}"
-                 Width="1120" Height="720" MinWidth="680" MinHeight="440"
+                 Width="1160" Height="740" MinWidth="720" MinHeight="460"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
                  WindowCornerPreference="Round">
     <ui:FluentWindow.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="FilesStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
-        <!-- Botón de la barra de herramientas: solo ícono, cuadrado y plano -->
-        <Style x:Key="ToolButton" TargetType="Button">
-            <Setter Property="Width" Value="36" />
-            <Setter Property="Height" Value="36" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" CornerRadius="8" Background="Transparent">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.35" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+            <!-- Lugar de la barra lateral: carpeta con su símbolo o unidad con el espacio usado -->
+            <DataTemplate x:Key="SidePlaceTemplate">
+                <Button Style="{StaticResource SideItem}" Click="Place_Click" ToolTip="{Binding Path}"
+                        PreviewMouseDown="Place_PreviewMouseDown" ContextMenuOpening="Place_ContextMenuOpening">
+                    <Button.ContextMenu>
+                        <ContextMenu />
+                    </Button.ContextMenu>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="17" Margin="0,0,12,0"
+                                       Foreground="{DynamicResource StrataAccentBrush}" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,7">
+                            <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <ProgressBar Value="{Binding UsedPercent, Mode=OneWay}" Maximum="100" Height="3" MinHeight="3" Margin="0,5,0,1"
+                                         Visibility="{Binding IsDrive, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                    </Grid>
+                </Button>
+            </DataTemplate>
 
-        <!-- Botón con ícono y texto de la barra de comandos (Nueva carpeta, Ordenar) -->
-        <Style x:Key="CommandButton" TargetType="Button" BasedOn="{StaticResource ToolButton}">
-            <Setter Property="Width" Value="NaN" />
-            <Setter Property="Height" Value="34" />
-            <Setter Property="Padding" Value="10,0" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" CornerRadius="8" Background="Transparent" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.35" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Interruptor de vista (lista / cuadrícula) y de ocultos: marcado con el acento -->
-        <Style x:Key="ViewToggle" TargetType="ToggleButton">
-            <Setter Property="Width" Value="34" />
-            <Setter Property="Height" Value="30" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Border x:Name="Bd" CornerRadius="6" Background="Transparent">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource StrataAccentBrush}" />
-                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Entrada de la barra lateral: la carpeta actual lleva la marca de acento, como el Hub -->
-        <Style x:Key="SideItem" TargetType="Button">
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Margin" Value="0,1" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <Border x:Name="Bd" CornerRadius="6" Background="Transparent" Padding="12,0" MinHeight="36">
-                                <ContentPresenter VerticalAlignment="Center" />
-                            </Border>
-                            <Border x:Name="Pill" Width="3" Height="16" CornerRadius="1.5" HorizontalAlignment="Left"
-                                    Background="{DynamicResource StrataAccentBrush}" Visibility="Collapsed" />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            </Trigger>
-                            <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                                <Setter TargetName="Pill" Property="Visibility" Value="Visible" />
-                            </DataTrigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Fila o mosaico de un archivo: resaltado suave y la selección teñida con el acento -->
-        <Style x:Key="FileItem" TargetType="ListBoxItem">
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Margin" Value="0,1" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Grid>
-                            <Border x:Name="Bd" CornerRadius="6" Background="Transparent" />
-                            <Border x:Name="Sel" CornerRadius="6" Background="{DynamicResource StrataAccentBrush}" Opacity="0" />
-                            <Border x:Name="Edge" CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource StrataAccentBrush}" Opacity="0" />
-                            <ContentPresenter />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Sel" Property="Opacity" Value="0.18" />
-                                <Setter TargetName="Edge" Property="Opacity" Value="0.45" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="GridItem" TargetType="ListBoxItem" BasedOn="{StaticResource FileItem}">
-            <Setter Property="Margin" Value="3" />
-        </Style>
-
-        <!-- Lo oculto y lo cortado se ve tenue -->
-        <Style x:Key="FileContent" TargetType="FrameworkElement">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                    <Setter Property="Opacity" Value="0.6" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsCut}" Value="True">
-                    <Setter Property="Opacity" Value="0.45" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <!-- Marca del estado en la nube sobre el ícono: nube (solo en línea) o visto verde (en el equipo;
-             relleno si está fijado), como en el Explorador -->
-        <Style x:Key="CloudBadge" TargetType="ui:SymbolIcon">
-            <Setter Property="Symbol" Value="CheckmarkCircle24" />
-            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
-            <Setter Property="Visibility" Value="{Binding HasCloudState, Converter={StaticResource BoolToVis}}" />
-            <Setter Property="HorizontalAlignment" Value="Right" />
-            <Setter Property="VerticalAlignment" Value="Bottom" />
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding Cloud}" Value="OnlineOnly">
-                    <Setter Property="Symbol" Value="Cloud24" />
-                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding Cloud}" Value="Pinned">
-                    <Setter Property="Filled" Value="True" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="RenameBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
-            <Setter Property="Padding" Value="6,3" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="FontSize" Value="13" />
-            <EventSetter Event="PreviewKeyDown" Handler="RenameBox_PreviewKeyDown" />
-            <EventSetter Event="LostKeyboardFocus" Handler="RenameBox_LostKeyboardFocus" />
-        </Style>
-
-        <!-- Vista de lista: ícono y nombre, fecha, tipo y tamaño (anchos iguales a la cabecera) -->
-        <DataTemplate x:Key="DetailsTemplate">
-            <Grid Height="34" Margin="10,0" Style="{StaticResource FileContent}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="160" />
-                    <ColumnDefinition Width="170" />
-                    <ColumnDefinition Width="170" />
-                    <ColumnDefinition Width="90" />
-                </Grid.ColumnDefinitions>
-                <Grid Width="24" Height="22" HorizontalAlignment="Left">
-                    <Image Source="{Binding Icon}" Width="20" Height="20" HorizontalAlignment="Left" VerticalAlignment="Top"
-                           RenderOptions.BitmapScalingMode="HighQuality" />
-                    <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="11" Margin="0,0,-1,-1" />
-                </Grid>
-                <Grid Margin="32,0,12,0">
-                    <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                    <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Center"
-                             Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
-                </Grid>
-                <TextBlock Grid.Column="1" Text="{Binding ModifiedText}" FontSize="12" VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                <TextBlock Grid.Column="2" Text="{Binding TypeName}" FontSize="12" VerticalAlignment="Center" Margin="0,0,12,0"
-                           TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                <TextBlock Grid.Column="3" Text="{Binding SizeText}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Right"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-            </Grid>
-        </DataTemplate>
-
-        <!-- Vista de cuadrícula: ícono grande o miniatura y el nombre debajo -->
-        <DataTemplate x:Key="GridTemplate">
-            <Grid Margin="8,10,8,8" Style="{StaticResource FileContent}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="72" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <Image Source="{Binding Icon}" Width="48" Height="48" RenderOptions.BitmapScalingMode="HighQuality">
-                    <Image.Style>
-                        <Style TargetType="Image">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding HasThumbnail}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Image.Style>
-                </Image>
-                <Border CornerRadius="6" MaxWidth="96" MaxHeight="72" HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Visibility="{Binding HasThumbnail, Converter={StaticResource BoolToVis}}" ClipToBounds="True">
-                    <Image Source="{Binding Thumbnail}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
-                </Border>
-                <!-- Video: el botón de reproducir sobre su carátula -->
-                <Border Width="26" Height="26" CornerRadius="13" Background="#99000000" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding IsVideo}" Value="True" />
-                                        <Condition Binding="{Binding HasThumbnail}" Value="True" />
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <ui:SymbolIcon Symbol="Play24" Filled="True" FontSize="13" Foreground="White" Margin="2,0,0,0" />
-                </Border>
-                <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="16" Margin="0,0,14,6" />
-                <Grid Grid.Row="1" Margin="0,8,0,0">
-                    <TextBlock Text="{Binding DisplayName}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="34"
-                               TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                    <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Top"
-                             Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
-                </Grid>
-            </Grid>
-        </DataTemplate>
-
-        <!-- Mosaico de la portada: carpeta del usuario, de la nube o de la red -->
-        <DataTemplate x:Key="HomeFolderTemplate">
-            <Button Style="{StaticResource HubTile}" Width="196" Click="Place_Click" ToolTip="{Binding Path}">
-                <StackPanel Orientation="Horizontal">
-                    <Border Width="38" Height="38" CornerRadius="10" Margin="0,0,12,0"
-                            Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                        <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="19" Foreground="{DynamicResource StrataAccentBrush}" />
-                    </Border>
-                    <TextBlock Text="{Binding Name}" FontSize="14" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" MaxWidth="110"
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                </StackPanel>
-            </Button>
-        </DataTemplate>
-
-        <!-- Lugar de la barra lateral: carpeta con su símbolo o unidad con su ícono y el espacio usado -->
-        <DataTemplate x:Key="SidePlaceTemplate">
-            <Button Style="{StaticResource SideItem}" Click="Place_Click" ToolTip="{Binding Path}"
-                    ContextMenuOpening="Place_ContextMenuOpening">
-                <Button.ContextMenu>
-                    <ContextMenu />
-                </Button.ContextMenu>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="17" Margin="0,0,12,0"
-                                   Foreground="{DynamicResource StrataAccentBrush}" />
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,7">
-                        <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis"
+            <!-- Pestaña: la elegida resalta sobre la barra de título, como en un navegador -->
+            <DataTemplate x:Key="TabTemplate">
+                <Border x:Name="Tab" Height="32" MinWidth="120" MaxWidth="220" Margin="0,0,4,0" Padding="10,0,4,0" CornerRadius="8"
+                        Background="Transparent" Cursor="Hand" WindowChrome.IsHitTestVisibleInChrome="True"
+                        MouseLeftButtonDown="Tab_MouseLeftButtonDown" MouseDown="Tab_MouseDown" ToolTip="{Binding Path}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Symbol="Folder16" Filled="True" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource StrataAccentBrush}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                        <ProgressBar Value="{Binding UsedPercent, Mode=OneWay}" Maximum="100" Height="3" MinHeight="3" Margin="0,5,0,1"
-                                     Visibility="{Binding IsDrive, Converter={StaticResource BoolToVis}}" />
-                    </StackPanel>
-                </Grid>
-            </Button>
-        </DataTemplate>
+                        <Button Grid.Column="2" Style="{StaticResource ToolButton}" Width="22" Height="22" Margin="6,0,0,0"
+                                Click="CloseTab_Click" ToolTip="{l:T 'Cerrar pestaña (Ctrl+W)'}">
+                            <ui:SymbolIcon Symbol="Dismiss12" FontSize="10" />
+                        </Button>
+                    </Grid>
+                </Border>
+                <DataTemplate.Triggers>
+                    <Trigger SourceName="Tab" Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Tab" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                    </Trigger>
+                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                        <Setter TargetName="Tab" Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+                        <Setter TargetName="Tab" Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                        <Setter TargetName="Tab" Property="BorderThickness" Value="1" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+        </ResourceDictionary>
     </ui:FluentWindow.Resources>
 
     <Grid x:Name="Root" Background="{DynamicResource StrataHubTintBrush}">
@@ -323,10 +81,26 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!-- Barra de título con las pestañas -->
         <ui:TitleBar x:Name="WindowTitleBar" Grid.Row="0" Title="{l:T 'Archivos'}">
             <ui:TitleBar.Icon>
                 <ui:ImageIcon Source="{x:Static controls:FilesIcon.Image}" />
             </ui:TitleBar.Icon>
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,4,0,0">
+                    <ItemsControl x:Name="TabStrip" ItemTemplate="{StaticResource TabTemplate}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                    <Button Style="{StaticResource ToolButton}" Width="30" Height="30" Click="NewTab_Click"
+                            WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="{l:T 'Nueva pestaña (Ctrl+T)'}">
+                        <ui:SymbolIcon Symbol="Add16" FontSize="14" />
+                    </Button>
+                </StackPanel>
+            </ui:TitleBar.Header>
         </ui:TitleBar>
 
         <Grid Grid.Row="1">
@@ -335,10 +109,13 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Barra lateral: Este equipo, las carpetas del usuario y las unidades -->
-            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
+            <!-- Barra lateral: Este equipo, carpetas, nube, unidades y red -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False" controls:SmoothScroll.Enabled="True">
                 <StackPanel Margin="12,4,8,16">
                     <ItemsControl x:Name="SideFolders" ItemTemplate="{StaticResource SidePlaceTemplate}" />
+                    <TextBlock x:Name="SidePinnedTitle" Text="{l:T 'Ancladas'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                    <ItemsControl x:Name="SidePinned" ItemTemplate="{StaticResource SidePlaceTemplate}" />
                     <TextBlock x:Name="SideCloudTitle" Text="{l:T 'Nube'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
                     <ItemsControl x:Name="SideCloud" ItemTemplate="{StaticResource SidePlaceTemplate}" />
@@ -363,90 +140,16 @@
             <Grid Grid.Column="1" Margin="4,0,16,12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <!-- Navegación, ruta y búsqueda -->
+                <!-- Comandos (sobre el panel activo) -->
                 <Grid Margin="0,2,0,8">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,8,0">
-                        <Button x:Name="BackButton" Style="{StaticResource ToolButton}" Click="Back_Click" ToolTip="{l:T 'Atrás (Alt+Izquierda)'}">
-                            <ui:SymbolIcon Symbol="ArrowLeft24" FontSize="16" />
-                        </Button>
-                        <Button x:Name="ForwardButton" Style="{StaticResource ToolButton}" Click="Forward_Click" ToolTip="{l:T 'Adelante (Alt+Derecha)'}">
-                            <ui:SymbolIcon Symbol="ArrowRight24" FontSize="16" />
-                        </Button>
-                        <Button x:Name="UpButton" Style="{StaticResource ToolButton}" Click="Up_Click" ToolTip="{l:T 'Subir un nivel (Alt+Arriba)'}">
-                            <ui:SymbolIcon Symbol="ArrowUp24" FontSize="16" />
-                        </Button>
-                        <Button Style="{StaticResource ToolButton}" Click="Refresh_Click" ToolTip="{l:T 'Actualizar (F5)'}">
-                            <ui:SymbolIcon Symbol="ArrowClockwise24" FontSize="16" />
-                        </Button>
-                    </StackPanel>
-
-                    <!-- Ruta en migas; un clic en el espacio libre (o Ctrl+L) la deja escribir -->
-                    <Border x:Name="AddressBar" Grid.Column="1" Height="36" CornerRadius="8" BorderThickness="1" Cursor="IBeam"
-                            Background="{DynamicResource ControlFillColorDefaultBrush}"
-                            BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
-                            MouseLeftButtonUp="AddressBar_MouseLeftButtonUp">
-                        <Grid>
-                            <ScrollViewer x:Name="CrumbScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
-                                          Margin="6,0">
-                                <ItemsControl x:Name="Crumbs" VerticalAlignment="Center">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <StackPanel Orientation="Horizontal">
-                                                <ui:SymbolIcon Symbol="ChevronRight12" FontSize="10" Margin="2,0" VerticalAlignment="Center"
-                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}"
-                                                               Visibility="{Binding HasChevron, Converter={StaticResource BoolToVis}}" />
-                                                <Button Style="{StaticResource CommandButton}" Height="28" Padding="8,0" Click="Crumb_Click"
-                                                        Cursor="Hand">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <ui:SymbolIcon Symbol="Home24" FontSize="14" Margin="0,0,6,0"
-                                                                       Foreground="{DynamicResource StrataAccentBrush}"
-                                                                       Visibility="{Binding IsHome, Converter={StaticResource BoolToVis}}" />
-                                                        <TextBlock Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
-                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                    </StackPanel>
-                                                </Button>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
-                            <TextBox x:Name="PathBox" Visibility="Collapsed" BorderThickness="0" Background="Transparent"
-                                     VerticalContentAlignment="Center" Padding="10,0" FontSize="13"
-                                     PreviewKeyDown="PathBox_PreviewKeyDown" LostKeyboardFocus="PathBox_LostKeyboardFocus" />
-                        </Grid>
-                    </Border>
-
-                    <ui:TextBox x:Name="SearchBox" Grid.Column="2" Width="250" Margin="8,0,0,0" Height="36" Padding="10,0"
-                                VerticalContentAlignment="Center" ClearButtonEnabled="True"
-                                TextChanged="SearchBox_TextChanged" PreviewKeyDown="SearchBox_PreviewKeyDown">
-                        <ui:TextBox.Icon>
-                            <ui:SymbolIcon Symbol="Search24" />
-                        </ui:TextBox.Icon>
-                    </ui:TextBox>
-                </Grid>
-
-                <!-- Comandos -->
-                <Grid Grid.Row="1" Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel x:Name="Commands" Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal">
                         <Button x:Name="NewFolderButton" Style="{StaticResource CommandButton}" Click="NewFolder_Click" ToolTip="{l:T 'Nueva carpeta (Ctrl+Mayús+N)'}">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="FolderAdd24" FontSize="16" Margin="0,0,8,0" Foreground="{DynamicResource StrataAccentBrush}" />
@@ -470,202 +173,49 @@
                             <ui:SymbolIcon Symbol="Delete24" FontSize="16" />
                         </Button>
                     </StackPanel>
-                    <StackPanel x:Name="ViewControls" Grid.Column="1" Orientation="Horizontal">
-                        <Button x:Name="SortButton" Style="{StaticResource CommandButton}" Click="Sort_Click">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="ArrowSort24" FontSize="16" Margin="0,0,8,0" />
-                                <TextBlock Text="{l:T 'Ordenar'}" FontSize="13" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <!-- En Este equipo no hay orden ni vista que cambiar -->
+                        <StackPanel x:Name="ViewControls" Orientation="Horizontal">
+                            <Button x:Name="SortButton" Style="{StaticResource CommandButton}" Click="Sort_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon Symbol="ArrowSort24" FontSize="16" Margin="0,0,8,0" />
+                                    <TextBlock Text="{l:T 'Ordenar'}" FontSize="13" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Border Padding="2" CornerRadius="8" Margin="8,0,0,0" VerticalAlignment="Center"
+                                    Background="{DynamicResource ControlFillColorDefaultBrush}">
+                                <StackPanel Orientation="Horizontal">
+                                    <ToggleButton x:Name="ExtensionsToggle" Style="{StaticResource ViewToggle}" Click="Extensions_Click"
+                                                  ToolTip="{l:T 'Mostrar las extensiones de los archivos'}" Margin="0,0,2,0">
+                                        <TextBlock Text=".ext" FontSize="11" FontWeight="SemiBold" />
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="HiddenToggle" Style="{StaticResource ViewToggle}" Click="Hidden_Click"
+                                                  ToolTip="{l:T 'Mostrar archivos ocultos'}" Margin="0,0,2,0">
+                                        <ui:SymbolIcon Symbol="Eye24" FontSize="15" />
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="DetailsToggle" Style="{StaticResource ViewToggle}" Click="DetailsView_Click"
+                                                  ToolTip="{l:T 'Lista'}">
+                                        <ui:SymbolIcon Symbol="TextBulletListLtr24" FontSize="15" />
+                                    </ToggleButton>
+                                    <ToggleButton x:Name="GridToggle" Style="{StaticResource ViewToggle}" Click="GridView_Click"
+                                                  ToolTip="{l:T 'Cuadrícula'}">
+                                        <ui:SymbolIcon Symbol="Grid24" FontSize="15" />
+                                    </ToggleButton>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
                         <Border Padding="2" CornerRadius="8" Margin="8,0,0,0" VerticalAlignment="Center"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                            <StackPanel Orientation="Horizontal">
-                                <ToggleButton x:Name="ExtensionsToggle" Style="{StaticResource ViewToggle}" Click="Extensions_Click"
-                                              ToolTip="{l:T 'Mostrar las extensiones de los archivos'}" Margin="0,0,2,0">
-                                    <TextBlock Text=".ext" FontSize="11" FontWeight="SemiBold" />
-                                </ToggleButton>
-                                <ToggleButton x:Name="HiddenToggle" Style="{StaticResource ViewToggle}" Click="Hidden_Click"
-                                              ToolTip="{l:T 'Mostrar archivos ocultos'}" Margin="0,0,2,0">
-                                    <ui:SymbolIcon Symbol="Eye24" FontSize="15" />
-                                </ToggleButton>
-                                <ToggleButton x:Name="DetailsToggle" Style="{StaticResource ViewToggle}" Click="DetailsView_Click"
-                                              ToolTip="{l:T 'Lista'}">
-                                    <ui:SymbolIcon Symbol="TextBulletListLtr24" FontSize="15" />
-                                </ToggleButton>
-                                <ToggleButton x:Name="GridToggle" Style="{StaticResource ViewToggle}" Click="GridView_Click"
-                                              ToolTip="{l:T 'Cuadrícula'}">
-                                    <ui:SymbolIcon Symbol="Grid24" FontSize="15" />
-                                </ToggleButton>
-                            </StackPanel>
+                            <ToggleButton x:Name="SplitToggle" Style="{StaticResource ViewToggle}" Click="Split_Click"
+                                          ToolTip="{l:T 'Vista doble: dos carpetas lado a lado (Ctrl+Mayús+D)'}">
+                                <ui:SymbolIcon Symbol="SplitVertical24" FontSize="15" />
+                            </ToggleButton>
                         </Border>
                     </StackPanel>
                 </Grid>
 
-                <!-- Contenido: tarjeta con la portada, la lista o la cuadrícula -->
-                <Border x:Name="Card" Grid.Row="2" CornerRadius="12" BorderThickness="1" ClipToBounds="True"
-                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                        AllowDrop="True" DragOver="Card_DragOver" Drop="Card_Drop">
-                    <Grid x:Name="Body">
-                        <!-- Portada (Este equipo): carpetas, unidades y recientes -->
-                        <ScrollViewer x:Name="HomePanel" VerticalScrollBarVisibility="Auto" CanContentScroll="False" Visibility="Collapsed">
-                            <StackPanel Margin="24,18,24,24">
-                                <TextBlock Text="{l:T 'Carpetas'}" FontSize="14" FontWeight="SemiBold" Margin="2,0,0,10"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                <ItemsControl x:Name="HomeFolders" ItemTemplate="{StaticResource HomeFolderTemplate}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-
-                                <TextBlock x:Name="HomeCloudTitle" Text="{l:T 'Nube'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,10"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" Visibility="Collapsed" />
-                                <ItemsControl x:Name="HomeCloud" ItemTemplate="{StaticResource HomeFolderTemplate}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-
-                                <TextBlock Text="{l:T 'Unidades'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,10"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                <ItemsControl x:Name="HomeDrives">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource HubTile}" Width="300" Click="Place_Click">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="*" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <Image Source="{Binding Icon}" Width="40" Height="40" Margin="0,0,14,0"
-                                                           RenderOptions.BitmapScalingMode="HighQuality" />
-                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis"
-                                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                        <ProgressBar Value="{Binding UsedPercent, Mode=OneWay}" Maximum="100" Height="5" MinHeight="5" Margin="0,8,0,6">
-                                                            <ProgressBar.Style>
-                                                                <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding IsAlmostFull}" Value="True">
-                                                                            <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </ProgressBar.Style>
-                                                        </ProgressBar>
-                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource CardDescription}" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-
-                                <TextBlock x:Name="HomeNetworkTitle" Text="{l:T 'Red'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,10"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" Visibility="Collapsed" />
-                                <ItemsControl x:Name="HomeNetwork" ItemTemplate="{StaticResource HomeFolderTemplate}" Visibility="Collapsed">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                </ItemsControl>
-
-                                <TextBlock x:Name="RecentTitle" Text="{l:T 'Recientes'}" FontSize="14" FontWeight="SemiBold" Margin="2,16,0,8"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                <ItemsControl x:Name="HomeRecent">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Button Style="{StaticResource SideItem}" Click="Recent_Click" ToolTip="{Binding Path}">
-                                                <Grid Margin="0,0,4,0">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto" />
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <Image Source="{Binding Icon}" Width="18" Height="18" Margin="0,0,12,0" />
-                                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center"
-                                                               TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                                                    <TextBlock Grid.Column="2" Text="{Binding When, StringFormat=g}" FontSize="12" Margin="12,0,0,0"
-                                                               VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                                </Grid>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </ScrollViewer>
-
-                        <!-- Lista con detalles -->
-                        <Grid x:Name="DetailsPanel" Visibility="Collapsed">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-                            <Grid x:Name="Header" Margin="16,8,30,4" Height="30">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" MinWidth="160" />
-                                    <ColumnDefinition Width="170" />
-                                    <ColumnDefinition Width="170" />
-                                    <ColumnDefinition Width="90" />
-                                </Grid.ColumnDefinitions>
-                            </Grid>
-                            <Border Grid.Row="0" Height="1" VerticalAlignment="Bottom" Margin="16,0"
-                                    Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
-                            <ListBox x:Name="DetailsList" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="6,4,6,6"
-                                     SelectionMode="Extended" ItemTemplate="{StaticResource DetailsTemplate}"
-                                     ItemContainerStyle="{StaticResource FileItem}"
-                                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
-                        </Grid>
-
-                        <!-- Cuadrícula -->
-                        <ListBox x:Name="GridList" Visibility="Collapsed" Background="Transparent" BorderThickness="0" Padding="8"
-                                 SelectionMode="Extended" ItemTemplate="{StaticResource GridTemplate}"
-                                 ItemContainerStyle="{StaticResource GridItem}"
-                                 VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListBox.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ui:VirtualizingWrapPanel ItemSize="118,132" Orientation="Vertical" SpacingMode="Uniform" />
-                                </ItemsPanelTemplate>
-                            </ListBox.ItemsPanel>
-                        </ListBox>
-
-                        <!-- Reintentar (una carpeta de red que no respondió) -->
-                        <ui:Button x:Name="RetryButton" Content="{l:T 'Reintentar'}" Appearance="Primary" Visibility="Collapsed"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,190,0,0" Click="Retry_Click" />
-
-                        <!-- Carpeta vacía, sin resultados o sin acceso -->
-                        <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"
-                                    IsHitTestVisible="False">
-                            <Border Width="64" Height="64" CornerRadius="18" HorizontalAlignment="Center"
-                                    Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                                <ui:SymbolIcon x:Name="EmptyIcon" Symbol="FolderOpen24" FontSize="30" Foreground="{DynamicResource StrataAccentBrush}" />
-                            </Border>
-                            <TextBlock x:Name="EmptyTitle" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,14,0,4"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-                            <TextBlock x:Name="EmptyText" Style="{StaticResource CardDescription}" HorizontalAlignment="Center"
-                                       TextAlignment="Center" MaxWidth="360" />
-                        </StackPanel>
-                    </Grid>
-                </Border>
-
-                <!-- Estado: cuántos elementos y la selección; a la derecha, avisos breves -->
-                <Grid Grid.Row="3" Margin="6,8,6,0">
-                    <TextBlock x:Name="StatusText" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                    <TextBlock x:Name="MessageText" FontSize="12" HorizontalAlignment="Right" Opacity="0"
-                               Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
-                </Grid>
+                <!-- La pestaña elegida: uno o dos paneles -->
+                <ContentControl x:Name="TabHost" Grid.Row="1" Focusable="False" />
             </Grid>
         </Grid>
     </Grid>

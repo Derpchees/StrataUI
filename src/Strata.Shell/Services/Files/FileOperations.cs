@@ -24,6 +24,10 @@ public static class FileOperations
     public static Task<bool> RecycleAsync(IReadOnlyList<string> paths, IntPtr owner) =>
         RunAsync(FoDelete, paths, null, FofAllowUndo | FofNoConfirmation | FofWantNukeWarning, owner);
 
+    /// <summary>Borra para siempre (sin Papelera); Windows pide confirmación.</summary>
+    public static Task<bool> DeleteForeverAsync(IReadOnlyList<string> paths, IntPtr owner) =>
+        RunAsync(FoDelete, paths, null, 0, owner);
+
     /// <summary>Cambia el nombre; devuelve el error para mostrarlo o null si salió bien.</summary>
     public static string? Rename(string path, string newName, bool folder)
     {
@@ -121,6 +125,17 @@ public static class FileOperations
 
     /// <summary>"Abrir con…" de Windows, en su propio proceso.</summary>
     public static void OpenWith(string path) => Start("rundll32.exe", $"shell32.dll,OpenAs_RunDLL {path}");
+
+    /// <summary>Vacía la Papelera (Windows pregunta antes).</summary>
+    public static void EmptyRecycleBin(IntPtr owner)
+    {
+        int result = SHEmptyRecycleBin(owner, null, 0);
+        if (result != 0 && result != unchecked((int)0x8000FFFF)) // E_UNEXPECTED: ya estaba vacía
+            Log.Info($"Archivos: la Papelera no se vació (0x{result:X8})");
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHEmptyRecycleBin(IntPtr owner, string? root, uint flags);
 
     /// <summary>"Conectar unidad de red" de Windows (asignar una letra a \\servidor\recurso).</summary>
     public static void ConnectNetworkDrive() => Start("rundll32.exe", "shell32.dll,SHHelpShortcuts_RunDLL Connect");
