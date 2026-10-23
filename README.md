@@ -226,6 +226,10 @@ and everything goes back to normal.
   pane** view with two folders side by side (Ctrl+Shift+D) to drag files between them.
 - Pin your own folders to the sidebar, the Recycle Bin is one click away, file extensions can be
   shown or hidden, and scrolling is smooth.
+- The **desktop** is Strata UI's too: icons in the same style (previews, drag to arrange, rename,
+  drop files) and a right-click menu with view and sort options, widgets, Files and everything
+  Windows puts there (New, Display settings, Personalize, your graphics card panel). Widgets always
+  stay above the icons, and turning it off in the Hub brings the Windows desktop back as it was.
 - Breadcrumb path you can also type into (Ctrl+L), search in the folder, sorting, hidden files,
   back/forward with the mouse side buttons and the usual keyboard shortcuts.
 - Copy, cut, paste, rename, new folder and Recycle Bin use Windows' own engine (progress, conflict
@@ -234,9 +238,11 @@ and everything goes back to normal.
   7-Zip, Open with, Send to, Properties, New...), read in a separate process so a broken shell
   extension can't take Strata UI down. Archives open in your installed archiver, the Recycle Bin
   (restore, delete, empty) lives inside Files, and anything can be pinned to Start.
-- A built-in **viewer** for pictures, video and music: zoom where the mouse is, drag to pan, real
-  size with a double click, phone photos the right way up, playback controls that hide on their
-  own, full screen, and the arrow keys to go through the folder.
+- A built-in **viewer** for pictures (animated GIFs, SVG, camera RAW, HEIF/AVIF too), video and
+  music with the modern Windows player and your Store codecs (webm, AV1, HEVC, ogg, opus...): zoom
+  where the mouse is, drag to pan, real size with a double click, phone photos the right way up,
+  playback controls that hide on their own, full screen, and the arrow keys to go through the
+  folder. PDFs and Office documents open in your own apps.
 - **Cloud and network**: OneDrive (personal and work), Google Drive, Dropbox and iCloud Drive in the
   sidebar with each file's status (online-only, on this PC, always keep) and *Free up space*;
   thumbnails never download online-only files. Shared folders (`\\server\share`, or just

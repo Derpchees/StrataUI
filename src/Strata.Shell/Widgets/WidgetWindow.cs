@@ -78,17 +78,23 @@ public sealed class WidgetWindow : Window
     /// <summary>
     /// La ventana del escritorio pasa a ser su dueña: una ventana con dueño siempre queda encima de
     /// él, así el widget sigue a la vista con "Mostrar escritorio" (Win+D) y debajo de las demás
-    /// ventanas. Se repite si el Explorador se reinicia (la ventana del escritorio es otra).
+    /// ventanas. Con el escritorio de Strata UI, la dueña es su capa en ese monitor (así el widget
+    /// queda encima de los íconos). Se repite si el Explorador se reinicia o cambian las capas.
     /// </summary>
     public void AttachToDesktop()
     {
         var hwnd = new WindowInteropHelper(this).Handle;
-        if (hwnd != IntPtr.Zero && DesktopWindow() is var desktop && desktop != IntPtr.Zero)
-            SetWindowLongPtr(hwnd, GwlpHwndParent, desktop);
+        if (hwnd == IntPtr.Zero)
+            return;
+        var owner = Services.Desktop.DesktopManager.OwnerFor(Config.Device);
+        if (owner == IntPtr.Zero)
+            owner = DesktopWindow();
+        if (owner != IntPtr.Zero)
+            SetWindowLongPtr(hwnd, GwlpHwndParent, owner);
     }
 
     /// <summary>La ventana que tiene los íconos del escritorio (Progman o, en algunas versiones, un WorkerW).</summary>
-    private static IntPtr DesktopWindow()
+    internal static IntPtr DesktopWindow()
     {
         var progman = FindWindow("Progman", null);
         if (progman != IntPtr.Zero && FindWindowEx(progman, IntPtr.Zero, "SHELLDLL_DefView", null) != IntPtr.Zero)

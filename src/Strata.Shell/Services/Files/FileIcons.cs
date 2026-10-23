@@ -27,7 +27,8 @@ public static class FileIcons
     /// <summary>Imágenes que WPF sabe decodificar (con los códecs de Windows: también webp y heic).</summary>
     private static readonly HashSet<string> Pictures = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff", ".webp", ".heic", ".jfif",
+        ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff", ".webp", ".heic", ".heif", ".avif", ".jfif", ".jxr",
+        ".cr2", ".cr3", ".nef", ".nrw", ".arw", ".dng", ".orf", ".rw2", ".raf", ".pef", ".srw",
     };
 
     private const long MaxThumbnailBytes = 40L << 20;
@@ -68,8 +69,13 @@ public static class FileIcons
                         // carátula a Windows en el proceso aparte.
                         if (IsPicture(entry))
                             thumbnail = AppIcons.Load(entry.FullPath, 192);
+                        else if (entry.Extension.Equals(".svg", StringComparison.OrdinalIgnoreCase) && !entry.IsOnlineOnly)
+                            thumbnail = Previews.Svg(entry.FullPath, 192);
                         else if (HasShellThumbnail(entry))
                             thumbnail = ThumbnailHost.Get(entry.FullPath, 192, cachedOnly: entry.IsOnlineOnly);
+                        // Un PDF sin carátula de Windows (lo abre un navegador): su primera página.
+                        if (thumbnail is null && !entry.IsOnlineOnly && entry.Extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+                            thumbnail = PdfCover(entry.FullPath);
                         if (thumbnail is null)
                             continue;
                     }
@@ -105,6 +111,20 @@ public static class FileIcons
             }
         });
         return result.Task;
+    }
+
+    private static ImageSource? PdfCover(string path)
+    {
+        try
+        {
+            var document = Previews.OpenPdfAsync(path).GetAwaiter().GetResult();
+            return document is { PageCount: > 0 } ? Previews.PdfPageAsync(document, 0, 192).GetAwaiter().GetResult() : null;
+        }
+        catch (Exception ex)
+        {
+            Log.Info($"Carátulas: sin portada del PDF {Path.GetFileName(path)} ({ex.Message.Trim()})");
+            return null;
+        }
     }
 
     /// <summary>Tipos sin carátula (programas, accesos directos, texto): no vale la pena preguntar.</summary>

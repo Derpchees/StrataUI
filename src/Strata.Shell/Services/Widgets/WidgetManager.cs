@@ -32,6 +32,13 @@ public static class WidgetManager
                 window.AttachToDesktop();
         });
 
+    /// <summary>Cambiaron las capas del escritorio de Strata UI: cada widget toma la de su monitor como dueña.</summary>
+    public static void Reattach()
+    {
+        foreach (var window in Windows.Values)
+            window.AttachToDesktop();
+    }
+
     public static void Shutdown()
     {
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaysChanged;

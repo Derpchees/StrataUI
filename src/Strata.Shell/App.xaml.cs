@@ -66,6 +66,7 @@ public partial class App : Application
             NativeTaskbar.Restore();
             Services.Notifications.WindowsBanners.Restore();
             Services.Themes.WindowsAnimations.Restore();
+            Services.Desktop.DesktopManager.RestoreWindowsIcons();
             Shutdown();
             return;
         }
@@ -284,6 +285,8 @@ public partial class App : Application
         }, System.Windows.Threading.DispatcherPriority.ApplicationIdle));
         Services.StartMenu.ExplorerMenu.Listen();
         Services.Widgets.WidgetManager.Initialize();
+        // Después de los widgets: las capas del escritorio pasan a ser sus dueñas.
+        Services.Desktop.DesktopManager.Initialize();
         _explorerMenu = Settings.Current.StartExplorerMenu;
         Services.StartMenu.ExplorerMenu.Update();
         SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
@@ -806,6 +809,7 @@ public partial class App : Application
         _openHubEvent?.Dispose();
         Services.StartMenu.ExplorerMenu.Stop();
         Services.Widgets.WidgetManager.Shutdown();
+        Services.Desktop.DesktopManager.Shutdown();
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
         _mutex = null;
@@ -837,5 +841,6 @@ public partial class App : Application
         NativeTaskbar.Restore();
         Services.Notifications.WindowsBanners.Restore();
         Services.Themes.WindowsAnimations.Restore();
+        Services.Desktop.DesktopManager.RestoreWindowsIcons();
     }
 }

@@ -39,6 +39,40 @@ public partial class MediaViewerWindow : FluentWindow
     private Matrix _panStart;
     private CancellationTokenSource? _loading;
     private readonly DispatcherTimer _clock, _idle;
+    private FramePlayer? _media;
+    private GifAnimation? _gif;
+    private int _gifFrame;
+    private readonly DispatcherTimer _gifTimer = new();
+
+    /// <summary>
+    /// El reproductor de Windows (con los códecs de la Tienda: webm, AV1, HEVC, ogg, opus…); se crea
+    /// la primera vez que hace falta. Sus avisos llegan en otro hilo y se pasan a la ventana.
+    /// </summary>
+    private FramePlayer Media
+    {
+        get
+        {
+            if (_media != null)
+                return _media;
+            _media = new FramePlayer(Dispatcher);
+            _media.FrameChanged += () => Video.Source = _media.Frame;
+            _media.Player.MediaOpened += (_, _) => Dispatcher.BeginInvoke(Media_MediaOpened);
+            _media.Player.MediaEnded += (_, _) => Dispatcher.BeginInvoke(Media_MediaEnded);
+            _media.Player.MediaFailed += (_, e) => Dispatcher.BeginInvoke(() => Media_MediaFailed(e.ErrorMessage));
+            return _media;
+        }
+    }
+
+    private Windows.Media.Playback.MediaPlaybackSession? Session => _media?.Player.PlaybackSession;
+
+    private void StopMedia()
+    {
+        if (_media is null)
+            return;
+        _media.Player.Pause();
+        _media.Player.Source = null;
+        Video.Source = null;
+    }
 
     /// <summary>Muestra <paramref name="items"/>[<paramref name="index"/>]; las flechas recorren la lista.</summary>
     public static void Open(IReadOnlyList<string> items, int index)
@@ -75,6 +109,7 @@ public partial class MediaViewerWindow : FluentWindow
             _idle.Start();
         };
         PreviewKeyDown += Window_PreviewKeyDown;
+        _gifTimer.Tick += (_, _) => NextGifFrame();
         VolumeSlider.Value = _volume;
         UpdateVolumeIcon();
         Closed += (_, _) =>
@@ -82,8 +117,9 @@ public partial class MediaViewerWindow : FluentWindow
             _loading?.Cancel();
             _clock.Stop();
             _idle.Stop();
-            Video.Stop();
-            Video.Source = null;
+            _media?.Dispose();
+            _media = null;
+            _gifTimer.Stop();
             _current = null;
             MemoryTrim.Schedule(TimeSpan.FromSeconds(3));
         };
@@ -96,8 +132,9 @@ public partial class MediaViewerWindow : FluentWindow
     {
         _loading?.Cancel();
         _clock.Stop();
-        Video.Stop();
-        Video.Source = null;
+        StopMedia();
+        _gifTimer.Stop();
+        _gif = null;
         _playing = false;
         _bitmap = null;
         Picture.Source = null;
@@ -134,7 +171,7 @@ public partial class MediaViewerWindow : FluentWindow
                 _updatingSeek = false;
                 if (_kind == MediaKind.Audio)
                     _ = LoadSongAsync(path);
-                Video.Source = new Uri(path);
+                Media.Player.Source = Windows.Media.Core.MediaSource.CreateFromUri(new Uri(path));
                 ApplyVolume();
                 Play();
                 break;
@@ -178,7 +215,7 @@ public partial class MediaViewerWindow : FluentWindow
     {
         if (_items.Count == 0)
             return;
-        Video.Pause();
+        _media?.Player.Pause();
         SetPlaying(false);
         FileOperations.Open(_items[_index]);
     }
@@ -189,9 +226,27 @@ public partial class MediaViewerWindow : FluentWindow
     {
         var cts = _loading = new CancellationTokenSource();
         BitmapSource? bitmap;
+        string extension = System.IO.Path.GetExtension(path);
         try
         {
-            bitmap = await Task.Run(() => LoadOriented(path), cts.Token);
+            if (extension.Equals(".svg", StringComparison.OrdinalIgnoreCase))
+            {
+                bitmap = await FileIcons.RunAsync(() => Previews.Svg(path, 2400));
+            }
+            else if (extension.Equals(".gif", StringComparison.OrdinalIgnoreCase)
+                     && await FileIcons.RunAsync(() => Previews.Gif(path)) is { } animation && !cts.IsCancellationRequested)
+            {
+                // Animado: cuadro por cuadro con su tiempo; el zoom funciona igual.
+                _gif = animation;
+                _gifFrame = 0;
+                bitmap = animation.Frames[0];
+                _gifTimer.Interval = animation.Delays[0];
+                _gifTimer.Start();
+            }
+            else
+            {
+                bitmap = await Task.Run(() => LoadOriented(path), cts.Token);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -209,6 +264,18 @@ public partial class MediaViewerWindow : FluentWindow
         Picture.LayoutTransform = Transform.Identity;
         Picture.Source = bitmap;
         _ = Dispatcher.BeginInvoke(Fit, DispatcherPriority.Loaded);
+    }
+
+    private void NextGifFrame()
+    {
+        if (_gif is not { } gif || _kind != MediaKind.Image)
+        {
+            _gifTimer.Stop();
+            return;
+        }
+        _gifFrame = (_gifFrame + 1) % gif.Frames.Count;
+        Picture.Source = gif.Frames[_gifFrame];
+        _gifTimer.Interval = gif.Delays[_gifFrame];
     }
 
     /// <summary>
@@ -379,7 +446,7 @@ public partial class MediaViewerWindow : FluentWindow
 
     private void Play()
     {
-        Video.Play();
+        Media.Player.Play();
         SetPlaying(true);
     }
 
@@ -405,7 +472,7 @@ public partial class MediaViewerWindow : FluentWindow
             return;
         if (_playing)
         {
-            Video.Pause();
+            _media?.Player.Pause();
             SetPlaying(false);
         }
         else
@@ -418,17 +485,17 @@ public partial class MediaViewerWindow : FluentWindow
 
     private void Video_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) => TogglePlay();
 
-    private void Media_MediaOpened(object sender, RoutedEventArgs e)
+    private void Media_MediaOpened()
     {
-        if (Video.NaturalDuration.HasTimeSpan)
+        if (Session is { NaturalDuration: var duration } && duration > TimeSpan.Zero)
         {
-            Seek.Maximum = Math.Max(1, Video.NaturalDuration.TimeSpan.TotalSeconds);
-            DurationText.Text = Format(Video.NaturalDuration.TimeSpan);
+            Seek.Maximum = Math.Max(1, duration.TotalSeconds);
+            DurationText.Text = Format(duration);
         }
         UpdatePosition();
     }
 
-    private void Media_MediaEnded(object sender, RoutedEventArgs e)
+    private void Media_MediaEnded()
     {
         // El audio sigue con el siguiente de la carpeta (como una lista); el video se queda al final.
         if (_kind == MediaKind.Audio && _items.Count > 1 && _index < _items.Count - 1
@@ -437,15 +504,16 @@ public partial class MediaViewerWindow : FluentWindow
             ShowItem(_index + 1);
             return;
         }
-        Video.Pause();
-        Video.Position = TimeSpan.Zero;
+        _media?.Player.Pause();
+        if (Session is { } session)
+            session.Position = TimeSpan.Zero;
         SetPlaying(false);
         UpdatePosition();
     }
 
-    private void Media_MediaFailed(object sender, ExceptionRoutedEventArgs e)
+    private void Media_MediaFailed(string message)
     {
-        Log.Info($"Visor: no se pudo reproducir {_items[_index]} ({e.ErrorException?.Message.Trim()})");
+        Log.Info($"Visor: no se pudo reproducir {_items[_index]} ({message.Trim()})");
         SetPlaying(false);
         ShowError(Loc.T("Windows no tiene el códec para reproducir este formato."));
     }
@@ -454,7 +522,7 @@ public partial class MediaViewerWindow : FluentWindow
     {
         if (_seeking)
             return;
-        var position = Video.Position;
+        var position = Session?.Position ?? TimeSpan.Zero;
         _updatingSeek = true;
         Seek.Value = Math.Min(Seek.Maximum, position.TotalSeconds);
         _updatingSeek = false;
@@ -465,8 +533,9 @@ public partial class MediaViewerWindow : FluentWindow
     {
         if (_updatingSeek)
             return;
-        Video.Position = TimeSpan.FromSeconds(e.NewValue);
-        PositionText.Text = Format(Video.Position);
+        if (Session is { } session)
+            session.Position = TimeSpan.FromSeconds(e.NewValue);
+        PositionText.Text = Format(TimeSpan.FromSeconds(e.NewValue));
     }
 
     private void Seek_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) => _seeking = true;
@@ -474,7 +543,8 @@ public partial class MediaViewerWindow : FluentWindow
     private void Seek_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         _seeking = false;
-        Video.Position = TimeSpan.FromSeconds(Seek.Value);
+        if (Session is { } session)
+            session.Position = TimeSpan.FromSeconds(Seek.Value);
     }
 
     private static string Format(TimeSpan time) =>
@@ -495,7 +565,8 @@ public partial class MediaViewerWindow : FluentWindow
 
     private void ApplyVolume()
     {
-        Video.Volume = _muted ? 0 : _volume;
+        if (_media != null)
+            _media.Player.Volume = _muted ? 0 : _volume;
         UpdateVolumeIcon();
     }
 

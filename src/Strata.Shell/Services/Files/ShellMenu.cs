@@ -44,8 +44,12 @@ public sealed class ShellMenuSession : IDisposable
         Items = ReadItemsAsync(request);
     }
 
-    /// <summary>Empieza a leer el menú de Windows de esos elementos (o del fondo de la carpeta).</summary>
-    public static ShellMenuSession? Start(IReadOnlyList<string> paths, bool background)
+    /// <summary>
+    /// Empieza a leer el menú de Windows de esos elementos, del fondo de la carpeta o, con
+    /// <paramref name="desktop"/>, del fondo del escritorio (Configuración de pantalla, Personalizar,
+    /// el panel de la tarjeta de video…).
+    /// </summary>
+    public static ShellMenuSession? Start(IReadOnlyList<string> paths, bool background, bool desktop = false)
     {
         try
         {
@@ -62,7 +66,7 @@ public sealed class ShellMenuSession : IDisposable
             var process = Process.Start(start);
             if (process is null)
                 return null;
-            string request = JsonSerializer.Serialize(new Request(paths.ToList(), background, (GetKeyState(VkShift) & 0x8000) != 0));
+            string request = JsonSerializer.Serialize(new Request(paths.ToList(), background || desktop, (GetKeyState(VkShift) & 0x8000) != 0, desktop));
             return new ShellMenuSession(process, request);
         }
         catch (Exception ex)
@@ -145,7 +149,7 @@ public sealed class ShellMenuSession : IDisposable
         }
     }
 
-    private sealed record Request(List<string> Paths, bool Background, bool Extended);
+    private sealed record Request(List<string> Paths, bool Background, bool Extended, bool Desktop = false);
 
     // ── Proceso aparte ──────────────────────────────────────────────────────
 
@@ -177,7 +181,9 @@ public sealed class ShellMenuSession : IDisposable
         IntPtr hmenu = IntPtr.Zero;
         try
         {
-            menu = request.Background ? BackgroundMenu(request.Paths[0], owner.Handle, pidls) : ItemsMenu(request.Paths, owner.Handle, pidls);
+            menu = request.Desktop ? DesktopMenu(owner.Handle)
+                : request.Background ? BackgroundMenu(request.Paths[0], owner.Handle, pidls)
+                : ItemsMenu(request.Paths, owner.Handle, pidls);
             if (menu is null)
             {
                 output.WriteLine("[]");
@@ -380,6 +386,15 @@ public sealed class ShellMenuSession : IDisposable
             : menu as IContextMenu;
     }
 
+    /// <summary>Menú del fondo del escritorio (el de la raíz del Shell, con lo que registran Windows y los controladores).</summary>
+    private static IContextMenu? DesktopMenu(IntPtr owner)
+    {
+        if (SHGetDesktopFolder(out var desktop) < 0 || desktop is not IShellFolder folder)
+            return null;
+        var menuIid = typeof(IContextMenu).GUID;
+        return folder.CreateViewObject(owner, ref menuIid, out var menu) < 0 ? null : menu as IContextMenu;
+    }
+
     /// <summary>Menú del espacio libre de una carpeta (Nuevo, Propiedades de la carpeta…).</summary>
     private static IContextMenu? BackgroundMenu(string folder, IntPtr owner, List<IntPtr> pidls)
     {
@@ -573,6 +588,8 @@ public sealed class ShellMenuSession : IDisposable
     private static extern int SHBindToParent(IntPtr pidl, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object folder, out IntPtr child);
     [DllImport("shell32.dll")]
     private static extern int SHBindToObject(IntPtr parent, IntPtr pidl, IntPtr bindContext, ref Guid iid, [MarshalAs(UnmanagedType.Interface)] out object result);
+    [DllImport("shell32.dll")]
+    private static extern int SHGetDesktopFolder([MarshalAs(UnmanagedType.Interface)] out object folder);
     [DllImport("user32.dll")] private static extern IntPtr CreatePopupMenu();
     [DllImport("user32.dll")] private static extern bool DestroyMenu(IntPtr menu);
     [DllImport("user32.dll")] private static extern int GetMenuItemCount(IntPtr menu);

@@ -261,6 +261,21 @@ public sealed class StrataSettings
     /// <summary>Carpetas de red visitadas (\\servidor\recurso), para la barra lateral de Archivos.</summary>
     public List<string> FilesNetworkPlaces { get; set; } = [];
 
+    // Escritorio de Strata UI (íconos, menú contextual y dueño de los widgets)
+    /// <summary>Strata UI dibuja el escritorio (íconos y menú contextual); apagado, queda el de Windows.</summary>
+    public bool DesktopEnabled { get; set; } = true;
+    /// <summary>Se ven los íconos del escritorio; null = la primera vez se copia lo que tenía Windows.</summary>
+    public bool? DesktopShowIcons { get; set; }
+    public StartIconSize DesktopIconSize { get; set; } = StartIconSize.Medium;
+    /// <summary>Los íconos se acomodan solos en orden (si no, quedan donde se arrastraron).</summary>
+    public bool DesktopAutoArrange { get; set; } = true;
+    /// <summary>Orden de los íconos acomodados solos: Name, Modified, Type o Size.</summary>
+    public string DesktopSort { get; set; } = "Name";
+    /// <summary>Dónde se dejó cada ícono (ruta → "columna,fila"), cuando no se acomodan solos.</summary>
+    public Dictionary<string, string> DesktopIconSlots { get; set; } = new();
+    /// <summary>Windows mostraba sus íconos antes de que Strata UI los ocultara: se devuelven al salir.</summary>
+    public bool DesktopRestoreWindowsIcons { get; set; }
+
     // Sonido
     /// <summary>"Sonar también en": la segunda salida que repite lo que suena (ID de Windows); null = apagado.</summary>
     public string? AudioMirrorDevice { get; set; }

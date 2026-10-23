@@ -9,6 +9,17 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ## [3.9.0] - 2026-10-22
 
 ### Añadido
+- **Escritorio de Strata UI**: los íconos del escritorio con el estilo de Archivos (carátulas,
+  selección con recuadro, arrastrar para acomodarlos, cambiar nombre, soltar archivos, tamaños y
+  orden) y su propio menú contextual: Vista, Ordenar por, Pegar, agregar un widget o editar el
+  diseño, abrir en Archivos o en la terminal, personalizar Strata UI y lo que pone Windows ahí
+  (Nuevo, Configuración de pantalla, Personalizar, el panel de la tarjeta de video…). "Mostrar
+  íconos del escritorio" respeta cómo los tenías; los widgets quedan siempre encima de los íconos.
+  Se apaga en Hub › General y, al salir, el escritorio de Windows vuelve como estaba.
+- **Más formatos en el visor**: GIF animados, SVG, fotos RAW de cámara, HEIF/AVIF, y video y audio
+  con los códecs de la Tienda (webm, VP9, AV1, HEVC, ogg, opus, mkv…): el visor usa ahora el
+  reproductor moderno de Windows. Los PDF y documentos de oficina se abren con tu app (en la
+  cuadrícula, la primera página del PDF sirve de carátula); los SVG también tienen carátula.
 - **Pestañas y vista doble en Archivos**: pestañas en la barra de título (Ctrl+T, Ctrl+W, Ctrl+Tab,
   clic con la rueda para abrir una carpeta en otra pestaña o cerrar una) y dos carpetas lado a lado
   en la misma pestaña (Ctrl+Mayús+D), para arrastrar de una a otra.

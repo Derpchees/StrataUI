@@ -44,6 +44,17 @@
             </ui:CardControl>
 
             <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Escritorio de Strata UI'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Los íconos y el menú contextual del escritorio son de Strata UI (con lo de Windows dentro). Apagado, vuelve el escritorio de Windows.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="DesktopSwitch" Click="Desktop_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="LocalLanguage24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>

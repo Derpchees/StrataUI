@@ -199,6 +199,16 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   ícono propio) porque leerlo lo descarga. Red: `\\servidor` lista sus recursos (`Places.Shares`).
   Las carpetas que abre Strata UI pasan por `StartMenuService.OpenPath` (Archivos o el Explorador
   según `FilesReplaceExplorer`). Visor de medios: `Files/MediaViewerWindow`.
+- **Escritorio** (`Services/Desktop/DesktopManager`, `Desktop/DesktopWindow`): una capa por monitor
+  como los widgets (dueña: la ventana del escritorio; siempre al fondo) con los íconos en el monitor
+  principal y el menú contextual (el de Windows del escritorio entra con `ShellMenuSession`, modo
+  `desktop`). Los widgets usan la capa de su monitor como dueña (quedan encima de los íconos;
+  `WidgetManager.Reattach` al cambiar las capas, antes de cerrarlas). Mientras está activo, los
+  íconos de Windows se ocultan y vuelven al salir (`DesktopRestoreWindowsIcons`, también en
+  `--restore-taskbar`). El área de trabajo se lee con `GetMonitorInfo`: `Screen.WorkingArea` puede
+  quedar vieja.
+- **Visor**: video y audio con el `MediaPlayer` de WinRT (`FramePlayer`, fotogramas por Direct3D a un
+  `WriteableBitmap`): el `MediaElement` de WPF no abre webm, ogg ni opus aunque estén los códecs.
 - **Clic en notificaciones**: `BrowserActivation` (sitios), `ToastActivator` (activador COM del
   registro o del AppxManifest de apps empaquetadas, solo `com:ExeServer`) y, si no, la ventana o la
   app. Después de un activador, `AppWakeUp` muestra la app si quedó oculta en la bandeja (Thunderbird

@@ -1161,5 +1161,16 @@
   "No se pudo restaurar {0}": "Couldn't restore {0}",
   "Cargando opciones de Windows…": "Loading Windows options…",
   "Extraer en una carpeta": "Extract to a folder",
-  "No se pudo extraer {0}": "Couldn't extract {0}"
+  "No se pudo extraer {0}": "Couldn't extract {0}",
+  "Abrir en Archivos": "Open in Files",
+  "Mostrar en Archivos": "Show in Files",
+  "Agregar un widget": "Add a widget",
+  "Escritorio de Strata UI": "Strata UI desktop",
+  "Los íconos y el menú contextual del escritorio son de Strata UI (con lo de Windows dentro). Apagado, vuelve el escritorio de Windows.": "Desktop icons and the right-click menu come from Strata UI (with Windows' options inside). When off, the Windows desktop comes back.",
+  "Mostrar íconos del escritorio": "Show desktop icons",
+  "Organizar automáticamente": "Auto arrange icons",
+  "Personalizar Strata UI": "Personalize Strata UI",
+  "Íconos grandes": "Large icons",
+  "Íconos medianos": "Medium icons",
+  "Íconos pequeños": "Small icons"
 }

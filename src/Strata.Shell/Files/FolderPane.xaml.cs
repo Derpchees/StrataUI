@@ -1256,9 +1256,9 @@ public partial class FolderPane : UserControl
     /// Propiedades, Nuevo…), leídas en el momento en otro proceso (<see cref="ShellMenuSession"/>):
     /// el menú se abre enseguida y estas llegan debajo, también las de programas que se instalen después.
     /// </summary>
-    private void AddWindowsItems(ContextMenu menu, IReadOnlyList<string> paths, bool background)
+    internal static void AddWindowsItems(ContextMenu menu, IReadOnlyList<string> paths, bool background, bool desktop = false)
     {
-        if (ShellMenuSession.Start(paths, background) is not { } session)
+        if (ShellMenuSession.Start(paths, background, desktop) is not { } session)
             return;
         var separator = new Separator();
         var loading = new MenuItem { Header = Loc.T("Cargando opciones de Windows…"), IsEnabled = false };
@@ -1271,7 +1271,7 @@ public partial class FolderPane : UserControl
         {
             menu.Closed -= Closed;
             // Después del clic (si fue en una de estas, ya se pidió ejecutarla).
-            Dispatcher.BeginInvoke(session.Dispose, DispatcherPriority.Background);
+            menu.Dispatcher.BeginInvoke(session.Dispose, DispatcherPriority.Background);
         }
 
         async Task FillAsync()
