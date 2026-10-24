@@ -51,8 +51,9 @@ public partial class HubWindow : FluentWindow
     }
 
     /// <summary>
-    /// Módulos opcionales: la página para instalarlos y, si Optimización está instalado, una entrada
-    /// con sus páginas dentro (se despliega).
+    /// Módulos opcionales: la página para instalarlos y, si Optimización está instalado, sus páginas
+    /// debajo. Van al mismo nivel: el menú del Hub solo despliega un nivel (una entrada dentro de otra
+    /// desplegable no mostraba sus páginas).
     /// </summary>
     private void FillModules()
     {
@@ -66,19 +67,13 @@ public partial class HubWindow : FluentWindow
         _showsOptimization = false;
         if (OptionalModules.Optimization.Load() is { } module)
         {
-            var optimization = new NavigationViewItem
-            {
-                Content = OptionalModules.Optimization.Title,
-                Icon = new SymbolIcon { Symbol = OptionalModules.Optimization.Icon },
-            };
             foreach (var page in module.Pages)
-                optimization.MenuItems.Add(new NavigationViewItem
+                ModulesItem.MenuItems.Add(new NavigationViewItem
                 {
                     Content = page.Title,
                     Icon = new SymbolIcon { Symbol = page.Icon },
                     TargetPageType = page.PageType,
                 });
-            ModulesItem.MenuItems.Add(optimization);
             _showsOptimization = true;
         }
     }

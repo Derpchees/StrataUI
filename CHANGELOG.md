@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.10.1] - 2026-10-23
+
+### Corregido
+- **No se veían las páginas de Optimización**: quedaban en una entrada dentro de Módulos opcionales
+  que el menú del Hub no despliega. Ahora van directamente en Módulos opcionales, debajo de
+  "Instalar y quitar".
+
 ## [3.10.0] - 2026-10-23
 
 ### Añadido
