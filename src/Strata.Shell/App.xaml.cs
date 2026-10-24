@@ -249,6 +249,12 @@ public partial class App : Application
         Services.StartMenu.WinKeyHook.WinXPressed += () => AppsTaskbar?.ShowWinXMenu();
         Services.StartMenu.WinKeyHook.WinNPressed += () => StatusTaskbar?.ToggleNotificationCenter();
         Services.StartMenu.WinKeyHook.WinEPressed += () => OpenFiles();
+        // Win+E abre Archivos solo con el módulo instalado.
+        Services.Modules.OptionalModules.Changed += module =>
+        {
+            if (module == Services.Modules.OptionalModules.Files)
+                Dispatcher.BeginInvoke(UpdateKeyHook);
+        };
         UpdateKeyHook();
         OpenTaskbars();
         _shell.ExplorerHelper.HideExplorerTaskbar = true;
@@ -271,8 +277,9 @@ public partial class App : Application
         Services.Themes.WindowsAnimations.Update();
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
-        OptimizationModule.StartupMaintenance();
-        if (Settings.Current.SensorsAtStartup && Settings.Current.Layouts.Values.SelectMany(l => l.Bars).Any(bar =>
+        Services.Modules.OptionalModules.StartupMaintenance();
+        if (Settings.Current.SensorsAtStartup && Services.Modules.OptionalModules.Sensors.IsInstalled
+            && Settings.Current.Layouts.Values.SelectMany(l => l.Bars).Any(bar =>
                 bar.Items.Contains(BarItem.Fps) || bar.Items.Contains(BarItem.Cpu) || bar.Items.Contains(BarItem.Gpu)))
             _ = Sensors.StartAsync(automatic: true);
         _ = Task.Run(AutoStart.Migrate);
@@ -554,7 +561,7 @@ public partial class App : Application
 
     private static void UpdateKeyHook() =>
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, AnyVolumeOsd(),
-                                             Settings.Current.FilesReplaceExplorer);
+                                             Services.Modules.OptionalModules.Files.ReplacesExplorer);
 
     /// <summary>Barra con el botón Inicio en el monitor del mouse (null si ese monitor no tiene).</summary>
     private Taskbar? MouseMonitorStartTaskbar()
@@ -744,12 +751,20 @@ public partial class App : Application
         _hub.Topmost = false;
     }
 
-    /// <summary>Abre una ventana nueva del explorador de archivos (en esa carpeta o en Este equipo).</summary>
+    /// <summary>
+    /// Abre una ventana nueva de Archivos (en esa carpeta o en Este equipo) o, sin el módulo Archivos,
+    /// el Explorador de Windows.
+    /// </summary>
     public void OpenFiles(string? path = null)
     {
         if (_exiting)
             return;
-        var window = new Files.FilesWindow(path);
+        if (Services.Modules.OptionalModules.Files.Load() is not { } files)
+        {
+            Services.Files.FileOperations.Open(path ?? "shell:MyComputerFolder");
+            return;
+        }
+        var window = files.CreateWindow(path);
         window.Show();
         // Topmost momentáneo, como el Hub: queda encima aunque Windows niegue el foco.
         window.Topmost = true;

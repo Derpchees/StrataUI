@@ -76,7 +76,7 @@ public partial class FilesWindow : FluentWindow
     {
         InitializeComponent();
         FluentBackdrop.Follow(this);
-        SourceInitialized += (_, _) => Controls.FilesIcon.ApplyAppId(new WindowInteropHelper(this).Handle);
+        SourceInitialized += (_, _) => FilesIcon.ApplyAppId(new WindowInteropHelper(this).Handle);
         _home = new Place(Loc.T("Este equipo"), null, SymbolRegular.Home24);
         _folders = Places.Folders();
         _recycleBin = new Place(Loc.T("Papelera de reciclaje"), Places.RecycleBin, SymbolRegular.Delete24);

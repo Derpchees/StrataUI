@@ -711,9 +711,9 @@ public static class StartMenuService
     /// </summary>
     public static void OpenPath(string? path, bool select = false)
     {
-        if (path is "shell:Downloads" && Settings.Current.FilesReplaceExplorer)
+        if (path is "shell:Downloads" && Modules.OptionalModules.Files.ReplacesExplorer)
             path = Places.Downloads;
-        if (Settings.Current.FilesReplaceExplorer && (path is null || !path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase)))
+        if (Modules.OptionalModules.Files.ReplacesExplorer && (path is null || !path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase)))
         {
             App.Current.OpenFiles(path);
             return;

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Localization;
+using Strata.Shell.Services.Modules;
 
 namespace Strata.Shell.Hub.Pages;
 
@@ -28,6 +29,7 @@ public partial class TaskbarPage : Page
         Loaded += (_, _) =>
         {
             Sensors.Changed += UpdateSensors;
+            OptionalModules.Changed += OnModuleChanged;
             ScreenPicker.Changed += OnScreenChanged;
             Settings.Changed += BuildSummary;
             EditMode.EditSession.ActiveChanged += UpdateEditLibrary;
@@ -36,6 +38,7 @@ public partial class TaskbarPage : Page
         Unloaded += (_, _) =>
         {
             Sensors.Changed -= UpdateSensors;
+            OptionalModules.Changed -= OnModuleChanged;
             ScreenPicker.Changed -= OnScreenChanged;
             Settings.Changed -= BuildSummary;
             EditMode.EditSession.ActiveChanged -= UpdateEditLibrary;
@@ -121,8 +124,22 @@ public partial class TaskbarPage : Page
             Settings.Update(s => s.SensorsAtStartup = SensorsStartupSwitch.IsChecked == true);
     }
 
-    private void UpdateSensors()
+    private void UpdateSensors() => Dispatcher.BeginInvoke(() =>
     {
+        // Las temperaturas y los FPS vienen en el módulo Lecturas avanzadas.
+        var module = OptionalModules.Sensors;
+        if (!module.IsInstalled)
+        {
+            SensorsState.Text = module.IsDownloading ? Loc.T("Descargando…")
+                : module.ErrorText ?? Loc.T("Necesitan el módulo opcional Lecturas avanzadas.");
+            SensorsButton.Content = Loc.T("Instalar el módulo");
+            SensorsButton.IsEnabled = !module.IsDownloading;
+            SensorsRemoveButton.Visibility = Visibility.Collapsed;
+            PawnIoBar.IsOpen = false;
+            PawnIoButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+        SensorsRemoveButton.Visibility = Visibility.Visible;
         SensorsState.Text = Sensors.Starting ? Loc.T("Iniciando… si Windows pide permiso, acéptalo.")
             : Sensors.Running ? Loc.T("Activas: temperaturas y FPS hasta que se cierre Strata UI.")
             : Loc.T("Detenidas. También se inician con un clic en el contador de FPS.");
@@ -130,6 +147,12 @@ public partial class TaskbarPage : Page
         SensorsButton.IsEnabled = SensorsRemoveButton.IsEnabled = !Sensors.Starting;
         PawnIoBar.IsOpen = !Sensors.PawnIoInstalled;
         PawnIoButton.Visibility = PawnIoBar.IsOpen ? Visibility.Visible : Visibility.Collapsed;
+    });
+
+    private void OnModuleChanged(OptionalModule module)
+    {
+        if (module == OptionalModules.Sensors)
+            UpdateSensors();
     }
 
     /// <summary>
@@ -172,6 +195,11 @@ public partial class TaskbarPage : Page
 
     private async void Sensors_Click(object sender, RoutedEventArgs e)
     {
+        if (!OptionalModules.Sensors.IsInstalled)
+        {
+            await OptionalModules.Sensors.InstallAsync();
+            return;
+        }
         if (Sensors.Running)
             Sensors.Stop();
         else

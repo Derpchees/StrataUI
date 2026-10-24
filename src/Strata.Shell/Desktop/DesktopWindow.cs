@@ -9,10 +9,10 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Threading;
-using Strata.Shell.Files;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Files;
 using Strata.Shell.Services.Localization;
+using Strata.Shell.Services.Modules;
 using Strata.Shell.Services.StartMenu;
 using Wpf.Ui.Controls;
 using Forms = System.Windows.Forms;
@@ -675,11 +675,12 @@ public sealed class DesktopWindow : Window
             StartMenuService.OpenPath(target);
             return;
         }
-        if (MediaKinds.Of(entry.FullPath) != MediaKind.None)
+        // Fotos, videos y música: el visor del módulo Archivos (sin él, la app predeterminada).
+        if (MediaKinds.Of(entry.FullPath) != MediaKind.None && OptionalModules.Files.Load() is { } files)
         {
             var media = _tiles.Select(t => t.Entry).Where(e => !e.IsFolder && MediaKinds.Of(e.FullPath) != MediaKind.None)
                               .Select(e => e.FullPath).ToList();
-            MediaViewerWindow.Open(media, media.IndexOf(entry.FullPath));
+            files.OpenMedia(media, media.IndexOf(entry.FullPath));
             return;
         }
         if (Archivers.IsArchive(entry.FullPath) && Archivers.Open(entry.FullPath))
@@ -841,22 +842,32 @@ public sealed class DesktopWindow : Window
     private void FillItemMenu(ContextMenu menu, List<FileEntry> selection)
     {
         var first = selection[0];
-        menu.Items.Add(FolderPane.Item(Loc.T("Abrir"), SymbolRegular.Open24, () => selection.ForEach(Launch), bold: true));
-        menu.Items.Add(FolderPane.Item(first.IsFolder ? Loc.T("Abrir en Archivos") : Loc.T("Mostrar en Archivos"), SymbolRegular.FolderOpen24,
-                                       () => App.Current.OpenFiles(first.FullPath)));
+        menu.Items.Add(FileMenus.Item(Loc.T("Abrir"), SymbolRegular.Open24, () => selection.ForEach(Launch), bold: true));
+        bool strataFiles = OptionalModules.Files.IsInstalled;
+        menu.Items.Add(FileMenus.Item(first.IsFolder
+                                          ? strataFiles ? Loc.T("Abrir en Archivos") : Loc.T("Abrir en el Explorador")
+                                          : strataFiles ? Loc.T("Mostrar en Archivos") : Loc.T("Mostrar en el Explorador"),
+                                      SymbolRegular.FolderOpen24,
+                                      () =>
+                                      {
+                                          if (strataFiles || first.IsFolder)
+                                              App.Current.OpenFiles(first.FullPath);
+                                          else
+                                              StartMenuService.OpenPath(first.FullPath, select: true);
+                                      }));
         if (selection.Count == 1 && Archivers.IsArchive(first.FullPath))
-            menu.Items.Add(FolderPane.Item(Loc.T("Extraer en una carpeta"), SymbolRegular.FolderZip24, () => _ = Archivers.ExtractAsync(first.FullPath)));
+            menu.Items.Add(FileMenus.Item(Loc.T("Extraer en una carpeta"), SymbolRegular.FolderZip24, () => _ = Archivers.ExtractAsync(first.FullPath)));
         menu.Items.Add(new Separator());
-        menu.Items.Add(FolderPane.Item(Loc.T("Cortar"), SymbolRegular.Cut24,
+        menu.Items.Add(FileMenus.Item(Loc.T("Cortar"), SymbolRegular.Cut24,
                                        () => FileOperations.SetClipboard(selection.Select(s => s.FullPath).ToList(), cut: true)));
-        menu.Items.Add(FolderPane.Item(Loc.T("Copiar"), SymbolRegular.Copy24,
+        menu.Items.Add(FileMenus.Item(Loc.T("Copiar"), SymbolRegular.Copy24,
                                        () => FileOperations.SetClipboard(selection.Select(s => s.FullPath).ToList(), cut: false)));
-        menu.Items.Add(FolderPane.Item(Loc.T("Copiar ruta"), SymbolRegular.DocumentCopy24, () =>
+        menu.Items.Add(FileMenus.Item(Loc.T("Copiar ruta"), SymbolRegular.DocumentCopy24, () =>
             Clipboard.SetText(string.Join(Environment.NewLine, selection.Select(s => $"\"{s.FullPath}\"")))));
         if (selection.Count == 1)
         {
             bool inStart = StartMenuService.IsPinned(first.FullPath);
-            menu.Items.Add(FolderPane.Item(inStart ? Loc.T("Desanclar de Inicio") : Loc.T("Anclar a Inicio"),
+            menu.Items.Add(FileMenus.Item(inStart ? Loc.T("Desanclar de Inicio") : Loc.T("Anclar a Inicio"),
                                            inStart ? SymbolRegular.PinOff24 : SymbolRegular.Pin24, () =>
                                            {
                                                if (inStart)
@@ -866,9 +877,9 @@ public sealed class DesktopWindow : Window
                                            }));
         }
         menu.Items.Add(new Separator());
-        menu.Items.Add(FolderPane.Item(Loc.T("Cambiar nombre"), SymbolRegular.Rename24, () => StartRename(first), enabled: selection.Count == 1));
-        menu.Items.Add(FolderPane.Item(Loc.T("Enviar a la Papelera"), SymbolRegular.Delete24, () => _ = Recycle(selection)));
-        FolderPane.AddWindowsItems(menu, selection.Select(s => s.FullPath).ToList(), background: false);
+        menu.Items.Add(FileMenus.Item(Loc.T("Cambiar nombre"), SymbolRegular.Rename24, () => StartRename(first), enabled: selection.Count == 1));
+        menu.Items.Add(FileMenus.Item(Loc.T("Enviar a la Papelera"), SymbolRegular.Delete24, () => _ = Recycle(selection)));
+        FileMenus.AddWindowsItems(menu, selection.Select(s => s.FullPath).ToList(), background: false);
     }
 
     private void FillDesktopMenu(ContextMenu menu)
@@ -879,16 +890,16 @@ public sealed class DesktopWindow : Window
         foreach (var (size, text) in new[] { (StartIconSize.Large, Loc.T("Íconos grandes")), (StartIconSize.Medium, Loc.T("Íconos medianos")),
                                              (StartIconSize.Small, Loc.T("Íconos pequeños")) })
         {
-            var item = FolderPane.Item(text, null, () => Settings.Update(x => x.DesktopIconSize = size));
+            var item = FileMenus.Item(text, null, () => Settings.Update(x => x.DesktopIconSize = size));
             item.IsChecked = s.DesktopIconSize == size;
             view.Items.Add(item);
         }
         view.Items.Add(new Separator());
-        var auto = FolderPane.Item(Loc.T("Organizar automáticamente"), null, () => Settings.Update(x => x.DesktopAutoArrange = !x.DesktopAutoArrange));
+        var auto = FileMenus.Item(Loc.T("Organizar automáticamente"), null, () => Settings.Update(x => x.DesktopAutoArrange = !x.DesktopAutoArrange));
         auto.IsChecked = s.DesktopAutoArrange;
         view.Items.Add(auto);
         view.Items.Add(new Separator());
-        var show = FolderPane.Item(Loc.T("Mostrar íconos del escritorio"), null, () => Settings.Update(x => x.DesktopShowIcons = x.DesktopShowIcons != true));
+        var show = FileMenus.Item(Loc.T("Mostrar íconos del escritorio"), null, () => Settings.Update(x => x.DesktopShowIcons = x.DesktopShowIcons != true));
         show.IsChecked = s.DesktopShowIcons == true;
         view.Items.Add(show);
         menu.Items.Add(view);
@@ -898,7 +909,7 @@ public sealed class DesktopWindow : Window
                                             ("Modified", Loc.T("Fecha de modificación")) })
         {
             // Ordenar los vuelve a acomodar solos, en ese orden.
-            var item = FolderPane.Item(text, null, () => Settings.Update(x =>
+            var item = FileMenus.Item(text, null, () => Settings.Update(x =>
             {
                 x.DesktopSort = key;
                 x.DesktopAutoArrange = true;
@@ -907,34 +918,35 @@ public sealed class DesktopWindow : Window
             sort.Items.Add(item);
         }
         menu.Items.Add(sort);
-        menu.Items.Add(FolderPane.Item(Loc.T("Actualizar"), SymbolRegular.ArrowClockwise24, () => _ = LoadAsync()));
+        menu.Items.Add(FileMenus.Item(Loc.T("Actualizar"), SymbolRegular.ArrowClockwise24, () => _ = LoadAsync()));
         menu.Items.Add(new Separator());
-        menu.Items.Add(FolderPane.Item(Loc.T("Pegar"), SymbolRegular.ClipboardPaste24, () => _ = Paste(), enabled: FileOperations.ClipboardHasFiles()));
+        menu.Items.Add(FileMenus.Item(Loc.T("Pegar"), SymbolRegular.ClipboardPaste24, () => _ = Paste(), enabled: FileOperations.ClipboardHasFiles()));
         menu.Items.Add(new Separator());
 
         // Widgets: agregar uno y el modo edición.
         var widgets = new MenuItem { Header = Loc.T("Agregar un widget"), Icon = new SymbolIcon { Symbol = SymbolRegular.Apps24 } };
         foreach (var entry in EditMode.WidgetCatalog.All())
         {
-            widgets.Items.Add(FolderPane.Item(entry.Name, entry.Icon, () =>
+            widgets.Items.Add(FileMenus.Item(entry.Name, entry.Icon, () =>
             {
                 var config = entry.Create();
                 Services.Widgets.WidgetManager.Add(config.Kind, config.ShowDate, config.Module);
             }));
         }
         menu.Items.Add(widgets);
-        menu.Items.Add(FolderPane.Item(Loc.T("Editar diseño…"), SymbolRegular.Edit24, () => EditMode.EditSession.Start()));
+        menu.Items.Add(FileMenus.Item(Loc.T("Editar diseño…"), SymbolRegular.Edit24, () => EditMode.EditSession.Start()));
         menu.Items.Add(new Separator());
-        menu.Items.Add(FolderPane.Item(Loc.T("Abrir en Archivos"), SymbolRegular.FolderOpen24, () => App.Current.OpenFiles(UserDesktop)));
-        menu.Items.Add(FolderPane.Item(Loc.T("Abrir terminal aquí"), SymbolRegular.WindowConsole20, () => FileOperations.OpenTerminal(UserDesktop)));
+        menu.Items.Add(FileMenus.Item(OptionalModules.Files.IsInstalled ? Loc.T("Abrir en Archivos") : Loc.T("Abrir en el Explorador"),
+                                      SymbolRegular.FolderOpen24, () => App.Current.OpenFiles(UserDesktop)));
+        menu.Items.Add(FileMenus.Item(Loc.T("Abrir terminal aquí"), SymbolRegular.WindowConsole20, () => FileOperations.OpenTerminal(UserDesktop)));
         menu.Items.Add(new Separator());
         var personalize = new MenuItem { Header = Loc.T("Personalizar Strata UI"), Icon = new SymbolIcon { Symbol = SymbolRegular.PaintBrush24 } };
-        personalize.Items.Add(FolderPane.Item(Loc.T("Fondo de pantalla"), SymbolRegular.Image24, () => FileOperations.Open("ms-settings:personalization-background")));
-        personalize.Items.Add(FolderPane.Item(Loc.T("Tema y colores"), SymbolRegular.PaintBrush24, () => App.Current.OpenHub("Appearance")));
-        personalize.Items.Add(FolderPane.Item(Loc.T("Configuración de Strata UI"), SymbolRegular.Settings24, () => App.Current.OpenHub()));
+        personalize.Items.Add(FileMenus.Item(Loc.T("Fondo de pantalla"), SymbolRegular.Image24, () => FileOperations.Open("ms-settings:personalization-background")));
+        personalize.Items.Add(FileMenus.Item(Loc.T("Tema y colores"), SymbolRegular.PaintBrush24, () => App.Current.OpenHub("Appearance")));
+        personalize.Items.Add(FileMenus.Item(Loc.T("Configuración de Strata UI"), SymbolRegular.Settings24, () => App.Current.OpenHub()));
         menu.Items.Add(personalize);
         // Lo del escritorio de Windows: Nuevo, Configuración de pantalla, Personalizar, el panel de la tarjeta de video…
-        FolderPane.AddWindowsItems(menu, [UserDesktop], background: true, desktop: true);
+        FileMenus.AddWindowsItems(menu, [UserDesktop], background: true, desktop: true);
     }
 
     [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]

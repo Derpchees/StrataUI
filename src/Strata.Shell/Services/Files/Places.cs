@@ -246,6 +246,34 @@ public static class Places
         }
     }
 
+    /// <summary>Una ruta escrita o recibida, completa y sin barra final ("C:" es la raíz "C:\"), o null si no vale.</summary>
+    public static string? Normalize(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return null;
+        path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"')).TrimEnd('\\');
+        if (IsServer(path))
+            return path;
+        // "C:" solo (o "C:\" sin su barra) es la raíz de la unidad, no la carpeta actual del proceso en ella.
+        if (path.Length == 2 && path[1] == ':' && char.IsLetter(path[0]))
+            return char.ToUpperInvariant(path[0]) + @":\";
+        if (path.Equals(RecycleBin, StringComparison.OrdinalIgnoreCase))
+            return RecycleBin;
+        try
+        {
+            path = Path.GetFullPath(path);
+            // "C:" es la carpeta actual de esa unidad; la raíz es "C:\".
+            return Path.GetPathRoot(path) is { } root && path.Length <= root.Length ? root.TrimEnd('\\') + "\\" : path.TrimEnd('\\');
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return null;
+        }
+    }
+
+    public static bool SamePath(string? a, string? b) =>
+        string.Equals(a?.TrimEnd('\\'), b?.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Ruta de red "\\servidor" (sin recurso): se listan sus carpetas compartidas.</summary>
     public static bool IsServer(string? path) =>
         path is { Length: > 2 } && path.StartsWith(@"\\") && path.IndexOf('\\', 2) < 0;

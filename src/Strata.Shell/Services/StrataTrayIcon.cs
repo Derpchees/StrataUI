@@ -15,6 +15,7 @@ internal static class StrataTrayIcon
 {
     private static Forms.NotifyIcon? _icon;
     private static ContextMenu? _menu;
+    private static MenuItem? _filesEntry;
 
     public static void Show()
     {
@@ -57,6 +58,8 @@ internal static class StrataTrayIcon
     private static void ShowMenu()
     {
         _menu ??= CreateMenu();
+        // Archivos, solo con su módulo instalado.
+        _filesEntry!.Visibility = Modules.OptionalModules.Files.IsInstalled ? Visibility.Visible : Visibility.Collapsed;
         _menu.Placement = PlacementMode.MousePoint;
         _menu.IsOpen = true;
     }
@@ -66,7 +69,8 @@ internal static class StrataTrayIcon
         var menu = new ContextMenu();
         menu.Items.Add(Entry(Loc.T("Configuración de Strata UI"), () => App.Current.OpenHub(), bold: true));
         menu.Items.Add(Entry(Loc.T("Editar diseño…"), () => EditMode.EditSession.Start()));
-        menu.Items.Add(Entry(Loc.T("Archivos de Strata UI"), () => App.Current.OpenFiles()));
+        _filesEntry = Entry(Loc.T("Archivos de Strata UI"), () => App.Current.OpenFiles());
+        menu.Items.Add(_filesEntry);
         menu.Items.Add(new Separator());
         menu.Items.Add(Entry(Loc.T("Reiniciar Strata UI"), () => App.Current.ExitShell(restart: true)));
         menu.Items.Add(Entry(Loc.T("Salir de Strata UI"), () => App.Current.ExitShell()));

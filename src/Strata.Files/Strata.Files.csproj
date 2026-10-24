@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Módulo Archivos: el explorador de archivos y el visor de fotos, video y música. No viene en el
+       instalador; se instala en Hub › Módulos opcionales (Services/Modules/OptionalModule.cs). Lo que
+       también usa el escritorio (íconos, miniaturas, menús de Windows, operaciones, reproductor) sigue
+       en la app: este archivo solo trae las ventanas, porque se descarga solo (sin otras DLL). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>StrataUI.Files</AssemblyName>
+    <RootNamespace>Strata.Shell</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Se compila contra la app (con sus tipos internos) pero no la copia: corre dentro de ella. -->
+    <ProjectReference Include="..\Strata.Shell\Strata.Shell.csproj" Private="false" />
+  </ItemGroup>
+
+  <!-- Al compilar en desarrollo, junto a StrataUI.exe: así run.ps1 lo carga sin descargarlo. -->
+  <Target Name="CopyNextToApp" AfterTargets="Build" Condition="'$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), $(OutDir)))' == '$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), bin, $(Configuration), $(TargetFramework)))'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\Strata.Shell\bin\$(Configuration)\$(TargetFramework)\" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

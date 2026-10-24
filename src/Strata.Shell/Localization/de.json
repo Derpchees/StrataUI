@@ -1172,5 +1172,20 @@
   "Personalizar Strata UI": "Strata UI anpassen",
   "Íconos grandes": "Große Symbole",
   "Íconos medianos": "Mittelgroße Symbole",
-  "Íconos pequeños": "Kleine Symbole"
+  "Íconos pequeños": "Kleine Symbole",
+  "Abrir en el Explorador": "Im Explorer öffnen",
+  "Mostrar en el Explorador": "Im Explorer anzeigen",
+  "Instalar y quitar": "Installieren und entfernen",
+  "Módulos opcionales": "Optionale Module",
+  "Partes de Strata UI que no vienen en el instalador: se descargan de la publicación {0} en GitHub y se instalan solo si las quieres.": "Teile von Strata UI, die nicht im Installationsprogramm enthalten sind: Sie werden aus der Version {0} auf GitHub heruntergeladen und nur installiert, wenn du sie möchtest.",
+  "Se quitará al reiniciar Strata UI.": "Wird beim Neustart von Strata UI entfernt.",
+  "Instalado.": "Installiert.",
+  "No instalado.": "Nicht installiert.",
+  "Necesitan el módulo opcional Lecturas avanzadas.": "Dafür wird das optionale Modul Erweiterte Messwerte benötigt.",
+  "Instalar el módulo": "Modul installieren",
+  "No se pudo cargar el módulo {0}.": "Das Modul {0} konnte nicht geladen werden.",
+  "No se pudo descargar el módulo {0}.": "Das Modul {0} konnte nicht heruntergeladen werden.",
+  "Rendimiento, privacidad, IA, limpieza, apps preinstaladas y más ajustes de Windows.": "Leistung, Datenschutz, KI, Bereinigung, vorinstallierte Apps und weitere Windows-Einstellungen.",
+  "Explorador de archivos con pestañas, vista doble, carátulas y visor de fotos, video y música. Reemplaza al Explorador dentro de Strata UI.": "Dateiexplorer mit Tabs, Doppelansicht, Vorschaubildern und Betrachter für Fotos, Videos und Musik. Ersetzt den Explorer in Strata UI.",
+  "Temperatura de CPU y GPU y contador de FPS para los medidores de la barra y los widgets. Al activarlas, Windows pide permiso de administrador una vez.": "CPU- und GPU-Temperatur sowie FPS-Zähler für die Anzeigen der Leiste und die Widgets. Beim Aktivieren fragt Windows einmal nach Administratorrechten."
 }

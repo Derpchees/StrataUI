@@ -178,15 +178,24 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 - **Página nueva del Hub**: `Hub/Pages/XxxPage.xaml` con `<hub:PageHeader Icon=… Title=… Subtitle=…/>`
   al principio, entrada en `HubWindow.xaml` (grupo Personalización o Sistema) y, si conviene, un
   mosaico en `HomePage`. `--hub Xxx` la abre.
-- **Módulo de optimización** (`src/Strata.Optimization` → `StrataUI.Optimization.dll`): las páginas
-  del grupo Optimización no van en el instalador. `Services/OptimizationModule` lo descarga de la
-  publicación `vX.Y.Z` a `%LOCALAPPDATA%\StrataUI\Optimization` y solo lo acepta si su versión
-  completa (con el commit) es la de la app; `HubWindow.FillOptimization` agrega sus páginas
-  (`IHubModule`) o la entrada "Instalar". El motor (`Tweaks/`, limpieza, NVIDIA) sigue en la app y
-  los procesos elevados nunca cargan el módulo. Una página nueva de optimización va en el módulo y
-  en `OptimizationPages`; sus textos se traducen en los `.json` de la app. En desarrollo, compilar
-  la solución copia el módulo junto a `StrataUI.exe` (así se carga sin descargar; para ver la
-  entrada "Instalar", sacar esa copia).
+- **Módulos opcionales** (`Services/Modules/OptionalModule.cs`, Hub › Módulos opcionales =
+  `ModulesPage`): no van en el instalador; se descargan de la publicación `vX.Y.Z` y solo se aceptan
+  si su versión completa (con el commit) es la de la app. Compilar la solución en desarrollo los deja
+  junto a `StrataUI.exe` (se cargan sin descargar; para ver "Instalar", sacar esa copia).
+  - **Optimización** (`src/Strata.Optimization` → `StrataUI.Optimization.dll`, en
+    `%LOCALAPPDATA%\StrataUI\Optimization`): sus páginas (`IHubModule`, `OptimizationPages`) van
+    dentro de la entrada Módulos opcionales (`HubWindow.FillModules`). El motor (`Tweaks/`,
+    limpieza, NVIDIA) sigue en la app y los procesos elevados nunca cargan el módulo.
+  - **Archivos** (`src/Strata.Files` → `StrataUI.Files.dll`): solo las ventanas (`FilesWindow`,
+    `FolderPane`, `MediaViewerWindow`) detrás de `IFilesModule`. Lo que usa también el escritorio
+    (`Services/Files/`: íconos, miniaturas, `FileMenus`, operaciones, `FramePlayer`, `Previews`) sigue
+    en la app, y el módulo no puede traer otras DLL (se descarga solo). Sin él, `App.OpenFiles` abre
+    el Explorador y `FilesModule.ReplacesExplorer` es false (Win+E, Inicio, Win+X).
+  - **Lecturas avanzadas** (`src/Strata.Sensors` → `StrataUI.Sensors.zip`, con LibreHardwareMonitor y
+    TraceEvent): los lectores de temperaturas y FPS (`ISensorReaders`). Solo los carga el proceso
+    elevado, desde `%ProgramFiles%\StrataUI\Lecturas\Sensors` (`SensorsModule.LoadProtected`), que
+    llena la tarea con UAC (`SensorsTask.CopyModule`); nunca desde la carpeta del usuario. Sin el
+    módulo, el proceso elevado sigue atendiendo "free" y "run" (acciones de Optimización).
 - **Archivos** (`Files/FilesWindow`, `Services/Files/`): explorador propio. Lee con System.IO,
   íconos con `SHGetFileInfo` en un hilo STA aparte (`FileIcons`) y miniaturas decodificadas por WPF;
   nunca extensiones del Shell dentro del proceso: el menú de Windows (`ShellMenuSession`,
@@ -254,8 +263,9 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
    **Notas de la publicación en inglés** (traducir las del CHANGELOG; Added / Changed / Fixed) y
    en una sola lista con todo lo cambiado desde la última versión publicada, aunque haya versiones
    intermedias sin publicación: nada de "también incluye lo de la X.Y.Z".
-   Adjuntar también `artifacts\StrataUI.Optimization.dll` (lo deja `build-installer.ps1`, del
-   mismo commit): sin él, el botón "Instalar" de Optimización falla en esa versión.
+   Adjuntar también los módulos opcionales que deja `build-installer.ps1` (del mismo commit):
+   `artifacts\StrataUI.Optimization.dll`, `StrataUI.Files.dll` y `StrataUI.Sensors.zip`. Sin ellos,
+   "Instalar" en Módulos opcionales falla en esa versión.
 5. Commits intermedios durante el trabajo están bien; la versión se cierra al terminar la tanda,
    antes de pasar a otra cosa.
 

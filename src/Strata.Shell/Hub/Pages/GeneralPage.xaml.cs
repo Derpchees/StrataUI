@@ -25,19 +25,7 @@ public partial class GeneralPage : Page
         LanguageBox.SelectedItem = LanguageBox.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == Settings.Current.Language) ?? LanguageBox.Items[0];
         _loading = false;
-        Loaded += (_, _) =>
-        {
-            OptimizationModule.Changed -= ShowOptimization;
-            OptimizationModule.Changed += ShowOptimization;
-            ShowOptimization();
-        };
-        Unloaded += (_, _) => OptimizationModule.Changed -= ShowOptimization;
     }
-
-    private void ShowOptimization() => Dispatcher.BeginInvoke(() =>
-        OptimizationCard.Visibility = OptimizationModule.CanRemove ? Visibility.Visible : Visibility.Collapsed);
-
-    private void RemoveOptimization_Click(object sender, RoutedEventArgs e) => OptimizationModule.Remove();
 
     private bool _loading = true;
 

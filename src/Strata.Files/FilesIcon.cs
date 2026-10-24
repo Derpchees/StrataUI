@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace Strata.Shell.Controls;
+namespace Strata.Shell.Files;
 
 /// <summary>
 /// Ícono de Archivos: una carpeta con los colores del logo de Strata UI (en una caja de 256). La

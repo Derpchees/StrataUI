@@ -73,6 +73,12 @@ public static class SensorsTask
                 || !SameFile(Path.Combine(Path.GetDirectoryName(ProtectedExe)!, "StrataUI.dll"),
                              Path.Combine(AppContext.BaseDirectory, "StrataUI.dll")))
                 return false;
+            // El módulo de lecturas en la copia protegida: el mismo que el instalado, o ninguno si se quitó.
+            string protectedModule = Path.Combine(Modules.SensorsModule.ProtectedFolder, Modules.SensorsModule.DllName);
+            if (Modules.OptionalModules.Sensors.SourceFolder is { } source
+                    ? !SameFile(protectedModule, Path.Combine(source, Modules.SensorsModule.DllName))
+                    : File.Exists(protectedModule))
+                return false;
             // La tarea tiene que ejecutar ese mismo archivo: si Strata UI cambió de carpeta (por
             // ejemplo de Archivos de programa\WINX a ...\StrataUI), apunta a uno que ya no existe.
             return TaskCommand(UserSid) is { } command
@@ -95,7 +101,10 @@ public static class SensorsTask
     /// <summary>Crea o renueva la tarea (pide UAC). Devuelve false si se canceló o falló.</summary>
     public static async Task<bool> InstallAsync()
     {
-        int code = await Tweaks.Elevation.RunSelfAsync(InstallArg, UserSid);
+        // La carpeta del módulo Lecturas avanzadas (si está): el proceso elevado la copia a la protegida.
+        int code = Modules.OptionalModules.Sensors.SourceFolder is { } module
+            ? await Tweaks.Elevation.RunSelfAsync(InstallArg, UserSid, module)
+            : await Tweaks.Elevation.RunSelfAsync(InstallArg, UserSid);
         if (code != 0)
             Log.Info($"No se creó la tarea de lecturas avanzadas (código {code})");
         return code == 0;
@@ -110,16 +119,17 @@ public static class SensorsTask
     // ── Proceso elevado ─────────────────────────────────────────────────────
 
     /// <summary>
-    /// StrataUI.exe --install-sensors-task &lt;SID&gt;: copia Strata UI a la carpeta protegida y crea la tarea
-    /// para ese usuario (con su SID: si quien acepta UAC es otra cuenta de administrador, la tarea
-    /// igual queda para el usuario de Strata UI).
+    /// StrataUI.exe --install-sensors-task &lt;SID&gt; [módulo]: copia Strata UI a la carpeta protegida y crea
+    /// la tarea para ese usuario (con su SID: si quien acepta UAC es otra cuenta de administrador, la
+    /// tarea igual queda para el usuario de Strata UI). Con la carpeta del módulo Lecturas avanzadas,
+    /// también lo copia ahí (si no, quita el que hubiera).
     /// </summary>
     public static int RunInstall(string[] args)
     {
         // Sin SID, el usuario que ejecuta (el instalador, elevado con la misma cuenta, la deja lista).
         if (args.Length == 1)
             args = [args[0], UserSid];
-        if (args.Length != 2 || !Sid.IsMatch(args[1]))
+        if (args.Length is not (2 or 3) || !Sid.IsMatch(args[1]))
             return 2;
         string sid = args[1];
         RemoveLegacy(sid);
@@ -127,6 +137,7 @@ public static class SensorsTask
         {
             if (!InstalledProtected)
                 CopyApp(AppContext.BaseDirectory, CopyFolder);
+            CopyModule(args.Length == 3 ? args[2] : null);
             string xml = TaskXml(sid, ProtectedExe);
             string file = Path.Combine(Path.GetTempPath(), $"strataui-task-{Guid.NewGuid():N}.xml");
             File.WriteAllText(file, xml, Encoding.Unicode);
@@ -221,6 +232,30 @@ public static class SensorsTask
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
+    }
+
+    /// <summary>
+    /// El módulo Lecturas avanzadas en la carpeta protegida: copia el de <paramref name="from"/> (si es
+    /// de esta versión) o, sin él, borra el que hubiera.
+    /// </summary>
+    private static void CopyModule(string? from)
+    {
+        string to = Modules.SensorsModule.ProtectedFolder;
+        bool valid = from != null && Directory.Exists(from)
+                     && File.Exists(Path.Combine(from, Modules.SensorsModule.DllName))
+                     && FileVersionInfo.GetVersionInfo(Path.Combine(from, Modules.SensorsModule.DllName)).ProductVersion
+                        == FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion;
+        if (from != null && Path.GetFullPath(from).TrimEnd('\\').Equals(Path.GetFullPath(to).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+            return;
+        if (Directory.Exists(to))
+            Directory.Delete(to, recursive: true);
+        if (!valid)
+            return;
+        Directory.CreateDirectory(to);
+        foreach (var dir in Directory.EnumerateDirectories(from!, "*", SearchOption.AllDirectories))
+            Directory.CreateDirectory(Path.Combine(to, Path.GetRelativePath(from!, dir)));
+        foreach (var file in Directory.EnumerateFiles(from!, "*", SearchOption.AllDirectories))
+            File.Copy(file, Path.Combine(to, Path.GetRelativePath(from!, file)), overwrite: true);
     }
 
     /// <summary>Copia la app (reemplaza la copia anterior). Si Strata UI ya está ahí, no hace nada.</summary>

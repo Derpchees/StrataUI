@@ -1,11 +1,12 @@
 <ui:FluentWindow x:Class="Strata.Shell.Files.FilesWindow"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
-                 xmlns:controls="clr-namespace:Strata.Shell.Controls"
+                 xmlns:l="clr-namespace:Strata.Shell.Services.Localization;assembly=StrataUI"
+                 xmlns:controls="clr-namespace:Strata.Shell.Controls;assembly=StrataUI"
+                 xmlns:files="clr-namespace:Strata.Shell.Files"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
                  Title="{l:T 'Archivos'}"
-                 Icon="{x:Static controls:FilesIcon.Bitmap}"
+                 Icon="{x:Static files:FilesIcon.Bitmap}"
                  Width="1160" Height="740" MinWidth="720" MinHeight="460"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
@@ -86,7 +87,7 @@
         <!-- Barra de título con las pestañas -->
         <ui:TitleBar x:Name="WindowTitleBar" Grid.Row="0" Title="{l:T 'Archivos'}">
             <ui:TitleBar.Icon>
-                <ui:ImageIcon Source="{x:Static controls:FilesIcon.Image}" />
+                <ui:ImageIcon Source="{x:Static files:FilesIcon.Image}" />
             </ui:TitleBar.Icon>
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,4,0,0">

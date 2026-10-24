@@ -1172,5 +1172,20 @@
   "Personalizar Strata UI": "Personnaliser Strata UI",
   "Íconos grandes": "Grandes icônes",
   "Íconos medianos": "Icônes moyennes",
-  "Íconos pequeños": "Petites icônes"
+  "Íconos pequeños": "Petites icônes",
+  "Abrir en el Explorador": "Ouvrir dans l'Explorateur",
+  "Mostrar en el Explorador": "Afficher dans l'Explorateur",
+  "Instalar y quitar": "Installer et supprimer",
+  "Módulos opcionales": "Modules facultatifs",
+  "Partes de Strata UI que no vienen en el instalador: se descargan de la publicación {0} en GitHub y se instalan solo si las quieres.": "Des parties de Strata UI qui ne sont pas fournies avec le programme d'installation : elles se téléchargent depuis la version {0} sur GitHub et ne s'installent que si vous le souhaitez.",
+  "Se quitará al reiniciar Strata UI.": "Il sera supprimé au redémarrage de Strata UI.",
+  "Instalado.": "Installé.",
+  "No instalado.": "Non installé.",
+  "Necesitan el módulo opcional Lecturas avanzadas.": "Elles nécessitent le module facultatif Lectures avancées.",
+  "Instalar el módulo": "Installer le module",
+  "No se pudo cargar el módulo {0}.": "Impossible de charger le module {0}.",
+  "No se pudo descargar el módulo {0}.": "Impossible de télécharger le module {0}.",
+  "Rendimiento, privacidad, IA, limpieza, apps preinstaladas y más ajustes de Windows.": "Performances, confidentialité, IA, nettoyage, applications préinstallées et d'autres réglages de Windows.",
+  "Explorador de archivos con pestañas, vista doble, carátulas y visor de fotos, video y música. Reemplaza al Explorador dentro de Strata UI.": "Explorateur de fichiers avec onglets, double volet, aperçus et visionneuse de photos, vidéos et musique. Remplace l'Explorateur dans Strata UI.",
+  "Temperatura de CPU y GPU y contador de FPS para los medidores de la barra y los widgets. Al activarlas, Windows pide permiso de administrador una vez.": "Température du processeur et du GPU et compteur d'images par seconde pour les jauges de la barre et les widgets. À l'activation, Windows demande une fois l'autorisation d'administrateur."
 }

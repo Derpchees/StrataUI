@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Módulo Lecturas avanzadas: temperaturas (LibreHardwareMonitor) y FPS (ETW, TraceEvent). No viene
+       en el instalador; se publica comprimido con sus DLL (StrataUI.Sensors.zip) y lo carga solo el
+       proceso elevado de las lecturas, desde la carpeta protegida (Services/Modules/SensorsModule.cs). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>StrataUI.Sensors</AssemblyName>
+    <RootNamespace>Strata.Shell</RootNamespace>
+    <!-- Las DLL de los paquetes van con el módulo (una biblioteca no las copia por omisión). -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Solo las de Windows x64 (como la app), sin la carpeta runtimes de cada sistema. -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Se compila contra la app (con sus tipos internos) pero no la copia: corre dentro de ella. -->
+    <ProjectReference Include="..\Strata.Shell\Strata.Shell.csproj" Private="false" />
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.8" />
+  </ItemGroup>
+
+  <!-- En desarrollo, en la carpeta Sensors junto a StrataUI.exe (con sus DLL): así la tarea de las
+       lecturas lo copia a la carpeta protegida sin descargarlo. -->
+  <Target Name="CopyNextToApp" AfterTargets="Build" Condition="'$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), $(OutDir)))' == '$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), bin, $(Configuration), $(TargetFramework)))'">
+    <PropertyGroup>
+      <AppOutDir>$(MSBuildProjectDirectory)\..\Strata.Shell\bin\$(Configuration)\$(TargetFramework)\</AppOutDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ModuleFiles Include="$(OutDir)**\*" Exclude="$(OutDir)*.pdb;$(OutDir)*.deps.json;$(OutDir)*.runtimeconfig.json;$(OutDir)x86\**;$(OutDir)arm64\**;$(OutDir)runtimes\**" />
+      <!-- Las DLL de Windows de los paquetes (runtimes\win\lib\...), en la raíz: como al publicar. -->
+      <ModuleRuntimeFiles Include="$(OutDir)runtimes\win\lib\**\*.dll;$(OutDir)runtimes\win-x64\lib\**\*.dll;$(OutDir)runtimes\win-x64\native\*.dll" />
+      <!-- Lo que ya trae la app (ella misma, WPF-UI y demás paquetes suyos) no se repite. -->
+      <ModuleFiles Remove="@(ModuleFiles)" Condition="Exists('$(AppOutDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+      <ModuleRuntimeFiles Remove="@(ModuleRuntimeFiles)" Condition="Exists('$(AppOutDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ModuleFiles)" DestinationFiles="@(ModuleFiles->'..\Strata.Shell\bin\$(Configuration)\$(TargetFramework)\Sensors\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ModuleRuntimeFiles)" DestinationFolder="..\Strata.Shell\bin\$(Configuration)\$(TargetFramework)\Sensors\" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

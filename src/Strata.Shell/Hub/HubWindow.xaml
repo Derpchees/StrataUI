@@ -69,17 +69,21 @@
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
-                <!-- Módulos: Importar (temas, animaciones, widgets, menús de Inicio y sonidos) y una entrada
-                     por módulo descargable, con sus páginas dentro o la página para instalarlo
-                     (HubWindow.FillModules). -->
-                <ui:NavigationViewItemHeader x:Name="ModulesHeader" Text="{l:T 'Módulos'}" Margin="0,12,0,0" />
-                <ui:NavigationViewItem x:Name="ImportItem" Content="{l:T 'Importar'}" TargetPageType="{x:Type pages:ImportPage}">
+                <!-- Módulos opcionales: la página para instalarlos y, dentro, las páginas de los que traen
+                     las suyas (HubWindow.FillModules). -->
+                <ui:NavigationViewItem x:Name="ModulesItem" Content="{l:T 'Módulos opcionales'}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="ArrowImport24" />
+                        <ui:SymbolIcon Symbol="PuzzlePiece24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
+                <!-- Importar: temas, animaciones, widgets, menús de Inicio y sonidos -->
+                <ui:NavigationViewItem Content="{l:T 'Importar'}" TargetPageType="{x:Type pages:ImportPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="ArrowImport24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{l:T 'General'}" TargetPageType="{x:Type hub:SettingsHubPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />

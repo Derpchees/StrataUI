@@ -66,7 +66,7 @@ public class FilesTests
     [InlineData("d:", @"D:\")]
     [InlineData(@"C:\Windows\", @"C:\Windows")]
     public void Drive_root_is_not_the_current_folder(string input, string expected) =>
-        Assert.Equal(expected, Strata.Shell.Files.FolderPane.Normalize(input));
+        Assert.Equal(expected, Places.Normalize(input));
 
     [Fact]
     public void Svg_is_drawn_at_the_requested_size()

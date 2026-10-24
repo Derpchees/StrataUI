@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Cambiado
+- **Módulos opcionales**: Optimización, Archivos y las Lecturas avanzadas (temperaturas y FPS) ya
+  no vienen en el instalador. Se instalan con un clic en Hub › Módulos opcionales, que junta los
+  tres (y, dentro, las páginas de Optimización). El instalador pesa unos 10 MB menos. Sin Archivos,
+  las carpetas se abren en el Explorador de Windows; el escritorio de Strata UI sigue igual.
+- **Importar** pasa a la parte de abajo del Hub, junto a General.
+
 ## [3.9.1] - 2026-10-22
 
 ### Añadido

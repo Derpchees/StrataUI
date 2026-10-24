@@ -88,6 +88,18 @@ Source: "Integration.ps1"; DestDir: "{app}"; Flags: ignoreversion
 [InstallDelete]
 ; Restos de una versión anterior que ya no forman parte de la app.
 Type: filesandordirs; Name: "{app}\*.pdb"
+; Hasta la 3.9 las lecturas avanzadas venían en el instalador; ahora son un módulo opcional.
+Type: files; Name: "{app}\LibreHardwareMonitorLib.dll"
+Type: files; Name: "{app}\HidSharp.dll"
+Type: files; Name: "{app}\DiskInfoToolkit.dll"
+Type: files; Name: "{app}\BlackSharp.Core.dll"
+Type: files; Name: "{app}\RAMSPDToolkit-NDD.dll"
+Type: files; Name: "{app}\Microsoft.Diagnostics.*.dll"
+Type: files; Name: "{app}\Dia2Lib.dll"
+Type: files; Name: "{app}\TraceReloggerLib.dll"
+Type: filesandordirs; Name: "{app}\amd64"
+Type: filesandordirs; Name: "{app}\x86"
+Type: filesandordirs; Name: "{app}\arm64"
 ; Antes de la 1.0 el acceso directo iba suelto en el menú Inicio; ahora va en su carpeta.
 Type: files; Name: "{autoprograms}\WINX.lnk"
 ; Cuando se llamaba WINX (hasta la 1.3): su ejecutable, su carpeta del menú Inicio y su acceso directo.

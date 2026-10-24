@@ -30,6 +30,8 @@
     <InternalsVisibleTo Include="Strata.Tests" />
     <!-- El módulo de optimización (src/Strata.Optimization) usa los tipos internos de la app. -->
     <InternalsVisibleTo Include="StrataUI.Optimization" />
+    <InternalsVisibleTo Include="StrataUI.Files" />
+    <InternalsVisibleTo Include="StrataUI.Sensors" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,9 +47,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <PackageReference Include="ManagedShell" Version="0.0.374" />
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.8" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
     <PackageReference Include="SharpVectors.Wpf" Version="1.8.6" />
     <PackageReference Include="System.Management" Version="10.0.12" />

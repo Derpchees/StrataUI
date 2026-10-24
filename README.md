@@ -250,8 +250,9 @@ and everything goes back to normal.
   thumbnails never download online-only files. Shared folders (`\\server\share`, or just
   `\\server` to list them), your saved network locations, mapped drives (also disconnected ones)
   and *Map network drive*; an unreachable server says so instead of hanging.
-- Within Strata UI it replaces File Explorer: Win+E, the Explorer button and the Start menu and
-  Win+X folders open Files (switch it off in Hub > General). Everything else in Windows keeps using
+- An optional module: install it in Hub > Optional modules. Within Strata UI it replaces File
+  Explorer: Win+E, the Explorer button and the Start menu and Win+X folders open Files (switch it off
+  in Hub > General). Everything else in Windows keeps using
   File Explorer. You can also open it with `StrataUI.exe --files [folder]`.
 
 <a id="performance"></a>
@@ -260,7 +261,7 @@ and everything goes back to normal.
 
 - CPU, GPU and RAM usage on the bar or as big desktop readouts.
 - Temperatures and an **FPS counter** that understands frame generation (DLSS FG, FSR FG,
-  Lossless Scaling...).
+  Lossless Scaling...), with the *Advanced readings* optional module.
 - One-click **RAM cleanup** and internet speed with a built-in speed test.
 
 <a id="widgets"></a>
@@ -287,7 +288,7 @@ visible with Show desktop.
 
 ### <img src="docs/icons/optimization.svg" width="28" align="center" alt="" /> Optimization
 
-An optional module, installed from the Hub with one click. Every change is backed up, so everything
+An optional module, installed from Hub > Optional modules with one click. Every change is backed up, so everything
 can be undone.
 
 | Area | What it does |
@@ -396,7 +397,6 @@ src/Strata.Shell/            The app (StrataUI.exe)
   EditMode/                  On-screen layout editor
   StartMenu/                 Start menu styles, pins with folders and sections
   Flyouts/                   Sound, network, Bluetooth, brightness, battery, notification center
-  Files/                     File explorer window
   Notifications/             Banners and on-screen indicators (OSD)
   Widgets/                   Desktop widgets
   Hub/                       Settings window and its pages
@@ -405,6 +405,8 @@ src/Strata.Shell/            The app (StrataUI.exe)
   Services/                  Settings, audio, network, sensors, notifications, themes, modules...
   Localization/              UI translations (en, pt, fr, de; Spanish lives in the code)
 src/Strata.Optimization/     Optional module with the Optimization pages
+src/Strata.Files/            Optional module with the Files windows
+src/Strata.Sensors/          Optional module with the temperature and FPS readers
 src/Strata.ContextMenu/      "Pin to Start" in the Windows 11 right-click menu
 tests/Strata.Tests/          xUnit tests
 installer/                   Inno Setup script and the context menu package
