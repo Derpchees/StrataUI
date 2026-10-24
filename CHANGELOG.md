@@ -6,6 +6,8 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.10.0] - 2026-10-23
+
 ### Cambiado
 - **Módulos opcionales**: Optimización, Archivos y las Lecturas avanzadas (temperaturas y FPS) ya
   no vienen en el instalador. Se instalan con un clic en Hub › Módulos opcionales, que junta los
