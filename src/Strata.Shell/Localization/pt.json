@@ -1190,5 +1190,6 @@
   "Temperatura de CPU y GPU y contador de FPS para los medidores de la barra y los widgets. Al activarlas, Windows pide permiso de administrador una vez.": "Temperatura de CPU e GPU e contador de FPS para os medidores da barra e os widgets. Ao ativá-las, o Windows pede permissão de administrador uma vez.",
   "Cambiar el nombre en la barra lateral": "Renomear na barra lateral",
   "Volver al nombre de la carpeta": "Voltar ao nome da pasta",
-  "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Se a segunda saída tocar antes da principal, atrase-a até que soem juntas."
+  "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Se a segunda saída tocar antes da principal, atrase-a até que soem juntas.",
+  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Precisam de permissão de administrador novamente (o Strata UI ou o módulo foi atualizado): pressione Iniciar e aceite o aviso do Windows. Até lá, os medidores não mostram temperaturas nem FPS."
 }

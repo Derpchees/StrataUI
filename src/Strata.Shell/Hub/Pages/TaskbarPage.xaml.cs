@@ -144,10 +144,21 @@ public partial class TaskbarPage : Page
             : Sensors.Running ? Loc.T("Activas: temperaturas y FPS hasta que se cierre Strata UI.")
             : Loc.T("Detenidas. También se inician con un clic en el contador de FPS.");
         SensorsButton.Content = Sensors.Running ? Loc.T("Detener") : Loc.T("Iniciar");
+        // Detenidas porque el permiso quedó viejo (se actualizó Strata UI o el módulo): los medidores no
+        // las inician solos (nunca preguntan); se avisa para que se inicien a mano una vez.
+        if (!Sensors.Running && !Sensors.Starting)
+            _ = ShowPermissionNeededAsync();
         SensorsButton.IsEnabled = SensorsRemoveButton.IsEnabled = !Sensors.Starting;
         PawnIoBar.IsOpen = !Sensors.PawnIoInstalled;
         PawnIoButton.Visibility = PawnIoBar.IsOpen ? Visibility.Visible : Visibility.Collapsed;
     });
+
+    private async Task ShowPermissionNeededAsync()
+    {
+        if (await Task.Run(SensorsTask.IsReady) || Sensors.Running || Sensors.Starting || !OptionalModules.Sensors.IsInstalled)
+            return;
+        SensorsState.Text = Loc.T("Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.");
+    }
 
     private void OnModuleChanged(OptionalModule module)
     {

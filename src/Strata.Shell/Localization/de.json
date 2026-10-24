@@ -1190,5 +1190,6 @@
   "Temperatura de CPU y GPU y contador de FPS para los medidores de la barra y los widgets. Al activarlas, Windows pide permiso de administrador una vez.": "CPU- und GPU-Temperatur sowie FPS-Zähler für die Anzeigen der Leiste und die Widgets. Beim Aktivieren fragt Windows einmal nach Administratorrechten.",
   "Cambiar el nombre en la barra lateral": "In der Seitenleiste umbenennen",
   "Volver al nombre de la carpeta": "Ordnernamen verwenden",
-  "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Wenn die zweite Ausgabe vor der Hauptausgabe spielt, verzögere sie, bis beide gleichzeitig klingen."
+  "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Wenn die zweite Ausgabe vor der Hauptausgabe spielt, verzögere sie, bis beide gleichzeitig klingen.",
+  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Sie benötigen erneut Administratorrechte (Strata UI oder das Modul wurde aktualisiert): Drücke Starten und bestätige die Windows-Abfrage. Bis dahin zeigen die Anzeigen keine Temperaturen oder FPS."
 }
