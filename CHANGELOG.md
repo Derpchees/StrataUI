@@ -6,6 +6,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.10.2] - 2026-10-23
+
+### Corregido
+- **Las lecturas avanzadas parecían rotas tras actualizar**: el permiso de administrador se renueva
+  con cada actualización de Strata UI o del módulo, y mientras tanto los medidores quedaban sin
+  temperaturas ni FPS con la tarjeta del Hub diciendo solo "Detenidas". Ahora explica que hay que
+  pulsar Iniciar y aceptar el aviso de Windows.
+
 ## [3.10.1] - 2026-10-23
 
 ### Corregido
