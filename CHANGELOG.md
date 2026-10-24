@@ -8,12 +8,24 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [3.10.0] - 2026-10-23
 
+### Añadido
+- **Nombre propio para las carpetas ancladas** en la barra lateral de Archivos (clic derecho ›
+  "Cambiar el nombre en la barra lateral"): solo cambia cómo se ve ahí, la carpeta queda igual. Útil
+  con dos carpetas que se llaman igual en lugares distintos.
+- **Sincronía en "Sonar también en"**: un control de retraso para la segunda salida, por si suena
+  antes que la principal (por ejemplo, con la principal por Bluetooth).
+
 ### Cambiado
 - **Módulos opcionales**: Optimización, Archivos y las Lecturas avanzadas (temperaturas y FPS) ya
   no vienen en el instalador. Se instalan con un clic en Hub › Módulos opcionales, que junta los
   tres (y, dentro, las páginas de Optimización). El instalador pesa unos 10 MB menos. Sin Archivos,
   las carpetas se abren en el Explorador de Windows; el escritorio de Strata UI sigue igual.
 - **Importar** pasa a la parte de abajo del Hub, junto a General.
+
+### Corregido
+- **"Sonar también en" se desincronizaba**: la segunda salida se iba atrasando con los minutos
+  (los relojes de las dos salidas no van igual) y, cuando se vaciaba el búfer, saltaba. Ahora el
+  camino es más corto y se corrige de a poco, sin saltos.
 
 ## [3.9.1] - 2026-10-22
 

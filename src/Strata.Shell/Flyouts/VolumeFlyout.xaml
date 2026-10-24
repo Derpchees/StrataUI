@@ -249,6 +249,20 @@
                         Minimum="0" Maximum="100" IsMoveToPointEnabled="True" ValueChanged="MirrorSlider_ValueChanged" />
                 <TextBlock x:Name="MirrorPercent" Grid.Column="2" Style="{StaticResource FlyoutPercent}" />
             </Grid>
+            <!-- Sincronía: retraso de la segunda salida, para cuando suena antes que la principal -->
+            <Grid x:Name="MirrorDelayRow" Margin="0,4,0,0"
+                  ToolTip="{l:T 'Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.'}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ui:SymbolIcon Symbol="Timer24" FontSize="16" Margin="11,0,3,0" />
+                <Slider x:Name="MirrorDelaySlider" Grid.Column="1" Margin="8,0" VerticalAlignment="Center"
+                        Minimum="0" Maximum="400" SmallChange="10" LargeChange="50" TickFrequency="10" IsSnapToTickEnabled="True"
+                        IsMoveToPointEnabled="True" ValueChanged="MirrorDelay_ValueChanged" />
+                <TextBlock x:Name="MirrorDelayText" Grid.Column="2" Style="{StaticResource FlyoutPercent}" MinWidth="52" />
+            </Grid>
         </StackPanel>
 
         <!-- ── Entrada ── -->

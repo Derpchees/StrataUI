@@ -17,13 +17,42 @@ public sealed class Place : INotifyPropertyChanged
 {
     public Place(string name, string? path, SymbolRegular symbol)
     {
-        Name = name;
+        _name = name;
         Path = path;
         Symbol = symbol;
     }
 
-    public string Name { get; }
+    private string _name;
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            if (_name == value)
+                return;
+            _name = value;
+            Changed();
+        }
+    }
+
     public string? Path { get; }
+
+    private bool _isRenaming;
+    /// <summary>Se está escribiendo su nombre en la barra lateral (solo las ancladas).</summary>
+    public bool IsRenaming
+    {
+        get => _isRenaming;
+        set
+        {
+            if (_isRenaming == value)
+                return;
+            _isRenaming = value;
+            Changed();
+        }
+    }
+
+    /// <summary>Anclada con un nombre propio (no es el de la carpeta).</summary>
+    public bool HasCustomName { get; init; }
     public SymbolRegular Symbol { get; }
 
     /// <summary>Ícono de Windows (unidades); sin él se usa <see cref="Symbol"/>.</summary>
@@ -73,19 +102,45 @@ public static class Places
     /// <summary>La Papelera (carpeta virtual): se abre la de Windows.</summary>
     public const string RecycleBin = "shell:RecycleBinFolder";
 
-    /// <summary>Las carpetas ancladas que siguen existiendo.</summary>
+    /// <summary>Las carpetas ancladas que siguen existiendo, con el nombre que se les dio (si se les dio uno).</summary>
     public static List<Place> Pinned() =>
         Settings.Current.FilesPinnedFolders
             .Where(Directory.Exists)
-            .Select(p => new Place(NameOf(p), p, SymbolRegular.Folder24) { CanUnpin = true })
+            .Select(p => Settings.Current.FilesPinnedNames.GetValueOrDefault(PinnedKey(p)) is { Length: > 0 } custom
+                ? new Place(custom, p, SymbolRegular.Folder24) { CanUnpin = true, HasCustomName = true }
+                : new Place(NameOf(p), p, SymbolRegular.Folder24) { CanUnpin = true })
             .ToList();
 
     public static bool IsPinned(string path) =>
         Settings.Current.FilesPinnedFolders.Any(p => string.Equals(p.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase));
 
-    public static void SetPinned(string path, bool pinned) => Settings.Update(s => s.FilesPinnedFolders = pinned
-        ? s.FilesPinnedFolders.Append(path).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
-        : s.FilesPinnedFolders.Where(p => !string.Equals(p.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)).ToList());
+    public static void SetPinned(string path, bool pinned) => Settings.Update(s =>
+    {
+        s.FilesPinnedFolders = pinned
+            ? s.FilesPinnedFolders.Append(path).Distinct(StringComparer.OrdinalIgnoreCase).ToList()
+            : s.FilesPinnedFolders.Where(p => !string.Equals(p.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase)).ToList();
+        if (!pinned)
+            s.FilesPinnedNames.Remove(PinnedKey(path));
+    });
+
+    /// <summary>
+    /// El nombre que muestra la barra lateral para una carpeta anclada (solo eso: la carpeta no cambia).
+    /// Vacío o igual al de la carpeta, vuelve al de la carpeta.
+    /// </summary>
+    public static void SetPinnedName(string path, string? name)
+    {
+        name = name?.Trim();
+        Settings.Update(s =>
+        {
+            if (string.IsNullOrEmpty(name) || name == NameOf(path))
+                s.FilesPinnedNames.Remove(PinnedKey(path));
+            else
+                s.FilesPinnedNames[PinnedKey(path)] = name;
+        });
+    }
+
+    /// <summary>Clave de una carpeta en <see cref="StrataSettings.FilesPinnedNames"/>: sin barra final y en minúsculas.</summary>
+    public static string PinnedKey(string path) => path.TrimEnd('\\').ToLowerInvariant();
 
     /// <summary>Mueve una carpeta anclada antes de otra (arrastrándola en la barra lateral).</summary>
     public static void MovePinned(string path, string before) => Settings.Update(s =>

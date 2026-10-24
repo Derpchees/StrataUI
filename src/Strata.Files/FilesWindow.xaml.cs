@@ -482,6 +482,14 @@ public partial class FilesWindow : FluentWindow
         menu.Items.Add(FolderPane.Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => AddTab(place.Path)));
         if (place.CanUnpin)
         {
+            // Solo el nombre que se ve aquí (por ejemplo, dos carpetas que se llaman igual): la carpeta no cambia.
+            menu.Items.Add(FolderPane.Item(Loc.T("Cambiar el nombre en la barra lateral"), SymbolRegular.Rename24, () => place.IsRenaming = true));
+            if (place.HasCustomName)
+                menu.Items.Add(FolderPane.Item(Loc.T("Volver al nombre de la carpeta"), SymbolRegular.ArrowUndo24, () =>
+                {
+                    Places.SetPinnedName(place.Path!, null);
+                    RefreshPinned();
+                }));
             menu.Items.Add(FolderPane.Item(Loc.T("Desanclar de la barra lateral"), SymbolRegular.PinOff24, () =>
             {
                 Places.SetPinned(place.Path!, false);
@@ -498,6 +506,53 @@ public partial class FilesWindow : FluentWindow
         }
     }
 
+    // ── Nombre propio de una carpeta anclada ────────────────────────────────
+
+    private void PlaceName_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.NewValue is not true || sender is not System.Windows.Controls.TextBox { DataContext: Place place } box)
+            return;
+        box.Text = place.Name;
+        box.Dispatcher.BeginInvoke(() =>
+        {
+            box.Focus();
+            box.SelectAll();
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    private void PlaceName_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.TextBox { DataContext: Place place } box)
+            return;
+        if (e.Key == Key.Enter)
+        {
+            CommitPlaceName(place, box.Text);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            place.IsRenaming = false;
+            e.Handled = true;
+        }
+    }
+
+    private void PlaceName_LostFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.TextBox { DataContext: Place { IsRenaming: true } place } box)
+            CommitPlaceName(place, box.Text);
+    }
+
+    private static void CommitPlaceName(Place place, string text)
+    {
+        if (!place.IsRenaming)
+            return;
+        place.IsRenaming = false;
+        if (place.Path is null || text.Trim() == place.Name)
+            return;
+        Places.SetPinnedName(place.Path, text);
+        RefreshPinned();
+    }
+
     // ── Arrastrar y soltar en la barra lateral ──────────────────────────────
 
     /// <summary>Formato de una carpeta anclada que se arrastra para cambiarla de lugar.</summary>
@@ -506,7 +561,7 @@ public partial class FilesWindow : FluentWindow
     private Point? _placeDragStart;
 
     private void Place_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
-        _placeDragStart = ((FrameworkElement)sender).DataContext is Place { CanUnpin: true } ? e.GetPosition(this) : null;
+        _placeDragStart = ((FrameworkElement)sender).DataContext is Place { CanUnpin: true, IsRenaming: false } ? e.GetPosition(this) : null;
 
     /// <summary>Una carpeta anclada se arrastra para ordenarla entre las demás.</summary>
     private void Place_PreviewMouseMove(object sender, MouseEventArgs e)

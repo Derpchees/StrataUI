@@ -251,6 +251,8 @@ public sealed class StrataSettings
     public bool FilesShowHidden { get; set; }
     /// <summary>Carpetas ancladas a la barra lateral de Archivos, en orden.</summary>
     public List<string> FilesPinnedFolders { get; set; } = [];
+    /// <summary>Nombres propios de carpetas ancladas (clave: <see cref="Files.Places.PinnedKey"/>): solo en la barra lateral.</summary>
+    public Dictionary<string, string> FilesPinnedNames { get; set; } = [];
     /// <summary>El explorador muestra las extensiones (".pdf") en los nombres.</summary>
     public bool FilesShowExtensions { get; set; } = true;
     /// <summary>
@@ -279,6 +281,8 @@ public sealed class StrataSettings
     // Sonido
     /// <summary>"Sonar también en": la segunda salida que repite lo que suena (ID de Windows); null = apagado.</summary>
     public string? AudioMirrorDevice { get; set; }
+    /// <summary>Retraso de la segunda salida en ms (si suena antes que la principal, por ejemplo con Bluetooth).</summary>
+    public int AudioMirrorDelay { get; set; }
 
     // Módulos del área de estado
     public bool ShowNetworkModule { get; set; } = true;

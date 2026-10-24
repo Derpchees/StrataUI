@@ -147,7 +147,11 @@ public partial class VolumeFlyout : FlyoutWindow
             : device.IsDefault ? Loc.T("En pausa: es la salida principal")
             : device.Name;
         bool active = AudioMirror.ActiveTarget is { } target && target == chosen;
-        MirrorVolumeRow.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+        MirrorVolumeRow.Visibility = MirrorDelayRow.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
+        _updatingMirror = true;
+        MirrorDelaySlider.Value = Math.Clamp(Settings.Current.AudioMirrorDelay, 0, AudioMirror.MaxDelay);
+        _updatingMirror = false;
+        MirrorDelayText.Text = $"{MirrorDelaySlider.Value:0} ms";
         if (active && AudioMirror.GetVolume(chosen!) is { } volume)
         {
             _updatingMirror = true;
@@ -198,6 +202,31 @@ public partial class VolumeFlyout : FlyoutWindow
         MirrorPercent.Text = $"{e.NewValue:0}";
         if (!_updatingMirror && AudioMirror.ActiveTarget is { } target)
             AudioMirror.SetVolume(target, (float)(e.NewValue / 100));
+    }
+
+    private System.Windows.Threading.DispatcherTimer? _saveDelay;
+
+    /// <summary>
+    /// Retraso de la segunda salida: la duplicación lo usa al momento (se oye mientras se arrastra);
+    /// se guarda al soltar.
+    /// </summary>
+    private void MirrorDelay_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        MirrorDelayText.Text = $"{e.NewValue:0} ms";
+        if (_updatingMirror)
+            return;
+        Settings.Current.AudioMirrorDelay = (int)e.NewValue;
+        if (_saveDelay is null)
+        {
+            _saveDelay = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+            _saveDelay.Tick += (_, _) =>
+            {
+                _saveDelay.Stop();
+                Settings.Save();
+            };
+        }
+        _saveDelay.Stop();
+        _saveDelay.Start();
     }
 
     private void DevicesHeader_Click(object sender, RoutedEventArgs e)

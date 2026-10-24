@@ -13,8 +13,11 @@ public static class AudioMirror
 {
     // Búferes cortos: la segunda salida va un poco detrás de la principal; con más búfer, el desfase
     // se oiría como eco entre los dos parlantes.
-    private const int CaptureMilliseconds = 20, OutputMilliseconds = 30;
-    private static readonly TimeSpan MaxBuffered = TimeSpan.FromMilliseconds(90);
+    private const int CaptureMilliseconds = 10, OutputMilliseconds = 25;
+    // Lo que se deja esperando entre la captura y la segunda salida (más el retraso elegido) y cuánto
+    // puede alejarse antes de corregir. Los relojes de las dos salidas no van exactamente a la misma
+    // velocidad: sin corregir, el desfase crecía (o se achicaba) con los minutos.
+    private const int BaseBufferedMs = 15, ToleranceMs = 25;
 
     private static WasapiCapture? _capture;
     private static WasapiOut? _output;
@@ -69,12 +72,30 @@ public static class AudioMirror
             BufferDuration = TimeSpan.FromSeconds(1),
             ReadFully = true, // sin sonido en la principal, silencio (no se corta la salida)
         };
+        var format = capture.WaveFormat;
+        byte[] scratch = [];
         capture.DataAvailable += (_, e) =>
         {
-            // Si se acumuló (la salida se atrasó un momento), se vuelve a sincronizar.
-            if (buffer.BufferedDuration > MaxBuffered)
-                buffer.ClearBuffer();
             buffer.AddSamples(e.Buffer, 0, e.BytesRecorded);
+            // Mantiene la espera en lo justo: se tira solo lo que sobra (la segunda salida se atrasó) o
+            // se agrega silencio (se adelantó o se pidió más retraso), de a poco y sin vaciar todo.
+            int target = BaseBufferedMs + Math.Clamp(Settings.Current.AudioMirrorDelay, 0, MaxDelay);
+            double buffered = buffer.BufferedDuration.TotalMilliseconds;
+            if (buffered > target + ToleranceMs || buffered < target - ToleranceMs)
+            {
+                int bytes = Bytes(format, Math.Abs(buffered - target));
+                if (scratch.Length < bytes)
+                    scratch = new byte[bytes];
+                if (buffered > target)
+                {
+                    buffer.Read(scratch, 0, bytes);
+                }
+                else
+                {
+                    Array.Clear(scratch, 0, bytes);
+                    buffer.AddSamples(scratch, 0, bytes);
+                }
+            }
         };
         capture.RecordingStopped += (_, e) =>
         {
@@ -135,6 +156,16 @@ public static class AudioMirror
         {
             Log.Error("Sonar también en: no se pudo cambiar el volumen", ex);
         }
+    }
+
+    /// <summary>El mayor retraso que se puede elegir para la segunda salida, en ms.</summary>
+    public const int MaxDelay = 400;
+
+    /// <summary>Bytes de audio para tantos milisegundos, en cuadros completos.</summary>
+    private static int Bytes(WaveFormat format, double milliseconds)
+    {
+        int bytes = (int)(format.AverageBytesPerSecond * milliseconds / 1000);
+        return bytes - bytes % format.BlockAlign;
     }
 
     /// <summary>Captura de bucle con búfer corto (la de NAudio usa 100 ms y no deja cambiarlo).</summary>

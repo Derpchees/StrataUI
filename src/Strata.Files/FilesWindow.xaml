@@ -34,8 +34,14 @@
                         <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="17" Margin="0,0,12,0"
                                        Foreground="{DynamicResource StrataAccentBrush}" />
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,7">
-                            <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <Grid>
+                                <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                <!-- Nombre propio de una carpeta anclada (solo en la barra lateral) -->
+                                <TextBox Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" FontSize="13"
+                                         Margin="-4,-3" Padding="3,1" MinHeight="0"
+                                         IsVisibleChanged="PlaceName_IsVisibleChanged" KeyDown="PlaceName_KeyDown" LostKeyboardFocus="PlaceName_LostFocus" />
+                            </Grid>
                             <ProgressBar Value="{Binding UsedPercent, Mode=OneWay}" Maximum="100" Height="3" MinHeight="3" Margin="0,5,0,1"
                                          Visibility="{Binding IsDrive, Converter={StaticResource BoolToVis}}" />
                         </StackPanel>

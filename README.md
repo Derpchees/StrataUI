@@ -226,7 +226,7 @@ and everything goes back to normal.
   pane** view with two folders side by side (Ctrl+Shift+D) to drag files between them.
 - Select with a box by dragging over empty space, drop files on any folder in the sidebar (or on
   the Recycle Bin), and drag folders there to pin them.
-- Pin your own folders to the sidebar, the Recycle Bin is one click away, file extensions can be
+- Pin your own folders to the sidebar (and give them your own names there), the Recycle Bin is one click away, file extensions can be
   shown or hidden, and scrolling is smooth.
 - The **desktop** is Strata UI's too: icons in the same style (previews, drag to arrange, rename,
   drop files) and a right-click menu with view and sort options, widgets, Files and everything

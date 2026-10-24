@@ -1187,5 +1187,8 @@
   "No se pudo descargar el módulo {0}.": "Não foi possível baixar o módulo {0}.",
   "Rendimiento, privacidad, IA, limpieza, apps preinstaladas y más ajustes de Windows.": "Desempenho, privacidade, IA, limpeza, apps pré-instalados e mais ajustes do Windows.",
   "Explorador de archivos con pestañas, vista doble, carátulas y visor de fotos, video y música. Reemplaza al Explorador dentro de Strata UI.": "Explorador de arquivos com abas, visão dupla, miniaturas e visualizador de fotos, vídeo e música. Substitui o Explorador dentro do Strata UI.",
-  "Temperatura de CPU y GPU y contador de FPS para los medidores de la barra y los widgets. Al activarlas, Windows pide permiso de administrador una vez.": "Temperatura de CPU e GPU e contador de FPS para os medidores da barra e os widgets. Ao ativá-las, o Windows pede permissão de administrador uma vez."
+  "Temperatura de CPU y GPU y contador de FPS para los medidores de la barra y los widgets. Al activarlas, Windows pide permiso de administrador una vez.": "Temperatura de CPU e GPU e contador de FPS para os medidores da barra e os widgets. Ao ativá-las, o Windows pede permissão de administrador uma vez.",
+  "Cambiar el nombre en la barra lateral": "Renomear na barra lateral",
+  "Volver al nombre de la carpeta": "Voltar ao nome da pasta",
+  "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Se a segunda saída tocar antes da principal, atrase-a até que soem juntas."
 }
