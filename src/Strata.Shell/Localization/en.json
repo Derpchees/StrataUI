@@ -1205,5 +1205,11 @@
   "No se pudo emparejar. Comprueba que esté en modo de emparejamiento.": "Couldn't pair. Make sure it's in pairing mode.",
   "Escribe {0} en el dispositivo y pulsa Enter.": "Type {0} on the device and press Enter.",
   "Escribe el PIN del dispositivo (muchos usan 0000).": "Enter the device's PIN (many use 0000).",
-  "Comprueba que el dispositivo muestra {0}.": "Check that the device shows {0}."
+  "Comprueba que el dispositivo muestra {0}.": "Check that the device shows {0}.",
+  "Conectado · {0}% de batería": "Connected · {0}% battery",
+  "Toca para conectar": "Tap to connect",
+  "{0}: emparejado, sin conexión": "{0}: paired, not connected",
+  "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Stopped reading because they were slow (they slowed the PC down): {0}.",
+  "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "No longer read because it took too long and slowed the PC down ({0}).",
+  "No se pudo conectar": "Couldn't connect"
 }

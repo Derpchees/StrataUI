@@ -115,7 +115,11 @@ public static class UpdateService
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or FormatException)
         {
-            Log.Error("No se pudo buscar actualizaciones", ex);
+            // Sin internet (o GitHub caído) es lo normal en una laptop: una línea, sin la pila.
+            if (ex is HttpRequestException { InnerException: System.Net.Sockets.SocketException } or TaskCanceledException)
+                Log.Info($"No se pudo buscar actualizaciones: sin conexión ({ex.Message})");
+            else
+                Log.Error("No se pudo buscar actualizaciones", ex);
             ErrorText = Loc.T("No se pudo conectar con el servidor de actualizaciones.");
             SetState(UpdateState.Error);
         }

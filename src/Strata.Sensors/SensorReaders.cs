@@ -107,6 +107,9 @@ internal sealed class Temperatures : ITemperatureReader
     private const int SlowMs = 1500;
     private readonly Dictionary<string, int> _slowReads = new();
     private readonly HashSet<string> _skipped = new();
+    private readonly List<string> _skippedNames = new();
+
+    public IReadOnlyCollection<string> Skipped { get { lock (_skippedNames) return _skippedNames.ToList(); } }
 
     /// <summary>Lee una pieza si no quedó descartada por lenta; false si se la salta.</summary>
     private bool Update(LibreHardwareMonitor.Hardware.IHardware hardware)
@@ -120,7 +123,11 @@ internal sealed class Temperatures : ITemperatureReader
         {
             int slow = _slowReads[id] = _slowReads.GetValueOrDefault(id) + 1;
             if (slow >= 2 && _skipped.Add(id))
+            {
+                lock (_skippedNames)
+                    _skippedNames.Add(hardware.Name);
                 Log.Info($"Lecturas avanzadas: {hardware.Name} tarda {watch.ElapsedMilliseconds} ms en leerse; se deja de leer");
+            }
         }
         return true;
     }

@@ -362,7 +362,7 @@ public partial class BluetoothFlyout : FlyoutWindow
     public sealed class DeviceRow(BtDevice device, bool radioOn) : Row
     {
         private bool _connected = device.Connected;
-        private string _status = device.Connected ? Loc.T("Conectado") : Loc.T("Emparejado, sin conexión");
+        private string _status = StatusOf(device.Connected, device.Battery);
 
         public BtDevice Device { get; } = device;
         public string Name => Device.Name;
@@ -377,11 +377,16 @@ public partial class BluetoothFlyout : FlyoutWindow
                 if (_connected == value)
                     return;
                 _connected = value;
-                Status = value ? Loc.T("Conectado") : Loc.T("Emparejado, sin conexión");
+                Status = StatusOf(value, value ? Device.Battery : null);
                 Notify();
                 Notify(nameof(ActionText));
             }
         }
+
+        private static string StatusOf(bool connected, int? battery) =>
+            !connected ? Loc.T("Emparejado, sin conexión")
+            : battery is { } b ? Loc.F("Conectado · {0}% de batería", b)
+            : Loc.T("Conectado");
 
         public string ActionText => Connected ? Loc.T("Desconectar") : Loc.T("Conectar");
         // Conectar/desconectar solo está disponible para audio; el resto lo gestiona Windows al usarlos.

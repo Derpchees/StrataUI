@@ -1205,5 +1205,11 @@
   "No se pudo emparejar. Comprueba que esté en modo de emparejamiento.": "Não foi possível emparelhar. Verifique se está no modo de emparelhamento.",
   "Escribe {0} en el dispositivo y pulsa Enter.": "Digite {0} no dispositivo e pressione Enter.",
   "Escribe el PIN del dispositivo (muchos usan 0000).": "Digite o PIN do dispositivo (muitos usam 0000).",
-  "Comprueba que el dispositivo muestra {0}.": "Verifique se o dispositivo mostra {0}."
+  "Comprueba que el dispositivo muestra {0}.": "Verifique se o dispositivo mostra {0}.",
+  "Conectado · {0}% de batería": "Conectado · {0}% de bateria",
+  "Toca para conectar": "Toque para conectar",
+  "{0}: emparejado, sin conexión": "{0}: emparelhado, sem conexão",
+  "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Deixaram de ser lidos por serem lentos (deixavam o PC lento): {0}.",
+  "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "Deixou de ser lido porque demorava demais e deixava o PC lento ({0}).",
+  "No se pudo conectar": "Não foi possível conectar"
 }

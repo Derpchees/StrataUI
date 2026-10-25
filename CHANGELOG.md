@@ -6,6 +6,26 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.12.0] - 2026-10-25
+
+### Añadido
+- **Batería de los dispositivos Bluetooth** en el panel ("Conectado · 80 % de batería"), la misma que
+  muestra Configuración.
+- **Salidas Bluetooth en el panel de sonido**: los audífonos y parlantes emparejados sin conexión
+  aparecen como mosaico; al tocarlo se conectan y pasan a ser la salida.
+- **Aviso de sensores lentos**: si una pieza (la placa, la GPU…) tarda segundos en leerse y se deja
+  de leer, el Hub y el tooltip del medidor dicen cuál y por qué.
+
+### Cambiado
+- **Sin permiso de administrador después de actualizar**: el instalador (ya elevado) baja el módulo
+  Lecturas avanzadas de la nueva versión directo a la carpeta protegida, en vez de borrarlo; así la
+  tarea queda al día y las temperaturas vuelven solas.
+- **El menú Inicio arma su lista una sola vez** al abrirlo (antes, tres veces seguidas).
+
+### Corregido
+- El registro ya no se llena con la pila completa cuando no hay internet al buscar actualizaciones,
+  ni repite "Hora del sistema cambiada" varias veces por un mismo ajuste.
+
 ## [3.11.0] - 2026-10-25
 
 ### Añadido

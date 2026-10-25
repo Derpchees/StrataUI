@@ -39,6 +39,9 @@ public static class Sensors
     /// <summary>PawnIO no está instalado: no hay temperatura de CPU.</summary>
     public static bool MissingPawnIo { get; private set; }
 
+    /// <summary>Piezas que el proceso elevado dejó de leer porque tardaban segundos (frenaban al equipo).</summary>
+    public static IReadOnlyList<string> SlowParts { get; private set; } = [];
+
     /// <summary>Cambió algo (en el hilo de la UI).</summary>
     public static event Action? Changed;
 
@@ -433,6 +436,9 @@ public static class Sensors
                 case "pawnio":
                     MissingPawnIo = value == "0";
                     break;
+                case "slow":
+                    SlowParts = value.Split('|', StringSplitOptions.RemoveEmptyEntries);
+                    break;
                 case "fps":
                     foreach (var pair in value.Split(',', StringSplitOptions.RemoveEmptyEntries))
                     {
@@ -473,6 +479,7 @@ public static class Sensors
         }
         _pipe = null;
         CpuTemperature = GpuTemperature = null;
+        SlowParts = [];
         _presents = new();
         _freed?.TrySetResult(false);
         // Se cortó el proceso elevado con acciones en curso: fallan (no se repiten con UAC).
@@ -560,6 +567,7 @@ public static class Sensors
         // tardar o quedarse esperando a otro programa que los use, y eso no debe frenar los FPS.
         double? cpu = null, gpu = null;
         bool pawnIo = true;
+        string slow = "";
         new Thread(() =>
         {
             var opening = Stopwatch.StartNew();
@@ -572,6 +580,8 @@ public static class Sensors
             {
                 var reading = Stopwatch.StartNew();
                 (cpu, gpu) = temperatures.Read();
+                // Sin los separadores del protocolo en los nombres.
+                slow = string.Join("|", temperatures.Skipped.Select(name => new string(name.Where(c => c is not (';' or '=' or '|')).ToArray())));
                 if (reading.ElapsedMilliseconds > 2000)
                     Log.Info($"Lecturas avanzadas: leer las temperaturas tardó {reading.ElapsedMilliseconds} ms");
                 // Cada 2 s: las temperaturas cambian despacio y leer el hardware (sobre todo la placa) es
@@ -634,7 +644,8 @@ public static class Sensors
             string line = string.Create(CultureInfo.InvariantCulture,
                 $"cpu={cpu:0.0};gpu={gpu:0.0};pawnio={(pawnIo ? 1 : 0)}"
                 + $";fps={string.Join(",", counts.Select(c => $"{c.Key}:{c.Value.Shown}:{c.Value.Real}"))}"
-                + $";fg={string.Join(",", kinds.Select(k => $"{k.Pid}:{k.Kind}"))}");
+                + $";fg={string.Join(",", kinds.Select(k => $"{k.Pid}:{k.Kind}"))}"
+                + $";slow={slow}");
             if (frames is { Debug: true } && ++sent % 10 == 1)
                 Log.Info("Lecturas avanzadas: enviado " + line);
             try

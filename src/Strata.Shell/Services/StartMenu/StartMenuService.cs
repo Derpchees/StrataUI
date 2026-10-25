@@ -190,7 +190,7 @@ public static class StartMenuService
         _rebuildTimer.Tick += (_, _) =>
         {
             _rebuildTimer.Stop();
-            Rebuild();
+            Rebuild(onlyIfChanged: true);
         };
         _appsFolder = OpenAppsFolder(() =>
         {
@@ -502,7 +502,9 @@ public static class StartMenuService
             var watch = System.Diagnostics.Stopwatch.StartNew();
             _extraFound = await Task.Run(ExtraApps.Scan);
             Log.Info($"Apps de fuera del catálogo ({watch.ElapsedMilliseconds} ms): " + string.Join(" | ", _extraFound.Select(a => a.Name)));
-            Rebuild();
+            // Con una lectura nueva del catálogo en camino, ella arma la lista (ya con estos juegos).
+            if (_pendingFolder is null)
+                Rebuild();
         }
         finally
         {
@@ -526,19 +528,22 @@ public static class StartMenuService
         }
     }
 
-    private static void Rebuild()
+    /// <param name="onlyIfChanged">Por avisos de la carpeta: si quedan las mismas apps no se toca la lista
+    /// (la carpeta avisa en tandas y cada una volvía a armar el menú entero).</param>
+    private static void Rebuild(bool onlyIfChanged = false)
     {
         if (_appsFolder is null)
             return;
         var watch = System.Diagnostics.Stopwatch.StartNew();
-        RebuildCore();
+        if (!RebuildCore(onlyIfChanged))
+            return;
         Log.Info($"Catálogo de apps: {Apps.Count} apps en {watch.ElapsedMilliseconds} ms");
     }
 
-    private static void RebuildCore()
+    private static bool RebuildCore(bool onlyIfChanged)
     {
         if (_appsFolder is null)
-            return;
+            return false;
         var catalog = _appsFolder.Files.ToList()
             .Select(f => new StartApp(f))
             .Where(a => !IsNoise(a.Name))
@@ -550,6 +555,9 @@ public static class StartMenuService
             if (names.Add(ExtraApps.NameKey(extra.Name)) && ExtraStartApp(extra) is { } app)
                 catalog.Add(app);
         var items = catalog.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        if (onlyIfChanged && items.Count == Apps.Count
+            && items.Zip(Apps).All(pair => pair.First.Id == pair.Second.Id && pair.First.Name == pair.Second.Name))
+            return false;
 
         Apps.Clear();
         foreach (var app in items)
@@ -561,6 +569,7 @@ public static class StartMenuService
         PinLayout.RebuildViews();
         if (items.Count > 20)
             TaskbarPins.OnCatalogLoaded();
+        return true;
     }
 
     /// <summary>

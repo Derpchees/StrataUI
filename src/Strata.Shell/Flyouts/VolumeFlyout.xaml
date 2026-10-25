@@ -62,6 +62,7 @@
                 </Button>
                 <Button Style="{StaticResource FlyoutIconButton}" Width="26" Height="26" Margin="0,6,6,0"
                         HorizontalAlignment="Right" VerticalAlignment="Top" Click="DeviceOptions_Click"
+                        Visibility="{Binding OptionsVisibility}"
                         ToolTip="{l:T 'Opciones del dispositivo'}" AutomationProperties.Name="Opciones del dispositivo">
                     <ui:SymbolIcon Symbol="MoreHorizontal24" FontSize="14" />
                 </Button>

@@ -6,6 +6,7 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Audio;
+using Strata.Shell.Services.Bluetooth;
 using Wpf.Ui.Controls;
 using Strata.Shell.Services.Localization;
 
@@ -23,6 +24,8 @@ public partial class VolumeFlyout : FlyoutWindow
     private List<AppRow> _rows = new();
     private DeviceOptionsModel? _options;
     private bool _updating;
+    // Audífonos y parlantes Bluetooth emparejados pero sin conexión: se ofrecen como salida.
+    private List<BtDevice> _bluetooth = new();
 
     public VolumeFlyout()
     {
@@ -48,6 +51,7 @@ public partial class VolumeFlyout : FlyoutWindow
         UpdateDevices();
         RefreshApps();
         _refreshTimer.Start();
+        _ = LoadBluetoothAsync();
     }
 
     protected override bool StayOpenWhenDeactivated => _options?.IsBusy == true;
@@ -92,6 +96,7 @@ public partial class VolumeFlyout : FlyoutWindow
     private void UpdateDevices()
     {
         var outputs = Tiles(_audio.GetDevices(input: false));
+        outputs.AddRange(_bluetooth.Where(bt => !outputs.Any(t => IsEndpointOf(t.Device, bt))).Select(DeviceTile.ForBluetooth));
         var inputs = Tiles(_audio.GetDevices(input: true));
         OutputList.ItemsSource = outputs;
         InputList.ItemsSource = inputs;
@@ -259,6 +264,11 @@ public partial class VolumeFlyout : FlyoutWindow
     {
         if (sender is not FrameworkElement { DataContext: DeviceTile tile } || tile.IsDefault)
             return;
+        if (tile.Bluetooth is not null)
+        {
+            _ = ConnectBluetoothAsync(tile);
+            return;
+        }
         try
         {
             _audio.SetDefaultDevice(tile.Device.Id);
@@ -267,6 +277,66 @@ public partial class VolumeFlyout : FlyoutWindow
         {
             Log.Error($"No se pudo cambiar al dispositivo {tile.Name}", ex);
         }
+    }
+
+    // ── Salidas Bluetooth sin conexión ──────────────────────────────────────
+
+    private async Task LoadBluetoothAsync()
+    {
+        try
+        {
+            var radio = await BluetoothService.GetRadioAsync();
+            _bluetooth = radio?.State == Windows.Devices.Radios.RadioState.On
+                ? (await BluetoothService.GetPairedDevicesAsync()).Where(d => d.CanConnect && !d.Connected).ToList()
+                : new();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Panel de sonido: no se pudieron leer los dispositivos Bluetooth", ex);
+            _bluetooth = new();
+        }
+        if (_bluetooth.Count > 0)
+            UpdateDevices();
+    }
+
+    /// <summary>La salida de Windows es de ese dispositivo Bluetooth ("Audífonos (WH-1000XM4)").</summary>
+    private static bool IsEndpointOf(AudioDevice device, BtDevice bluetooth) =>
+        device.Adapter.Contains(bluetooth.Name, StringComparison.CurrentCultureIgnoreCase)
+        || device.Name.Contains(bluetooth.Name, StringComparison.CurrentCultureIgnoreCase);
+
+    /// <summary>Conecta el dispositivo y, cuando Windows crea su salida, la deja como predeterminada.</summary>
+    private async Task ConnectBluetoothAsync(DeviceTile tile)
+    {
+        var bluetooth = tile.Bluetooth!;
+        if (tile.Busy)
+            return;
+        tile.Busy = true;
+        tile.Status = Loc.T("Conectando…");
+        if (await BluetoothService.SetAudioConnectedAsync(bluetooth, connect: true))
+        {
+            // La salida tarda unos segundos en aparecer después de conectar.
+            for (int i = 0; i < 24; i++)
+            {
+                await Task.Delay(500);
+                if (_audio.GetDevices(input: false).FirstOrDefault(d => IsEndpointOf(d, bluetooth)) is { } endpoint)
+                {
+                    try
+                    {
+                        _audio.SetDefaultDevice(endpoint.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error($"No se pudo cambiar al dispositivo {endpoint.Name}", ex);
+                    }
+                    _bluetooth.Remove(bluetooth);
+                    UpdateDevices();
+                    return;
+                }
+            }
+        }
+        Log.Info($"Panel de sonido: no se pudo conectar {bluetooth.Name}");
+        tile.Busy = false;
+        tile.Status = Loc.T("No se pudo conectar");
     }
 
     private void DeviceOptions_Click(object sender, RoutedEventArgs e)
@@ -317,13 +387,34 @@ public partial class VolumeFlyout : FlyoutWindow
     }
 
     /// <summary>Mosaico de un dispositivo.</summary>
-    public sealed class DeviceTile(AudioDevice device, bool swapNames)
+    public sealed class DeviceTile(AudioDevice device, bool swapNames, BtDevice? bluetooth = null) : INotifyPropertyChanged
     {
+        private string? _status;
+
+        /// <summary>Un dispositivo Bluetooth emparejado sin conexión: al tocarlo se conecta y pasa a ser la salida.</summary>
+        public static DeviceTile ForBluetooth(BtDevice bluetooth) => new(
+            new AudioDevice("bt:" + bluetooth.Address, bluetooth.Name, "", AudioDeviceKind.Bluetooth, false, false, false),
+            swapNames: false, bluetooth);
+
         public AudioDevice Device { get; } = device;
+        public BtDevice? Bluetooth { get; } = bluetooth;
+        public bool Busy { get; set; }
         public string Name => swapNames ? Device.Adapter : Device.Name;
-        public string Adapter => swapNames ? Device.Name : Device.Adapter;
+        public string Adapter => _status ?? (Bluetooth != null ? Loc.T("Toca para conectar") : swapNames ? Device.Name : Device.Adapter);
         public bool IsDefault => Device.IsDefault;
-        public string ToolTip => $"{Device.Name}\n{Device.Adapter}";
+        public string ToolTip => Bluetooth != null ? Loc.F("{0}: emparejado, sin conexión", Device.Name) : $"{Device.Name}\n{Device.Adapter}";
+        public Visibility OptionsVisibility => Bluetooth is null ? Visibility.Visible : Visibility.Collapsed;
+
+        public string? Status
+        {
+            set
+            {
+                _status = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Adapter)));
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public SymbolRegular Symbol => Device.Kind switch
         {

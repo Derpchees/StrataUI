@@ -142,6 +142,9 @@ public partial class TaskbarPage : Page
         SensorsRemoveButton.Visibility = Visibility.Visible;
         SensorsState.Text = Sensors.Starting ? Loc.T("Iniciando… si Windows pide permiso, acéptalo.")
             : Sensors.Running ? Loc.T("Activas: temperaturas y FPS hasta que se cierre Strata UI.")
+                + (Sensors.SlowParts.Count > 0
+                    ? "\n" + Loc.F("Se dejaron de leer por lentas (frenaban al equipo): {0}.", string.Join(", ", Sensors.SlowParts))
+                    : "")
             : Loc.T("Detenidas. También se inician con un clic en el contador de FPS.");
         SensorsButton.Content = Sensors.Running ? Loc.T("Detener") : Loc.T("Iniciar");
         // Detenidas porque el permiso quedó viejo (se actualizó Strata UI o el módulo): los medidores no

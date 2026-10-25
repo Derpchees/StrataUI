@@ -195,7 +195,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
     TraceEvent): los lectores de temperaturas y FPS (`ISensorReaders`). Solo los carga el proceso
     elevado, desde `%ProgramFiles%\StrataUI\Lecturas\Sensors` (`SensorsModule.LoadProtected`), que
     llena la tarea con UAC (`SensorsTask.CopyModule`); nunca desde la carpeta del usuario. Sin el
-    módulo, el proceso elevado sigue atendiendo "free" y "run" (acciones de Optimización).
+    módulo, el proceso elevado sigue atendiendo "free" y "run" (acciones de Optimización). El instalador
+    (`--install-sensors-task` sin SID) baja el módulo de su versión directo a la carpeta protegida
+    (`SensorsModule.DownloadToProtected`): así tras actualizar no hace falta otro UAC.
+    Al instalarlo (o tras actualizar, con medidores) las lecturas se inician solas (`Sensors.StartAfterModuleAsync`).
 - **Archivos** (`Files/FilesWindow`, `Services/Files/`): explorador propio. Lee con System.IO,
   íconos con `SHGetFileInfo` en un hilo STA aparte (`FileIcons`) y miniaturas decodificadas por WPF;
   nunca extensiones del Shell dentro del proceso: el menú de Windows (`ShellMenuSession`,

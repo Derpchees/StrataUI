@@ -536,8 +536,16 @@ public partial class Taskbar : AppBarWindow
         System.Globalization.CultureInfo.CurrentCulture.ClearCachedData();
         RescheduleClock();
         ClockTick?.Invoke();
-        Log.Info($"Hora del sistema cambiada: {DateTime.Now:G} ({TimeZoneInfo.Local.Id})");
+        // Windows avisa varias veces seguidas por un mismo ajuste: se registra una vez (o si cambia la zona).
+        string zone = TimeZoneInfo.Local.Id;
+        if (zone != _loggedZone || DateTime.UtcNow - _loggedClockAt > TimeSpan.FromSeconds(30))
+            Log.Info($"Hora del sistema cambiada: {DateTime.Now:G} ({zone})");
+        _loggedZone = zone;
+        _loggedClockAt = DateTime.UtcNow;
     }
+
+    private static string? _loggedZone;
+    private static DateTime _loggedClockAt;
 
     private static void ScheduleNextTick()
     {
@@ -827,6 +835,7 @@ public partial class Taskbar : AppBarWindow
         // tooltip dice por qué: lecturas detenidas o, en la CPU, falta PawnIO.
         string why = !Sensors.Running ? "\n" + Loc.T("Clic en el contador de FPS (o Hub › Barra de tareas) para activar temperaturas y FPS.")
             : Sensors.MissingPawnIo ? "\n" + Loc.T("La temperatura de la CPU necesita PawnIO: instálalo desde Hub › Barra de tareas.")
+            : Sensors.SlowParts.Count > 0 ? "\n" + Loc.F("Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).", string.Join(", ", Sensors.SlowParts))
             : "\n" + Loc.T("Este equipo no informa esa temperatura.");
         const string NoTemp = "-- °C";
 

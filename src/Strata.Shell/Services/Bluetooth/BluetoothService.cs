@@ -7,7 +7,8 @@ namespace Strata.Shell.Services.Bluetooth;
 
 public enum BtKind { Audio, Input, Phone, Computer, Other }
 
-public sealed record BtDevice(string Id, ulong Address, string Name, BtKind Kind, bool Connected, bool CanConnect);
+/// <param name="Battery">Carga en % (solo conectados que la informan).</param>
+public sealed record BtDevice(string Id, ulong Address, string Name, BtKind Kind, bool Connected, bool CanConnect, int? Battery = null);
 
 /// <summary>Lo que el dispositivo pide al emparejar: confirmar, ver un PIN o escribirlo.</summary>
 public enum BtPrompt { ConfirmPin, DisplayPin, ProvidePin }
@@ -20,6 +21,9 @@ public static class BluetoothService
     public const string IsPairedKey = "System.Devices.Aep.IsPaired";
     public const string AddressKey = "System.Devices.Aep.DeviceAddress";
     public const string CodMajorKey = "System.Devices.Aep.Bluetooth.Cod.Major";
+    private const string ContainerKey = "System.Devices.Aep.ContainerId";
+    // DEVPKEY_Bluetooth_Battery: la carga que muestra Configuración (en el nodo del dispositivo, no en el AEP).
+    private const string BatteryKey = "{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2";
     private const string ClassicProtocol = "{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}";
     private const string LeProtocol = "{bb7bb05e-5972-42b5-94fc-76eaa7084d49}";
 
@@ -33,7 +37,7 @@ public static class BluetoothService
     public static async Task<IReadOnlyList<BtDevice>> GetPairedDevicesAsync()
     {
         var devices = new Dictionary<ulong, BtDevice>();
-        string[] properties = [IsConnectedKey];
+        string[] properties = [IsConnectedKey, ContainerKey];
 
         // Bluetooth clásico (audio, teclados, teléfonos…)
         foreach (var info in await DeviceInformation.FindAllAsync(BluetoothDevice.GetDeviceSelectorFromPairingState(true), properties))
@@ -68,6 +72,9 @@ public static class BluetoothService
                 kind, IsConnected(info, device.ConnectionStatus), false);
         }
 
+        foreach (var (address, device) in devices.Where(d => d.Value.Connected).ToList())
+            devices[address] = device with { Battery = await BatteryAsync(device.Id) };
+
         return devices.Values
             .OrderByDescending(d => d.Connected)
             .ThenBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
@@ -80,6 +87,28 @@ public static class BluetoothService
     /// </summary>
     private static bool IsConnected(DeviceInformation info, BluetoothConnectionStatus status) =>
         Bool(info.Properties, IsConnectedKey) ?? status == BluetoothConnectionStatus.Connected;
+
+    /// <summary>Carga de la batería que informa el dispositivo (audífonos, mouses…), o null.</summary>
+    private static async Task<int?> BatteryAsync(string aepId)
+    {
+        try
+        {
+            var endpoint = await DeviceInformation.CreateFromIdAsync(aepId, [ContainerKey], DeviceInformationKind.AssociationEndpoint);
+            if (!endpoint.Properties.TryGetValue(ContainerKey, out var value) || value is not Guid container)
+                return null;
+            // El dispositivo y sus servicios comparten contenedor: cualquiera de ellos puede llevar la carga.
+            var nodes = await DeviceInformation.FindAllAsync($"System.Devices.ContainerId:=\"{{{container}}}\"",
+                [BatteryKey], DeviceInformationKind.Device);
+            foreach (var node in nodes)
+                if (node.Properties.TryGetValue(BatteryKey, out var battery) && battery is not null)
+                    return Math.Clamp(Convert.ToInt32(battery), 0, 100);
+        }
+        catch (Exception ex)
+        {
+            Log.Info($"Bluetooth: no se pudo leer la batería ({ex.Message})");
+        }
+        return null;
+    }
 
     public static bool? Bool(IReadOnlyDictionary<string, object> properties, string key) =>
         properties.TryGetValue(key, out var value) && value is bool b ? b : null;

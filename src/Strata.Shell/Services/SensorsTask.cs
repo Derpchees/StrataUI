@@ -127,7 +127,8 @@ public static class SensorsTask
     public static int RunInstall(string[] args)
     {
         // Sin SID, el usuario que ejecuta (el instalador, elevado con la misma cuenta, la deja lista).
-        if (args.Length == 1)
+        bool fromInstaller = args.Length == 1;
+        if (fromInstaller)
             args = [args[0], UserSid];
         if (args.Length is not (2 or 3) || !Sid.IsMatch(args[1]))
             return 2;
@@ -135,9 +136,14 @@ public static class SensorsTask
         RemoveLegacy(sid);
         try
         {
+            // El instalador no trae el módulo Lecturas avanzadas: si se usaba, se baja el de esta
+            // versión directo a la carpeta protegida (así tras actualizar no hace falta otro UAC).
+            bool hadModule = fromInstaller && (Directory.Exists(Modules.SensorsModule.ProtectedFolder)
+                                               || Directory.Exists(Modules.SensorsModule.UserFolder));
             if (!InstalledProtected)
                 CopyApp(AppContext.BaseDirectory, CopyFolder);
-            CopyModule(args.Length == 3 ? args[2] : null);
+            if (!hadModule || !Modules.SensorsModule.DownloadToProtected())
+                CopyModule(args.Length == 3 ? args[2] : null);
             string xml = TaskXml(sid, ProtectedExe);
             string file = Path.Combine(Path.GetTempPath(), $"strataui-task-{Guid.NewGuid():N}.xml");
             File.WriteAllText(file, xml, Encoding.Unicode);

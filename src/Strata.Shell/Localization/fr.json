@@ -1205,5 +1205,11 @@
   "No se pudo emparejar. Comprueba que esté en modo de emparejamiento.": "Impossible d'associer. Vérifiez qu'il est en mode d'appairage.",
   "Escribe {0} en el dispositivo y pulsa Enter.": "Tapez {0} sur l'appareil et appuyez sur Entrée.",
   "Escribe el PIN del dispositivo (muchos usan 0000).": "Saisissez le code PIN de l'appareil (beaucoup utilisent 0000).",
-  "Comprueba que el dispositivo muestra {0}.": "Vérifiez que l'appareil affiche {0}."
+  "Comprueba que el dispositivo muestra {0}.": "Vérifiez que l'appareil affiche {0}.",
+  "Conectado · {0}% de batería": "Connecté · {0} % de batterie",
+  "Toca para conectar": "Touchez pour connecter",
+  "{0}: emparejado, sin conexión": "{0} : associé, non connecté",
+  "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Lecture arrêtée car trop lents (ils ralentissaient le PC) : {0}.",
+  "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "Plus lu car trop lent, il ralentissait le PC ({0}).",
+  "No se pudo conectar": "Impossible de se connecter"
 }

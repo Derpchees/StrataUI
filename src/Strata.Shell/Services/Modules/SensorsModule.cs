@@ -21,6 +21,8 @@ namespace Strata.Shell.Services
     {
         /// <summary>PawnIO está instalado: sin él no hay temperatura de CPU.</summary>
         bool PawnIo { get; }
+        /// <summary>Piezas que se dejaron de leer por lentas (sus nombres).</summary>
+        IReadOnlyCollection<string> Skipped { get; }
         (double? Cpu, double? Gpu) Read();
     }
 
@@ -51,7 +53,7 @@ namespace Strata.Shell.Services.Modules
         public override string Title => Loc.T("Lecturas avanzadas");
         public override string Description => Loc.T("Temperatura de CPU y GPU y contador de FPS para los medidores de la barra y los widgets. Al activarlas, Windows pide permiso de administrador una vez.");
 
-        private static string UserFolder => Path.Combine(Path.GetDirectoryName(Settings.FilePath)!, "Sensors");
+        internal static string UserFolder =>Path.Combine(Path.GetDirectoryName(Settings.FilePath)!, "Sensors");
         private static string BundledFolder => Path.Combine(AppContext.BaseDirectory, "Sensors");
 
         /// <summary>Donde lo carga el proceso elevado: dentro de la carpeta protegida de las lecturas.</summary>
@@ -144,6 +146,48 @@ namespace Strata.Shell.Services.Modules
             }
             if (installed)
                 await Sensors.StartAfterModuleAsync(requested);
+        }
+
+        /// <summary>
+        /// En el instalador (ya elevado): baja el módulo de esta versión y lo descomprime directo en la
+        /// carpeta protegida, sin pasar por una carpeta que el usuario pueda cambiar. La app luego baja
+        /// el mismo archivo a la suya (mismas fechas), así la tarea queda al día sin pedir UAC.
+        /// False si no se pudo (sin internet o la publicación todavía no lo tiene).
+        /// </summary>
+        internal static bool DownloadToProtected()
+        {
+            string fresh = ProtectedFolder + ".new";
+            try
+            {
+                return Task.Run(async () =>
+                {
+                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+                    string? url = await FindAssetAsync("StrataUI.Sensors.zip").WaitAsync(timeout.Token);
+                    if (url is null)
+                        return false;
+                    byte[] data = await Updates.UpdateService.Client.GetByteArrayAsync(url, timeout.Token);
+                    if (Directory.Exists(fresh))
+                        Directory.Delete(fresh, recursive: true);
+                    using (var archive = new ZipArchive(new MemoryStream(data)))
+                        archive.ExtractToDirectory(fresh);
+                    if (!Matches(Path.Combine(fresh, DllName)))
+                    {
+                        Directory.Delete(fresh, recursive: true);
+                        return false;
+                    }
+                    if (Directory.Exists(ProtectedFolder))
+                        Directory.Delete(ProtectedFolder, recursive: true);
+                    Directory.Move(fresh, ProtectedFolder);
+                    return true;
+                }).GetAwaiter().GetResult();
+            }
+            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or TimeoutException
+                                          or IOException or UnauthorizedAccessException or JsonException
+                                          or KeyNotFoundException or InvalidDataException)
+            {
+                Log.Error("Instalador: no se pudo bajar el módulo Sensors", ex);
+                return false;
+            }
         }
 
         /// <summary>

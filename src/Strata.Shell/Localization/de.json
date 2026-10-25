@@ -1205,5 +1205,11 @@
   "No se pudo emparejar. Comprueba que esté en modo de emparejamiento.": "Kopplung nicht möglich. Prüfe, ob es im Kopplungsmodus ist.",
   "Escribe {0} en el dispositivo y pulsa Enter.": "Gib {0} auf dem Gerät ein und drücke die Eingabetaste.",
   "Escribe el PIN del dispositivo (muchos usan 0000).": "Gib die PIN des Geräts ein (viele verwenden 0000).",
-  "Comprueba que el dispositivo muestra {0}.": "Prüfe, ob das Gerät {0} anzeigt."
+  "Comprueba que el dispositivo muestra {0}.": "Prüfe, ob das Gerät {0} anzeigt.",
+  "Conectado · {0}% de batería": "Verbunden · {0} % Akku",
+  "Toca para conectar": "Tippen zum Verbinden",
+  "{0}: emparejado, sin conexión": "{0}: gekoppelt, nicht verbunden",
+  "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Wegen Langsamkeit nicht mehr gelesen (sie bremsten den PC): {0}.",
+  "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "Wird nicht mehr gelesen, weil es zu lange dauerte und den PC bremste ({0}).",
+  "No se pudo conectar": "Verbindung nicht möglich"
 }
