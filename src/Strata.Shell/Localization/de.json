@@ -1211,5 +1211,6 @@
   "{0}: emparejado, sin conexión": "{0}: gekoppelt, nicht verbunden",
   "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Wegen Langsamkeit nicht mehr gelesen (sie bremsten den PC): {0}.",
   "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "Wird nicht mehr gelesen, weil es zu lange dauerte und den PC bremste ({0}).",
-  "No se pudo conectar": "Verbindung nicht möglich"
+  "No se pudo conectar": "Verbindung nicht möglich",
+  "El nombre no puede estar vacío ni terminar en punto o espacio.": "Der Name darf nicht leer sein und nicht auf einen Punkt oder ein Leerzeichen enden."
 }

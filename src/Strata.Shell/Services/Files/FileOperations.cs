@@ -31,6 +31,12 @@ public static class FileOperations
     /// <summary>Cambia el nombre; devuelve el error para mostrarlo o null si salió bien.</summary>
     public static string? Rename(string path, string newName, bool folder)
     {
+        // Con "\" o "..\" en el nombre, Path.Combine lo movería a otra carpeta en vez de renombrarlo; y
+        // Windows quita en silencio los puntos y espacios del final.
+        if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            return Localization.Loc.T("El nombre no puede llevar \\ / : * ? \" < > |");
+        if (newName.Trim().Length == 0 || newName.EndsWith('.') || newName.EndsWith(' '))
+            return Localization.Loc.T("El nombre no puede estar vacío ni terminar en punto o espacio.");
         string target = Path.Combine(Path.GetDirectoryName(path)!, newName);
         try
         {

@@ -75,7 +75,12 @@ public static class FileIcons
                             thumbnail = ThumbnailHost.Get(entry.FullPath, 192, cachedOnly: entry.IsOnlineOnly);
                         // Un PDF sin carátula de Windows (lo abre un navegador): su primera página.
                         if (thumbnail is null && !entry.IsOnlineOnly && entry.Extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+                        {
+                            bool askedShell = HasShellThumbnail(entry);
                             thumbnail = PdfCover(entry.FullPath);
+                            if (thumbnail != null && askedShell)
+                                _noShellPdf = true;
+                        }
                         if (thumbnail is null)
                             continue;
                     }
@@ -135,7 +140,14 @@ public static class FileIcons
     };
 
     private static bool HasShellThumbnail(FileEntry entry) =>
-        !entry.IsFolder && entry.Size > 0 && entry.Extension.Length > 0 && !NoThumbnail.Contains(entry.Extension);
+        !entry.IsFolder && entry.Size > 0 && entry.Extension.Length > 0 && !NoThumbnail.Contains(entry.Extension)
+        && !(_noShellPdf && entry.Extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Windows no da carátula de PDF (los abre un navegador, sin manejador de miniaturas): después del
+    /// primero se va directo a <see cref="PdfCover"/>, sin preguntarle al proceso aparte por cada uno.
+    /// </summary>
+    private static volatile bool _noShellPdf;
 
     /// <summary>Una imagen que se puede leer sin descargarla de la nube.</summary>
     public static bool IsPicture(FileEntry entry) =>

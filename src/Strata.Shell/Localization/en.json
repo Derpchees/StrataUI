@@ -1211,5 +1211,6 @@
   "{0}: emparejado, sin conexión": "{0}: paired, not connected",
   "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Stopped reading because they were slow (they slowed the PC down): {0}.",
   "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "No longer read because it took too long and slowed the PC down ({0}).",
-  "No se pudo conectar": "Couldn't connect"
+  "No se pudo conectar": "Couldn't connect",
+  "El nombre no puede estar vacío ni terminar en punto o espacio.": "The name can't be empty or end with a period or a space."
 }

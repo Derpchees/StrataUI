@@ -21,6 +21,10 @@ public static class Log
 
     private static int _writes;
 
+    // Sin excepción ante texto inválido (un emoji partido en el tooltip de un ícono de la bandeja
+    // tumbaba la escritura): el carácter suelto se cambia por el de reemplazo.
+    private static readonly System.Text.UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
+
     private static void Write(string level, string message)
     {
         try
@@ -35,7 +39,7 @@ public static class Log
                     if (info.Exists && info.Length > MaxBytes)
                         File.Move(FilePath, Path.ChangeExtension(FilePath, ".old.log"), overwrite: true);
                 }
-                File.AppendAllText(FilePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {message}{Environment.NewLine}");
+                File.AppendAllText(FilePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {message}{Environment.NewLine}", Utf8);
             }
         }
         catch (IOException)

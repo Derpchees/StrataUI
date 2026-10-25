@@ -6,6 +6,17 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.12.1] - 2026-10-25
+
+### Corregido
+- **Archivos: Mayús+Supr** borraba a la Papelera; ahora borra para siempre, como el Explorador
+  (Windows pregunta antes).
+- **Archivos: un nombre que termina en punto** ("nota.") se aceptaba y Windows le quitaba el punto en
+  silencio; ahora se avisa. El cambio de nombre tampoco puede mover el archivo a otra carpeta.
+- **Carátulas de PDF**: con el navegador como visor de PDF, Windows no da miniatura y se le
+  preguntaba igual por cada archivo; ahora, tras el primero, se usa directo la primera página.
+- Un emoji partido en el texto de un ícono de la bandeja ya no rompe la escritura del registro.
+
 ## [3.12.0] - 2026-10-25
 
 ### Añadido

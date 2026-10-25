@@ -1211,5 +1211,6 @@
   "{0}: emparejado, sin conexión": "{0} : associé, non connecté",
   "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Lecture arrêtée car trop lents (ils ralentissaient le PC) : {0}.",
   "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "Plus lu car trop lent, il ralentissait le PC ({0}).",
-  "No se pudo conectar": "Impossible de se connecter"
+  "No se pudo conectar": "Impossible de se connecter",
+  "El nombre no puede estar vacío ni terminar en punto o espacio.": "Le nom ne peut pas être vide ni se terminer par un point ou une espace."
 }

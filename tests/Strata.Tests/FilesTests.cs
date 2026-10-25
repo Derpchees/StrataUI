@@ -153,4 +153,26 @@ public class FilesTests
     [InlineData(@"C:\Users", null)]
     public void Share_root_of_network_paths(string path, string? expected) =>
         Assert.Equal(expected, Places.ShareRoot(path));
+
+    [Theory]
+    [InlineData(@"..\afuera.txt")]
+    [InlineData(@"otra\nota.txt")]
+    [InlineData("nota.")]
+    [InlineData("nota ")]
+    public void Rename_never_moves_the_file(string name)
+    {
+        string folder = Path.Combine(Path.GetTempPath(), "strata-rename-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(folder, "otra"));
+        string file = Path.Combine(folder, "nota.txt");
+        File.WriteAllText(file, "x");
+        try
+        {
+            Assert.NotNull(FileOperations.Rename(file, name, folder: false));
+            Assert.True(File.Exists(file));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
 }

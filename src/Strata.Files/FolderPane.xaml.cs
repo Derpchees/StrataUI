@@ -938,6 +938,14 @@ public partial class FolderPane : UserControl
         _ = LoadAsync(merge: true);
     }
 
+    /// <summary>Borra para siempre, sin pasar por la Papelera (Windows confirma).</summary>
+    private async Task DeleteSelectionForeverAsync(IReadOnlyList<FileEntry> entries)
+    {
+        await FileOperations.DeleteForeverAsync(entries.Select(e => e.FullPath).ToList(), Handle);
+        _reload.Stop();
+        _ = LoadAsync(merge: true);
+    }
+
     /// <summary>Borra para siempre lo elegido de la Papelera (Windows confirma).</summary>
     private async Task DeleteForeverAsync(IReadOnlyList<FileEntry> entries)
     {
@@ -1553,6 +1561,10 @@ public partial class FolderPane : UserControl
                 return true;
             case Key.F2 when CanModify && SelectedEntries is [var only]:
                 StartRename(only);
+                return true;
+            // Como en el Explorador: Mayús+Supr borra para siempre (Windows pregunta antes).
+            case Key.Delete when mods == ModifierKeys.Shift && CanModify && SelectedEntries is { Count: > 0 } selected:
+                _ = DeleteSelectionForeverAsync(selected);
                 return true;
             case Key.Delete:
                 _ = RecycleSelectionAsync();

@@ -1211,5 +1211,6 @@
   "{0}: emparejado, sin conexión": "{0}: emparelhado, sem conexão",
   "Se dejaron de leer por lentas (frenaban al equipo): {0}.": "Deixaram de ser lidos por serem lentos (deixavam o PC lento): {0}.",
   "Se dejó de leer porque tardaba demasiado y frenaba al equipo ({0}).": "Deixou de ser lido porque demorava demais e deixava o PC lento ({0}).",
-  "No se pudo conectar": "Não foi possível conectar"
+  "No se pudo conectar": "Não foi possível conectar",
+  "El nombre no puede estar vacío ni terminar en punto o espacio.": "O nome não pode estar vazio nem terminar com ponto ou espaço."
 }
