@@ -1191,5 +1191,19 @@
   "Cambiar el nombre en la barra lateral": "Renommer dans la barre latérale",
   "Volver al nombre de la carpeta": "Revenir au nom du dossier",
   "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Si la deuxième sortie joue avant la principale, retardez-la jusqu'à ce qu'elles soient synchronisées.",
-  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Elles ont de nouveau besoin de l'autorisation d'administrateur (Strata UI ou le module a été mis à jour) : appuyez sur Démarrer et acceptez l'invite de Windows. D'ici là, les jauges n'affichent ni températures ni FPS."
+  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Elles ont de nouveau besoin de l'autorisation d'administrateur (Strata UI ou le module a été mis à jour) : appuyez sur Démarrer et acceptez l'invite de Windows. D'ici là, les jauges n'affichent ni températures ni FPS.",
+  "DISPOSITIVOS DISPONIBLES": "APPAREILS DISPONIBLES",
+  "Buscando… pon el dispositivo en modo de emparejamiento.": "Recherche… mettez l'appareil en mode d'appairage.",
+  "PIN": "Code PIN",
+  "Emparejado, sin conexión": "Associé, non connecté",
+  "Emparejar": "Associer",
+  "Emparejando…": "Association…",
+  "Aceptar": "OK",
+  "Confirmar": "Confirmer",
+  "Emparejamiento cancelado": "Association annulée",
+  "El dispositivo no respondió a tiempo": "L'appareil n'a pas répondu à temps",
+  "No se pudo emparejar. Comprueba que esté en modo de emparejamiento.": "Impossible d'associer. Vérifiez qu'il est en mode d'appairage.",
+  "Escribe {0} en el dispositivo y pulsa Enter.": "Tapez {0} sur l'appareil et appuyez sur Entrée.",
+  "Escribe el PIN del dispositivo (muchos usan 0000).": "Saisissez le code PIN de l'appareil (beaucoup utilisent 0000).",
+  "Comprueba que el dispositivo muestra {0}.": "Vérifiez que l'appareil affiche {0}."
 }

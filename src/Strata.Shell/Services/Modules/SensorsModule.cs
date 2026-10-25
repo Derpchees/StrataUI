@@ -72,14 +72,22 @@ namespace Strata.Shell.Services.Modules
             if (Directory.Exists(UserFolder) && SourceFolder is null)
             {
                 Log.Info("El módulo Sensors es de otra versión: se descarga el de esta");
-                _ = InstallAsync();
+                _ = InstallCoreAsync(requested: false);
             }
         }
 
-        public override async Task InstallAsync()
+        public override Task InstallAsync() => InstallCoreAsync(requested: true);
+
+        /// <summary>
+        /// Descarga el módulo y, listo, inicia las lecturas (Windows pide permiso una vez): así las
+        /// temperaturas aparecen sin pulsar Iniciar. Tras una actualización (<paramref name="requested"/>
+        /// false) solo si algún medidor las muestra.
+        /// </summary>
+        private async Task InstallCoreAsync(bool requested)
         {
             if (IsDownloading)
                 return;
+            bool installed = false;
             ErrorText = null;
             IsDownloading = true;
             Progress = 0;
@@ -113,6 +121,7 @@ namespace Strata.Shell.Services.Modules
                     Directory.Delete(UserFolder, recursive: true);
                 Directory.Move(fresh, UserFolder);
                 Log.Info($"Módulo Sensors instalado en {UserFolder}");
+                installed = true;
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or IOException
                                           or UnauthorizedAccessException or JsonException or KeyNotFoundException
@@ -133,6 +142,8 @@ namespace Strata.Shell.Services.Modules
                 IsDownloading = false;
                 RaiseChanged();
             }
+            if (installed)
+                await Sensors.StartAfterModuleAsync(requested);
         }
 
         /// <summary>

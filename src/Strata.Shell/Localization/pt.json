@@ -1191,5 +1191,19 @@
   "Cambiar el nombre en la barra lateral": "Renomear na barra lateral",
   "Volver al nombre de la carpeta": "Voltar ao nome da pasta",
   "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Se a segunda saída tocar antes da principal, atrase-a até que soem juntas.",
-  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Precisam de permissão de administrador novamente (o Strata UI ou o módulo foi atualizado): pressione Iniciar e aceite o aviso do Windows. Até lá, os medidores não mostram temperaturas nem FPS."
+  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Precisam de permissão de administrador novamente (o Strata UI ou o módulo foi atualizado): pressione Iniciar e aceite o aviso do Windows. Até lá, os medidores não mostram temperaturas nem FPS.",
+  "DISPOSITIVOS DISPONIBLES": "DISPOSITIVOS DISPONÍVEIS",
+  "Buscando… pon el dispositivo en modo de emparejamiento.": "Procurando… coloque o dispositivo no modo de emparelhamento.",
+  "PIN": "PIN",
+  "Emparejado, sin conexión": "Emparelhado, sem conexão",
+  "Emparejar": "Emparelhar",
+  "Emparejando…": "Emparelhando…",
+  "Aceptar": "OK",
+  "Confirmar": "Confirmar",
+  "Emparejamiento cancelado": "Emparelhamento cancelado",
+  "El dispositivo no respondió a tiempo": "O dispositivo não respondeu a tempo",
+  "No se pudo emparejar. Comprueba que esté en modo de emparejamiento.": "Não foi possível emparelhar. Verifique se está no modo de emparelhamento.",
+  "Escribe {0} en el dispositivo y pulsa Enter.": "Digite {0} no dispositivo e pressione Enter.",
+  "Escribe el PIN del dispositivo (muchos usan 0000).": "Digite o PIN do dispositivo (muitos usam 0000).",
+  "Comprueba que el dispositivo muestra {0}.": "Verifique se o dispositivo mostra {0}."
 }

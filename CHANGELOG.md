@@ -6,6 +6,22 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.11.0] - 2026-10-25
+
+### Añadido
+- **Emparejar desde el panel de Bluetooth**: con la radio encendida, el panel busca los dispositivos
+  cercanos (clásicos y LE) y los muestra en "Dispositivos disponibles"; se emparejan ahí mismo, sin
+  abrir Configuración, también los que piden confirmar o escribir un PIN.
+
+### Cambiado
+- **Las lecturas avanzadas empiezan solas al instalar el módulo**: al terminar la descarga se inician
+  (Windows pide permiso una vez) y los medidores muestran las temperaturas sin pulsar Iniciar. Tras
+  una actualización pasa lo mismo si alguna barra o widget muestra CPU, GPU o FPS.
+
+### Corregido
+- **Bluetooth decía "Emparejado" aunque el dispositivo estuviera conectado**: el estado se lee de la
+  misma propiedad que usa Windows y se actualiza en vivo mientras el panel está abierto.
+
 ## [3.10.2] - 2026-10-23
 
 ### Corregido

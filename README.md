@@ -210,7 +210,8 @@ and everything goes back to normal.
 
 - **Sound**: output, input, per-app volume and device options, and **Also play on** to hear
   everything on a second output too (both monitors' speakers, for example). **Network and Wi-Fi** with a
-  show-password button, **Bluetooth**, **battery**.
+  show-password button, **Bluetooth** (live connection status and pairing nearby devices right
+  from the flyout), **battery**.
 - **Brightness for every monitor** over DDC/CI, with Windows Night light.
 - **Media**: album art, title and artist on the bar for any app that reports media (Spotify,
   browsers, Media Player...), with optional controls.
@@ -261,7 +262,8 @@ and everything goes back to normal.
 
 - CPU, GPU and RAM usage on the bar or as big desktop readouts.
 - Temperatures and an **FPS counter** that understands frame generation (DLSS FG, FSR FG,
-  Lossless Scaling...), with the *Advanced readings* optional module.
+  Lossless Scaling...), with the *Advanced readings* optional module (they start on their own as
+  soon as it is installed).
 - One-click **RAM cleanup** and internet speed with a built-in speed test.
 
 <a id="widgets"></a>

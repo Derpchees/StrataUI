@@ -29,7 +29,7 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                 </Grid.ColumnDefinitions>
-                                <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="18" Margin="0,0,12,0" />
+                                <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="18" Margin="0,0,12,0" Filled="{Binding Connected}" />
                                 <StackPanel Grid.Column="1">
                                     <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" />
                                     <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Status}" />
@@ -46,5 +46,54 @@
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <StackPanel x:Name="AvailableSection" Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource FlyoutSection}" Text="{l:T 'DISPOSITIVOS DISPONIBLES'}" />
+                <ui:ProgressRing x:Name="Scanning" Grid.Column="1" IsIndeterminate="True" Width="14" Height="14"
+                                 VerticalAlignment="Bottom" Margin="0,0,8,6" />
+            </Grid>
+            <TextBlock x:Name="AvailableHint" Style="{StaticResource FlyoutHint}" Margin="4,0,0,6" TextWrapping="Wrap"
+                       Text="{l:T 'Buscando… pon el dispositivo en modo de emparejamiento.'}" />
+            <ItemsControl x:Name="AvailableList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <Button Style="{StaticResource FlyoutRow}" Click="Available_Click">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="18" Margin="0,0,12,0" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" />
+                                        <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Status}"
+                                                   Visibility="{Binding StatusVisibility}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                            <StackPanel Margin="40,2,10,10" Visibility="{Binding ExpandedVisibility}">
+                                <TextBlock Style="{StaticResource FlyoutText}" TextWrapping="Wrap" Margin="0,0,0,6"
+                                           Text="{Binding PromptText}" Visibility="{Binding PromptVisibility}" />
+                                <ui:TextBox Margin="0,0,0,8" PlaceholderText="{l:T 'PIN'}"
+                                            Text="{Binding Pin, UpdateSourceTrigger=PropertyChanged}"
+                                            Visibility="{Binding PinVisibility}" />
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <ui:Button Content="{l:T 'Cancelar'}" Margin="0,0,8,0" Click="PairCancel_Click"
+                                               Visibility="{Binding AnswerVisibility}" />
+                                    <ui:Button Appearance="Primary" MinWidth="110" Content="{Binding PairText}"
+                                               Visibility="{Binding PairVisibility}" Click="Pair_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
     </StackPanel>
 </flyouts:FlyoutWindow>

@@ -269,6 +269,32 @@ public static class Sensors
             await StartAsync(automatic: true);
     }
 
+    /// <summary>Alguna barra o widget muestra CPU, GPU o FPS (según los ajustes guardados).</summary>
+    public static bool MetersInUse =>
+        Settings.Current.Layouts.Values.SelectMany(l => l.Bars)
+            .Any(bar => bar.Items.Any(item => item is BarItem.Cpu or BarItem.Gpu or BarItem.Fps))
+        || Settings.Current.Widgets.Any(w => w.Kind is WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps);
+
+    /// <summary>
+    /// Se acaba de instalar el módulo: las lecturas se inician ya (si el permiso no está al día,
+    /// Windows lo pide una vez) para que los medidores muestren las temperaturas sin más clics. Sin
+    /// medidores que las usen, se detienen enseguida pero el permiso queda listo: al agregar uno
+    /// empiezan solas. Tras una actualización (<paramref name="requested"/> false) solo con medidores.
+    /// </summary>
+    public static async Task StartAfterModuleAsync(bool requested)
+    {
+        bool used = MetersInUse;
+        if (!requested && !used)
+            return;
+        // Las que corrían sin el módulo (solo liberar RAM y acciones) no leen temperaturas: se renuevan.
+        if (Running)
+            Close();
+        _quietTried = true;
+        Log.Info("Lecturas avanzadas: módulo instalado; se inician");
+        if (await StartAsync(automatic: true) && !used)
+            StopIfUnused(false);
+    }
+
     /// <summary>
     /// Ninguna barra ni widget muestra CPU, GPU o FPS: si las lecturas se iniciaron solas, el proceso
     /// elevado se cierra (deja de leer el hardware y los eventos de la GPU). Vuelven a iniciarse

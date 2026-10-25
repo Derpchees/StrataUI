@@ -1191,5 +1191,19 @@
   "Cambiar el nombre en la barra lateral": "In der Seitenleiste umbenennen",
   "Volver al nombre de la carpeta": "Ordnernamen verwenden",
   "Si la segunda salida suena antes que la principal, retrásala hasta que se oigan juntas.": "Wenn die zweite Ausgabe vor der Hauptausgabe spielt, verzögere sie, bis beide gleichzeitig klingen.",
-  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Sie benötigen erneut Administratorrechte (Strata UI oder das Modul wurde aktualisiert): Drücke Starten und bestätige die Windows-Abfrage. Bis dahin zeigen die Anzeigen keine Temperaturen oder FPS."
+  "Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.": "Sie benötigen erneut Administratorrechte (Strata UI oder das Modul wurde aktualisiert): Drücke Starten und bestätige die Windows-Abfrage. Bis dahin zeigen die Anzeigen keine Temperaturen oder FPS.",
+  "DISPOSITIVOS DISPONIBLES": "VERFÜGBARE GERÄTE",
+  "Buscando… pon el dispositivo en modo de emparejamiento.": "Suche läuft… versetze das Gerät in den Kopplungsmodus.",
+  "PIN": "PIN",
+  "Emparejado, sin conexión": "Gekoppelt, nicht verbunden",
+  "Emparejar": "Koppeln",
+  "Emparejando…": "Wird gekoppelt…",
+  "Aceptar": "OK",
+  "Confirmar": "Bestätigen",
+  "Emparejamiento cancelado": "Kopplung abgebrochen",
+  "El dispositivo no respondió a tiempo": "Das Gerät hat nicht rechtzeitig geantwortet",
+  "No se pudo emparejar. Comprueba que esté en modo de emparejamiento.": "Kopplung nicht möglich. Prüfe, ob es im Kopplungsmodus ist.",
+  "Escribe {0} en el dispositivo y pulsa Enter.": "Gib {0} auf dem Gerät ein und drücke die Eingabetaste.",
+  "Escribe el PIN del dispositivo (muchos usan 0000).": "Gib die PIN des Geräts ein (viele verwenden 0000).",
+  "Comprueba que el dispositivo muestra {0}.": "Prüfe, ob das Gerät {0} anzeigt."
 }
