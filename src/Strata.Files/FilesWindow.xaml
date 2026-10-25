@@ -151,6 +151,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- Comandos (sobre el panel activo) -->
@@ -195,37 +196,89 @@
                             <Border Padding="2" CornerRadius="8" Margin="8,0,0,0" VerticalAlignment="Center"
                                     Background="{DynamicResource ControlFillColorDefaultBrush}">
                                 <StackPanel Orientation="Horizontal">
-                                    <ToggleButton x:Name="ExtensionsToggle" Style="{StaticResource ViewToggle}" Click="Extensions_Click"
+                                    <files:CommandToggle x:Name="ExtensionsToggle" Style="{StaticResource ViewToggle}" Click="Extensions_Click"
                                                   ToolTip="{l:T 'Mostrar las extensiones de los archivos'}" Margin="0,0,2,0">
                                         <TextBlock Text=".ext" FontSize="11" FontWeight="SemiBold" />
-                                    </ToggleButton>
-                                    <ToggleButton x:Name="HiddenToggle" Style="{StaticResource ViewToggle}" Click="Hidden_Click"
+                                    </files:CommandToggle>
+                                    <files:CommandToggle x:Name="HiddenToggle" Style="{StaticResource ViewToggle}" Click="Hidden_Click"
                                                   ToolTip="{l:T 'Mostrar archivos ocultos'}" Margin="0,0,2,0">
                                         <ui:SymbolIcon Symbol="Eye24" FontSize="15" />
-                                    </ToggleButton>
-                                    <ToggleButton x:Name="DetailsToggle" Style="{StaticResource ViewToggle}" Click="DetailsView_Click"
+                                    </files:CommandToggle>
+                                    <files:CommandToggle x:Name="DetailsToggle" Style="{StaticResource ViewToggle}" Click="DetailsView_Click"
                                                   ToolTip="{l:T 'Lista'}">
                                         <ui:SymbolIcon Symbol="TextBulletListLtr24" FontSize="15" />
-                                    </ToggleButton>
-                                    <ToggleButton x:Name="GridToggle" Style="{StaticResource ViewToggle}" Click="GridView_Click"
+                                    </files:CommandToggle>
+                                    <files:CommandToggle x:Name="GridToggle" Style="{StaticResource ViewToggle}" Click="GridView_Click"
                                                   ToolTip="{l:T 'Cuadrícula'}">
                                         <ui:SymbolIcon Symbol="Grid24" FontSize="15" />
-                                    </ToggleButton>
+                                    </files:CommandToggle>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
                         <Border Padding="2" CornerRadius="8" Margin="8,0,0,0" VerticalAlignment="Center"
                                 Background="{DynamicResource ControlFillColorDefaultBrush}">
-                            <ToggleButton x:Name="SplitToggle" Style="{StaticResource ViewToggle}" Click="Split_Click"
-                                          ToolTip="{l:T 'Vista doble: dos carpetas lado a lado (Ctrl+Mayús+D)'}">
-                                <ui:SymbolIcon Symbol="SplitVertical24" FontSize="15" />
-                            </ToggleButton>
+                            <StackPanel Orientation="Horizontal">
+                                <files:CommandToggle x:Name="PreviewToggle" Style="{StaticResource ViewToggle}" Click="Preview_Click" Margin="0,0,2,0"
+                                              ToolTip="{l:T 'Vista previa (Alt+P)'}">
+                                    <ui:SymbolIcon Symbol="PanelRight24" FontSize="15" />
+                                </files:CommandToggle>
+                                <files:CommandToggle x:Name="SplitToggle" Style="{StaticResource ViewToggle}" Click="Split_Click"
+                                              ToolTip="{l:T 'Vista doble: dos carpetas lado a lado (Ctrl+Mayús+D)'}">
+                                    <ui:SymbolIcon Symbol="SplitVertical24" FontSize="15" />
+                                </files:CommandToggle>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </Grid>
 
                 <!-- La pestaña elegida: uno o dos paneles -->
                 <ContentControl x:Name="TabHost" Grid.Row="1" Focusable="False" />
+
+                <!-- Copias y traslados en curso (o que terminaron con errores) -->
+                <ItemsControl x:Name="TransfersList" Grid.Row="2">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,8,0,0" Padding="14,10,10,10" CornerRadius="{DynamicResource StrataLargeCornerRadius}"
+                                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="20" Margin="0,0,12,0" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource StrataAccentBrush}" />
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                        <Grid Margin="0,2,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Detail}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" ToolTip="{Binding Detail}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Current}" FontSize="12" Margin="10,0,0,0" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                        </Grid>
+                                        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="1" Height="4" MinHeight="4" Margin="0,8,0,0"
+                                                     IsIndeterminate="{Binding IsIndeterminate, Mode=OneWay}"
+                                                     Visibility="{Binding IsActive, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <ui:Button Content="{l:T 'Reintentar como administrador'}" Icon="{ui:SymbolIcon Shield24}" Margin="0,0,6,0"
+                                                   Visibility="{Binding CanRetryAsAdmin, Converter={StaticResource BoolToVis}}" Click="TransferRetry_Click" />
+                                        <Button Style="{StaticResource ToolButton}" Width="30" Height="30" Click="TransferClose_Click"
+                                                ToolTip="{l:T 'Cancelar o cerrar'}" AutomationProperties.Name="{l:T 'Cancelar o cerrar'}">
+                                            <ui:SymbolIcon Symbol="Dismiss16" FontSize="13" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Grid>
         </Grid>
     </Grid>

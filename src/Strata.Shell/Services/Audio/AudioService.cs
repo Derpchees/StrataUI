@@ -158,7 +158,19 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
     private static readonly PropertyKey DeviceDescKey = new(new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), 2);
     private static readonly PropertyKey InstancePathKey = new(new Guid("b3f8fa53-0004-438e-9003-51a46e139bfc"), 2);
 
-    public IReadOnlyList<AudioDevice> GetDevices(bool input)
+    // Leer los dispositivos de Windows tarda (unos 200 ms por lista con varias salidas y el panel de
+    // sonido pedía tres): se guardan hasta que Windows avisa de un cambio.
+    private readonly IReadOnlyList<AudioDevice>?[] _devices = new IReadOnlyList<AudioDevice>?[2];
+
+    public IReadOnlyList<AudioDevice> GetDevices(bool input) => _devices[input ? 1 : 0] ??= ReadDevices(input);
+
+    private void InvalidateDevices()
+    {
+        _devices[0] = null;
+        _devices[1] = null;
+    }
+
+    private IReadOnlyList<AudioDevice> ReadDevices(bool input)
     {
         var flow = input ? DataFlow.Capture : DataFlow.Render;
         string? defaultId = DefaultId(flow, Role.Multimedia);
@@ -354,7 +366,9 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
 
     // ── Notificaciones ──────────────────────────────────────────────────────
 
-    private void OnDevicesChanged(DataFlow? defaultChanged) =>
+    private void OnDevicesChanged(DataFlow? defaultChanged)
+    {
+        InvalidateDevices();
         Application.Current?.Dispatcher.BeginInvoke(() =>
         {
             if (defaultChanged == DataFlow.Render)
@@ -365,11 +379,13 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
             Output.RaiseChanged();
             Input.RaiseChanged();
         });
+    }
 
     void IMMNotificationClient.OnDeviceStateChanged(string deviceId, DeviceState newState) => OnDevicesChanged(null);
     void IMMNotificationClient.OnDeviceAdded(string pwstrDeviceId) => OnDevicesChanged(null);
     void IMMNotificationClient.OnDeviceRemoved(string deviceId) => OnDevicesChanged(null);
-    void IMMNotificationClient.OnPropertyValueChanged(string pwstrDeviceId, PropertyKey key) { }
+    // Un nombre o una forma que cambia: la próxima lectura los trae al día.
+    void IMMNotificationClient.OnPropertyValueChanged(string pwstrDeviceId, PropertyKey key) => InvalidateDevices();
 
     void IMMNotificationClient.OnDefaultDeviceChanged(DataFlow flow, Role role, string defaultDeviceId)
     {

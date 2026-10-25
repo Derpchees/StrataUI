@@ -287,8 +287,12 @@ public partial class App : Application
         // El menú Inicio, armado una vez cuando ya cargó el catálogo de apps: así la primera apertura es rápida.
         _ = Task.Delay(TimeSpan.FromSeconds(5)).ContinueWith(_ => Dispatcher.BeginInvoke(() =>
         {
-            if (!_exiting)
-                StartMenu.StartMenuLauncher.WarmUp();
+            if (_exiting)
+                return;
+            StartMenu.StartMenuLauncher.WarmUp();
+            // Y la lista de dispositivos de sonido (leerla tarda): el panel de sonido abre al momento.
+            Audio.GetDevices(input: false);
+            Audio.GetDevices(input: true);
         }, System.Windows.Threading.DispatcherPriority.ApplicationIdle));
         Services.StartMenu.ExplorerMenu.Listen();
         Services.Widgets.WidgetManager.Initialize();

@@ -165,12 +165,9 @@ public static class StartCommands
         var files = await FilePicker.PickFilesAsync(Loc.F("Ícono para {0}", app.Name),
                                                     Loc.T("Imágenes e íconos") + "|" + CustomIcons.DialogFilter);
         if (files.Length > 0 && !CustomIcons.Set(app.Id, files[0]))
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = Loc.T("Cambiar ícono…"),
-                Content = Loc.T("No se pudo leer una imagen de ese archivo."),
-                CloseButtonText = Loc.T("Cerrar"),
-            }.ShowDialogAsync();
+            await Strata.Shell.Controls.StrataDialog.ShowAsync(null, Loc.T("Cambiar ícono…"),
+                Loc.T("No se pudo leer una imagen de ese archivo."),
+                Loc.T("Cerrar"));
     });
 
     public static ICommand ResetIcon { get; } = new Relay(p =>

@@ -26,6 +26,11 @@ public partial class VolumeFlyout : FlyoutWindow
     private bool _updating;
     // Audífonos y parlantes Bluetooth emparejados pero sin conexión: se ofrecen como salida.
     private List<BtDevice> _bluetooth = new();
+    // El mismo mosaico entre una lista y otra: mientras conecta conserva su "Conectando…".
+    private readonly Dictionary<ulong, DeviceTile> _bluetoothTiles = new();
+
+    private DeviceTile BluetoothTile(BtDevice device) =>
+        _bluetoothTiles.TryGetValue(device.Address, out var tile) ? tile : _bluetoothTiles[device.Address] = DeviceTile.ForBluetooth(device);
 
     public VolumeFlyout()
     {
@@ -96,7 +101,7 @@ public partial class VolumeFlyout : FlyoutWindow
     private void UpdateDevices()
     {
         var outputs = Tiles(_audio.GetDevices(input: false));
-        outputs.AddRange(_bluetooth.Where(bt => !outputs.Any(t => IsEndpointOf(t.Device, bt))).Select(DeviceTile.ForBluetooth));
+        outputs.AddRange(_bluetooth.Where(bt => !outputs.Any(t => IsEndpointOf(t.Device, bt))).Select(BluetoothTile));
         var inputs = Tiles(_audio.GetDevices(input: true));
         OutputList.ItemsSource = outputs;
         InputList.ItemsSource = inputs;

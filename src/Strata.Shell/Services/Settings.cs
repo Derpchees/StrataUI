@@ -249,6 +249,8 @@ public sealed class StrataSettings
     public bool FilesGridView { get; set; }
     /// <summary>El explorador muestra los archivos y carpetas ocultos.</summary>
     public bool FilesShowHidden { get; set; }
+    /// <summary>Panel de vista previa a la derecha de cada carpeta (Alt+P).</summary>
+    public bool FilesPreviewPane { get; set; }
     /// <summary>Carpetas ancladas a la barra lateral de Archivos, en orden.</summary>
     public List<string> FilesPinnedFolders { get; set; } = [];
     /// <summary>Nombres propios de carpetas ancladas (clave: <see cref="Files.Places.PinnedKey"/>): solo en la barra lateral.</summary>

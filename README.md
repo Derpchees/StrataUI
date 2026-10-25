@@ -109,7 +109,7 @@ and everything goes back to normal.
     <td colspan="2" valign="top">
       <img src="docs/icons/files.svg" width="40" align="left" alt="" />
       <b><a href="#files">Files</a></b><br />
-      A clean file explorer in your theme: folders, drives, recents, thumbnails and Windows' own copy engine.
+      A clean file explorer in your theme: folders, drives, recents, thumbnails, preview pane and copy progress built in.
     </td>
   </tr>
 </table>
@@ -234,10 +234,16 @@ and everything goes back to normal.
   drop files) and a right-click menu with view and sort options, widgets, Files and everything
   Windows puts there (New, Display settings, Personalize, your graphics card panel). Widgets always
   stay above the icons, and turning it off in the Hub brings the Windows desktop back as it was.
-- Breadcrumb path you can also type into (Ctrl+L), search in the folder, sorting, hidden files,
-  back/forward with the mouse side buttons and the usual keyboard shortcuts.
-- Copy, cut, paste, rename, new folder and Recycle Bin use Windows' own engine (progress, conflict
-  questions and Ctrl+Z in File Explorer). Clipboard and drag and drop work with File Explorer and
+- Breadcrumb path you can also type into (Ctrl+L), search that also looks inside subfolders (each
+  result says where it is), sorting, hidden files, back/forward with the mouse side buttons and the
+  usual keyboard shortcuts (Shift+Delete deletes permanently).
+- A **preview pane** (Alt+P) for the selected file: pictures with their real size, the first page
+  of a PDF, the start of text and code files, covers of video and music, and a folder's item count.
+- Copy and move show their **progress inside Files** (speed, time left, cancel) instead of a
+  Windows window, and replacing a file never loses the old one if you cancel. Name conflicts,
+  permanent deletes and emptying the Recycle Bin ask in Strata UI's own themed dialogs, on the
+  monitor you're working on. Anything that needs administrator rights can be retried with
+  Windows' engine. Clipboard and drag and drop work with File Explorer and
   any other app. The right-click menu also includes everything Windows and your apps add (NanaZip,
   7-Zip, Open with, Send to, Properties, New...), read in a separate process so a broken shell
   extension can't take Strata UI down. Archives open in your installed archiver, the Recycle Bin

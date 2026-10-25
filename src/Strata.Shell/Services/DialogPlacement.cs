@@ -7,8 +7,9 @@ namespace Strata.Shell.Services;
 
 /// <summary>
 /// Los cuadros de diálogo (confirmar una desinstalación, avisos de error…) salen en el monitor donde
-/// se hizo la acción: el del puntero. WPF-UI los centraba sobre la ventana principal de la app, que
-/// es invisible y está en el monitor principal de Windows.
+/// se hizo la acción: el de su ventana dueña o el de la ventana de Strata UI activa (el explorador
+/// en el otro monitor, aunque el puntero quedó en este) y, si no hay ninguna, el del puntero. WPF-UI
+/// los centraba sobre la ventana principal de la app, que es invisible y está en el monitor principal.
 /// </summary>
 public static class DialogPlacement
 {
@@ -18,15 +19,34 @@ public static class DialogPlacement
                                           new RoutedEventHandler((sender, _) =>
                                           {
                                               if (sender is Window window)
-                                                  CenterOnPointerScreen(new WindowInteropHelper(window).Handle);
+                                                  Place(window);
                                           }));
 
+    /// <summary>En el monitor de la ventana que lo abrió (su dueña o la activa) o, sin ninguna, en el del puntero.</summary>
+    public static void Place(Window dialog)
+    {
+        IntPtr hwnd = new WindowInteropHelper(dialog).Handle;
+        var origin = dialog.Owner is { IsVisible: true, ActualWidth: > 1 } owner ? owner
+            : Application.Current?.Windows.OfType<Window>()
+                .FirstOrDefault(w => w != dialog && w.IsActive && w.IsVisible && w.ActualWidth > 1);
+        if (origin != null && new WindowInteropHelper(origin).Handle is var originHandle && originHandle != IntPtr.Zero
+            && GetWindowRect(originHandle, out var area))
+        {
+            var center = new System.Drawing.Point((area.Left + area.Right) / 2, (area.Top + area.Bottom) / 2);
+            Center(hwnd, Forms.Screen.FromPoint(center).WorkingArea);
+            return;
+        }
+        CenterOnPointerScreen(hwnd);
+    }
+
     /// <summary>Centra la ventana (en píxeles físicos) en el área de trabajo del monitor del puntero.</summary>
-    public static void CenterOnPointerScreen(IntPtr hwnd)
+    public static void CenterOnPointerScreen(IntPtr hwnd) =>
+        Center(hwnd, Forms.Screen.FromPoint(Forms.Cursor.Position).WorkingArea);
+
+    private static void Center(IntPtr hwnd, System.Drawing.Rectangle work)
     {
         if (hwnd == IntPtr.Zero || !GetWindowRect(hwnd, out var rect))
             return;
-        var work = Forms.Screen.FromPoint(Forms.Cursor.Position).WorkingArea;
         int width = rect.Right - rect.Left, height = rect.Bottom - rect.Top;
         int x = work.Left + Math.Max(0, (work.Width - width) / 2);
         int y = work.Top + Math.Max(0, (work.Height - height) / 2);

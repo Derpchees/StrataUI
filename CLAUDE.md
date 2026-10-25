@@ -121,8 +121,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   ventana (una región no lo recorta) y en una ventana en capas (`AllowsTransparency`) además no hay
   región. Por eso los avisos y el OSD son ventanas normales que, con vidrio, miden lo que su tarjeta y
   DWM redondea las esquinas; los menús contextuales y los Popup no llevan vidrio.
-- **Cuadros de diálogo**: `DialogPlacement` centra todo `MessageBox` de WPF-UI en el monitor del
-  puntero; el diálogo de abrir archivo usa `DialogPlacement.PointerAnchor()` de dueña.
+- **Cuadros de diálogo**: preguntas y avisos con `Controls/StrataDialog` (`ShowAsync`/`ConfirmAsync`,
+  con el tema de Strata UI), nunca `MessageBox` de WPF-UI ni de Windows. `DialogPlacement.Place` los
+  centra en el monitor de su dueña o de la ventana activa de Strata UI (si no, el del puntero); el
+  diálogo de abrir archivo usa `DialogPlacement.PointerAnchor()` de dueña.
 - **Desinstalar desde Inicio** (`AppActions.UninstallAsync`): una app web de Chromium (`_crx_` en el ID o
   `--app-id=` en el acceso directo) usa `--uninstall-app-id`, nunca el desinstalador del navegador.
 - **Tareas de administrador**: un argumento `--algo` atendido al principio de `App.OnStartup` y
@@ -206,7 +208,9 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
   (`ThumbnailHost`, `--thumbnails`, UTF-8 por la entrada y la salida estándar) van en otro proceso.
   Cada pestaña tiene uno o dos `FolderPane` (vista doble); la ventana solo tiene la barra lateral,
   las pestañas y los comandos del panel activo. La Papelera se lee de `$Recycle.Bin` (`RecycleBin`,
-  fichas `$I`) y los comprimidos se abren con el compresor instalado (`Archivers`). Copiar/mover/Papelera con `SHFileOperation` (`FileOperations`).
+  fichas `$I`) y los comprimidos se abren con el compresor instalado (`Archivers`). Copiar y mover con el motor propio (`FileTransfers`: `CopyFileEx`, progreso en la ventana de
+  Archivos, reemplazar copia aparte y cambia al final para no perder el viejo); Papelera y borrar con
+  `SHFileOperation` sin sus ventanas (`FileOperations`, que hace las preguntas con `StrataDialog`).
   Nube por atributos (`FileEntry.CloudOf`): un archivo "solo en línea" no se lee (ni miniatura ni
   ícono propio) porque leerlo lo descarga. Red: `\\servidor` lista sus recursos (`Places.Shares`).
   Las carpetas que abre Strata UI pasan por `StartMenuService.OpenPath` (Archivos o el Explorador

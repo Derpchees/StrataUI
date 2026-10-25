@@ -104,6 +104,18 @@ public partial class FolderPane : UserControl
             _reload.Stop();
             _ = LoadAsync(merge: true);
         };
+        _previewTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+        _previewTimer.Tick += (_, _) =>
+        {
+            _previewTimer.Stop();
+            _ = UpdatePreviewAsync();
+        };
+        _deepSearchTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        _deepSearchTimer.Tick += (_, _) =>
+        {
+            _deepSearchTimer.Stop();
+            StartDeepSearch();
+        };
         _messageTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
         _messageTimer.Tick += (_, _) =>
         {
@@ -439,7 +451,7 @@ public partial class FolderPane : UserControl
         var incoming = fresh.ToDictionary(e => e.FullPath, StringComparer.OrdinalIgnoreCase);
         foreach (var entry in _entries.ToList())
         {
-            if (!incoming.TryGetValue(entry.FullPath, out var updated) || !Same(entry, updated))
+            if (!entry.FromSearch && (!incoming.TryGetValue(entry.FullPath, out var updated) || !Same(entry, updated)))
                 _entries.Remove(entry);
         }
         var added = new List<FileEntry>();
@@ -621,7 +633,9 @@ public partial class FolderPane : UserControl
         {
             EmptyIcon.Symbol = SymbolRegular.Search24;
             EmptyTitle.Text = Loc.T("Sin resultados");
-            EmptyText.Text = Loc.F("Nada en esta carpeta coincide con «{0}».", query.Trim());
+            EmptyText.Text = _deepSearching ? Loc.T("Buscando también en las subcarpetas…")
+                : CanDeepSearch && query.Trim().Length >= 2 ? Loc.F("Nada en esta carpeta ni en sus subcarpetas coincide con «{0}».", query.Trim())
+                : Loc.F("Nada en esta carpeta coincide con «{0}».", query.Trim());
         }
         else if (InRecycleBin)
         {
@@ -640,6 +654,7 @@ public partial class FolderPane : UserControl
     private void UpdateStatus()
     {
         StateChanged?.Invoke();
+        SchedulePreview(); // la selección o la carpeta cambiaron
         if (_path is null || _view is null)
             return;
         int count = _view.Count;
@@ -652,6 +667,8 @@ public partial class FolderPane : UserControl
             if (selected.Any(e => !e.IsFolder))
                 text += "   ·   " + FileEntry.FormatSize(bytes);
         }
+        if (_deepSearching)
+            text += "   ·   " + Loc.T("buscando en subcarpetas…");
         StatusText.Text = text;
     }
 
@@ -938,7 +955,7 @@ public partial class FolderPane : UserControl
         _ = LoadAsync(merge: true);
     }
 
-    /// <summary>Borra para siempre, sin pasar por la Papelera (Windows confirma).</summary>
+    /// <summary>Borra para siempre, sin pasar por la Papelera (después de preguntar).</summary>
     private async Task DeleteSelectionForeverAsync(IReadOnlyList<FileEntry> entries)
     {
         await FileOperations.DeleteForeverAsync(entries.Select(e => e.FullPath).ToList(), Handle);
@@ -946,13 +963,14 @@ public partial class FolderPane : UserControl
         _ = LoadAsync(merge: true);
     }
 
-    /// <summary>Borra para siempre lo elegido de la Papelera (Windows confirma).</summary>
+    /// <summary>Borra para siempre lo elegido de la Papelera (después de preguntar).</summary>
     private async Task DeleteForeverAsync(IReadOnlyList<FileEntry> entries)
     {
         var items = entries.Select(e => e.Recycled).OfType<RecycledItem>().ToList();
         if (items.Count == 0)
             return;
-        await FileOperations.DeleteForeverAsync(items.Select(i => i.DataPath).ToList(), Handle);
+        if (!await FileOperations.DeleteForeverAsync(items.Select(i => i.DataPath).ToList(), Handle, items.Select(i => i.Name).ToList()))
+            return;
         foreach (var item in items)
         {
             try
@@ -967,10 +985,10 @@ public partial class FolderPane : UserControl
         _ = LoadAsync(merge: true);
     }
 
-    private void EmptyRecycleBin()
+    private async void EmptyRecycleBin()
     {
-        FileOperations.EmptyRecycleBin(Handle);
-        _ = LoadAsync(merge: true);
+        if (await FileOperations.EmptyRecycleBinAsync(Handle))
+            _ = LoadAsync(merge: true);
     }
 
     public void RenameSelected()
@@ -1646,9 +1664,261 @@ public partial class FolderPane : UserControl
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
     {
+        ScheduleDeepSearch();
         _view?.Refresh();
         UpdateEmptyState();
         UpdateStatus();
+    }
+
+    // ── Vista previa ────────────────────────────────────────────────────────
+    // A la derecha (Alt+P): imagen, primera página de un PDF, el comienzo de un texto o la carátula
+    // de Windows (video, música, Office), con su tipo, tamaño y fecha. Nada se lee de un archivo
+    // que solo está en la nube (lo descargaría).
+
+    private readonly DispatcherTimer _previewTimer;
+    private int _previewVersion;
+
+    private static readonly HashSet<string> TextExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".txt", ".md", ".log", ".json", ".xml", ".csv", ".ini", ".cfg", ".conf", ".yaml", ".yml", ".toml", ".cs", ".xaml",
+        ".js", ".ts", ".tsx", ".jsx", ".css", ".html", ".htm", ".py", ".ps1", ".psm1", ".bat", ".cmd", ".sh", ".c", ".h",
+        ".cpp", ".hpp", ".java", ".kt", ".go", ".rs", ".lua", ".sql", ".reg", ".gitignore", ".editorconfig", ".csproj", ".props",
+    };
+
+    /// <summary>Se mostró u ocultó el panel en la ventana (para todas las carpetas).</summary>
+    public void PreviewChanged() => SchedulePreview();
+
+    private void SchedulePreview()
+    {
+        _previewTimer.Stop();
+        _previewTimer.Start();
+    }
+
+    private async Task UpdatePreviewAsync()
+    {
+        int version = ++_previewVersion;
+        bool show = Settings.Current.FilesPreviewPane && _path != null;
+        PreviewPane.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        if (!show)
+            return;
+        var selected = SelectedEntries;
+        PreviewImage.Source = null;
+        PreviewText.Text = "";
+        PreviewText.Visibility = Visibility.Collapsed;
+        PreviewEmpty.Visibility = Visibility.Collapsed;
+        PreviewInfo.Visibility = Visibility.Visible;
+        if (selected.Count != 1)
+        {
+            PreviewInfo.Visibility = selected.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+            PreviewEmpty.Visibility = Visibility.Visible;
+            PreviewEmptyText.Text = selected.Count > 1 ? "" : Loc.T("Elige un archivo para verlo aquí.");
+            PreviewName.Text = Loc.F("{0} seleccionados", selected.Count);
+            long bytes = selected.Where(e => !e.IsFolder).Sum(e => e.Size);
+            PreviewDetails.Text = selected.Any(e => !e.IsFolder) ? FileEntry.FormatSize(bytes) : "";
+            return;
+        }
+
+        var entry = selected[0];
+        PreviewName.Text = entry.Name;
+        var lines = new List<string> { entry.TypeName };
+        if (!entry.IsFolder && entry.Size >= 0)
+            lines.Add(entry.SizeText);
+        if (entry.ModifiedText.Length > 0)
+            lines.Add(Loc.F("Modificado: {0}", entry.ModifiedText));
+        PreviewDetails.Text = string.Join("\n", lines);
+        PreviewImage.Source = entry.Thumbnail ?? entry.Icon;
+
+        string path = entry.FullPath;
+        try
+        {
+            if (entry.IsFolder)
+            {
+                int? count = await Task.Run(() => CountItems(path));
+                if (version == _previewVersion && count is { } n)
+                    PreviewDetails.Text = string.Join("\n", lines.Prepend(n == 1 ? Loc.T("1 elemento") : Loc.F("{0} elementos", n)));
+                return;
+            }
+            if (entry.IsOnlineOnly)
+                return;
+            if (TextExtensions.Contains(entry.Extension) && entry.Size <= 4 * 1024 * 1024)
+            {
+                string text = await Task.Run(() => ReadStart(path));
+                if (version != _previewVersion)
+                    return;
+                PreviewImage.Source = null;
+                PreviewText.Text = text;
+                PreviewText.Visibility = Visibility.Visible;
+                return;
+            }
+            ImageSource? image = FileIcons.IsPicture(entry)
+                ? await FileIcons.RunAsync(() => AppIcons.Load(path, 560))
+                : entry.Extension.Equals(".pdf", StringComparison.OrdinalIgnoreCase)
+                    ? await PdfFirstPageAsync(path)
+                    : await Task.Run(() => ThumbnailHost.Get(path, 512, cachedOnly: false));
+            if (version != _previewVersion || image is null)
+                return;
+            PreviewImage.Source = image;
+            // El tamaño real (la vista previa se decodifica más chica).
+            if (FileIcons.IsPicture(entry) && await Task.Run(() => PixelSize(path)) is { } size && version == _previewVersion)
+                PreviewDetails.Text = string.Join("\n", lines.Append($"{size.Width} × {size.Height}"));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException
+                                      or NotSupportedException or System.Runtime.InteropServices.COMException)
+        {
+            // Sin vista previa: quedan el ícono y los datos.
+        }
+    }
+
+    private static async Task<ImageSource?> PdfFirstPageAsync(string path)
+    {
+        var document = await Previews.OpenPdfAsync(path);
+        return document is { PageCount: > 0 } ? await Previews.PdfPageAsync(document, 0, 560) : null;
+    }
+
+    /// <summary>Lo primero de un texto (200 líneas): lo bastante para reconocerlo sin leerlo entero.</summary>
+    private static string ReadStart(string path)
+    {
+        using var reader = new StreamReader(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), detectEncodingFromByteOrderMarks: true);
+        var text = new System.Text.StringBuilder();
+        for (int i = 0; i < 200 && reader.ReadLine() is { } line; i++)
+            text.AppendLine(line.Length > 400 ? line[..400] + "…" : line);
+        return text.ToString();
+    }
+
+    /// <summary>Ancho y alto de una imagen sin decodificarla entera (solo su encabezado).</summary>
+    private static (int Width, int Height)? PixelSize(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var frame = System.Windows.Media.Imaging.BitmapDecoder.Create(stream,
+                System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation,
+                System.Windows.Media.Imaging.BitmapCacheOption.None).Frames[0];
+            return (frame.PixelWidth, frame.PixelHeight);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException
+                                      or FileFormatException or ArgumentException or InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private static int? CountItems(string path)
+    {
+        try
+        {
+            return new DirectoryInfo(path).EnumerateFileSystemInfos().Take(10000).Count();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
+    // ── Búsqueda en las subcarpetas ─────────────────────────────────────────
+    // Lo de esta carpeta se filtra al escribir; con una pausa, se busca también más abajo y lo que
+    // aparece se agrega a la lista (con la carpeta donde está en lugar del tipo).
+
+    private readonly DispatcherTimer _deepSearchTimer;
+    private CancellationTokenSource? _deepSearch;
+    private bool _deepSearching;
+    private const int DeepSearchLimit = 1000;
+
+    private bool CanDeepSearch => _path != null && !InRecycleBin && !Places.IsServer(_path);
+
+    /// <summary>Cambió el texto: se descarta lo encontrado antes y, si hay algo que buscar, se espera una pausa.</summary>
+    private void ScheduleDeepSearch()
+    {
+        _deepSearchTimer.Stop();
+        StopDeepSearch();
+        foreach (var found in _entries.Where(entry => entry.FromSearch).ToList())
+            _entries.Remove(found);
+        if (SearchBox.Text.Trim().Length >= 2 && CanDeepSearch)
+            _deepSearchTimer.Start();
+    }
+
+    private void StopDeepSearch()
+    {
+        _deepSearch?.Cancel();
+        _deepSearch = null;
+        _deepSearching = false;
+    }
+
+    private void StartDeepSearch()
+    {
+        string query = SearchBox.Text.Trim();
+        if (query.Length < 2 || !CanDeepSearch || _path is not { } root)
+            return;
+        var cts = _deepSearch = new CancellationTokenSource();
+        var token = cts.Token;
+        bool hidden = Settings.Current.FilesShowHidden, inCloud = CloudPlace(root) != null;
+        bool thumbnails = Thumbnails(root);
+        _deepSearching = true;
+        UpdateEmptyState();
+        UpdateStatus();
+        void Deliver(List<FileEntry> batch) => Dispatcher.BeginInvoke(() =>
+        {
+            if (token.IsCancellationRequested || !SamePath(_path, root))
+                return;
+            foreach (var entry in batch)
+                _entries.Add(entry);
+            FileIcons.Load(batch, thumbnails, Dispatcher, token);
+            UpdateEmptyState();
+            UpdateStatus();
+        });
+        _ = Task.Run(() =>
+        {
+            var batch = new List<FileEntry>();
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            int count = 0;
+            try
+            {
+                var skip = FileAttributes.System | FileAttributes.ReparsePoint | (hidden ? 0 : FileAttributes.Hidden);
+                var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = skip };
+                foreach (var folder in new DirectoryInfo(root).EnumerateDirectories("*", new EnumerationOptions { AttributesToSkip = skip }))
+                {
+                    // Lo de la carpeta misma ya está en la lista: se busca dentro de cada subcarpeta.
+                    foreach (var info in folder.EnumerateFileSystemInfos("*", options))
+                    {
+                        token.ThrowIfCancellationRequested();
+                        if (!info.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase))
+                            continue;
+                        bool isFolder = info is DirectoryInfo;
+                        string where = System.IO.Path.GetRelativePath(root, System.IO.Path.GetDirectoryName(info.FullName)!);
+                        string type = FileIcons.TypeName(isFolder ? "" : info.Extension, isFolder);
+                        batch.Add(new FileEntry(info, Loc.F("{0} · en {1}", type, where), inCloud) { FromSearch = true });
+                        if (++count >= DeepSearchLimit)
+                            break;
+                        // De a poco: lo primero que aparece se ve enseguida.
+                        if (watch.ElapsedMilliseconds > 150)
+                        {
+                            Deliver(batch);
+                            batch = [];
+                            watch.Restart();
+                        }
+                    }
+                    if (count >= DeepSearchLimit)
+                        break;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                // Una carpeta que no se deja leer: lo encontrado hasta ahí se muestra igual.
+            }
+            Deliver(batch);
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_deepSearch != cts)
+                    return;
+                _deepSearching = false;
+                UpdateEmptyState();
+                UpdateStatus();
+            });
+        }, token);
     }
 
     private void SearchBox_PreviewKeyDown(object sender, KeyEventArgs e)

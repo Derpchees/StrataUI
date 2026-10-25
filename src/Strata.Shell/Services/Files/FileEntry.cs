@@ -41,6 +41,9 @@ public sealed class FileEntry : INotifyPropertyChanged
     /// <summary>Si está en la Papelera, de dónde salió (para restaurarlo).</summary>
     public RecycledItem? Recycled { get; }
 
+    /// <summary>Lo encontró la búsqueda en una subcarpeta (no es de la carpeta que se ve).</summary>
+    public bool FromSearch { get; init; }
+
     /// <summary>Una carpeta compartida de un servidor (\\servidor\recurso): sin fecha ni tamaño.</summary>
     public FileEntry(string name, string path, string typeName)
     {
@@ -96,6 +99,9 @@ public sealed class FileEntry : INotifyPropertyChanged
 
     /// <summary>Cambió <see cref="ShowExtensions"/>: el nombre se vuelve a mostrar.</summary>
     public void RefreshName() => Changed(nameof(DisplayName));
+
+    /// <summary>Lo que leen la automatización y los lectores de pantalla de cada fila (si no, el nombre de la clase).</summary>
+    public override string ToString() => Name;
 
     public string SizeText => IsFolder ? "" : FormatSize(Size);
     public string ModifiedText => Modified == default ? "" : Modified.ToString("g", CultureInfo.CurrentCulture);

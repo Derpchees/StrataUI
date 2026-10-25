@@ -6,6 +6,36 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.13.0] - 2026-10-25
+
+### Añadido
+- **Archivos: progreso de copiar y mover dentro de la ventana**, sin la de Windows: velocidad, tiempo
+  restante, el archivo en curso y un botón para cancelar. Mover dentro de la misma unidad es
+  instantáneo; los archivos grandes se copian sin la caché de Windows (más rápido). Lo que falla por
+  permisos se puede reintentar como administrador. Desde el escritorio, sin Archivos abierto, el
+  resultado llega como notificación.
+- **Archivos: búsqueda en las subcarpetas**: con una pausa al escribir, también busca más abajo y
+  cada resultado dice en qué carpeta está.
+- **Archivos: panel de vista previa** (Alt+P): imágenes con su tamaño real, la primera página de un
+  PDF, el comienzo de textos y código, carátulas de video y música, y cuántos elementos tiene una
+  carpeta.
+
+### Cambiado
+- **Diálogos propios con el tema de Strata UI** (nombres repetidos al copiar o mover, borrar para
+  siempre, vaciar la Papelera, una unidad sin Papelera, desinstalar desde Inicio, Optimización) en
+  vez de los de Windows o WPF-UI; salen sobre la ventana desde la que se pidieron, en su monitor.
+- **El panel de sonido abre al instante**: la lista de dispositivos se guarda hasta que Windows avisa
+  de un cambio (antes se leía tres veces en cada apertura, unos 650 ms).
+
+### Corregido
+- **Reemplazar y cancelar ya no pierde el archivo que estaba**: se copia aparte y se cambia al final.
+- **Archivos: Pegar** quedaba apagado si se copiaban archivos en otra app con la ventana abierta.
+- **Archivos: los botones de vista** (lista, cuadrícula, ocultos, extensiones, vista doble) no
+  respondían a los lectores de pantalla ni a la automatización, y cada archivo se anunciaba con el
+  nombre de una clase.
+- Un elemento que ya no existe al copiar o mover ya no cancela todo lo demás.
+- El mosaico Bluetooth del panel de sonido conserva su "Conectando…" si la lista se rehace.
+
 ## [3.12.1] - 2026-10-25
 
 ### Corregido

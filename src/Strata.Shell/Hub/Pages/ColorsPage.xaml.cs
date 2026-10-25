@@ -335,7 +335,8 @@ public partial class ColorsPage : Page
         catch (Exception ex)
         {
             Log.Error("No se pudo cambiar el fondo", ex);
-            System.Windows.MessageBox.Show(Loc.F("No se pudo cambiar el fondo:\n{0}", ex.Message), "Strata UI");
+            _ = Controls.StrataDialog.ShowAsync(Window.GetWindow(this), "Strata UI",
+                Loc.F("No se pudo cambiar el fondo:\n{0}", ex.Message), Loc.T("Cerrar"));
             return false;
         }
     }

@@ -76,15 +76,31 @@ public partial class FilesWindow : FluentWindow
     {
         InitializeComponent();
         FluentBackdrop.Follow(this);
-        SourceInitialized += (_, _) => FilesIcon.ApplyAppId(new WindowInteropHelper(this).Handle);
+        SourceInitialized += (_, _) =>
+        {
+            var handle = new WindowInteropHelper(this).Handle;
+            FilesIcon.ApplyAppId(handle);
+            // Copiar archivos en otra app con esta ventana abierta: Pegar se habilita al momento.
+            AddClipboardFormatListener(handle);
+            HwndSource.FromHwnd(handle)?.AddHook((IntPtr _, int message, IntPtr _, IntPtr _, ref bool _) =>
+            {
+                if (message == WmClipboardUpdate)
+                    UpdateCommands();
+                return IntPtr.Zero;
+            });
+        };
         _home = new Place(Loc.T("Este equipo"), null, SymbolRegular.Home24);
         _folders = Places.Folders();
         _recycleBin = new Place(Loc.T("Papelera de reciclaje"), Places.RecycleBin, SymbolRegular.Delete24);
         SideFolders.ItemsSource = new[] { _home }.Concat(_folders).Append(_recycleBin).ToList();
         UpdatePinned();
         TabStrip.ItemsSource = _tabs;
+        TransfersList.ItemsSource = FileTransfers.Active;
+        FileTransfers.Viewers++;
+        Closed += (_, _) => FileTransfers.Viewers--;
 
         HiddenToggle.IsChecked = Settings.Current.FilesShowHidden;
+        PreviewToggle.IsChecked = Settings.Current.FilesPreviewPane;
         FileEntry.ShowExtensions = Settings.Current.FilesShowExtensions;
         ExtensionsToggle.IsChecked = FileEntry.ShowExtensions;
         ApplyViewToggles();
@@ -393,6 +409,9 @@ public partial class FilesWindow : FluentWindow
             case Key.D when mods == (ModifierKeys.Control | ModifierKeys.Shift):
                 SetSplit(_tab?.Right is null);
                 break;
+            case Key.P when mods == ModifierKeys.Alt:
+                SetPreview(!Settings.Current.FilesPreviewPane);
+                break;
             default:
                 handled = Pane.HandleKey(e);
                 break;
@@ -429,6 +448,16 @@ public partial class FilesWindow : FluentWindow
     }
 
     private void Split_Click(object sender, RoutedEventArgs e) => SetSplit(SplitToggle.IsChecked == true);
+    private void Preview_Click(object sender, RoutedEventArgs e) => SetPreview(PreviewToggle.IsChecked == true);
+
+    /// <summary>Muestra u oculta la vista previa en todas las carpetas abiertas (se recuerda).</summary>
+    private void SetPreview(bool show)
+    {
+        PreviewToggle.IsChecked = show;
+        Settings.Update(s => s.FilesPreviewPane = show);
+        foreach (var pane in _tabs.SelectMany(t => t.Panes))
+            pane.PreviewChanged();
+    }
     private void NewFolder_Click(object sender, RoutedEventArgs e) => Pane.NewFolder();
     private void Cut_Click(object sender, RoutedEventArgs e) => Pane.CopySelection(cut: true);
     private void Copy_Click(object sender, RoutedEventArgs e) => Pane.CopySelection(cut: false);
@@ -471,9 +500,10 @@ public partial class FilesWindow : FluentWindow
         menu.Items.Clear();
         if (place.Path == Places.RecycleBin)
         {
-            menu.Items.Add(FolderPane.Item(Loc.T("Vaciar la Papelera"), SymbolRegular.DeleteDismiss24, () =>
+            menu.Items.Add(FolderPane.Item(Loc.T("Vaciar la Papelera"), SymbolRegular.DeleteDismiss24, async () =>
             {
-                FileOperations.EmptyRecycleBin(new WindowInteropHelper(this).Handle);
+                if (!await FileOperations.EmptyRecycleBinAsync(new WindowInteropHelper(this).Handle))
+                    return;
                 foreach (var pane in _tabs.SelectMany(t => t.Panes).Where(p => p.InRecycleBin))
                     pane.Reload();
             }));
@@ -672,4 +702,28 @@ public partial class FilesWindow : FluentWindow
     /// <summary>"Conectar unidad de red" de Windows, en su propio proceso.</summary>
     private void ConnectDrive_Click(object sender, RoutedEventArgs e) =>
         FileOperations.ConnectNetworkDrive();
+
+    private const int WmClipboardUpdate = 0x031D;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool AddClipboardFormatListener(IntPtr hwnd);
+
+    // ── Copias y traslados ──────────────────────────────────────────────────
+
+    /// <summary>La X: cancela la que está en curso o quita de la lista la que terminó.</summary>
+    private void TransferClose_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: FileTransfer transfer })
+            return;
+        if (transfer.IsActive)
+            transfer.Cancel();
+        else
+            FileTransfers.Dismiss(transfer);
+    }
+
+    private async void TransferRetry_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: FileTransfer transfer })
+            await FileTransfers.RetryAsAdminAsync(transfer, new WindowInteropHelper(this).Handle);
+    }
 }

@@ -144,14 +144,9 @@ public static class AppActions
     {
         if (IsPackaged(app))
         {
-            var confirm = new Wpf.Ui.Controls.MessageBox
-            {
-                Title = Loc.T("Desinstalar"),
-                Content = Loc.F("Se desinstalará {0} y sus datos.", app.Name),
-                PrimaryButtonText = Loc.T("Desinstalar"),
-                CloseButtonText = Loc.T("Cancelar"),
-            };
-            if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+            if (!await Strata.Shell.Controls.StrataDialog.ConfirmAsync(null, Loc.T("Desinstalar"),
+                    Loc.F("Se desinstalará {0} y sus datos.", app.Name),
+                    Loc.T("Desinstalar")))
                 return;
             await RemovePackageAsync(app);
             StartMenuService.Refresh();
@@ -189,14 +184,9 @@ public static class AppActions
 
     private static async Task UninstallEdgeAsync()
     {
-        var confirm = new Wpf.Ui.Controls.MessageBox
-        {
-            Title = Loc.T("Desinstalar Edge"),
-            Content = Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado."),
-            PrimaryButtonText = Loc.T("Desinstalar"),
-            CloseButtonText = Loc.T("Cancelar"),
-        };
-        if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+        if (!await Strata.Shell.Controls.StrataDialog.ConfirmAsync(null, Loc.T("Desinstalar Edge"),
+                Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado."),
+                Loc.T("Desinstalar")))
             return;
         int code = await Tweaks.Elevation.RunSelfAsync(Tweaks.EdgeRemover.Arg);
         if (code == Tweaks.Elevation.Cancelled)
@@ -207,14 +197,11 @@ public static class AppActions
             Tweaks.TweakEngine.Backup.AddRemovedApps(["Microsoft Edge"]);
             return;
         }
-        await new Wpf.Ui.Controls.MessageBox
-        {
-            Title = Loc.T("Desinstalar Edge"),
-            Content = Tweaks.EdgeRemover.IsDisabled
+        await Strata.Shell.Controls.StrataDialog.ShowAsync(null, Loc.T("Desinstalar Edge"),
+            Tweaks.EdgeRemover.IsDisabled
                 ? Loc.T("Windows no deja desinstalar Edge en tu región, así que se desactivó: ya no sale en Inicio ni corre en segundo plano. Se restaura en el Hub, en Apps preinstaladas.")
                 : Loc.T("Windows no dejó quitar Edge. Puede que una actualización lo esté usando: reinicia e inténtalo de nuevo."),
-            CloseButtonText = Loc.T("Cerrar"),
-        }.ShowDialogAsync();
+            Loc.T("Cerrar"));
     }
 
     // ── Apps web de navegadores Chromium ────────────────────────────────────
@@ -302,12 +289,9 @@ public static class AppActions
         catch (Exception ex)
         {
             Log.Error($"No se pudo desinstalar {app.Name}", ex);
-            await new Wpf.Ui.Controls.MessageBox
-            {
-                Title = Loc.T("Desinstalar"),
-                Content = Loc.F("Windows no permitió desinstalar {0}.", app.Name),
-                CloseButtonText = Loc.T("Cerrar"),
-            }.ShowDialogAsync();
+            await Strata.Shell.Controls.StrataDialog.ShowAsync(null, Loc.T("Desinstalar"),
+                Loc.F("Windows no permitió desinstalar {0}.", app.Name),
+                Loc.T("Cerrar"));
         }
     }
 

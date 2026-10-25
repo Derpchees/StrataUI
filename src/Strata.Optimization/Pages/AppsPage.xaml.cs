@@ -63,14 +63,9 @@ public partial class AppsPage : Page
             GameBarButton.IsEnabled = false;
             return;
         }
-        var confirm = new Wpf.Ui.Controls.MessageBox
-        {
-            Title = Loc.T("Desinstalar Game Bar"),
-            Content = Loc.T("Se quitará la Game Bar de Xbox de tu usuario y se apagará la grabación de juegos en segundo plano. Para volver a tenerla, se instala desde Microsoft Store."),
-            PrimaryButtonText = Loc.T("Desinstalar"),
-            CloseButtonText = Loc.T("Cancelar"),
-        };
-        if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+        if (!await Strata.Shell.Controls.StrataDialog.ConfirmAsync(Window.GetWindow(this), Loc.T("Desinstalar Game Bar"),
+                Loc.T("Se quitará la Game Bar de Xbox de tu usuario y se apagará la grabación de juegos en segundo plano. Para volver a tenerla, se instala desde Microsoft Store."),
+                Loc.T("Desinstalar")))
             return;
         GameBarButton.IsEnabled = false;
         GameBarText.Text = Loc.T("Desinstalando Game Bar…");
@@ -109,14 +104,9 @@ public partial class AppsPage : Page
                 EdgeText.Text = Loc.T("Listo: Edge volvió a como estaba.");
             return;
         }
-        var confirm = new Wpf.Ui.Controls.MessageBox
-        {
-            Title = Loc.T("Desinstalar Edge"),
-            Content = Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado."),
-            PrimaryButtonText = Loc.T("Desinstalar"),
-            CloseButtonText = Loc.T("Cancelar"),
-        };
-        if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+        if (!await Strata.Shell.Controls.StrataDialog.ConfirmAsync(Window.GetWindow(this), Loc.T("Desinstalar Edge"),
+                Loc.T("Se quitará Microsoft Edge de este equipo para todos los usuarios. Si Windows no lo permite en tu región, se desactiva: sin accesos directos ni procesos en segundo plano. Los enlaces se abrirán con tu navegador predeterminado."),
+                Loc.T("Desinstalar")))
             return;
         EdgeButton.IsEnabled = false;
         EdgeText.Text = Loc.T("Desinstalando Edge…");
@@ -194,18 +184,13 @@ public partial class AppsPage : Page
         var selected = _rows.Where(r => r.IsSelected).Select(r => r.Package).ToList();
         bool allUsers = AllUsersBox.IsChecked == true;
 
-        var confirm = new Wpf.Ui.Controls.MessageBox
-        {
-            Title = Loc.T("Quitar apps"),
-            Content = (allUsers ? Loc.F("Se quitarán {0} apps para todos los usuarios:", selected.Count)
+        if (!await Strata.Shell.Controls.StrataDialog.ConfirmAsync(Window.GetWindow(this), Loc.T("Quitar apps"),
+                (allUsers ? Loc.F("Se quitarán {0} apps para todos los usuarios:", selected.Count)
                                 : Loc.F("Se quitarán {0} apps:", selected.Count)) + "\n\n" +
                       string.Join("\n", selected.Select(p => "• " + p.Label).Take(15)) +
                       (selected.Count > 15 ? "\n" + Loc.F("… y {0} más", selected.Count - 15) : "") +
                       "\n\n" + Loc.T("Se pueden reinstalar desde Microsoft Store."),
-            PrimaryButtonText = Loc.T("Quitar"),
-            CloseButtonText = Loc.T("Cancelar"),
-        };
-        if (await confirm.ShowDialogAsync() != Wpf.Ui.Controls.MessageBoxResult.Primary)
+                Loc.T("Quitar")))
             return;
 
         RemoveButton.IsEnabled = false;
