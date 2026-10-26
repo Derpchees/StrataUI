@@ -1308,5 +1308,8 @@
   "Extraer todo en…": "Extract all to…",
   "Explorar el contenido": "Browse contents",
   "Extraer todo el comprimido en una carpeta": "Extract the whole archive to a folder",
-  "Extraer todo": "Extract all"
+  "Extraer todo": "Extract all",
+  "{0}: método de compresión no admitido": "{0}: unsupported compression method",
+  "{0}: error de CRC (el comprimido está dañado)": "{0}: CRC error (the archive is damaged)",
+  "{0}: el comprimido está dañado ({1})": "{0}: the archive is damaged ({1})"
 }

@@ -6,6 +6,33 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.14.0] - 2026-10-25
+
+### Añadido
+- **Archivos: comprimidos sin otro programa.** Un .zip, .7z, .rar, .tar.gz y unos 50 formatos más
+  (con 7-Zip incluido) se abren como una carpeta: se navegan, se abren sus archivos, se copian y se
+  extraen con su progreso ("Extraer aquí", "Extraer en…", "Extraer todo"). Con contraseña, se pide
+  con el diálogo de Strata UI. "Extraer aquí" no mete una carpeta dentro de otra si todo viene en una.
+- **Comprimir**: "Comprimir en «nombre.7z»" (7z con la compresión máxima, lo que mejor comprime) y
+  "Comprimir…" para elegir nombre, formato (7z, zip o tar), nivel y contraseña (AES-256; en 7z
+  también los nombres). También desde el escritorio.
+- **Archivos: formatear unidades** (clic derecho en la unidad): NTFS, exFAT o FAT32, nombre y
+  formato rápido. Nunca la unidad de Windows, la de Strata UI ni la de los datos del usuario.
+- **La barra usa el ícono elegido en Vesktop** (su personalización de la bandeja) y el de "no leídos"
+  cuando hay mensajes nuevos; si se cambia en Vesktop, la barra se actualiza sola.
+
+### Cambiado
+- **Permiso de administrador con el estilo de Strata UI**: copiar, mover, borrar, cambiar el nombre
+  o crear una carpeta en un lugar protegido pregunta con el diálogo de Strata UI (escudo en
+  "Continuar") en vez de las ventanas de Windows, y lo hace en un proceso elevado con el progreso en
+  la misma tarjeta. Al reintentar, solo se repite lo que falló y al mismo destino.
+- Abrir un comprimido ya no lanza NanaZip, 7-Zip ni WinRAR: ya no hace falta tenerlos.
+
+### Corregido
+- **Íconos ocultos de la bandeja**: con clic derecho, el panel se cerraba y el menú de la app no se
+  podía usar. Ahora sigue abierto mientras el menú está visible y se cierra al terminar.
+- Un error del reloj de la barra al cerrar Strata UI (quedaba en el registro).
+
 ## [3.13.0] - 2026-10-25
 
 ### Añadido

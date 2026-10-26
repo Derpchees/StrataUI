@@ -1308,5 +1308,8 @@
   "Extraer todo en…": "Alles entpacken nach…",
   "Explorar el contenido": "Inhalt durchsuchen",
   "Extraer todo el comprimido en una carpeta": "Das ganze Archiv in einen Ordner entpacken",
-  "Extraer todo": "Alles entpacken"
+  "Extraer todo": "Alles entpacken",
+  "{0}: método de compresión no admitido": "{0}: Komprimierungsmethode wird nicht unterstützt",
+  "{0}: error de CRC (el comprimido está dañado)": "{0}: CRC-Fehler (das Archiv ist beschädigt)",
+  "{0}: el comprimido está dañado ({1})": "{0}: das Archiv ist beschädigt ({1})"
 }

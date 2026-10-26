@@ -491,6 +491,14 @@ public static class Archives
             if (line.Length > 0)
                 onLine(line.Split('\t'));
         }
+        // Terminó de contestar: se cierra su entrada (deja de esperar un "cancelar").
+        try
+        {
+            process.StandardInput.Close();
+        }
+        catch (IOException)
+        {
+        }
         await process.WaitForExitAsync();
         return process.ExitCode;
     }

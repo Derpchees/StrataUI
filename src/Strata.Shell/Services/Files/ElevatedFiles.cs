@@ -168,7 +168,9 @@ public static class ElevatedFiles
             return 2;
         try
         {
-            using var pipe = new NamedPipeClientStream(".", args[1], PipeDirection.InOut);
+            // Asíncrona: la espera del "cancelar" se puede cortar al terminar (cerrar una tubería con una
+            // lectura pendiente en otro hilo se quedaba esperando a esa lectura).
+            using var pipe = new NamedPipeClientStream(".", args[1], PipeDirection.InOut, PipeOptions.Asynchronous);
             pipe.Connect(15000);
             var utf8 = new UTF8Encoding(false);
             using var reader = new StreamReader(pipe, utf8, false, 4096, leaveOpen: true);
@@ -235,20 +237,20 @@ public static class ElevatedFiles
             Elevated = true,
         };
         transfer.Clock.Start();
-        // "C" desde Strata UI: cancelar.
-        var listener = new Thread(() =>
+        // "C" desde Strata UI: cancelar. Se deja de escuchar al terminar.
+        using var stopListening = new CancellationTokenSource();
+        var listener = Task.Run(async () =>
         {
             try
             {
-                while (reader.ReadLine() is { } line)
+                while (await reader.ReadLineAsync(stopListening.Token) is { } line)
                     if (line == "C")
                         transfer.Cancel();
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or OperationCanceledException or ObjectDisposedException)
             {
             }
-        }) { IsBackground = true };
-        listener.Start();
+        });
         var worker = new Thread(() => FileTransfers.Execute(transfer)) { IsBackground = true };
         worker.Start();
         while (!worker.Join(200))
@@ -265,6 +267,8 @@ public static class ElevatedFiles
                 send(["F", source]);
         }
         send(["S", transfer.State.ToString()]);
+        stopListening.Cancel();
+        listener.Wait(2000);
         return transfer.State == TransferState.Done ? 0 : 1;
     }
 

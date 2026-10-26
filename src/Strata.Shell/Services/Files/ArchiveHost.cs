@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services.Files;
 
@@ -38,7 +39,8 @@ public static class ArchiveHost
     private static int Dispatch(string[] args)
     {
         var utf8 = new UTF8Encoding(false);
-        using var input = new StreamReader(Console.OpenStandardInput(), utf8, true);
+        // Sin using: un hilo puede seguir leyendo la entrada (el "cancelar") y cerrarla esperaría a esa lectura.
+        var input = new StreamReader(Console.OpenStandardInput(), utf8, true);
         using var output = new StreamWriter(Console.OpenStandardOutput(), utf8) { AutoFlush = true };
         _out = TextWriter.Synchronized(output);
         try
@@ -653,9 +655,9 @@ public static class ArchiveHost
             else
                 Errors.Add(result switch
                 {
-                    SevenZip.ResultUnsupported => $"{current.Item.Path}: método de compresión no admitido",
-                    SevenZip.ResultCrcError => $"{current.Item.Path}: error de CRC (el comprimido está dañado)",
-                    _ => $"{current.Item.Path}: el comprimido está dañado ({result})",
+                    SevenZip.ResultUnsupported => Loc.F("{0}: método de compresión no admitido", current.Item.Path),
+                    SevenZip.ResultCrcError => Loc.F("{0}: error de CRC (el comprimido está dañado)", current.Item.Path),
+                    _ => Loc.F("{0}: el comprimido está dañado ({1})", current.Item.Path, result),
                 });
             return SevenZip.SOk;
         }

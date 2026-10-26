@@ -559,7 +559,8 @@ public partial class Taskbar : AppBarWindow
 
     /// <summary>El reloj compartido marca segundos si alguna barra los muestra.</summary>
     private static bool AnyShowsSeconds() =>
-        App.Current.Taskbars.Any(bar => Settings.Current.For(bar.Device).ShowSeconds);
+        // Al cerrarse Strata UI el reloj puede dar un último tic sin la app.
+        System.Windows.Application.Current is App app && app.Taskbars?.Any(bar => Settings.Current.For(bar.Device).ShowSeconds) == true;
 
     /// <summary>Al mostrar u ocultar los segundos cambia el ritmo del reloj.</summary>
     private static void RescheduleClock()

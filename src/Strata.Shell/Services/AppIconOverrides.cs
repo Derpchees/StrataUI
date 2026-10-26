@@ -79,6 +79,7 @@ public static partial class AppIconOverrides
             {
                 lock (Cache)
                     Cache.Clear();
+                Log.Info($"Barra: cambió un ícono propio de Vesktop ({Changed?.GetInvocationList().Length ?? 0} botones)");
                 Changed?.Invoke();
             });
             watcher.Created += changed;
@@ -87,6 +88,7 @@ public static partial class AppIconOverrides
             watcher.Renamed += (s, e) => changed(s, e);
             watcher.EnableRaisingEvents = true;
             _watcher = watcher;
+            Log.Info($"Barra: se vigila {VesktopAssets}");
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
         {

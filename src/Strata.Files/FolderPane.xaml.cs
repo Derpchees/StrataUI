@@ -1144,7 +1144,7 @@ public partial class FolderPane : UserControl
         if (name.Length > 0 && entry.DisplayName != entry.Name)
             name += entry.Extension;
         // Devuelve el foco a la lista para seguir con el teclado.
-        Dispatcher.BeginInvoke(() => (ActiveList.ItemContainerGenerator.ContainerFromItem(entry) as ListBoxItem ?? (UIElement)ActiveList).Focus(),
+        _ = Dispatcher.BeginInvoke(() => (ActiveList.ItemContainerGenerator.ContainerFromItem(entry) as ListBoxItem ?? (UIElement)ActiveList).Focus(),
                                DispatcherPriority.Input);
         if (!apply || name.Length == 0 || name == entry.Name)
             return;

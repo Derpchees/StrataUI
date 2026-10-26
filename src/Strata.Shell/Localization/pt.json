@@ -1308,5 +1308,8 @@
   "Extraer todo en…": "Extrair tudo para…",
   "Explorar el contenido": "Explorar o conteúdo",
   "Extraer todo el comprimido en una carpeta": "Extrair todo o arquivo compactado para uma pasta",
-  "Extraer todo": "Extrair tudo"
+  "Extraer todo": "Extrair tudo",
+  "{0}: método de compresión no admitido": "{0}: método de compactação não suportado",
+  "{0}: error de CRC (el comprimido está dañado)": "{0}: erro de CRC (o arquivo compactado está danificado)",
+  "{0}: el comprimido está dañado ({1})": "{0}: o arquivo compactado está danificado ({1})"
 }

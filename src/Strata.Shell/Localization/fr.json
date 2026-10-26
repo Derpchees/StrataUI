@@ -1308,5 +1308,8 @@
   "Extraer todo en…": "Tout extraire dans…",
   "Explorar el contenido": "Parcourir le contenu",
   "Extraer todo el comprimido en una carpeta": "Extraire toute l’archive dans un dossier",
-  "Extraer todo": "Tout extraire"
+  "Extraer todo": "Tout extraire",
+  "{0}: método de compresión no admitido": "{0} : méthode de compression non prise en charge",
+  "{0}: error de CRC (el comprimido está dañado)": "{0} : erreur CRC (l’archive est endommagée)",
+  "{0}: el comprimido está dañado ({1})": "{0} : l’archive est endommagée ({1})"
 }
