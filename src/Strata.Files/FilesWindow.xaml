@@ -167,6 +167,14 @@
                                 <TextBlock Text="{l:T 'Nueva carpeta'}" FontSize="13" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
+                        <!-- Dentro de un comprimido, en lugar de "Nueva carpeta" -->
+                        <Button x:Name="ExtractAllButton" Style="{StaticResource CommandButton}" Click="ExtractAll_Click" Visibility="Collapsed"
+                                ToolTip="{l:T 'Extraer todo el comprimido en una carpeta'}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="FolderZip24" FontSize="16" Margin="0,0,8,0" Foreground="{DynamicResource StrataAccentBrush}" />
+                                <TextBlock Text="{l:T 'Extraer todo'}" FontSize="13" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
                         <Border Width="1" Height="20" Margin="8,0" Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
                         <Button x:Name="CutButton" Style="{StaticResource ToolButton}" Height="34" Click="Cut_Click" ToolTip="{l:T 'Cortar (Ctrl+X)'}">
                             <ui:SymbolIcon Symbol="Cut24" FontSize="16" />

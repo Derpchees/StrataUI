@@ -19,7 +19,7 @@ public sealed class StrataDialog : FluentWindow
     private readonly Grid _root;
     private int _choice = -1;
 
-    private StrataDialog(Window? owner, string title, string message, IReadOnlyList<string> buttons)
+    private StrataDialog(Window? owner, string title, string message, IReadOnlyList<string> buttons, UIElement? content, bool elevate)
     {
         Title = title;
         Owner = owner;
@@ -46,6 +46,12 @@ public sealed class StrataDialog : FluentWindow
         foreach (System.Windows.Controls.TextBlock block in text.Children)
             block.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty,
                                        ReferenceEquals(block, text.Children[0]) ? "TextFillColorPrimaryBrush" : "TextFillColorSecondaryBrush");
+        // Campos propios (contraseña, opciones de formato…) debajo del texto.
+        if (content is FrameworkElement extra)
+        {
+            extra.Margin = new Thickness(0, 16, 0, 0);
+            text.Children.Add(extra);
+        }
 
         // Botones a lo ancho, como los de Windows 11: el primero con el acento.
         var row = new UniformGrid { Rows = 1, Margin = new Thickness(16, 14, 16, 16) };
@@ -62,6 +68,9 @@ public sealed class StrataDialog : FluentWindow
                 IsDefault = i == 0,
                 IsCancel = i == buttons.Count - 1 && buttons.Count > 1,
             };
+            // Lo que pide permiso de administrador lleva el escudo, como en Windows.
+            if (i == 0 && elevate)
+                button.Icon = new SymbolIcon(SymbolRegular.Shield24);
             // El último es "Cancelar": cuenta como no elegir nada.
             button.Click += (_, _) => Finish(index == buttons.Count - 1 && buttons.Count > 1 ? -1 : index);
             row.Children.Add(button);
@@ -146,11 +155,43 @@ public sealed class StrataDialog : FluentWindow
     /// </summary>
     public static Task<int> ShowAsync(Window? owner, string title, string message, params string[] buttons)
     {
-        var dialog = new StrataDialog(owner, title, message, buttons);
+        var dialog = new StrataDialog(owner, title, message, buttons, null, elevate: false);
         dialog.Show();
         dialog.Activate();
         return dialog._result.Task;
     }
+
+    /// <summary>
+    /// Con campos propios debajo del mensaje (<paramref name="content"/>, que se lee al volver) y, si
+    /// <paramref name="elevate"/>, el escudo de administrador en el primer botón.
+    /// </summary>
+    public static Task<int> ShowAsync(Window? owner, string title, string message, UIElement? content, bool elevate, params string[] buttons)
+    {
+        var dialog = new StrataDialog(owner, title, message, buttons, content, elevate);
+        if (content != null)
+            dialog.Loaded += (_, _) => dialog.Dispatcher.BeginInvoke(() => FocusFirst(content), System.Windows.Threading.DispatcherPriority.Input);
+        dialog.Show();
+        dialog.Activate();
+        return dialog._result.Task;
+    }
+
+    /// <summary>El primer campo para escribir recibe el foco (la contraseña, el nombre).</summary>
+    private static bool FocusFirst(DependencyObject root)
+    {
+        if (root is System.Windows.Controls.TextBox or System.Windows.Controls.PasswordBox)
+            return ((UIElement)root).Focus();
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            if (FocusFirst(System.Windows.Media.VisualTreeHelper.GetChild(root, i)))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>Pedir permiso de administrador (con el escudo en "Continuar"): true si se eligió seguir.</summary>
+    public static async Task<bool> ConfirmAdminAsync(Window? owner, string title, string message) =>
+        await ShowAsync(owner, title, message, null, true,
+                        Services.Localization.Loc.T("Continuar"), Services.Localization.Loc.T("Cancelar")) == 0;
 
     /// <summary>Confirmar una acción: true si se eligió <paramref name="action"/>.</summary>
     public static async Task<bool> ConfirmAsync(Window? owner, string title, string message, string action) =>

@@ -28,9 +28,9 @@ public sealed partial class LocalizationTests
     [GeneratedRegex(@"\{(\d+)(:[^}]*)?\}")]
     private static partial Regex Placeholder();
 
-    // El módulo de optimización usa las traducciones de la app.
+    // Los módulos opcionales (Optimización, Archivos) usan las traducciones de la app.
     private static IEnumerable<string> SourceFiles(string pattern) =>
-        new[] { Source, Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Optimization") }
+        new[] { Source, Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Optimization"), Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Files") }
             .SelectMany(dir => Directory.EnumerateFiles(dir, pattern, SearchOption.AllDirectories))
                  .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
                           && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"));

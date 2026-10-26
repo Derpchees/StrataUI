@@ -225,7 +225,10 @@
                         <ItemsControl x:Name="HomeDrives" ItemsPanel="{StaticResource WrapItems}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Style="{StaticResource HubTile}" Width="300" Click="Place_Click">
+                                    <Button Style="{StaticResource HubTile}" Width="300" Click="Place_Click" ContextMenuOpening="Drive_ContextMenuOpening">
+                                        <Button.ContextMenu>
+                                            <ContextMenu />
+                                        </Button.ContextMenu>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto" />

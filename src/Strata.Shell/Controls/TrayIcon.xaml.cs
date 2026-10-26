@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using ManagedShell.Common.Helpers;
 using ManagedShell.Interop;
 using ManagedShell.WindowsTray;
@@ -48,6 +49,7 @@ public partial class TrayIcon : UserControl
             _pressedAt = e.GetPosition(this);
             return;
         }
+        KeepHiddenTrayOpen();
         Icon?.IconMouseDown(e.ChangedButton, CursorParam, Forms.SystemInformation.DoubleClickTime);
     }
 
@@ -62,9 +64,23 @@ public partial class TrayIcon : UserControl
             _pressedAt = null;
             Icon?.IconMouseDown(MouseButton.Left, CursorParam, Forms.SystemInformation.DoubleClickTime);
         }
+        KeepHiddenTrayOpen();
         Icon?.IconMouseUp(e.ChangedButton, CursorParam, Forms.SystemInformation.DoubleClickTime);
         if (Icon is { } icon)
             Services.TrayMenuFix.Watch(icon.HWnd);
+    }
+
+    /// <summary>
+    /// En los íconos ocultos: el panel sigue abierto mientras la app muestra su menú (si se cerraba al
+    /// tomar ella el foco, el menú se cerraba también) y se cierra cuando el menú se va.
+    /// </summary>
+    private void KeepHiddenTrayOpen()
+    {
+        DependencyObject node = this;
+        while (VisualTreeHelper.GetParent(node) is { } parent)
+            node = parent;
+        if ((node as FrameworkElement)?.Parent is System.Windows.Controls.Primitives.Popup { IsOpen: true } popup && Icon is { } icon)
+            Services.TrayMenuFix.KeepOpenWhileMenu(popup, icon.HWnd);
     }
 
     private void OnMouseEnter(object sender, MouseEventArgs e)

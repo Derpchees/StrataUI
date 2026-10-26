@@ -47,6 +47,72 @@ public static class TrayMenuFix
         _timer.Start();
     }
 
+    private static DispatcherTimer? _keepTimer;
+
+    /// <summary>
+    /// El panel de íconos ocultos (un Popup que se cierra al perder el mouse) sigue abierto mientras la
+    /// app muestra su menú: si se cerraba cuando ella tomaba el foco, su menú se cerraba también o
+    /// quedaba sin poder usarse. Cuando el menú se va, se cierra el panel (como en Windows). Si la app
+    /// no abre ningún menú (abre su ventana, o nada), el panel vuelve a cerrarse con un clic afuera.
+    /// </summary>
+    public static void KeepOpenWhileMenu(System.Windows.Controls.Primitives.Popup popup, IntPtr iconWindow)
+    {
+        GetWindowThreadProcessId(iconWindow, out uint pid);
+        if (pid == 0)
+            return;
+        var before = VisibleWindows(pid);
+        popup.StaysOpen = true;
+        IntPtr menu = IntPtr.Zero;
+        int ticks = 0;
+
+        _keepTimer?.Stop();
+        var timer = _keepTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(60) };
+        void Finish(bool close)
+        {
+            timer.Stop();
+            popup.StaysOpen = false; // vuelve a tomar el mouse: un clic afuera lo cierra
+            if (close)
+                popup.IsOpen = false;
+        }
+        timer.Tick += (_, _) =>
+        {
+            ticks++;
+            if (!popup.IsOpen)
+            {
+                timer.Stop();
+                popup.StaysOpen = false;
+                return;
+            }
+            if (menu == IntPtr.Zero)
+            {
+                menu = VisibleWindows(pid).Except(before).FirstOrDefault(IsMenuLike);
+                if (menu == IntPtr.Zero && ticks > 25) // un segundo y medio sin menú
+                    Finish(close: false);
+                return;
+            }
+            if (!IsWindow(menu) || !IsWindowVisible(menu))
+                Finish(close: true);
+        };
+        timer.Start();
+    }
+
+    /// <summary>Un menú (#32768) o una ventana emergente sin barra de título (los menús propios de algunas apps).</summary>
+    private static bool IsMenuLike(IntPtr window)
+    {
+        var name = new System.Text.StringBuilder(32);
+        if (GetClassName(window, name, name.Capacity) > 0 && name.ToString() == "#32768")
+            return true;
+        long style = GetWindowLongPtr(window, GwlStyle).ToInt64();
+        return (style & WsPopup) != 0 && (style & WsCaption) != WsCaption;
+    }
+
+    private const int GwlStyle = -16;
+    private const long WsPopup = 0x80000000L, WsCaption = 0x00C00000L;
+
+    [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, System.Text.StringBuilder name, int max);
+    [DllImport("user32.dll")] private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
+
     /// <summary>Junto al cursor, dentro del área de trabajo del monitor (hacia arriba o a la izquierda si no cabe).</summary>
     private static void MoveNextTo(IntPtr window, NativeRect rect, NativePoint cursor, IntPtr monitor)
     {

@@ -55,6 +55,13 @@
     <PackageReference Include="Vortice.Direct2D1" Version="3.8.3" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
+    <!-- Comprimidos: 7z.dll de 7-Zip (LGPL). Solo la carga el proceso aparte (Services/Files/ArchiveHost). -->
+    <PackageReference Include="7z.Libs" Version="26.5.0" ExcludeAssets="all" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(Pkg7z_Libs)\bin\x64\7z.dll" Link="7z.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(Pkg7z_Libs)\bin\License.txt" Link="7z-License.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
   </ItemGroup>
 
 </Project>

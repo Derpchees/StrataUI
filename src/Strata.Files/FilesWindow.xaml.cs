@@ -283,9 +283,12 @@ public partial class FilesWindow : FluentWindow
         bool inFolder = pane.InFolder, canModify = pane.CanModify;
         int selected = pane.SelectedCount;
         NewFolderButton.IsEnabled = canModify;
+        NewFolderButton.Visibility = pane.InArchive ? Visibility.Collapsed : Visibility.Visible;
+        ExtractAllButton.Visibility = pane.InArchive ? Visibility.Visible : Visibility.Collapsed;
         PasteButton.IsEnabled = canModify && FileOperations.ClipboardHasFiles();
-        CutButton.IsEnabled = CopyButton.IsEnabled = canModify && selected > 0;
-        DeleteButton.IsEnabled = selected > 0;
+        CutButton.IsEnabled = canModify && selected > 0;
+        CopyButton.IsEnabled = (canModify || pane.InArchive) && selected > 0;
+        DeleteButton.IsEnabled = selected > 0 && !pane.InArchive;
         RenameButton.IsEnabled = canModify && selected == 1;
         // En Este equipo no hay orden ni vista que cambiar.
         ViewControls.Visibility = inFolder ? Visibility.Visible : Visibility.Collapsed;
@@ -464,6 +467,7 @@ public partial class FilesWindow : FluentWindow
     private void Paste_Click(object sender, RoutedEventArgs e) => _ = Pane.PasteAsync();
     private void Rename_Click(object sender, RoutedEventArgs e) => Pane.RenameSelected();
     private void Delete_Click(object sender, RoutedEventArgs e) => _ = Pane.RecycleSelectionAsync();
+    private void ExtractAll_Click(object sender, RoutedEventArgs e) => Pane.ExtractAll();
     private void Sort_Click(object sender, RoutedEventArgs e) => Pane.ShowSortMenu(SortButton);
     private void DetailsView_Click(object sender, RoutedEventArgs e) => SetGridView(false);
     private void GridView_Click(object sender, RoutedEventArgs e) => SetGridView(true);
@@ -510,6 +514,9 @@ public partial class FilesWindow : FluentWindow
             return;
         }
         menu.Items.Add(FolderPane.Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => AddTab(place.Path)));
+        // Formatear: nunca la unidad de Windows (ni la de Strata UI o la de los datos del usuario).
+        if (place.IsDrive && place.Path is { } drive && DriveFormat.CanFormat(drive))
+            menu.Items.Add(FolderPane.Item(Loc.T("Formatear…"), SymbolRegular.HardDrive20, () => _ = FormatAsync(drive)));
         if (place.CanUnpin)
         {
             // Solo el nombre que se ve aquí (por ejemplo, dos carpetas que se llaman igual): la carpeta no cambia.
@@ -534,6 +541,17 @@ public partial class FilesWindow : FluentWindow
                 _ = LoadPlacesAsync();
             }));
         }
+    }
+
+    /// <summary>Formatea una unidad (pregunta antes) y al terminar vuelve a leer las unidades.</summary>
+    internal async Task FormatAsync(string drive)
+    {
+        if (await DriveFormat.AskAndFormatAsync(drive, new WindowInteropHelper(this).Handle) is not { } transfer)
+            return;
+        await transfer.Finished.Task;
+        _ = LoadPlacesAsync();
+        foreach (var pane in _tabs.SelectMany(t => t.Panes).Where(p => FolderPane.SamePath(System.IO.Path.GetPathRoot(p.CurrentPath ?? ""), drive)))
+            pane.Reload();
     }
 
     // ── Nombre propio de una carpeta anclada ────────────────────────────────

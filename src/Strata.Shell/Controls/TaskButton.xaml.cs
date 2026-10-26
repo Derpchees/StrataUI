@@ -47,6 +47,7 @@ public partial class TaskButton : UserControl
             if (DataContext is INotifyPropertyChanged window)
                 window.PropertyChanged += OnWindowChanged;
             WebSites.IconsChanged += UpdateIcon;
+            AppIconOverrides.Changed += UpdateIcon;
             UpdateIcon();
             UpdateGroup();
         };
@@ -60,6 +61,7 @@ public partial class TaskButton : UserControl
                 _watchedLeader.PropertyChanged -= OnWindowChanged;
             _watchedLeader = null;
             WebSites.IconsChanged -= UpdateIcon;
+            AppIconOverrides.Changed -= UpdateIcon;
         };
     }
 
@@ -171,7 +173,7 @@ public partial class TaskButton : UserControl
         if (Slot is { } slot)
         {
             // Anclado: el ícono de la app (el elegido en Inicio, si se cambió), abierta o no.
-            AppIcon.Source = slot.Icon ?? Window?.Icon;
+            AppIcon.Source = AppIconOverrides.For(Window) ?? (Window is null ? AppIconOverrides.ForPin(slot.Id) : null) ?? slot.Icon ?? Window?.Icon;
             BrowserBadge.Visibility = Visibility.Collapsed;
             return;
         }
@@ -179,7 +181,7 @@ public partial class TaskButton : UserControl
             return;
         var site = TaskGroups.Site(window);
         var siteIcon = site is null ? null : WebSites.Icon(site.Domain);
-        AppIcon.Source = siteIcon ?? window.Icon;
+        AppIcon.Source = siteIcon ?? AppIconOverrides.For(window) ?? window.Icon;
         BrowserBadge.Source = siteIcon != null ? window.Icon : null;
         BrowserBadge.Visibility = siteIcon != null ? Visibility.Visible : Visibility.Collapsed;
     }

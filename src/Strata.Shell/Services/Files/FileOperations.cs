@@ -21,7 +21,7 @@ public static class FileOperations
     {
         if (sources.Count == 0 || await ConflictAsync(sources, folder, Loc.T("Copiar"), owner) is not { } conflict)
             return false;
-        return await FileTransfers.Start(TransferKind.Copy, sources, folder, conflict);
+        return await TransferAsync(TransferKind.Copy, sources, folder, conflict, owner);
     }
 
     public static async Task<bool> MoveAsync(IReadOnlyList<string> sources, string folder, IntPtr owner)
@@ -30,7 +30,51 @@ public static class FileOperations
         var moving = sources.Where(s => !SameFolder(s, folder)).ToList();
         if (moving.Count == 0 || await ConflictAsync(moving, folder, Loc.T("Mover"), owner) is not { } conflict)
             return false;
-        return await FileTransfers.Start(TransferKind.Move, moving, folder, conflict);
+        return await TransferAsync(TransferKind.Move, moving, folder, conflict, owner);
+    }
+
+    /// <summary>
+    /// A una carpeta protegida (Archivos de programa, la raíz de C:…) se pregunta antes y se hace con
+    /// permiso de administrador desde el principio; si algo falla por permisos en una carpeta normal,
+    /// se pregunta al terminar y se reintenta solo eso.
+    /// </summary>
+    private static async Task<bool> TransferAsync(TransferKind kind, IReadOnlyList<string> sources, string folder, TransferConflict conflict, IntPtr owner)
+    {
+        if (!CanWrite(folder))
+        {
+            if (!await ElevatedFiles.AskAsync(owner, kind == TransferKind.Copy
+                    ? Loc.F("Para copiar a «{0}» hace falta permiso de administrador.", FileTransfers.FolderNameOf(folder))
+                    : Loc.F("Para mover a «{0}» hace falta permiso de administrador.", FileTransfers.FolderNameOf(folder))))
+                return false;
+            return await ElevatedFiles.StartTransfer(new FileTransfer(kind, sources, folder, conflict) { Elevated = true }).Finished.Task;
+        }
+        var transfer = FileTransfers.Begin(new FileTransfer(kind, sources, folder, conflict));
+        if (await transfer.Finished.Task)
+            return true;
+        return transfer.CanRetryAsAdmin && await FileTransfers.RetryAsAdminAsync(transfer, owner);
+    }
+
+    /// <summary>Se puede escribir en la carpeta sin permiso de administrador (se prueba creando un archivo que se borra solo).</summary>
+    internal static bool CanWrite(string folder)
+    {
+        if (!Directory.Exists(folder))
+            return true; // que lo diga la copia
+        try
+        {
+            using (new FileStream(Path.Combine(folder, $".strata-{Guid.NewGuid():N}.tmp"), FileMode.CreateNew, FileAccess.Write,
+                                  FileShare.None, 1, FileOptions.DeleteOnClose))
+            {
+            }
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+        catch (IOException)
+        {
+            return true; // llena, de solo lectura, desconectada: no lo arregla el administrador
+        }
     }
 
     /// <summary>
@@ -45,10 +89,36 @@ public static class FileOperations
                     Loc.T("Esta unidad no tiene Papelera: lo que elimines se borrará para siempre."),
                     Loc.T("Eliminar"), owner))
                 return false;
-            return await RunAsync(FoDelete, paths, null, FofNoConfirmation | FofSilent, owner);
+            return await DeleteAsync(paths, recycle: false, owner);
         }
+        return await DeleteAsync(paths, recycle: true, owner);
+    }
+
+    /// <summary>
+    /// Borra con el motor de Windows sin sus ventanas de error; lo que no se pudo por permisos se
+    /// pregunta (con el tema de Strata UI) y se borra con permiso de administrador.
+    /// </summary>
+    private static async Task<bool> DeleteAsync(IReadOnlyList<string> paths, bool recycle, IntPtr owner)
+    {
         // Si algo no cabe en la Papelera, Windows avisa (es lo único que sigue preguntando él).
-        return await RunAsync(FoDelete, paths, null, FofAllowUndo | FofNoConfirmation | FofWantNukeWarning | FofSilent, owner);
+        ushort flags = (ushort)(FofNoConfirmation | FofSilent | FofNoErrorUi | (recycle ? FofAllowUndo | FofWantNukeWarning : 0));
+        var (result, aborted) = await RunAsync(FoDelete, paths, null, flags, owner);
+        if (result == 0 && !aborted)
+            return true;
+        var left = paths.Where(p => File.Exists(p) || Directory.Exists(p)).ToList();
+        if (aborted || left.Count == 0 || result is not (ErrorAccessDenied or DeAccessDeniedSource or ErrorPrivilegeNotHeld))
+            return false;
+        string message = left.Count == 1
+            ? Loc.F("Para eliminar «{0}» hace falta permiso de administrador.", Path.GetFileName(left[0].TrimEnd('\\')))
+            : Loc.F("Para eliminar {0} elementos hace falta permiso de administrador.", left.Count);
+        if (!await ElevatedFiles.AskAsync(owner, message))
+            return false;
+        if (await ElevatedFiles.RunAsync(new ElevatedFiles.Job { Op = recycle ? "recycle" : "delete", Paths = left }) is { Length: > 0 } error)
+        {
+            Log.Info($"Archivos: no se pudo eliminar como administrador ({error})");
+            return false;
+        }
+        return true;
     }
 
     /// <summary>Borra para siempre (sin Papelera), después de preguntar.</summary>
@@ -62,15 +132,8 @@ public static class FileOperations
             : Loc.F("{0} elementos se borrarán para siempre. No se puede deshacer.", paths.Count);
         if (!await ConfirmAsync(Loc.T("Eliminar definitivamente"), message, Loc.T("Eliminar"), owner))
             return false;
-        return await RunAsync(FoDelete, paths, null, FofNoConfirmation | FofSilent, owner);
+        return await DeleteAsync(paths, recycle: false, owner);
     }
-
-    /// <summary>
-    /// Con el motor de Windows, reemplazando sin preguntar: para reintentar lo que falló por permisos
-    /// (Windows pide permiso de administrador si hace falta).
-    /// </summary>
-    internal static Task<bool> RunWindowsAsync(TransferKind kind, IReadOnlyList<string> sources, string folder, IntPtr owner) =>
-        RunAsync(kind == TransferKind.Copy ? FoCopy : FoMove, sources, folder, FofAllowUndo | FofNoConfirmMkDir | FofNoConfirmation, owner);
 
     private static bool SameFolder(string path, string folder) =>
         string.Equals(Path.GetDirectoryName(path.TrimEnd('\\'))?.TrimEnd('\\'), folder.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
@@ -106,7 +169,7 @@ public static class FileOperations
         Controls.StrataDialog.ConfirmAsync(OwnerWindow(owner), title, message, action);
 
     /// <summary>La ventana de la app con ese HWND (el explorador, el escritorio): el diálogo sale sobre ella, en su monitor.</summary>
-    private static Window? OwnerWindow(IntPtr hwnd) =>
+    internal static Window? OwnerWindow(IntPtr hwnd) =>
         hwnd == IntPtr.Zero ? null
             : Application.Current?.Windows.OfType<Window>().FirstOrDefault(w => w.IsVisible && new System.Windows.Interop.WindowInteropHelper(w).Handle == hwnd);
 
@@ -125,9 +188,26 @@ public static class FileOperations
         }
     }
 
-    /// <summary>Cambia el nombre; devuelve el error para mostrarlo o null si salió bien.</summary>
-    public static string? Rename(string path, string newName, bool folder)
+    /// <summary>
+    /// Cambia el nombre; si hace falta permiso de administrador, lo pregunta y lo hace elevado.
+    /// Devuelve el error para mostrarlo, "" si se canceló o null si salió bien.
+    /// </summary>
+    public static async Task<string?> RenameAsync(string path, string newName, bool folder, IntPtr owner)
     {
+        string? error = Rename(path, newName, folder, out bool denied);
+        if (error is null || !denied)
+            return error;
+        if (!await ElevatedFiles.AskAsync(owner, Loc.F("Para cambiar el nombre de «{0}» hace falta permiso de administrador.", Path.GetFileName(path.TrimEnd('\\')))))
+            return "";
+        return await ElevatedFiles.RunAsync(new ElevatedFiles.Job { Op = "rename", Paths = [path], NewName = newName });
+    }
+
+    /// <summary>Cambia el nombre; devuelve el error para mostrarlo o null si salió bien.</summary>
+    public static string? Rename(string path, string newName, bool folder) => Rename(path, newName, folder, out _);
+
+    private static string? Rename(string path, string newName, bool folder, out bool denied)
+    {
+        denied = false;
         // Con "\" o "..\" en el nombre, Path.Combine lo movería a otra carpeta en vez de renombrarlo; y
         // Windows quita en silencio los puntos y espacios del final.
         if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
@@ -145,6 +225,7 @@ public static class FileOperations
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
         {
+            denied = ex is UnauthorizedAccessException;
             return ex.Message;
         }
     }
@@ -152,10 +233,42 @@ public static class FileOperations
     /// <summary>Crea "Nueva carpeta" (o "Nueva carpeta (2)"…) y devuelve su ruta.</summary>
     public static string NewFolder(string parent, string baseName)
     {
+        string path = FreeName(parent, baseName);
+        Directory.CreateDirectory(path);
+        return path;
+    }
+
+    /// <summary>
+    /// Como <see cref="NewFolder"/>, pero en una carpeta protegida pregunta y la crea con permiso de
+    /// administrador. Null si se canceló o falló (el error queda en el registro).
+    /// </summary>
+    public static async Task<string?> NewFolderAsync(string parent, string baseName, IntPtr owner)
+    {
+        string path = FreeName(parent, baseName);
+        try
+        {
+            Directory.CreateDirectory(path);
+            return path;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            if (!await ElevatedFiles.AskAsync(owner, Loc.F("Para crear una carpeta en «{0}» hace falta permiso de administrador.", FileTransfers.FolderNameOf(parent))))
+                return null;
+            if (await ElevatedFiles.RunAsync(new ElevatedFiles.Job { Op = "mkdir", Paths = [path] }) is { } error)
+            {
+                if (error.Length > 0)
+                    Log.Info($"Archivos: no se pudo crear la carpeta como administrador ({error})");
+                return null;
+            }
+            return path;
+        }
+    }
+
+    private static string FreeName(string parent, string baseName)
+    {
         string path = Path.Combine(parent, baseName);
         for (int i = 2; Directory.Exists(path) || File.Exists(path); i++)
             path = Path.Combine(parent, $"{baseName} ({i})");
-        Directory.CreateDirectory(path);
         return path;
     }
 
@@ -282,31 +395,21 @@ public static class FileOperations
         }
     }
 
-    private static Task<bool> RunAsync(uint operation, IReadOnlyList<string> sources, string? target, ushort flags, IntPtr owner)
+    /// <summary>SHFileOperation en un hilo STA aparte: su código de resultado y si se canceló algo.</summary>
+    private static Task<(int Result, bool Aborted)> RunAsync(uint operation, IReadOnlyList<string> sources, string? target, ushort flags, IntPtr owner)
     {
-        var done = new TaskCompletionSource<bool>();
+        var done = new TaskCompletionSource<(int, bool)>();
         var thread = new Thread(() =>
         {
             try
             {
-                var op = new ShFileOpStruct
-                {
-                    Owner = owner,
-                    Function = operation,
-                    // Lista terminada en doble nulo, como pide SHFileOperation.
-                    From = string.Join('\0', sources) + "\0\0",
-                    To = target is null ? null : target + "\0\0",
-                    Flags = flags,
-                };
-                int result = SHFileOperation(ref op);
-                if (result != 0 && !op.AnyOperationsAborted)
-                    Log.Info($"Archivos: la operación {operation} terminó con el código 0x{result:X}");
-                done.SetResult(result == 0 && !op.AnyOperationsAborted);
+                int result = ShellOperation(operation, sources, target, flags, owner, out bool aborted);
+                done.SetResult((result, aborted));
             }
             catch (Exception ex)
             {
                 Log.Error("Archivos: falló la operación con archivos", ex);
-                done.SetResult(false);
+                done.SetResult((-1, false));
             }
         })
         {
@@ -318,9 +421,29 @@ public static class FileOperations
         return done.Task;
     }
 
-    private const uint FoMove = 1, FoCopy = 2, FoDelete = 3;
-    private const ushort FofRenameOnCollision = 0x8, FofNoConfirmation = 0x10, FofAllowUndo = 0x40,
-                         FofNoConfirmMkDir = 0x200, FofWantNukeWarning = 0x4000, FofSilent = 0x4;
+    /// <summary>SHFileOperation en este hilo (también en el proceso elevado).</summary>
+    internal static int ShellOperation(uint operation, IReadOnlyList<string> sources, string? target, ushort flags, IntPtr owner, out bool aborted)
+    {
+        var op = new ShFileOpStruct
+        {
+            Owner = owner,
+            Function = operation,
+            // Lista terminada en doble nulo, como pide SHFileOperation.
+            From = string.Join('\0', sources) + "\0\0",
+            To = target is null ? null : target + "\0\0",
+            Flags = flags,
+        };
+        int result = SHFileOperation(ref op);
+        aborted = op.AnyOperationsAborted;
+        if (result != 0 && !aborted)
+            Log.Info($"Archivos: la operación {operation} terminó con el código 0x{result:X}");
+        return result;
+    }
+
+    internal const uint FoDelete = 3;
+    internal const ushort FofNoConfirmation = 0x10, FofAllowUndo = 0x40, FofWantNukeWarning = 0x4000, FofSilent = 0x4, FofNoErrorUi = 0x400;
+    // Errores de SHFileOperation por permisos (el de Win32 y el propio "sin acceso al origen").
+    private const int ErrorAccessDenied = 5, DeAccessDeniedSource = 0x78, ErrorPrivilegeNotHeld = 1314;
     private const uint SherbNoConfirmation = 0x1, SherbNoProgressUi = 0x2;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

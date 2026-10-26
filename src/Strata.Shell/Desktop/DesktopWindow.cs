@@ -683,8 +683,12 @@ public sealed class DesktopWindow : Window
             files.OpenMedia(media, media.IndexOf(entry.FullPath));
             return;
         }
-        if (Archivers.IsArchive(entry.FullPath) && Archivers.Open(entry.FullPath))
+        // Comprimidos: Archivos entra en ellos como en una carpeta (la barra final lo pide).
+        if (Archives.OpensInside(entry.FullPath) && OptionalModules.Files.IsInstalled)
+        {
+            App.Current.OpenFiles(entry.FullPath + "\\");
             return;
+        }
         FileOperations.Open(entry.FullPath);
     }
 
@@ -839,6 +843,19 @@ public sealed class DesktopWindow : Window
         e.Handled = true;
     }
 
+    /// <summary>Extrae junto al comprimido (la tarjeta o el aviso muestran el progreso y el resultado).</summary>
+    private static async Task ExtractHereAsync(string archive, IntPtr owner)
+    {
+        try
+        {
+            await Archives.ExtractHereAsync(archive, owner);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or IOException)
+        {
+            Services.Notifications.NotificationService.ShowLocal(Loc.F("No se pudo extraer {0}", Path.GetFileName(archive)), ex.Message);
+        }
+    }
+
     private void FillItemMenu(ContextMenu menu, List<FileEntry> selection)
     {
         var first = selection[0];
@@ -855,8 +872,15 @@ public sealed class DesktopWindow : Window
                                           else
                                               StartMenuService.OpenPath(first.FullPath, select: true);
                                       }));
-        if (selection.Count == 1 && Archivers.IsArchive(first.FullPath))
-            menu.Items.Add(FileMenus.Item(Loc.T("Extraer en una carpeta"), SymbolRegular.FolderZip24, () => _ = Archivers.ExtractAsync(first.FullPath)));
+        var owner = new WindowInteropHelper(this).Handle;
+        if (selection.Count == 1 && Archives.IsArchive(first.FullPath))
+            menu.Items.Add(FileMenus.Item(Loc.T("Extraer aquí"), SymbolRegular.FolderZip24, () => _ = ExtractHereAsync(first.FullPath, owner)));
+        if (Archives.Available)
+        {
+            var paths = selection.Select(s => s.FullPath).ToList();
+            menu.Items.Add(FileMenus.Item(Loc.F("Comprimir en «{0}.7z»", Archives.SuggestedName(paths)), SymbolRegular.FolderZip24, () => Archives.CompressQuick(paths, owner)));
+            menu.Items.Add(FileMenus.Item(Loc.T("Comprimir…"), SymbolRegular.FolderZip24, () => _ = Archives.CompressAsync(paths, owner)));
+        }
         menu.Items.Add(new Separator());
         menu.Items.Add(FileMenus.Item(Loc.T("Cortar"), SymbolRegular.Cut24,
                                        () => FileOperations.SetClipboard(selection.Select(s => s.FullPath).ToList(), cut: true)));

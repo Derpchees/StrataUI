@@ -153,8 +153,14 @@ public partial class FolderPane : UserControl
     /// <summary>Se ve la Papelera (no se crean carpetas ni se pega; se restaura o se borra para siempre).</summary>
     public bool InRecycleBin => _path == Places.RecycleBin;
 
+    /// <summary>Se ve el contenido de un comprimido (solo se abre, se copia o se extrae).</summary>
+    public bool InArchive => _archive != null;
+
     /// <summary>Una carpeta de verdad, donde se puede crear, pegar, cortar y cambiar nombres.</summary>
-    public bool CanModify => _path != null && !InRecycleBin;
+    public bool CanModify => _path != null && !InRecycleBin && !InArchive;
+
+    /// <summary>El comprimido que se ve y la carpeta de adentro (null en una carpeta normal).</summary>
+    private (string Archive, string Inner)? _archive;
 
     public int SelectedCount => _path is null ? 0 : ActiveList.SelectedItems.Count;
 
@@ -233,8 +239,11 @@ public partial class FolderPane : UserControl
 
     public void Navigate(string? path, bool record = true)
     {
+        // Un comprimido con la barra al final ("C:\fotos.zip\"), o desde el historial: se entra en él.
+        bool intoArchive = path != null && (path.EndsWith('\\') || !record) && File.Exists(path.TrimEnd('\\'))
+                           && Archives.IsArchive(path.TrimEnd('\\'));
         // Un archivo: su carpeta, con él seleccionado (como "Mostrar en la carpeta").
-        if (path != null && File.Exists(path))
+        if (path != null && !intoArchive && File.Exists(path))
         {
             _selectAfterLoad = System.IO.Path.GetFullPath(path);
             path = System.IO.Path.GetDirectoryName(_selectAfterLoad);
@@ -307,6 +316,7 @@ public partial class FolderPane : UserControl
         _loading?.Cancel();
         var cts = _loading = new CancellationTokenSource();
         string? path = _path;
+        _archive = Archives.Locate(path);
         if (_headerForRecycleBin != InRecycleBin)
             BuildHeader();
         UpdateChrome();
@@ -323,13 +333,15 @@ public partial class FolderPane : UserControl
         List<FileEntry> fresh;
         try
         {
-            var read = Task.Run(() => path == Places.RecycleBin ? RecycleBin.Read().Select(i => new FileEntry(i)).ToList()
-                                      : Places.IsServer(path) ? ReadServer(path)
-                                      : Read(path, hidden, inCloud), cts.Token);
+            var read = _archive is { } location ? ReadArchiveAsync(location, cts.Token)
+                : Task.Run(() => path == Places.RecycleBin ? RecycleBin.Read().Select(i => new FileEntry(i)).ToList()
+                                 : Places.IsServer(path) ? ReadServer(path)
+                                 : Read(path, hidden, inCloud), cts.Token);
             // Una carpeta de red sin conexión puede tardar mucho en fallar: se avisa y se deja de esperar.
             if (await Task.WhenAny(read, Task.Delay(400, cts.Token)) != read && !merge && !cts.IsCancellationRequested)
                 ShowConnecting(path);
-            if (await Task.WhenAny(read, Task.Delay(TimeSpan.FromSeconds(10), cts.Token)) != read)
+            // Un comprimido grande (o su contraseña) puede tardar: ahí no hay límite.
+            if (await Task.WhenAny(read, Task.Delay(_archive is null ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan, cts.Token)) != read)
             {
                 if (!cts.IsCancellationRequested)
                     ShowNoResponse(path);
@@ -339,6 +351,12 @@ public partial class FolderPane : UserControl
         }
         catch (OperationCanceledException)
         {
+            return;
+        }
+        catch (InvalidDataException ex)
+        {
+            if (!cts.IsCancellationRequested)
+                ShowError(ex.Message);
             return;
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
@@ -392,6 +410,19 @@ public partial class FolderPane : UserControl
         RememberNetwork(path);
     }
 
+    /// <summary>Lo que hay en una carpeta de un comprimido (lo lee el proceso de los comprimidos; pide la contraseña si hace falta).</summary>
+    private async Task<List<FileEntry>> ReadArchiveAsync((string Archive, string Inner) location, CancellationToken token)
+    {
+        var listing = await Archives.ListAsync(location.Archive, Handle, token)
+                      ?? throw new InvalidDataException(Loc.T("Este comprimido está protegido con contraseña."));
+        if (!listing.HasFolder(location.Inner))
+            throw new DirectoryNotFoundException(location.Inner);
+        var date = File.GetLastWriteTime(location.Archive);
+        return await Task.Run(() => listing.Children(location.Inner)
+            .Select(c => new FileEntry(c, location.Archive, date, FileIcons.TypeName(c.IsFolder ? "" : System.IO.Path.GetExtension(c.Name), c.IsFolder)))
+            .ToList(), token);
+    }
+
     /// <summary>Las carpetas compartidas de un servidor de la red.</summary>
     private static List<FileEntry> ReadServer(string server)
     {
@@ -410,7 +441,7 @@ public partial class FolderPane : UserControl
     /// archivos solo en línea ya se saltan uno por uno (<see cref="FileIcons.IsPicture"/>).
     /// </summary>
     private bool Thumbnails(string path) =>
-        CloudPlace(path) is not { } cloud || System.IO.Path.GetPathRoot(cloud.Path!)?.TrimEnd('\\') != cloud.Path!.TrimEnd('\\');
+        _archive is null && (CloudPlace(path) is not { } cloud || System.IO.Path.GetPathRoot(cloud.Path!)?.TrimEnd('\\') != cloud.Path!.TrimEnd('\\'));
 
     /// <summary>Una carpeta de red que se pudo abrir queda en la barra lateral (su "\\servidor\recurso").</summary>
     private void RememberNetwork(string path)
@@ -478,7 +509,7 @@ public partial class FolderPane : UserControl
         _watcher?.Dispose();
         _watcher = null;
         _watchedPath = path;
-        if (path is null || Places.IsServer(path) || path == Places.RecycleBin)
+        if (path is null || Places.IsServer(path) || path == Places.RecycleBin || _archive != null)
             return;
         try
         {
@@ -636,6 +667,12 @@ public partial class FolderPane : UserControl
             EmptyText.Text = _deepSearching ? Loc.T("Buscando también en las subcarpetas…")
                 : CanDeepSearch && query.Trim().Length >= 2 ? Loc.F("Nada en esta carpeta ni en sus subcarpetas coincide con «{0}».", query.Trim())
                 : Loc.F("Nada en esta carpeta coincide con «{0}».", query.Trim());
+        }
+        else if (InArchive)
+        {
+            EmptyIcon.Symbol = SymbolRegular.FolderZip24;
+            EmptyTitle.Text = Loc.T("Esta carpeta está vacía");
+            EmptyText.Text = Loc.T("No hay nada en esta carpeta del comprimido.");
         }
         else if (InRecycleBin)
         {
@@ -811,6 +848,18 @@ public partial class FolderPane : UserControl
                 return;
             }
         }
+        // Dentro de un comprimido: se saca a una carpeta temporal y se abre desde ahí.
+        if (_archive is { } location)
+        {
+            _ = OpenFromArchiveAsync(location, entries);
+            return;
+        }
+        // Un comprimido: se entra en él como en una carpeta (sin otro programa).
+        if (entries is [var archive] && Archives.OpensInside(archive.FullPath))
+        {
+            Navigate(archive.FullPath + "\\");
+            return;
+        }
         // Una imagen, un video o un audio: el visor, con los demás de la carpeta en el orden de la vista.
         if (entries is [var single] && MediaKinds.Of(single.FullPath) != MediaKind.None && _view != null)
         {
@@ -821,45 +870,118 @@ public partial class FolderPane : UserControl
         }
         foreach (var entry in entries)
         {
-            // Un comprimido, con el compresor instalado (NanaZip, 7-Zip…) y no con la carpeta comprimida de Windows.
-            if (Archivers.IsArchive(entry.FullPath) && Archivers.Open(entry.FullPath))
-                continue;
             if (!FileOperations.Open(entry.FullPath))
                 ShowMessage(Loc.F("No se pudo abrir {0}", entry.Name));
         }
     }
 
-    private async Task ExtractAsync(FileEntry archive)
+    /// <summary>Abre archivos de un comprimido: se extraen a la carpeta temporal (un comprimido adentro se explora).</summary>
+    private async Task OpenFromArchiveAsync((string Archive, string Inner) location, IReadOnlyList<FileEntry> entries)
+    {
+        var files = entries.Where(e => !e.IsFolder && e.ArchivePath != null).ToList();
+        if (files.Count == 0)
+            return;
+        var paths = await Archives.ExtractToTempAsync(location.Archive, files.Select(e => e.ArchivePath!).ToList(), location.Inner, Handle);
+        if (paths.Count == 0)
+            return; // la tarjeta muestra lo que pasó
+        if (paths is [var single])
+        {
+            if (Archives.OpensInside(single))
+            {
+                Navigate(single + "\\");
+                return;
+            }
+            if (MediaKinds.Of(single) != MediaKind.None)
+            {
+                MediaViewerWindow.Open([single], 0);
+                return;
+            }
+        }
+        foreach (var path in paths)
+        {
+            if (!FileOperations.Open(path))
+                ShowMessage(Loc.F("No se pudo abrir {0}", System.IO.Path.GetFileName(path)));
+        }
+    }
+
+    /// <summary>"Extraer aquí": junto al comprimido; al terminar queda seleccionado lo extraído.</summary>
+    private async Task ExtractHereAsync(string archive)
     {
         try
         {
-            if (await Archivers.ExtractAsync(archive.FullPath) is { } folder)
-                _selectAfterLoad = folder;
+            if (await Archives.ExtractHereAsync(archive, Handle) is { } transfer && await transfer.Finished.Task
+                && transfer.Result is { } result)
+            {
+                _selectAfterLoad = result;
+                _ = LoadAsync(merge: true);
+            }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
         {
-            ShowMessage(Loc.F("No se pudo extraer {0}", archive.Name));
-            Log.Error($"Archivos: no se pudo extraer {archive.FullPath}", ex);
+            ShowMessage(Loc.F("No se pudo extraer {0}", System.IO.Path.GetFileName(archive)));
+            Log.Error($"Archivos: no se pudo extraer {archive}", ex);
         }
+    }
+
+    /// <summary>Extrae (lo elegido o todo el comprimido) en una carpeta que se elige.</summary>
+    private async Task ExtractToAsync(string archive, IReadOnlyList<string> inner, string baseFolder)
+    {
+        if (await FilePicker.PickFoldersAsync(Loc.T("Extraer en")) is not [var folder])
+            return;
+        Archives.Extract(archive, inner, baseFolder, folder, TransferConflict.KeepBoth, Handle);
+    }
+
+    /// <summary>Lo elegido de un comprimido, a la carpeta temporal y al portapapeles (se puede pegar en cualquier lado).</summary>
+    private async Task CopyFromArchiveAsync(IReadOnlyList<FileEntry> selected)
+    {
+        if (_archive is not { } location)
+            return;
+        var paths = await Archives.ExtractToTempAsync(location.Archive, selected.Select(e => e.ArchivePath!).ToList(), location.Inner, Handle);
+        if (paths.Count == 0)
+            return;
+        FileOperations.SetClipboard(paths, cut: false);
+        ShowMessageInfo(paths.Count == 1 ? Loc.T("1 elemento copiado") : Loc.F("{0} elementos copiados", paths.Count));
+        StateChanged?.Invoke();
+    }
+
+    /// <summary>Al terminar (bien), queda seleccionado lo que creó la tarea (el comprimido nuevo).</summary>
+    private async Task SelectWhenDoneAsync(FileTransfer? transfer)
+    {
+        if (transfer != null && await transfer.Finished.Task && transfer.Result is { } result
+            && SamePath(System.IO.Path.GetDirectoryName(result), _path))
+        {
+            _selectAfterLoad = result;
+            _ = LoadAsync(merge: true);
+        }
+    }
+
+    /// <summary>"Extraer todo" de la barra de comandos: el comprimido que se ve, en una carpeta que se elige.</summary>
+    public void ExtractAll()
+    {
+        if (_archive is { } location)
+            _ = ExtractToAsync(location.Archive, [], "");
     }
 
     private static string? FolderOf(FileEntry entry)
     {
         if (entry.IsFolder)
             return entry.FullPath;
-        if (entry.Extension.Equals(".lnk", StringComparison.OrdinalIgnoreCase)
+        if (!entry.InArchive && entry.Extension.Equals(".lnk", StringComparison.OrdinalIgnoreCase)
             && ExtraApps.ShortcutTarget(entry.FullPath) is { Length: > 0 } target && Directory.Exists(target))
             return target;
         return null;
     }
 
-    public void NewFolder()
+    public async void NewFolder()
     {
-        if (_path is null)
+        if (_path is null || !CanModify)
             return;
         try
         {
-            _selectAfterLoad = FileOperations.NewFolder(_path, Loc.T("Nueva carpeta"));
+            // En una carpeta protegida, pregunta y la crea con permiso de administrador.
+            if (await FileOperations.NewFolderAsync(_path, Loc.T("Nueva carpeta"), Handle) is not { } created)
+                return;
+            _selectAfterLoad = created;
             _renameAfterLoad = true;
             _reload.Stop();
             _ = LoadAsync(merge: true);
@@ -876,6 +998,12 @@ public partial class FolderPane : UserControl
         var selected = SelectedEntries;
         if (selected.Count == 0)
             return;
+        if (InArchive)
+        {
+            if (!cut)
+                _ = CopyFromArchiveAsync(selected);
+            return;
+        }
         FileOperations.SetClipboard(selected.Select(e => e.FullPath).ToList(), cut);
         _cutPaths = cut ? selected.Select(e => e.FullPath).ToHashSet(StringComparer.OrdinalIgnoreCase) : new(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in _entries)
@@ -916,7 +1044,7 @@ public partial class FolderPane : UserControl
     public async Task RecycleSelectionAsync()
     {
         var selected = SelectedEntries;
-        if (selected.Count == 0)
+        if (selected.Count == 0 || InArchive)
             return;
         if (InRecycleBin)
         {
@@ -1006,7 +1134,7 @@ public partial class FolderPane : UserControl
         entry.IsRenaming = true;
     }
 
-    private void CommitRename(TextBox box, bool apply)
+    private async void CommitRename(TextBox box, bool apply)
     {
         if (box.DataContext is not FileEntry entry || !entry.IsRenaming)
             return;
@@ -1025,9 +1153,10 @@ public partial class FolderPane : UserControl
             ShowMessage(Loc.T("El nombre no puede llevar \\ / : * ? \" < > |"));
             return;
         }
-        if (FileOperations.Rename(entry.FullPath, name, entry.IsFolder) is { } error)
+        if (await FileOperations.RenameAsync(entry.FullPath, name, entry.IsFolder, Handle) is { } error)
         {
-            ShowMessage(error);
+            if (error.Length > 0)
+                ShowMessage(error);
             return;
         }
         _selectAfterLoad = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(entry.FullPath)!, name);
@@ -1159,6 +1288,26 @@ public partial class FolderPane : UserControl
             menu.Items.Add(Item(Loc.T("Actualizar"), SymbolRegular.ArrowClockwise24, () => _ = LoadAsync(merge: true)));
             return;
         }
+        if (_archive is { } location)
+        {
+            // Dentro de un comprimido: abrir, copiar o extraer (no se modifica).
+            if (onItem && selected.Count > 0)
+            {
+                menu.Items.Add(Item(Loc.T("Abrir"), SymbolRegular.Open24, () => Open(selected), bold: true));
+                menu.Items.Add(Item(Loc.T("Extraer en…"), SymbolRegular.FolderArrowRight24,
+                                    () => _ = ExtractToAsync(location.Archive, selected.Select(s => s.ArchivePath!).ToList(), location.Inner)));
+                menu.Items.Add(Item(Loc.T("Copiar"), SymbolRegular.Copy24, () => _ = CopyFromArchiveAsync(selected)));
+            }
+            else
+            {
+                menu.Items.Add(Item(Loc.T("Extraer todo aquí"), SymbolRegular.FolderZip24, () => _ = ExtractHereAsync(location.Archive)));
+                menu.Items.Add(Item(Loc.T("Extraer todo en…"), SymbolRegular.FolderArrowRight24, () => _ = ExtractToAsync(location.Archive, [], "")));
+                menu.Items.Add(new Separator());
+                menu.Items.Add(SortMenu());
+                menu.Items.Add(Item(Loc.T("Actualizar"), SymbolRegular.ArrowClockwise24, () => _ = LoadAsync(merge: true)));
+            }
+            return;
+        }
         if (onItem && selected.Count > 0)
         {
             var first = selected[0];
@@ -1174,8 +1323,22 @@ public partial class FolderPane : UserControl
                                         PinsChanged?.Invoke();
                                     }));
             }
-            if (selected.Count == 1 && !first.IsFolder && Archivers.IsArchive(first.FullPath))
-                menu.Items.Add(Item(Loc.T("Extraer en una carpeta"), SymbolRegular.FolderZip24, () => _ = ExtractAsync(first)));
+            if (selected.Count == 1 && !first.IsFolder && Archives.IsArchive(first.FullPath))
+            {
+                // Las imágenes de disco se montan con doble clic; su contenido se ve desde aquí.
+                if (!Archives.OpensInside(first.FullPath))
+                    menu.Items.Add(Item(Loc.T("Explorar el contenido"), SymbolRegular.FolderOpen24, () => Navigate(first.FullPath + "\\")));
+                menu.Items.Add(Item(Loc.T("Extraer aquí"), SymbolRegular.FolderZip24, () => _ = ExtractHereAsync(first.FullPath)));
+                menu.Items.Add(Item(Loc.T("Extraer en…"), SymbolRegular.FolderArrowRight24, () => _ = ExtractToAsync(first.FullPath, [], "")));
+            }
+            if (Archives.Available)
+            {
+                var paths = selected.Select(s => s.FullPath).ToList();
+                menu.Items.Add(Item(Loc.F("Comprimir en «{0}.7z»", Archives.SuggestedName(paths)), SymbolRegular.FolderZip24,
+                                    () => _ = SelectWhenDoneAsync(Archives.CompressQuick(paths, Handle))));
+                menu.Items.Add(Item(Loc.T("Comprimir…"), SymbolRegular.FolderZip24,
+                                    async () => await SelectWhenDoneAsync(await Archives.CompressAsync(paths, Handle))));
+            }
             menu.Items.Add(new Separator());
             menu.Items.Add(Item(Loc.T("Cortar"), SymbolRegular.Cut24, () => CopySelection(cut: true)));
             menu.Items.Add(Item(Loc.T("Copiar"), SymbolRegular.Copy24, () => CopySelection(cut: false)));
@@ -1322,7 +1485,7 @@ public partial class FolderPane : UserControl
         _dragStart = null;
         _clickedSelected = null;
         var selected = SelectedEntries;
-        if (selected.Count == 0 || selected.Any(s => s.IsRenaming))
+        if (selected.Count == 0 || selected.Any(s => s.IsRenaming) || InArchive)
             return;
         var data = new DataObject(DataFormats.FileDrop, selected.Select(s => s.FullPath).ToArray());
         try
@@ -1493,7 +1656,8 @@ public partial class FolderPane : UserControl
     {
         try
         {
-            e.Effects = InRecycleBin
+            e.Effects = InArchive ? DragDropEffects.None
+                : InRecycleBin
                 ? (e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Move & e.AllowedEffects : DragDropEffects.None)
                 : DropTarget(e) is { } target && e.Data.GetData(DataFormats.FileDrop) is string[] files
                 ? DropEffect(e, target, files) & e.AllowedEffects
@@ -1511,6 +1675,8 @@ public partial class FolderPane : UserControl
     {
         try
         {
+            if (InArchive)
+                return;
             if (InRecycleBin && e.Data.GetData(DataFormats.FileDrop) is string[] recycled)
             {
                 e.Handled = true;
@@ -1622,6 +1788,20 @@ public partial class FolderPane : UserControl
             Navigate(place.Path);
     }
 
+    /// <summary>Clic derecho en una unidad de la portada: abrirla en otra pestaña o formatearla.</summary>
+    private void Drive_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (sender is not Button { DataContext: Place { Path: { } drive }, ContextMenu: { } menu })
+        {
+            e.Handled = true;
+            return;
+        }
+        menu.Items.Clear();
+        menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(drive)));
+        if (DriveFormat.CanFormat(drive) && Window.GetWindow(this) is FilesWindow window)
+            menu.Items.Add(Item(Loc.T("Formatear…"), SymbolRegular.HardDrive20, () => _ = window.FormatAsync(drive)));
+    }
+
     private void Recent_Click(object sender, RoutedEventArgs e)
     {
         if (((FrameworkElement)sender).DataContext is not RecentItem recent)
@@ -1731,6 +1911,9 @@ public partial class FolderPane : UserControl
         string path = entry.FullPath;
         try
         {
+            // Dentro de un comprimido no hay nada en el disco que leer: el ícono y los datos.
+            if (entry.InArchive)
+                return;
             if (entry.IsFolder)
             {
                 int? count = await Task.Run(() => CountItems(path));
@@ -1824,7 +2007,7 @@ public partial class FolderPane : UserControl
     private bool _deepSearching;
     private const int DeepSearchLimit = 1000;
 
-    private bool CanDeepSearch => _path != null && !InRecycleBin && !Places.IsServer(_path);
+    private bool CanDeepSearch => _path != null && !InRecycleBin && !InArchive && !Places.IsServer(_path);
 
     /// <summary>Cambió el texto: se descarta lo encontrado antes y, si hay algo que buscar, se espera una pausa.</summary>
     private void ScheduleDeepSearch()

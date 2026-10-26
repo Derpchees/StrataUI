@@ -143,6 +143,20 @@ public partial class App : Application
             Shutdown(Services.Files.ShellMenuSession.Run());
             return;
         }
+        // Archivos con permiso de administrador (copiar a carpetas protegidas, borrar, formatear): elevado.
+        if (e.Args.Length > 0 && e.Args[0] == Services.Files.ElevatedFiles.Arg)
+        {
+            Services.Localization.Loc.Initialize(Settings.Current.Language);
+            Shutdown(Services.Files.ElevatedFiles.Run(e.Args));
+            return;
+        }
+        // Comprimidos (listar, extraer, comprimir) con 7-Zip, en un proceso aparte.
+        if (e.Args.Length > 0 && e.Args[0] == Services.Files.ArchiveHost.Arg)
+        {
+            Services.Localization.Loc.Initialize(Settings.Current.Language);
+            Shutdown(Services.Files.ArchiveHost.Run(e.Args));
+            return;
+        }
         // Diálogo de abrir archivo o carpeta en un proceso aparte (ver Services/FilePicker).
         if (e.Args.Length > 0 && e.Args[0] == FilePicker.Arg)
         {

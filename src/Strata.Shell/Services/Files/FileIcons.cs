@@ -185,7 +185,7 @@ public static class FileIcons
     {
         // Las carpetas con desktop.ini (solo lectura o de sistema) pueden tener su propio ícono.
         // Solo en línea: leer su ícono propio lo descargaría (el de su tipo alcanza).
-        bool own = !entry.IsOnlineOnly && (entry.IsFolder
+        bool own = !entry.IsOnlineOnly && !entry.InArchive && (entry.IsFolder
             ? (entry.Attributes & (FileAttributes.ReadOnly | FileAttributes.System)) != 0
             : PerFile.Contains(entry.Extension));
         string key = own ? entry.FullPath : entry.IsFolder ? "<carpeta>" : entry.Extension is { Length: > 0 } ext ? ext : "<sin extensión>";

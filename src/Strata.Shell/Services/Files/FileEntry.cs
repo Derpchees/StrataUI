@@ -38,6 +38,23 @@ public sealed class FileEntry : INotifyPropertyChanged
         Recycled = item;
     }
 
+    /// <summary>Algo de adentro de un comprimido: su ruta es la del comprimido más la de adentro ("C:\a.zip\fotos\1.jpg").</summary>
+    public FileEntry(ArchiveListing.Child child, string archive, DateTime archiveDate, string typeName)
+    {
+        Name = child.Name;
+        FullPath = Path.Combine(archive, child.Path);
+        IsFolder = child.IsFolder;
+        Size = child.IsFolder ? -1 : child.Item?.Size ?? 0;
+        Modified = child.Item?.Modified ?? archiveDate;
+        Attributes = child.IsFolder ? FileAttributes.Directory : FileAttributes.Normal;
+        TypeName = typeName;
+        ArchivePath = child.Path;
+    }
+
+    /// <summary>Su ruta dentro del comprimido (null si es un archivo normal).</summary>
+    public string? ArchivePath { get; }
+    public bool InArchive => ArchivePath != null;
+
     /// <summary>Si está en la Papelera, de dónde salió (para restaurarlo).</summary>
     public RecycledItem? Recycled { get; }
 

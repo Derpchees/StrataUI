@@ -10,7 +10,7 @@ using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services.Files;
 
-public enum TransferKind { Copy, Move }
+public enum TransferKind { Copy, Move, Extract, Compress, Format }
 
 /// <summary>Qué hacer con un nombre que ya está en el destino (se decide antes de empezar).</summary>
 public enum TransferConflict
@@ -26,8 +26,9 @@ public enum TransferConflict
 public enum TransferState { Preparing, Running, Done, Canceled, Failed }
 
 /// <summary>
-/// Una copia o un traslado con su progreso, para mostrarlo dentro del explorador (sin la ventana de
-/// Windows). Lo actualiza el hilo de trabajo; las propiedades se avisan desde la UI cada tanto.
+/// Una tarea con progreso que se muestra dentro del explorador (sin ventanas de Windows): copiar,
+/// mover, extraer, comprimir o formatear. La actualiza el hilo de trabajo (o el proceso aparte que
+/// la hace: el elevado, el de los comprimidos); las propiedades se avisan desde la UI cada tanto.
 /// </summary>
 public sealed class FileTransfer : INotifyPropertyChanged
 {
@@ -41,11 +42,23 @@ public sealed class FileTransfer : INotifyPropertyChanged
 
     public TransferKind Kind { get; }
     public IReadOnlyList<string> Sources { get; }
+    /// <summary>La carpeta destino; al comprimir, el archivo que se crea; al formatear, la unidad.</summary>
     public string Folder { get; }
     internal TransferConflict Conflict { get; }
     internal readonly CancellationTokenSource Cancellation = new();
     internal readonly Stopwatch Clock = new();
     internal readonly TaskCompletionSource<bool> Finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>Destino exacto de cada origen (al reintentar como administrador: el mismo que la primera vez).</summary>
+    internal Dictionary<string, string>? Targets { get; init; }
+    /// <summary>Dónde quedó (o iba a quedar) cada origen; con esto se reintenta sin duplicar.</summary>
+    internal readonly Dictionary<string, string> Resolved = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Orígenes con algún error (solo esos se reintentan).</summary>
+    internal readonly HashSet<string> FailedSources = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Lo hace un proceso con permiso de administrador (no se puede volver a pedir).</summary>
+    public bool Elevated { get; init; }
+    /// <summary>La carpeta o el archivo que quedó al terminar (para seleccionarlo).</summary>
+    public string? Result { get; internal set; }
 
     // Escritas por el hilo de trabajo.
     internal long TotalBytes, DoneBytes;
@@ -61,17 +74,23 @@ public sealed class FileTransfer : INotifyPropertyChanged
     public TransferState State => StateValue;
     public bool IsActive => StateValue is TransferState.Preparing or TransferState.Running;
     public bool HasErrors => StateValue == TransferState.Failed;
-    public bool CanRetryAsAdmin => HasErrors && NeedsAdmin;
+    public bool CanRetryAsAdmin => HasErrors && NeedsAdmin && !Elevated && Kind is TransferKind.Copy or TransferKind.Move;
     public double Progress => TotalBytes > 0 ? Math.Clamp((double)Interlocked.Read(ref DoneBytes) / TotalBytes, 0, 1)
                               : TotalFiles > 0 ? (double)DoneFiles / TotalFiles : 0;
-    public bool IsIndeterminate => StateValue == TransferState.Preparing;
+    public bool IsIndeterminate => StateValue == TransferState.Preparing || (IsActive && Kind == TransferKind.Format);
 
     public Wpf.Ui.Controls.SymbolRegular Symbol => StateValue switch
     {
         TransferState.Done => Wpf.Ui.Controls.SymbolRegular.CheckmarkCircle24,
         TransferState.Failed => Wpf.Ui.Controls.SymbolRegular.ErrorCircle24,
         TransferState.Canceled => Wpf.Ui.Controls.SymbolRegular.DismissCircle24,
-        _ => Kind == TransferKind.Copy ? Wpf.Ui.Controls.SymbolRegular.Copy24 : Wpf.Ui.Controls.SymbolRegular.FolderArrowRight24,
+        _ => Kind switch
+        {
+            TransferKind.Copy => Wpf.Ui.Controls.SymbolRegular.Copy24,
+            TransferKind.Extract or TransferKind.Compress => Wpf.Ui.Controls.SymbolRegular.FolderZip24,
+            TransferKind.Format => Wpf.Ui.Controls.SymbolRegular.HardDrive20,
+            _ => Wpf.Ui.Controls.SymbolRegular.FolderArrowRight24,
+        },
     };
 
     private string What => Sources.Count == 1
@@ -84,10 +103,19 @@ public sealed class FileTransfer : INotifyPropertyChanged
     {
         (TransferKind.Copy, TransferState.Done) => Loc.F("Se copió {0} a {1}", What, FolderName),
         (TransferKind.Move, TransferState.Done) => Loc.F("Se movió {0} a {1}", What, FolderName),
+        (TransferKind.Extract, TransferState.Done) => Loc.F("Se extrajo {0} en {1}", What, FolderName),
+        (TransferKind.Compress, TransferState.Done) => Loc.F("Se creó {0}", FolderName),
+        (TransferKind.Format, TransferState.Done) => Loc.F("Se formateó {0}", Folder),
         (_, TransferState.Canceled) => Loc.T("Cancelado"),
         (TransferKind.Copy, TransferState.Failed) => Loc.F("No se pudo copiar todo a {0}", FolderName),
         (TransferKind.Move, TransferState.Failed) => Loc.F("No se pudo mover todo a {0}", FolderName),
+        (TransferKind.Extract, TransferState.Failed) => Loc.F("No se pudo extraer todo en {0}", FolderName),
+        (TransferKind.Compress, TransferState.Failed) => Loc.F("No se pudo crear {0}", FolderName),
+        (TransferKind.Format, TransferState.Failed) => Loc.F("No se pudo formatear {0}", Folder),
         (TransferKind.Copy, _) => Loc.F("Copiando {0} a {1}", What, FolderName),
+        (TransferKind.Extract, _) => Loc.F("Extrayendo {0} en {1}", What, FolderName),
+        (TransferKind.Compress, _) => Loc.F("Comprimiendo {0} en {1}", What, FolderName),
+        (TransferKind.Format, _) => Loc.F("Formateando {0}", Folder),
         _ => Loc.F("Moviendo {0} a {1}", What, FolderName),
     };
 
@@ -97,11 +125,14 @@ public sealed class FileTransfer : INotifyPropertyChanged
         {
             switch (StateValue)
             {
+                case TransferState.Preparing when Kind == TransferKind.Format:
+                case TransferState.Running when Kind == TransferKind.Format:
+                    return Loc.T("Esto puede tardar unos minutos.");
                 case TransferState.Preparing:
                     return Loc.T("Calculando…");
                 case TransferState.Failed:
                     lock (Errors)
-                        return Errors.Count == 1 ? Errors[0] : Loc.F("{0} elementos con errores. {1}", Errors.Count, Errors[0]);
+                        return Errors.Count == 0 ? "" : Errors.Count == 1 ? Errors[0] : Loc.F("{0} elementos con errores. {1}", Errors.Count, Errors[0]);
                 case TransferState.Done or TransferState.Canceled:
                     return "";
             }
@@ -143,6 +174,18 @@ public sealed class FileTransfer : INotifyPropertyChanged
             Notify(name);
     }
 
+    internal void AddError(string message, bool admin, string? path = null)
+    {
+        lock (Errors)
+        {
+            Errors.Add(message);
+            if (path != null && Sources.FirstOrDefault(s => FileTransfers.IsInside(path, s)) is { } source)
+                FailedSources.Add(source);
+        }
+        if (admin)
+            NeedsAdmin = true;
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
     private void Notify([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
@@ -150,7 +193,8 @@ public sealed class FileTransfer : INotifyPropertyChanged
 /// <summary>
 /// Copiar y mover con progreso propio (CopyFileEx), que el explorador muestra en su ventana. Mover
 /// dentro de la misma unidad es cambiar de lugar (instantáneo); entre unidades, copiar y borrar.
-/// Lo que falla por permisos se puede reintentar con Windows, que pide permiso de administrador.
+/// Lo que falla por permisos se reintenta en un proceso con permiso de administrador
+/// (<see cref="ElevatedFiles"/>), con la misma tarjeta de progreso.
 /// </summary>
 public static class FileTransfers
 {
@@ -162,26 +206,66 @@ public static class FileTransfers
 
     private static DispatcherTimer? _refresh;
 
-    internal static Task<bool> Start(TransferKind kind, IReadOnlyList<string> sources, string folder, TransferConflict conflict)
+    /// <summary>Copia o mueve y devuelve si todo salió bien.</summary>
+    internal static Task<bool> Start(TransferKind kind, IReadOnlyList<string> sources, string folder, TransferConflict conflict) =>
+        Begin(new FileTransfer(kind, sources, folder, conflict)).Finished.Task;
+
+    /// <summary>Empieza a copiar o mover con el motor propio, en este proceso.</summary>
+    internal static FileTransfer Begin(FileTransfer transfer) => Run(transfer, t =>
     {
-        var transfer = new FileTransfer(kind, sources, folder, conflict);
+        Execute(t);
+        return Task.CompletedTask;
+    });
+
+    /// <summary>
+    /// Muestra la tarea en la lista y la hace en otro hilo con <paramref name="work"/> (que actualiza
+    /// su progreso y deja su estado final); al terminar avisa y la quita si salió bien.
+    /// </summary>
+    internal static FileTransfer Run(FileTransfer transfer, Func<FileTransfer, Task> work)
+    {
+        if (Application.Current is { } app && !app.Dispatcher.CheckAccess())
+            return app.Dispatcher.Invoke(() => Run(transfer, work));
         Active.Add(transfer);
-        if (_refresh is null)
+        if (Application.Current != null)
         {
-            _refresh = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(250) };
-            _refresh.Tick += (_, _) =>
+            if (_refresh is null)
             {
-                foreach (var t in Active)
-                    t.Refresh();
-                if (!Active.Any(t => t.IsActive))
-                    _refresh.Stop();
-            };
+                _refresh = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(250) };
+                _refresh.Tick += (_, _) =>
+                {
+                    foreach (var t in Active)
+                        t.Refresh();
+                    if (!Active.Any(t => t.IsActive))
+                        _refresh.Stop();
+                };
+            }
+            _refresh.Start();
         }
-        _refresh.Start();
         transfer.Clock.Start();
-        var thread = new Thread(() => Run(transfer)) { IsBackground = true, Name = "Strata UI: copia de archivos" };
-        thread.Start();
-        return transfer.Finished.Task;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await work(transfer);
+            }
+            catch (OperationCanceledException)
+            {
+                transfer.StateValue = TransferState.Canceled;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Archivos: falló la tarea {transfer.Kind} a {transfer.Folder}", ex);
+                transfer.AddError(ex.Message, admin: false);
+                transfer.StateValue = TransferState.Failed;
+            }
+            if (transfer.IsActive)
+                transfer.StateValue = transfer.Errors.Count > 0 ? TransferState.Failed : TransferState.Done;
+            if (Application.Current is { } current)
+                _ = current.Dispatcher.BeginInvoke(() => Complete(transfer));
+            else
+                transfer.Finished.TrySetResult(transfer.State == TransferState.Done); // sin la app (pruebas)
+        });
+        return transfer;
     }
 
     /// <summary>Quita una terminada de la lista (la X de su tarjeta).</summary>
@@ -191,17 +275,32 @@ public static class FileTransfers
             Active.Remove(transfer);
     }
 
-    /// <summary>Lo mismo con el motor de Windows, que pide permiso de administrador si hace falta.</summary>
-    public static async Task RetryAsAdminAsync(FileTransfer transfer, IntPtr owner)
+    /// <summary>
+    /// Lo que falló, otra vez con permiso de administrador (pregunta antes, con el tema de Strata UI):
+    /// solo los orígenes con errores y al mismo destino que la primera vez (lo ya copiado se reemplaza
+    /// por lo mismo, sin "nombre (2)").
+    /// </summary>
+    public static async Task<bool> RetryAsAdminAsync(FileTransfer transfer, IntPtr owner, bool ask = true)
     {
+        if (ask && !await ElevatedFiles.AskAsync(owner, transfer.Kind == TransferKind.Copy
+                ? Loc.F("Para copiar a «{0}» hace falta permiso de administrador.", FolderNameOf(transfer.Folder))
+                : Loc.F("Para mover a «{0}» hace falta permiso de administrador.", FolderNameOf(transfer.Folder))))
+            return false;
         Active.Remove(transfer);
-        // Los nombres repetidos ya se decidieron: ahora se reemplaza lo que quedó a medias.
-        await FileOperations.RunWindowsAsync(transfer.Kind, transfer.Sources, transfer.Folder, owner);
+        List<string> sources;
+        lock (transfer.Errors)
+            sources = transfer.FailedSources.Count > 0 ? transfer.Sources.Where(transfer.FailedSources.Contains).ToList() : transfer.Sources.ToList();
+        var targets = sources.Where(transfer.Resolved.ContainsKey).ToDictionary(s => s, s => transfer.Resolved[s], StringComparer.OrdinalIgnoreCase);
+        var retry = new FileTransfer(transfer.Kind, sources, transfer.Folder, TransferConflict.Replace) { Targets = targets, Elevated = true };
+        return await ElevatedFiles.StartTransfer(retry).Finished.Task;
     }
+
+    internal static string FolderNameOf(string folder) => Path.GetFileName(folder.TrimEnd('\\')) is { Length: > 0 } name ? name : folder;
 
     private sealed record Job(string Source, string Target, long Size);
 
-    private static void Run(FileTransfer transfer)
+    /// <summary>Copia o mueve en este hilo (también lo usa el proceso elevado, sin la interfaz).</summary>
+    internal static void Execute(FileTransfer transfer)
     {
         var token = transfer.Cancellation.Token;
         var jobs = new List<Job>();
@@ -218,7 +317,7 @@ public static class FileTransfers
                     continue;
                 if (!File.Exists(clean) && !Directory.Exists(clean))
                 {
-                    AddError(transfer, Loc.F("«{0}» ya no está en su carpeta.", name), admin: false);
+                    transfer.AddError(Loc.F("«{0}» ya no está en su carpeta.", name), admin: false);
                     continue;
                 }
                 // Lo que falla al leer un elemento (sin permiso, se desconectó) no frena a los demás.
@@ -228,7 +327,7 @@ public static class FileTransfers
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
                 {
-                    AddError(transfer, $"{name}: {ex.Message}", ex is not IOException);
+                    transfer.AddError($"{name}: {ex.Message}", ex is not IOException, clean);
                 }
             }
             transfer.TotalFiles = jobs.Count;
@@ -236,7 +335,17 @@ public static class FileTransfers
             transfer.StateValue = TransferState.Running;
 
             foreach (var folder in folders)
-                Directory.CreateDirectory(folder);
+            {
+                try
+                {
+                    Directory.CreateDirectory(folder);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    transfer.AddError($"{Path.GetFileName(folder)}: {ex.Message}", ex is UnauthorizedAccessException,
+                                      transfer.Resolved.FirstOrDefault(r => IsInside(folder, r.Value)).Key);
+                }
+            }
             long completed = 0;
             foreach (var job in jobs)
             {
@@ -263,16 +372,13 @@ public static class FileTransfers
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
         {
-            AddError(transfer, ex.Message, ex is UnauthorizedAccessException or System.Security.SecurityException);
+            transfer.AddError(ex.Message, ex is UnauthorizedAccessException or System.Security.SecurityException);
             transfer.StateValue = TransferState.Failed;
         }
         Log.Info($"Archivos: {transfer.Kind} de {transfer.Sources.Count} elemento(s) a {transfer.Folder}: {transfer.StateValue}"
                  + $" ({transfer.DoneFiles}/{transfer.TotalFiles} archivos, {transfer.Clock.ElapsedMilliseconds} ms"
+                 + (transfer.Elevated ? ", como administrador" : "")
                  + (transfer.Errors.Count > 0 ? $", {transfer.Errors.Count} errores: {transfer.Errors[0]}" : "") + ")");
-        if (Application.Current is { } app)
-            app.Dispatcher.BeginInvoke(() => Complete(transfer));
-        else
-            transfer.Finished.TrySetResult(transfer.State == TransferState.Done); // sin la app (pruebas)
     }
 
     /// <summary>Qué archivos y carpetas hacen falta para un elemento de origen.</summary>
@@ -281,9 +387,10 @@ public static class FileTransfers
     {
         bool isFolder = Directory.Exists(clean);
         string target = TargetFor(transfer, clean, name, isFolder);
+        transfer.Resolved[clean] = target;
         if (isFolder && IsInside(transfer.Folder, clean))
         {
-            AddError(transfer, Loc.F("«{0}» no se puede poner dentro de sí misma.", name), admin: false);
+            transfer.AddError(Loc.F("«{0}» no se puede poner dentro de sí misma.", name), admin: false);
             return;
         }
         transfer.CurrentName = name;
@@ -344,6 +451,8 @@ public static class FileTransfers
     /// <summary>Dónde queda cada elemento según lo que se decidió para los nombres repetidos.</summary>
     private static string TargetFor(FileTransfer transfer, string source, string name, bool isFolder)
     {
+        if (transfer.Targets?.TryGetValue(source, out var exact) == true)
+            return exact;
         string target = Path.Combine(transfer.Folder, name);
         if (!File.Exists(target) && !Directory.Exists(target))
             return target;
@@ -378,7 +487,7 @@ public static class FileTransfers
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            AddError(transfer, $"{Path.GetFileName(job.Source)}: {ex.Message}", ex is UnauthorizedAccessException);
+            transfer.AddError($"{Path.GetFileName(job.Source)}: {ex.Message}", ex is UnauthorizedAccessException, job.Source);
             return false;
         }
         int cancel = 0;
@@ -405,7 +514,7 @@ public static class FileTransfers
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 DeletePart(writeTo);
-                AddError(transfer, $"{Path.GetFileName(job.Source)}: {ex.Message}", ex is UnauthorizedAccessException);
+                transfer.AddError($"{Path.GetFileName(job.Source)}: {ex.Message}", ex is UnauthorizedAccessException, job.Source);
                 return false;
             }
         }
@@ -415,8 +524,8 @@ public static class FileTransfers
             DeletePart(writeTo);
         if (error == ErrorRequestAborted)
             throw new OperationCanceledException(token);
-        AddError(transfer, $"{Path.GetFileName(job.Source)}: {new System.ComponentModel.Win32Exception(error).Message}",
-                 error is ErrorAccessDenied or ErrorPrivilegeNotHeld);
+        transfer.AddError($"{Path.GetFileName(job.Source)}: {new System.ComponentModel.Win32Exception(error).Message}",
+                          error is ErrorAccessDenied or ErrorPrivilegeNotHeld, job.Source);
         return false;
     }
 
@@ -443,7 +552,7 @@ public static class FileTransfers
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            AddError(transfer, $"{Path.GetFileName(job.Source)}: {ex.Message}", ex is UnauthorizedAccessException);
+            transfer.AddError($"{Path.GetFileName(job.Source)}: {ex.Message}", ex is UnauthorizedAccessException, job.Source);
         }
     }
 
@@ -459,8 +568,8 @@ public static class FileTransfers
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // Se copió pero el original sigue (en uso, sin permiso): se avisa, nada se pierde.
-            AddError(transfer, Loc.F("{0}: se copió, pero no se pudo quitar el original ({1})", Path.GetFileName(path), ex.Message),
-                     ex is UnauthorizedAccessException);
+            transfer.AddError(Loc.F("{0}: se copió, pero no se pudo quitar el original ({1})", Path.GetFileName(path), ex.Message),
+                              ex is UnauthorizedAccessException, path);
         }
     }
 
@@ -476,14 +585,6 @@ public static class FileTransfers
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
         }
-    }
-
-    private static void AddError(FileTransfer transfer, string message, bool admin)
-    {
-        lock (transfer.Errors)
-            transfer.Errors.Add(message);
-        if (admin)
-            transfer.NeedsAdmin = true;
     }
 
     private static bool SameVolume(string a, string b) =>
