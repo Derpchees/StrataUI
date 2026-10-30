@@ -224,6 +224,8 @@ public partial class Taskbar
         yield return VolumeButton;
         yield return BatteryButton;
         yield return NotificationsButton;
+        yield return ScreenshotButton;
+        yield return PowerButton;
         yield return CpuButton;
         yield return GpuButton;
         yield return RamButton;

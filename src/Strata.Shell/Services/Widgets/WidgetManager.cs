@@ -133,7 +133,11 @@ public static class WidgetManager
         FrameworkElement content = config.Kind switch
         {
             WidgetKind.Visualizer => new VisualizerWidget(config),
-            WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps or WidgetKind.NetSpeed => new MeterWidget(config),
+            WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps or WidgetKind.NetSpeed
+                or WidgetKind.Ram or WidgetKind.Battery => new MeterWidget(config),
+            WidgetKind.Media => new MediaWidget(config),
+            WidgetKind.Calendar => new CalendarWidget(config),
+            WidgetKind.Disks => new DisksWidget(config),
             WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, config.Module) is { } module
                 ? new CustomWidget(config, module)
                 : CustomWidget.Missing(config.Module),

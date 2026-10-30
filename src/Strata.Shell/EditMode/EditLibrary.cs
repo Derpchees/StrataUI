@@ -26,6 +26,11 @@ internal static class WidgetCatalog
             new(SymbolRegular.Gauge24, Loc.T("Medidor de GPU"), () => new WidgetConfig { Kind = WidgetKind.Gpu }),
             new(SymbolRegular.Games24, Loc.T("Contador de FPS"), () => new WidgetConfig { Kind = WidgetKind.Fps }),
             new(SymbolRegular.ArrowBidirectionalUpDown24, Loc.T("Velocidad de internet"), () => new WidgetConfig { Kind = WidgetKind.NetSpeed }),
+            new(SymbolRegular.Ram20, Loc.T("Medidor de RAM"), () => new WidgetConfig { Kind = WidgetKind.Ram }),
+            new(SymbolRegular.Battery524, Loc.T("Batería"), () => new WidgetConfig { Kind = WidgetKind.Battery }),
+            new(SymbolRegular.PlayCircle24, Loc.T("Reproductor"), () => new WidgetConfig { Kind = WidgetKind.Media }),
+            new(SymbolRegular.CalendarMonth24, Loc.T("Calendario"), () => new WidgetConfig { Kind = WidgetKind.Calendar }),
+            new(SymbolRegular.HardDrive20, Loc.T("Discos"), () => new WidgetConfig { Kind = WidgetKind.Disks }),
         };
         foreach (var module in ModuleStore.All<ModuleBase>(ModuleKind.Widget))
             list.Add(new(SymbolRegular.PuzzlePiece24, module.Name, () => new WidgetConfig { Kind = WidgetKind.Custom, Module = module.Id }));
@@ -40,6 +45,11 @@ internal static class WidgetCatalog
         WidgetKind.Gpu => SymbolRegular.Gauge24,
         WidgetKind.Fps => SymbolRegular.Games24,
         WidgetKind.NetSpeed => SymbolRegular.ArrowBidirectionalUpDown24,
+        WidgetKind.Ram => SymbolRegular.Ram20,
+        WidgetKind.Battery => SymbolRegular.Battery524,
+        WidgetKind.Media => SymbolRegular.PlayCircle24,
+        WidgetKind.Calendar => SymbolRegular.CalendarMonth24,
+        WidgetKind.Disks => SymbolRegular.HardDrive20,
         _ => SymbolRegular.Clock24,
     };
 
@@ -50,6 +60,11 @@ internal static class WidgetCatalog
         WidgetKind.Gpu => Loc.T("Medidor de GPU"),
         WidgetKind.Fps => Loc.T("Contador de FPS"),
         WidgetKind.NetSpeed => Loc.T("Velocidad de internet"),
+        WidgetKind.Ram => Loc.T("Medidor de RAM"),
+        WidgetKind.Battery => Loc.T("Batería"),
+        WidgetKind.Media => Loc.T("Reproductor"),
+        WidgetKind.Calendar => Loc.T("Calendario"),
+        WidgetKind.Disks => Loc.T("Discos"),
         WidgetKind.Custom => ModuleStore.Get<WidgetModule>(ModuleKind.Widget, widget.Module)?.Name ?? Loc.T("Widget importado"),
         _ => widget.ShowDate ? Loc.T("Reloj con fecha") : Loc.T("Reloj"),
     };
@@ -61,8 +76,11 @@ internal static class WidgetCatalog
         {
             WidgetKind.Clock => new Size(widget.ShowDate ? 300 : 240, widget.ShowDate ? 150 : 110),
             WidgetKind.Visualizer => new Size(380, 150),
-            WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps => new Size(190, 120),
+            WidgetKind.Cpu or WidgetKind.Gpu or WidgetKind.Fps or WidgetKind.Ram or WidgetKind.Battery => new Size(190, 120),
             WidgetKind.NetSpeed => new Size(240, 120),
+            WidgetKind.Media => new Size(400, 130),
+            WidgetKind.Calendar => new Size(290, 330),
+            WidgetKind.Disks => new Size(310, 160),
             _ => new Size(260, 150),
         };
         return new Size(size.Width * widget.Scale, size.Height * widget.Scale);

@@ -305,7 +305,17 @@
                             </Border>
                         </Grid>
                     </Button>
-    
+
+                    <!-- Captura de pantalla (Recortes de Windows) y menú de energía -->
+                    <Button x:Name="ScreenshotButton" Style="{StaticResource StatusButton}"
+                            ToolTip="{l:T 'Captura de pantalla'}" Click="ScreenshotButton_Click">
+                        <TextBlock Style="{StaticResource IconText}" Text="&#xE722;" />
+                    </Button>
+                    <Button x:Name="PowerButton" Style="{StaticResource StatusButton}"
+                            ToolTip="{l:T 'Energía'}" Click="PowerButton_Click">
+                        <TextBlock Style="{StaticResource IconText}" Text="&#xE7E8;" />
+                    </Button>
+
                     <Border x:Name="ShowDesktopArea" Width="12" Background="Transparent" ToolTip="{l:T 'Mostrar escritorio'}"
                             MouseLeftButtonUp="ShowDesktop_Click">
                         <Border x:Name="ShowDesktopLine" Width="1" Height="16" HorizontalAlignment="Right"

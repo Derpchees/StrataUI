@@ -388,6 +388,10 @@ internal sealed class BarPreview
                     return Cell(outline, 34);
                 }
                 return Cell(Glyph(SystemStatus.GetBattery()?.Glyph ?? (char)0xE83F));
+            case BarItem.Screenshot:
+                return Cell(Glyph(0xE722));
+            case BarItem.Power:
+                return Cell(Glyph(0xE7E8));
             case BarItem.Notifications:
                 return Cell(Glyph(0xEA8F));
             case BarItem.FreeRam:

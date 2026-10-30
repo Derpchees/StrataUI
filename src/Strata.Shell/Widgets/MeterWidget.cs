@@ -44,11 +44,21 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
             text.Foreground = Brushes.White;
         }
         Effect = new DropShadowEffect { BlurRadius = 12, ShadowDepth = 1, Opacity = 0.55, Color = Colors.Black };
-        _label.Text = _kind switch { WidgetKind.Gpu => "GPU", WidgetKind.Fps => "FPS", WidgetKind.NetSpeed => "↓ " + Loc.T("Internet"), _ => "CPU" };
+        _label.Text = _kind switch
+        {
+            WidgetKind.Gpu => "GPU", WidgetKind.Fps => "FPS", WidgetKind.NetSpeed => "↓ " + Loc.T("Internet"),
+            WidgetKind.Ram => "RAM", WidgetKind.Battery => Loc.T("Batería"), _ => "CPU",
+        };
 
         Apply(config);
         Loaded += (_, _) =>
         {
+            if (_kind == WidgetKind.Battery)
+            {
+                SystemStatus.Changed += Update;
+                Update();
+                return;
+            }
             if (_kind == WidgetKind.NetSpeed)
             {
                 NetSpeed.Subscribe();
@@ -61,11 +71,18 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
             SystemMonitor.Changed += Update;
             Sensors.Changed += Update;
             // Temperaturas y FPS: con el permiso ya dado, las lecturas empiezan solas (sin preguntar).
-            Sensors.StartQuietly();
+            // La RAM no las necesita.
+            if (_kind != WidgetKind.Ram)
+                Sensors.StartQuietly();
             Update();
         };
         Unloaded += (_, _) =>
         {
+            if (_kind == WidgetKind.Battery)
+            {
+                SystemStatus.Changed -= Update;
+                return;
+            }
             if (_kind == WidgetKind.NetSpeed)
             {
                 NetSpeed.Unsubscribe();
@@ -138,6 +155,30 @@ public sealed class MeterWidget : StackPanel, IWidgetContent
             _number.Text = space > 0 ? down[..space] : down;
             _unit.Text = space > 0 ? " " + down[(space + 1)..] : "";
             _detail.Text = "↑ " + NetSpeed.Format(NetSpeed.UpBytesPerSecond);
+            return;
+        }
+        if (_kind == WidgetKind.Ram)
+        {
+            bool known = SystemMonitor.RamTotal > 0;
+            _number.Text = known ? Math.Round(SystemMonitor.RamPercent).ToString() : "—";
+            _unit.Text = known ? "%" : "";
+            // En uso / total, como el medidor de la barra.
+            _detail.Text = known
+                ? string.Create(System.Globalization.CultureInfo.CurrentCulture,
+                    $"{SystemMonitor.RamUsed / 1073741824.0:0.0}/{Math.Round(SystemMonitor.RamTotal / 1073741824.0):0} GB")
+                : "";
+            return;
+        }
+        if (_kind == WidgetKind.Battery)
+        {
+            var battery = SystemStatus.GetBattery();
+            _number.Text = battery is null ? "—" : battery.Percent.ToString();
+            _unit.Text = battery is null ? "" : "%";
+            _detail.Text = battery is null ? Loc.T("Sin batería")
+                : battery.Charging ? Loc.T("Cargando")
+                : battery.PluggedIn ? Loc.T("Conectado")
+                : battery.Remaining is { } left ? Loc.F("{0} h {1} min restantes", (int)left.TotalHours, left.Minutes)
+                : Loc.T("Con batería");
             return;
         }
         if (_kind == WidgetKind.Fps)

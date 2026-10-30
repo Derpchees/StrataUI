@@ -186,13 +186,7 @@ public partial class Taskbar : AppBarWindow
     /// </summary>
     private void ApplyOrientation()
     {
-        HiddenTrayPopup.Placement = Position switch
-        {
-            TaskbarPosition.Top => PlacementMode.Bottom,
-            TaskbarPosition.Left => PlacementMode.Right,
-            TaskbarPosition.Right => PlacementMode.Left,
-            _ => PlacementMode.Top,
-        };
+        HiddenTrayPopup.Placement = MenuPlacement(Position);
         HiddenTrayPopup.VerticalOffset = Position switch { TaskbarPosition.Top => 8, TaskbarPosition.Bottom => -8, _ => 0 };
         HiddenTrayPopup.HorizontalOffset = Position switch { TaskbarPosition.Left => 8, TaskbarPosition.Right => -8, _ => 0 };
         TurnChevron(animate: false);
@@ -824,7 +818,41 @@ public partial class Taskbar : AppBarWindow
         BarItem.NetSpeed => NetSpeedButton,
         BarItem.Clock => ClockButton,
         BarItem.Notifications => NotificationsButton,
+        BarItem.Screenshot => ScreenshotButton,
+        BarItem.Power => PowerButton,
         _ => null, // las apps abiertas son el área de las ventanas (TaskArea)
+    };
+
+    /// <summary>Recortes de Windows (lo mismo que Win+Mayús+S).</summary>
+    private void ScreenshotButton_Click(object sender, RoutedEventArgs e) =>
+        OpenUri("ms-screenclip:");
+
+    /// <summary>Bloquear, suspender, cerrar sesión, reiniciar o apagar, junto al botón.</summary>
+    private void PowerButton_Click(object sender, RoutedEventArgs e)
+    {
+        var menu = new ContextMenu { PlacementTarget = PowerButton, Placement = MenuPlacement(Position) };
+        void Add(string text, Action action)
+        {
+            var item = new MenuItem { Header = text };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+        Add(Loc.T("Bloquear"), Services.StartMenu.StartMenuService.Lock);
+        Add(Loc.T("Suspender"), Services.StartMenu.StartMenuService.Sleep);
+        Add(Loc.T("Cerrar sesión"), Services.StartMenu.StartMenuService.SignOut);
+        menu.Items.Add(new Separator());
+        Add(Loc.T("Reiniciar"), Services.StartMenu.StartMenuService.Restart);
+        Add(Loc.T("Apagar"), Services.StartMenu.StartMenuService.PowerOff);
+        menu.IsOpen = true;
+    }
+
+    /// <summary>El menú sale hacia el escritorio: arriba de una barra de abajo, a la derecha de una de la izquierda…</summary>
+    private static PlacementMode MenuPlacement(TaskbarPosition edge) => edge switch
+    {
+        TaskbarPosition.Top => PlacementMode.Bottom,
+        TaskbarPosition.Left => PlacementMode.Right,
+        TaskbarPosition.Right => PlacementMode.Left,
+        _ => PlacementMode.Top,
     };
 
     // ── Medidores ───────────────────────────────────────────────────────────

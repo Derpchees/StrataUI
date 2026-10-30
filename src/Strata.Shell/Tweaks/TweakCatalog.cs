@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.IO;
+using Microsoft.Win32;
 using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Tweaks;
@@ -351,5 +352,87 @@ public static class TweakCatalog
              PolicyLM(@"SOFTWARE\Policies\BraveSoftware\Brave", "BraveWalletDisabled", 1),
              PolicyLM(@"SOFTWARE\Policies\BraveSoftware\Brave", "BraveVPNDisabled", 1),
              PolicyLM(@"SOFTWARE\Policies\BraveSoftware\Brave", "BraveAIChatEnabled", 0)]),
+        new("edge-bloat", Browsers, Loc.T("Edge: sin compras, recomendaciones ni noticias"),
+            Loc.T("Quita el asistente de compras, las recomendaciones y el contenido de MSN de la pestaña nueva."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Edge", "EdgeShoppingAssistantEnabled", 0),
+             PolicyLM(@"SOFTWARE\Policies\Microsoft\Edge", "ShowRecommendationsEnabled", 0),
+             PolicyLM(@"SOFTWARE\Policies\Microsoft\Edge", "NewTabPageContentEnabled", 0),
+             PolicyLM(@"SOFTWARE\Policies\Microsoft\Edge", "PersonalizationReportingEnabled", 0)]),
+        new("chrome-background", Browsers, Loc.T("Chrome sin procesos en segundo plano"),
+            Loc.T("Chrome no sigue abierto (ni gasta memoria) después de cerrar su última ventana."),
+            [PolicyLM(@"SOFTWARE\Policies\Google\Chrome", "BackgroundModeEnabled", 0)],
+            Available: () => AppInstalled("chrome.exe")),
+        new("firefox-telemetry", Browsers, Loc.T("Firefox: sin telemetría ni Pocket"),
+            Loc.T("Firefox deja de enviar datos de uso y quita Pocket."),
+            [PolicyLM(@"SOFTWARE\Policies\Mozilla\Firefox", "DisableTelemetry", 1),
+             PolicyLM(@"SOFTWARE\Policies\Mozilla\Firefox", "DisablePocket", 1)],
+            Available: () => AppInstalled("firefox.exe")),
+
+        // ── Más privacidad ─────────────────────────────────────────────────────
+        new("feedback-requests", Privacy, Loc.T("No pedir opiniones"),
+            Loc.T("Windows deja de preguntar qué te parece y de mostrar avisos de comentarios."),
+            [CU(@"Software\Microsoft\Siuf\Rules", "NumberOfSIUFInPeriod", null, 0),
+             PolicyLM(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "DoNotShowFeedbackNotifications", 1)]),
+        new("inking-typing", Privacy, Loc.T("No aprender de lo que escribes"),
+            Loc.T("Windows no junta lo que escribes y dibujas con lápiz ni tus contactos para el diccionario personal."),
+            [CU(@"Software\Microsoft\InputPersonalization", "RestrictImplicitInkCollection", 0, 1),
+             CU(@"Software\Microsoft\InputPersonalization", "RestrictImplicitTextCollection", 0, 1),
+             CU(@"Software\Microsoft\InputPersonalization\TrainedDataStore", "HarvestContacts", 1, 0)]),
+        new("error-reporting", Privacy, Loc.T("Desactivar el informe de errores"),
+            Loc.T("Cuando una app falla, Windows no envía el informe a Microsoft."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Windows\Windows Error Reporting", "Disabled", 1)]),
+        new("cloud-clipboard", Privacy, Loc.T("No sincronizar el portapapeles en la nube"),
+            Loc.T("Lo que copias no se sube a tu cuenta de Microsoft para pegarlo en otros equipos. El historial (Win+V) sigue."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Windows\System", "AllowCrossDeviceClipboard", 0)]),
+
+        // ── Más actualizaciones, juegos y rendimiento ──────────────────────────
+        new("driver-updates", Update, Loc.T("No actualizar controladores con Windows Update"),
+            Loc.T("Windows Update no reemplaza tus controladores (por ejemplo, el de la tarjeta gráfica que instalaste a mano)."),
+            [PolicyLM(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "ExcludeWUDriversInQualityUpdate", 1)]),
+        new("game-mode", Gaming, Loc.T("Modo de juego"),
+            Loc.T("Windows da prioridad al juego activo y no instala actualizaciones ni muestra avisos mientras juegas."),
+            [CU(@"Software\Microsoft\GameBar", "AutoGameModeEnabled", 0, 1, missing: 1)]),
+        new("fullscreen-optimizations", Gaming, Loc.T("Desactivar optimizaciones de pantalla completa"),
+            Loc.T("Los juegos en pantalla completa la usan de verdad. Puede bajar la latencia en juegos antiguos; en los nuevos casi no cambia."),
+            [CU(@"System\GameConfigStore", "GameDVR_FSEBehaviorMode", 0, 2),
+             CU(@"System\GameConfigStore", "GameDVR_HonorUserFSEBehaviorMode", 0, 1),
+             CU(@"System\GameConfigStore", "GameDVR_DXGIHonorFSEWindowsCompatible", 0, 1)]),
+        new("ntfs-last-access", Performance, Loc.T("No anotar la fecha del último acceso"),
+            Loc.T("NTFS deja de escribir en el disco cada vez que se lee un archivo. Se aplica al reiniciar."),
+            [LM(@"SYSTEM\CurrentControlSet\Control\FileSystem", "NtfsDisableLastAccessUpdate",
+                unchecked((int)0x80000002), unchecked((int)0x80000001))]),
+        new("maps-broker", Memory, Loc.T("Desactivar la descarga de mapas"),
+            Loc.T("El servicio que baja mapas sin conexión deja de iniciarse con Windows. Se aplica al reiniciar."),
+            [LM(ServicesKey + "MapsBroker", "Start", 2, 4)],
+            Available: () => ServiceExists("MapsBroker")),
+
+        // ── Más Explorador ─────────────────────────────────────────────────────
+        new("full-path", Explorer, Loc.T("Ruta completa en la barra de título"),
+            Loc.T("El Explorador muestra la ruta entera de la carpeta, no solo su nombre."),
+            [CU(@"Software\Microsoft\Windows\CurrentVersion\Explorer\CabinetState", "FullPath", 0, 1)],
+            Refresh: TweakRefresh.Explorer),
+        new("shortcut-suffix", Explorer, Loc.T("Sin \"- Acceso directo\" en los nombres"),
+            Loc.T("Los accesos directos nuevos se llaman como el archivo, sin agregar \"- Acceso directo\"."),
+            [CU(@"Software\Microsoft\Windows\CurrentVersion\Explorer\NamingTemplates", "ShortcutNameTemplate",
+                null, "\"%s.lnk\"", kind: RegistryValueKind.String)],
+            Refresh: TweakRefresh.Explorer),
     ];
+
+    /// <summary>Hay un programa con ese ejecutable registrado (App Paths, como lo encuentra Windows).</summary>
+    private static bool AppInstalled(string exe)
+    {
+        foreach (var hive in new[] { Registry.LocalMachine, Registry.CurrentUser })
+        {
+            try
+            {
+                using var key = hive.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" + exe);
+                if (key?.GetValue(null) is string path && File.Exists(path.Trim('"')))
+                    return true;
+            }
+            catch (Exception ex) when (ex is global::System.Security.SecurityException or UnauthorizedAccessException)
+            {
+            }
+        }
+        return false;
+    }
 }

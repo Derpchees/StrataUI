@@ -139,6 +139,8 @@ public partial class Taskbar
         BarItem.Volume => [(Loc.T("Configuración de sonido"), "ms-settings:sound")],
         BarItem.Battery => [(Loc.T("Configuración de energía y batería"), "ms-settings:powersleep")],
         BarItem.Notifications => [(Loc.T("Configuración de notificaciones"), "ms-settings:notifications")],
+        BarItem.Screenshot => [(Loc.T("Configuración de captura de pantalla"), "ms-settings:keyboard")],
+        BarItem.Power => [(Loc.T("Configuración de energía y batería"), "ms-settings:powersleep")],
         BarItem.Clock => [(Loc.T("Configuración de fecha y hora"), "ms-settings:dateandtime"),
                           (Loc.T("Configuración de notificaciones"), "ms-settings:notifications")],
         BarItem.Media => [(Loc.T("Configuración de sonido"), "ms-settings:sound")],

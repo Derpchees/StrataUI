@@ -313,26 +313,16 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
 
         try
         {
-            using var process = Process.GetProcessById((int)session.GetProcessID);
-            string? path = null;
-            string name = process.ProcessName;
-            try
-            {
-                path = process.MainModule?.FileName;
-                if (path != null)
-                {
-                    var description = FileVersionInfo.GetVersionInfo(path).FileDescription;
-                    if (!string.IsNullOrWhiteSpace(description))
-                        name = description;
-                }
-            }
-            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-            {
-                // Procesos protegidos o de otra arquitectura: nos quedamos con el nombre del proceso.
-            }
-            return (path ?? process.ProcessName, name, path is null ? null : IconFromFile(path));
+            // La ruta con QueryFullProcessImageName (también de procesos protegidos): MainModule recorría
+            // todos los módulos del proceso y ProcessName todos los procesos del sistema, por cada app y
+            // cada 1.5 s con el panel de sonido abierto (unos 600 ms al abrirlo).
+            int pid = (int)session.GetProcessID;
+            if (ProcessPath(pid) is { } path)
+                return (path, DescriptionOf(path), IconFromFile(path));
+            using var process = Process.GetProcessById(pid);
+            return (process.ProcessName, process.ProcessName, null);
         }
-        catch (ArgumentException)
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception)
         {
             // El proceso ya terminó.
             var display = string.IsNullOrWhiteSpace(session.DisplayName) ? Loc.T("Aplicación") : session.DisplayName;
@@ -341,6 +331,52 @@ public sealed class AudioService : IMMNotificationClient, IDisposable
     }
 
     private static readonly Dictionary<string, ImageSource?> IconCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, string> Descriptions = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>El nombre que el .exe dice de sí mismo ("Spotify", "Google Chrome"…) o el del archivo.</summary>
+    private static string DescriptionOf(string path)
+    {
+        if (Descriptions.TryGetValue(path, out var known))
+            return known;
+        string name = Path.GetFileNameWithoutExtension(path);
+        try
+        {
+            if (FileVersionInfo.GetVersionInfo(path).FileDescription is { } description && !string.IsNullOrWhiteSpace(description))
+                name = description;
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException or UnauthorizedAccessException)
+        {
+        }
+        return Descriptions[path] = name;
+    }
+
+    private static string? ProcessPath(int pid)
+    {
+        IntPtr handle = OpenProcess(ProcessQueryLimitedInformation, false, pid);
+        if (handle == IntPtr.Zero)
+            return null;
+        try
+        {
+            var buffer = new System.Text.StringBuilder(1024);
+            int size = buffer.Capacity;
+            return QueryFullProcessImageName(handle, 0, buffer, ref size) ? buffer.ToString(0, size) : null;
+        }
+        finally
+        {
+            CloseHandle(handle);
+        }
+    }
+
+    private const int ProcessQueryLimitedInformation = 0x1000;
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(int access, bool inherit, int pid);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+    private static extern bool QueryFullProcessImageName(IntPtr process, int flags, System.Text.StringBuilder name, ref int size);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
 
     private static ImageSource? IconFromFile(string path)
     {

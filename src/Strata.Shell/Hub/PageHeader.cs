@@ -47,11 +47,21 @@ public sealed class PageHeader : Grid
         SetColumn(text, 1);
         Children.Add(text);
 
-        // Dentro de una pestaña ya está la cabecera de su entrada.
+        // Dentro de una pestaña ya está la cabecera de su entrada: queda solo la línea de para qué
+        // sirve la pestaña (sin ella no se sabía qué tenía cada una).
         Loaded += (_, _) =>
         {
-            if (TabbedPage.IsEmbedded(this))
+            if (!TabbedPage.IsEmbedded(this))
+                return;
+            if (string.IsNullOrEmpty(_subtitle.Text))
+            {
                 Visibility = Visibility.Collapsed;
+                return;
+            }
+            tile.Visibility = Visibility.Collapsed;
+            _title.Visibility = Visibility.Collapsed;
+            _subtitle.Margin = new Thickness(0);
+            Margin = new Thickness(0, 0, 0, 16);
         };
     }
 

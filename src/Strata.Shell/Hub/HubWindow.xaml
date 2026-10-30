@@ -68,16 +68,15 @@
                         <ui:SymbolIcon Symbol="Apps24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-
-                <!-- Módulos opcionales: la página para instalarlos y, dentro, las páginas de los que traen
-                     las suyas (HubWindow.FillModules). -->
+            </ui:NavigationView.MenuItems>
+            <ui:NavigationView.FooterMenuItems>
+                <!-- Módulos opcionales (arriba de Importar): la página para instalarlos y, dentro, las
+                     páginas de los que traen las suyas (HubWindow.FillModules). -->
                 <ui:NavigationViewItem x:Name="ModulesItem" Content="{l:T 'Módulos opcionales'}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PuzzlePiece24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-            </ui:NavigationView.MenuItems>
-            <ui:NavigationView.FooterMenuItems>
                 <!-- Importar: temas, animaciones, widgets, menús de Inicio y sonidos -->
                 <ui:NavigationViewItem Content="{l:T 'Importar'}" TargetPageType="{x:Type pages:ImportPage}">
                     <ui:NavigationViewItem.Icon>

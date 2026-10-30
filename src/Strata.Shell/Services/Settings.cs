@@ -67,7 +67,7 @@ public enum StartIconKind { Strata, Windows, WindowsMono, Circle, Dot, Grid, Sea
 /// (modo edición); las apps abiertas (<see cref="Apps"/>) se estiran en el espacio libre de su
 /// zona. Cada monitor lleva cada elemento una sola vez.
 /// </summary>
-public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock, Notifications, Apps, NetSpeed }
+public enum BarItem { Start, Media, Tray, Network, Bluetooth, Brightness, Volume, Battery, Cpu, Gpu, Ram, Fps, FreeRam, Clock, Notifications, Apps, NetSpeed, Screenshot, Power }
 
 /// <summary>Una barra de un monitor: su borde, sus elementos en orden y la zona de cada uno.</summary>
 public sealed class BarConfig
@@ -92,7 +92,7 @@ public sealed class ScreenLayout
 }
 
 /// <summary>Widgets de escritorio (ver Services/Widgets).</summary>
-public enum WidgetKind { Clock, Visualizer, Custom, Cpu, Gpu, Fps, NetSpeed }
+public enum WidgetKind { Clock, Visualizer, Custom, Cpu, Gpu, Fps, NetSpeed, Ram, Battery, Media, Calendar, Disks }
 
 /// <summary>
 /// Un widget del escritorio: su monitor y su posición como fracción del espacio libre del área de

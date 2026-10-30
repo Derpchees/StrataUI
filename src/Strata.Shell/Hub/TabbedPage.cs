@@ -24,7 +24,9 @@ public abstract class TabbedPage : Page
     private const string EmbeddedTag = "StrataHubTab";
 
     /// <summary>Página de cada pestaña → la entrada que la contiene (para abrir "Tray", "Updates"…).</summary>
-    public static readonly IReadOnlyDictionary<Type, Type> Hosts = new Dictionary<Type, Type>
+    public static IReadOnlyDictionary<Type, Type> Hosts => HostTable;
+
+    private static readonly Dictionary<Type, Type> HostTable = new()
     {
         [typeof(TaskbarPage)] = typeof(TaskbarHubPage),
         [typeof(TrayPage)] = typeof(TaskbarHubPage),
@@ -34,6 +36,13 @@ public abstract class TabbedPage : Page
         [typeof(GeneralPage)] = typeof(SettingsHubPage),
         [typeof(UpdatesPage)] = typeof(SettingsHubPage),
     };
+
+    /// <summary>Las pestañas de una entrada de un módulo (Optimización), para abrirlas por nombre ("--hub Privacy").</summary>
+    public static void RegisterHost(Type host, IEnumerable<Tab> tabs)
+    {
+        foreach (var tab in tabs)
+            HostTable[tab.PageType] = host;
+    }
 
     // Pestaña pedida antes de que la entrada exista (el Hub navega y la entrada la abre al crearse).
     private static Type? _requested;
