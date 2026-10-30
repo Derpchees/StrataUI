@@ -36,6 +36,27 @@ public partial class StartMenuProfile : StartMenuBase
             _avatar.Show();
             _avatar.Follow();
         };
+        // El menú se reutiliza: oculto, la foto también (si no, quedaba una ventana invisible encima).
+        IsVisibleChanged += (_, _) =>
+        {
+            if (_avatar is null)
+                return;
+            if (IsVisible)
+            {
+                _avatar.Show();
+                _avatar.Follow();
+            }
+            else
+            {
+                _avatar.Hide();
+            }
+        };
+    }
+
+    protected override void OnReopen()
+    {
+        base.OnReopen();
+        Greeting.Text = GreetingFor(DateTime.Now);
     }
 
     protected override TextBox? SearchInput => SearchBox;

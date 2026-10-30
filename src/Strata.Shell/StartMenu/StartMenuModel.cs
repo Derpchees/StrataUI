@@ -26,12 +26,25 @@ public sealed class StartMenuModel : INotifyPropertyChanged
         AllApps = source.View;
         // Las herramientas de Windows (Servicios, Desfragmentar…) no van en la lista: solo al buscarlas.
         AllApps.Filter = item => item is StartApp { IsSystemTool: false };
-        Recent = Settings.Current.StartShowRecent ? StartMenuService.GetRecent(8) : [];
+        _recent = ReadRecent();
+    }
+
+    private static IReadOnlyList<RecentItem> ReadRecent() => Settings.Current.StartShowRecent ? StartMenuService.GetRecent(8) : [];
+
+    /// <summary>El menú se vuelve a abrir (la misma ventana): sin la búsqueda de antes y con los recientes al día.</summary>
+    public void Reset()
+    {
+        Query = "";
+        ShowAllApps = false;
+        _recent = ReadRecent();
+        Notify(nameof(Recent));
+        Notify(nameof(HasRecent));
     }
 
     public ObservableCollection<StartApp> Pinned => StartMenuService.Pinned;
     public ICollectionView AllApps { get; }
-    public IReadOnlyList<RecentItem> Recent { get; }
+    private IReadOnlyList<RecentItem> _recent;
+    public IReadOnlyList<RecentItem> Recent => _recent;
     public bool HasRecent => Recent.Count > 0;
 
     // Opciones del Hub (se leen al abrir el menú)
@@ -249,12 +262,36 @@ public static class StartMenuLauncher
         }
     }
 
+    private static bool _rewarming;
+
     /// <summary>
     /// Arma una vez el estilo elegido fuera de la pantalla (ver <see cref="FlyoutWindow.WarmUp"/>): la
     /// primera apertura después de iniciar tardaba casi un segundo en verse.
     /// </summary>
     public static void WarmUp()
     {
+        if (!_rewarming)
+        {
+            // El preparado se descarta si cambian los ajustes o el tema (al arrancar, el acento del
+            // fondo): se arma otro unos segundos después, sin nada abierto, para que siga listo.
+            _rewarming = true;
+            var later = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.ApplicationIdle)
+            {
+                Interval = TimeSpan.FromSeconds(5),
+            };
+            later.Tick += (_, _) =>
+            {
+                later.Stop();
+                if (FlyoutManager.HasKeptOrOpen)
+                    return;
+                WarmUp();
+            };
+            FlyoutManager.KeptDropped += () =>
+            {
+                later.Stop();
+                later.Start();
+            };
+        }
         try
         {
             FlyoutWindow menu = Settings.Current.StartStyle switch

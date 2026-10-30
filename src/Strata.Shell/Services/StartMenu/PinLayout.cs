@@ -27,7 +27,7 @@ public sealed class PinSectionView(PinSection section, IEnumerable<object> tiles
 {
     public PinSection Section { get; } = section;
     public string Id => Section.Id;
-    public string Name => Section.Name;
+    public string Name => PinLayout.DisplayName(Section.Name);
     /// <summary><see cref="StartApp"/>, <see cref="PinFolderView"/> o <see cref="PinGapView"/>, en orden.</summary>
     public ObservableCollection<object> Tiles { get; } = new(tiles);
     public event PropertyChangedEventHandler? PropertyChanged { add { } remove { } }
@@ -40,6 +40,24 @@ public sealed class PinSectionView(PinSection section, IEnumerable<object> tiles
 public static class PinLayout
 {
     public static ObservableCollection<PinSectionView> Sections { get; } = new();
+
+    /// <summary>
+    /// El nombre por defecto de una sección se guardó ya traducido ("Anclado", "Pinned"…): se muestra
+    /// en el idioma de ahora. Un nombre elegido por el usuario queda tal cual.
+    /// </summary>
+    internal static string DisplayName(string name) =>
+        DefaultNames.Value.Contains(name) ? Loc.T("Anclado") : name;
+
+    private static readonly Lazy<HashSet<string>> DefaultNames = new(() =>
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal) { "Anclado" };
+        foreach (var language in Loc.Translated)
+        {
+            if (Loc.Load(language).TryGetValue("Anclado", out var translated))
+                names.Add(translated);
+        }
+        return names;
+    });
 
     /// <summary>Cambió la organización (para refrescar las vistas abiertas).</summary>
     public static event Action? Changed;

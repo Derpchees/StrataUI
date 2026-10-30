@@ -63,7 +63,9 @@ public abstract class FlyoutWindow : FluentWindow
 
         Deactivated += (_, _) =>
         {
-            if (!StayOpenWhenDeactivated)
+            // Uno oculto para reutilizarse no se "cierra" otra vez: contaba como recién cerrado y el
+            // clic que lo abría se tomaba como el que lo había cerrado (ver FlyoutManager.Toggle).
+            if (!StayOpenWhenDeactivated && IsVisible)
                 CloseFlyout();
         };
         PreviewKeyDown += (_, e) =>
@@ -182,7 +184,14 @@ public abstract class FlyoutWindow : FluentWindow
         ContentRendered += (_, _) =>
         {
             Log.Info($"{GetType().Name} preparado en {watch.ElapsedMilliseconds} ms");
-            Dispatcher.BeginInvoke(Close, System.Windows.Threading.DispatcherPriority.Background);
+            // Uno que se reutiliza queda listo (oculto) para la primera apertura.
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (Reusable && FlyoutManager.Keep(this))
+                    Hide();
+                else
+                    Close();
+            }, System.Windows.Threading.DispatcherPriority.Background);
         };
         Show();
     }
@@ -214,6 +223,15 @@ public abstract class FlyoutWindow : FluentWindow
             BarPosition = bar.Position;
             _bar = new WindowInteropHelper(bar).Handle;
         }
+        // La misma ventana otra vez (ver KeepAlive): desde cero, como una nueva.
+        if (_shown)
+        {
+            _closing = false;
+            _placed = false;
+            _offsetX = _offsetY = 0;
+            OnReopen();
+        }
+        _shown = true;
         if (FillWorkArea)
             SizeToContent = SizeToContent.Manual;
         BeforeShow();
@@ -232,10 +250,63 @@ public abstract class FlyoutWindow : FluentWindow
             // Si el contenido cambia de tamaño (secciones que se expanden, listas que terminan de cargar),
             // se mantiene pegado a la barra. Se difiere hasta después del render: al disparar SizeChanged
             // la ventana nativa todavía tiene el tamaño anterior.
-            SizeChanged += (_, _) => Dispatcher.BeginInvoke(() => PositionAbove(anchor),
-                                                            System.Windows.Threading.DispatcherPriority.Render);
+            _following = anchor;
+            if (!_followsSize)
+            {
+                _followsSize = true;
+                SizeChanged += (_, _) => Dispatcher.BeginInvoke(() =>
+                {
+                    if (_following is { } current)
+                        PositionAbove(current);
+                }, System.Windows.Threading.DispatcherPriority.Render);
+            }
             AnimateIn();
         });
+    }
+
+    private bool _shown, _followsSize, _discard;
+    private FrameworkElement? _following;
+
+    /// <summary>
+    /// Paneles que se abren muy seguido (el menú Inicio): al cerrarse se ocultan y la próxima apertura
+    /// usa la misma ventana. Crear una ventana nueva (su superficie de DWM y de WPF) costaba unos
+    /// 150 ms en los que la animación de entrada ya corría sin nada que mostrar.
+    /// </summary>
+    protected virtual bool KeepAlive => false;
+
+    internal bool Reusable => KeepAlive && !_discard;
+
+    /// <summary>FlyoutManager ya escucha su cierre (una sola vez aunque se reutilice).</summary>
+    internal bool Tracked { get; set; }
+
+    /// <summary>Monitor con cuyo tema se armó el panel.</summary>
+    internal string Device => _device;
+
+    /// <summary>Se ocultó para volver a usarse (en lugar de Closed).</summary>
+    internal event Action? Hidden;
+
+    /// <summary>Se va a mostrar otra vez la misma ventana: lo que debe empezar de cero.</summary>
+    protected virtual void OnReopen() { }
+
+    /// <summary>Ya no se reutiliza (cambiaron los ajustes o el tema): se cierra ahora o al terminar de cerrarse.</summary>
+    internal void Discard()
+    {
+        _discard = true;
+        if (!IsVisible)
+            Close();
+    }
+
+    private void FinishClosing()
+    {
+        if (Reusable && IsLoaded)
+        {
+            Hide();
+            Hidden?.Invoke();
+        }
+        else
+        {
+            Close();
+        }
     }
 
     /// <summary>Ejecuta algo después de que WPF dibuje esa cantidad de cuadros.</summary>
@@ -260,10 +331,10 @@ public abstract class FlyoutWindow : FluentWindow
         _closing = true;
         if (!IsVisible)
         {
-            Dispatcher.BeginInvoke(Close);
+            Dispatcher.BeginInvoke(FinishClosing);
             return;
         }
-        Services.Themes.Motion.Out(this, Moving(), BarPosition, () => Dispatcher.BeginInvoke(Close), MoveBy);
+        Services.Themes.Motion.Out(this, Moving(), BarPosition, () => Dispatcher.BeginInvoke(FinishClosing), MoveBy);
     }
 
     /// <summary>Corre la ventana entera respecto de su lugar final (lo usa la animación).</summary>
@@ -443,8 +514,16 @@ public static class FlyoutManager
         _open?.CloseFlyout();
         try
         {
+            string? device = (Window.GetWindow(anchor) as Taskbar)?.Device;
+            // El que quedó oculto, si es de este tipo y del tema de ese monitor.
+            if (_kept is T kept && kept.Reusable && kept.Device == (device ?? ThemeManager.MainDevice))
+            {
+                _open = kept;
+                kept.ShowAt(anchor);
+                return;
+            }
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            FlyoutWindow.NextDevice = (Window.GetWindow(anchor) as Taskbar)?.Device;
+            FlyoutWindow.NextDevice = device;
             var flyout = new T();
             long created = watch.ElapsedMilliseconds;
             flyout.ContentRendered += (_, _) =>
@@ -453,14 +532,8 @@ public static class FlyoutManager
                 if (watch.ElapsedMilliseconds > 300)
                     Log.Info($"Panel {typeof(T).Name} lento: creado en {created} ms, visible en {watch.ElapsedMilliseconds} ms");
             };
-            flyout.Closed += (_, _) =>
-            {
-                MemoryTrim.Schedule(TimeSpan.FromSeconds(5));
-                _lastClosedType = typeof(T);
-                _lastClosedAt = DateTime.UtcNow;
-                if (ReferenceEquals(_open, flyout))
-                    _open = null;
-            };
+            Track(flyout);
+            Keep(flyout);
             _open = flyout;
             flyout.ShowAt(anchor);
         }
@@ -470,6 +543,67 @@ public static class FlyoutManager
             Log.Error($"No se pudo abrir el panel {typeof(T).Name}", ex);
         }
     }
+
+    private static void Track(FlyoutWindow flyout)
+    {
+        if (flyout.Tracked)
+            return;
+        flyout.Tracked = true;
+        void Ended()
+        {
+            MemoryTrim.Schedule(TimeSpan.FromSeconds(5));
+            _lastClosedType = flyout.GetType();
+            _lastClosedAt = DateTime.UtcNow;
+            if (ReferenceEquals(_open, flyout))
+                _open = null;
+        }
+        flyout.Hidden += Ended;
+        flyout.Closed += (_, _) =>
+        {
+            Ended();
+            if (ReferenceEquals(_kept, flyout))
+                _kept = null;
+        };
+    }
+
+    // ── Panel que se reutiliza (el menú Inicio) ─────────────────────────────
+
+    private static FlyoutWindow? _kept;
+    private static bool _watching;
+
+    /// <summary>Guarda el panel para volver a usarlo (false si no es de los que se reutilizan).</summary>
+    internal static bool Keep(FlyoutWindow flyout)
+    {
+        if (!flyout.Reusable || ReferenceEquals(_kept, flyout))
+            return flyout.Reusable;
+        DropKept(); // otro estilo u otro monitor: queda uno solo
+        if (!_watching)
+        {
+            // Lo que el panel leyó al crearse (opciones, tema, textos traducidos) ya no vale: el próximo es nuevo.
+            _watching = true;
+            Settings.Changed += DropKept;
+            ThemeManager.ThemeChanged += DropKept;
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += (_, _) => Application.Current?.Dispatcher.BeginInvoke(DropKept);
+        }
+        Track(flyout); // el de WarmUp no pasó por Toggle
+        _kept = flyout;
+        return true;
+    }
+
+    private static void DropKept()
+    {
+        var kept = _kept;
+        _kept = null;
+        kept?.Discard();
+        if (kept != null)
+            KeptDropped?.Invoke();
+    }
+
+    /// <summary>El panel guardado se descartó (para preparar otro: ver StartMenuLauncher).</summary>
+    internal static event Action? KeptDropped;
+
+    /// <summary>Hay un panel guardado listo o uno abierto (no hace falta preparar otro).</summary>
+    internal static bool HasKeptOrOpen => _kept != null || _open != null;
 
     public static void CloseAll() => _open?.CloseFlyout();
 

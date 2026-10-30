@@ -28,6 +28,16 @@ public sealed class PinLayoutTests
     private static string[] Ids(int section) =>
         Layout[section].Items.Select(e => e.IsGap ? "_" : e.IsFolder ? "[" + string.Join(",", e.FolderApps!) + "]" : e.AppId!).ToArray();
 
+    [Theory]
+    [InlineData("Anclado")]
+    [InlineData("Pinned")]
+    [InlineData("Angeheftet")]
+    public void The_default_section_name_follows_the_language(string saved) =>
+        Assert.Equal(Strata.Shell.Services.Localization.Loc.T("Anclado"), PinLayout.DisplayName(saved));
+
+    [Fact]
+    public void A_chosen_section_name_is_kept() => Assert.Equal("Juegos", PinLayout.DisplayName("Juegos"));
+
     [Fact]
     public void Move_reorders_within_and_between_sections()
     {

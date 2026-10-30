@@ -6,6 +6,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.14.2] - 2026-10-29
+
+### Cambiado
+- **El menú Inicio se abre más rápido.** Antes se creaba una ventana nueva en cada apertura y su
+  primer cuadro tardaba unos 150 ms más (la animación de entrada ya corría sin nada que mostrar).
+  Ahora se reutiliza la misma ventana, oculta mientras tanto: arranca la animación a los ~35 ms y
+  aparece entera desde el primer cuadro. Al reabrirse empieza sin la búsqueda anterior, en el inicio y
+  con los recientes y el saludo al día. Si cambian los ajustes o el tema, se arma una nueva unos
+  segundos después, sin quitar el foco a lo que se esté usando.
+
+### Corregido
+- El nombre de la sección de anclados ("Anclado") salía en el idioma en que se creó: ahora sigue al
+  idioma de la interfaz (un nombre elegido por el usuario se respeta).
+
 ## [3.14.1] - 2026-10-29
 
 ### Corregido

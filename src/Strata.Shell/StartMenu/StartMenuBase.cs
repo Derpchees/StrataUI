@@ -50,6 +50,17 @@ public abstract class StartMenuBase : FlyoutWindow
 
     public StartMenuModel Model { get; } = new();
 
+    // Se abre muchas veces al día: la misma ventana, oculta mientras tanto (ver FlyoutWindow.KeepAlive).
+    protected override bool KeepAlive => true;
+
+    protected override void OnReopen()
+    {
+        StartMenuService.RefreshIfStale();
+        Model.Reset();
+        // Loaded no vuelve a dispararse: el foco al buscador, ya con la ventana activa.
+        Dispatcher.BeginInvoke(() => SearchInput?.Focus(), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
     /// <summary>Caja de búsqueda del estilo concreto.</summary>
     protected abstract TextBox? SearchInput { get; }
 
