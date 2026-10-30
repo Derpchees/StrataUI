@@ -32,4 +32,11 @@ public class HubSearchTests
 
     [Fact]
     public void Signs_are_ignored() => Assert.Equal(" que es esto ", HubSearch.Fold("¿Qué es esto?"));
+
+    [Fact]
+    public void The_spanish_text_also_finds_a_translated_entry()
+    {
+        var english = new HubSearchEntry("Turn off telemetry", "Privacy", "PrivacyPage", Also: "Desactivar telemetría Privacidad");
+        Assert.Single(HubSearch.Find([english], "telemetria"));
+    }
 }

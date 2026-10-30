@@ -78,6 +78,7 @@ public static class Loc
     public static void Initialize(string? setting)
     {
         Language = Resolve(setting, CultureInfo.CurrentUICulture);
+        _originals = null;
         if (Language == "es")
         {
             _table = null;
@@ -134,6 +135,20 @@ public static class Loc
     /// <summary>Texto traducido (o el original si falta la traducción).</summary>
     public static string T(string spanish) =>
         _table != null && _table.TryGetValue(spanish, out var translated) && translated.Length > 0 ? translated : spanish;
+
+    private static Dictionary<string, string>? _originals;
+
+    /// <summary>
+    /// El texto en español del que salió una traducción (el buscador del Hub encuentra "telemetría" aunque
+    /// la interfaz diga "telemetry"). Null en español o si no es una traducción.
+    /// </summary>
+    public static string? Original(string translated)
+    {
+        if (_table is null)
+            return null;
+        _originals ??= _table.GroupBy(p => p.Value).ToDictionary(g => g.Key, g => g.First().Key);
+        return _originals.TryGetValue(translated, out var spanish) && spanish != translated ? spanish : null;
+    }
 
     /// <summary>Texto con huecos {0}, {1}…: se traduce el formato y luego se rellena.</summary>
     public static string F(string spanishFormat, params object?[] args) =>

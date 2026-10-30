@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.15.1] - 2026-10-29
+
+### Corregido
+- El buscador del Hub también encuentra en español con la interfaz en otro idioma ("telemetria"
+  encuentra "Turn off telemetry").
+- Con Módulos opcionales desplegado abajo, la lista de arriba no cabía y "Widgets" no se veía: ahora se
+  pliega al ir a otra página y el Hub abre más alto.
+- Las optimizaciones decían que se deshacen en "Optimización › Respaldo", que ya no existe: ahora
+  "Módulos opcionales › Respaldo".
+
 ## [3.15.0] - 2026-10-29
 
 ### Añadido

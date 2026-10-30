@@ -12,7 +12,8 @@ namespace Strata.Shell.Hub;
 /// artificial"), la página que se abre (un nombre de <see cref="HubWindow.NavigateTo"/>) y el texto que
 /// se resalta en ella (el título de su tarjeta), si hay.
 /// </summary>
-internal sealed record HubSearchEntry(string Title, string Where, string Page, string? Highlight = null);
+/// <param name="Also">Otras palabras con que se encuentra (el texto en español si la interfaz está en otro idioma).</param>
+internal sealed record HubSearchEntry(string Title, string Where, string Page, string? Highlight = null, string Also = "");
 
 /// <summary>
 /// Lo que el buscador del Hub encuentra: las entradas de la navegación, sus pestañas, las
@@ -65,6 +66,8 @@ internal static class HubSearch
             entries.Add(new(BarLayout.Name(item), bar, "TaskbarPage"));
         foreach (var widget in WidgetCatalog.All())
             entries.Add(new(widget.Name, Loc.T("Widgets"), "WidgetsPage"));
+        // También en español: la interfaz puede estar en inglés y uno buscar "telemetría".
+        entries = entries.Select(e => e with { Also = string.Join(" ", new[] { Loc.Original(e.Title), Loc.Original(e.Where) }.Where(t => t != null)) }).ToList();
         // Lo mismo dos veces (una pestaña que se llama como su entrada): queda uno.
         return entries.DistinctBy(e => (e.Title, e.Page)).ToList();
     }
@@ -76,7 +79,7 @@ internal static class HubSearch
         if (words.Length == 0)
             return [];
         return entries
-            .Select(entry => (entry, text: Fold(entry.Title), where: Fold(entry.Where)))
+            .Select(entry => (entry, text: Fold(entry.Title), where: Fold(entry.Where + " " + entry.Also)))
             .Where(e => words.All(w => e.text.Contains(w) || e.where.Contains(w)))
             .OrderBy(e => e.text.StartsWith(words[0]) ? 0 : e.text.Contains(" " + words[0]) ? 1 : e.text.Contains(words[0]) ? 2 : 3)
             .ThenBy(e => e.text.Length)

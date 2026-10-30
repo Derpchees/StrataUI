@@ -32,8 +32,8 @@ public partial class HubWindow : FluentWindow
         {
             _currentPage = e.Page;
             // Una página de Módulos opcionales (o de Optimización): su entrada se despliega y queda marcada.
-            if (e.Page is ModulesPage || e.Page?.GetType().Assembly != typeof(HubWindow).Assembly)
-                ModulesItem.IsExpanded = true;
+            // En otra se pliega: abajo, desplegada, le quitaba lugar a la lista de arriba (Widgets no se veía).
+            ModulesItem.IsExpanded = e.Page is ModulesPage || e.Page?.GetType().Assembly != typeof(HubWindow).Assembly;
             if (e.Page is FrameworkElement page)
             {
                 Motion.In(page, page, TaskbarPosition.Bottom, 0.6);

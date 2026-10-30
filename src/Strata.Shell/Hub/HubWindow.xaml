@@ -8,7 +8,7 @@
                  xmlns:hub="clr-namespace:Strata.Shell.Hub"
                  Title="Strata UI"
                  Icon="pack://application:,,,/Assets/strataui.ico"
-                 Width="1040" Height="720" MinWidth="780" MinHeight="520"
+                 Width="1040" Height="820" MinWidth="780" MinHeight="520"
                  WindowStartupLocation="CenterScreen"
                  ExtendsContentIntoTitleBar="True"
                  WindowCornerPreference="Round">
