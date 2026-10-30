@@ -30,6 +30,10 @@
                            IsBackButtonVisible="Collapsed"
                            IsPaneToggleVisible="False"
                            OpenPaneLength="250">
+            <!-- Buscador de páginas, pestañas, optimizaciones y widgets (Ctrl+F) -->
+            <ui:NavigationView.PaneHeader>
+                <hub:HubSearchBox x:Name="Search" />
+            </ui:NavigationView.PaneHeader>
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="{l:T 'Dashboard'}" TargetPageType="{x:Type pages:HomePage}">
                     <ui:NavigationViewItem.Icon>

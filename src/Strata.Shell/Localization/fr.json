@@ -1311,8 +1311,7 @@
   "Extraer todo": "Tout extraire",
   "{0}: método de compresión no admitido": "{0} : méthode de compression non prise en charge",
   "{0}: error de CRC (el comprimido está dañado)": "{0} : erreur CRC (l’archive est endommagée)",
-  "{0}: el comprimido está dañado ({1})": "{0} : l’archive est endommagée ({1})"
-,
+  "{0}: el comprimido está dañado ({1})": "{0} : l’archive est endommagée ({1})",
   "Configuración de captura de pantalla": "Paramètres de capture d'écran",
   "Medidor de RAM": "Indicateur de RAM",
   "Reproductor": "Lecteur",
@@ -1358,5 +1357,7 @@
   "Que Windows responda más rápido y deje más recursos para lo que estás usando.": "Un Windows plus réactif qui laisse plus de ressources à ce que vous utilisez.",
   "Archivos que sobran, apps preinstaladas y extras de los navegadores.": "Fichiers inutiles, applications préinstallées et extras des navigateurs.",
   "Telemetría, anuncios, funciones de IA y actualizaciones automáticas.": "Télémétrie, publicités, fonctions d'IA et mises à jour automatiques.",
-  "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "Comportement du système, son apparence, l'Explorateur et le multitâche."
+  "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "Comportement du système, son apparence, l'Explorateur et le multitâche.",
+  "Hub": "Hub",
+  "Buscar en Strata UI": "Rechercher dans Strata UI"
 }

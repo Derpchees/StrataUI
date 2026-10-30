@@ -11,7 +11,7 @@ namespace Strata.Shell.Widgets;
 
 /// <summary>
 /// El mes en curso para el escritorio: nombre del mes, iniciales de los días (desde el primer día de la
-/// semana del idioma) y hoy marcado con el color de acento. Cambia de día con el reloj compartido.
+/// semana de la región) y hoy marcado con el color de acento. Cambia de día con el reloj compartido.
 /// </summary>
 public sealed class CalendarWidget : StackPanel, IWidgetContent
 {
@@ -60,7 +60,8 @@ public sealed class CalendarWidget : StackPanel, IWidgetContent
         _month.Text = char.ToUpper(month[0], culture) + month[1..];
 
         _days.Children.Clear();
-        var first = culture.DateTimeFormat.FirstDayOfWeek;
+        // El primer día de la semana es el de la región de Windows; los nombres, del idioma de Strata UI.
+        var first = CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
         for (int i = 0; i < 7; i++)
         {
             var day = (DayOfWeek)(((int)first + i) % 7);

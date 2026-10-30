@@ -1311,8 +1311,7 @@
   "Extraer todo": "Extrair tudo",
   "{0}: método de compresión no admitido": "{0}: método de compactação não suportado",
   "{0}: error de CRC (el comprimido está dañado)": "{0}: erro de CRC (o arquivo compactado está danificado)",
-  "{0}: el comprimido está dañado ({1})": "{0}: o arquivo compactado está danificado ({1})"
-,
+  "{0}: el comprimido está dañado ({1})": "{0}: o arquivo compactado está danificado ({1})",
   "Configuración de captura de pantalla": "Configurações de captura de tela",
   "Medidor de RAM": "Medidor de RAM",
   "Reproductor": "Reprodutor",
@@ -1358,5 +1357,7 @@
   "Que Windows responda más rápido y deje más recursos para lo que estás usando.": "Que o Windows responda mais rápido e deixe mais recursos para o que você está usando.",
   "Archivos que sobran, apps preinstaladas y extras de los navegadores.": "Arquivos que sobram, apps pré-instalados e extras dos navegadores.",
   "Telemetría, anuncios, funciones de IA y actualizaciones automáticas.": "Telemetria, anúncios, recursos de IA e atualizações automáticas.",
-  "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "Comportamento do sistema, sua aparência, o Explorador e a multitarefa."
+  "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "Comportamento do sistema, sua aparência, o Explorador e a multitarefa.",
+  "Hub": "Hub",
+  "Buscar en Strata UI": "Pesquisar no Strata UI"
 }

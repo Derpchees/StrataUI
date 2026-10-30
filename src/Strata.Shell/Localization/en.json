@@ -1311,8 +1311,7 @@
   "Extraer todo": "Extract all",
   "{0}: método de compresión no admitido": "{0}: unsupported compression method",
   "{0}: error de CRC (el comprimido está dañado)": "{0}: CRC error (the archive is damaged)",
-  "{0}: el comprimido está dañado ({1})": "{0}: the archive is damaged ({1})"
-,
+  "{0}: el comprimido está dañado ({1})": "{0}: the archive is damaged ({1})",
   "Configuración de captura de pantalla": "Screenshot settings",
   "Medidor de RAM": "RAM meter",
   "Reproductor": "Media player",
@@ -1358,5 +1357,7 @@
   "Que Windows responda más rápido y deje más recursos para lo que estás usando.": "Make Windows respond faster and leave more resources for what you're using.",
   "Archivos que sobran, apps preinstaladas y extras de los navegadores.": "Leftover files, preinstalled apps and browser extras.",
   "Telemetría, anuncios, funciones de IA y actualizaciones automáticas.": "Telemetry, ads, AI features and automatic updates.",
-  "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "System behavior, its look, File Explorer and multitasking."
+  "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "System behavior, its look, File Explorer and multitasking.",
+  "Hub": "Hub",
+  "Buscar en Strata UI": "Search Strata UI"
 }

@@ -171,6 +171,8 @@ public sealed class StrataSettings
     public bool StartAppsZoned { get; set; }
     /// <summary>Al iniciar con Windows también se abre el Hub (por defecto, solo las barras).</summary>
     public bool HubAtStartup { get; set; }
+    /// <summary>Dónde quedó el Hub al cerrarlo (izquierda, arriba, derecha, abajo en píxeles y si estaba maximizado); null = centrado.</summary>
+    public int[]? HubPlacement { get; set; }
     /// <summary>Clic en el medidor de RAM: la libera (si no, abre el Administrador de tareas). Clic derecho para cambiarlo.</summary>
     public bool RamClickFreesRam { get; set; } = true;
     /// <summary>La velocidad de internet en bits (Mb/s, como los planes de internet) en vez de bytes (MB/s).</summary>
@@ -516,7 +518,9 @@ public static class Settings
             // siguiente arranque empezaba de cero (y guardaba encima).
             SafeFile.Write(FilePath, JsonSerializer.Serialize(Current, Json));
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        // InvalidOperationException: otro hilo cambió una lista mientras se serializaba (desde un hilo de
+        // fondo, sin esto, cerraba Strata UI); el siguiente guardado la escribe completa.
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             Log.Error("No se pudo guardar la configuración", ex);
         }

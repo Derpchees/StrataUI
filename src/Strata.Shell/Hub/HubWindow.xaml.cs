@@ -48,6 +48,139 @@ public partial class HubWindow : FluentWindow
             Motion.In(Root, Root, TaskbarPosition.Bottom, 0.8);
             Nav.Navigate(_startPage);
         };
+
+        // Vuelve a abrir donde quedó (mismo tamaño, monitor y maximizado); centrado solo la primera vez.
+        if (Settings.Current.HubPlacement is { Length: 5 })
+            WindowStartupLocation = WindowStartupLocation.Manual;
+        SourceInitialized += (_, _) => RestorePlacement();
+        Closing += (_, _) => SavePlacement();
+
+        Search.Navigation = NavigationEntries;
+        Search.Chosen += entry =>
+        {
+            NavigateTo(entry.Page);
+            if (entry.Highlight is { } text)
+                Highlight(text);
+        };
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.F && System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control)
+            {
+                Search.FocusBox();
+                e.Handled = true;
+            }
+        };
+    }
+
+    // ── Lugar de la ventana ─────────────────────────────────────────────────
+    // GetWindowPlacement guarda píxeles reales (vale con monitores a distinta escala) y, al restaurar,
+    // Windows trae la ventana a la pantalla si ese monitor ya no está.
+
+    private void RestorePlacement()
+    {
+        if (Settings.Current.HubPlacement is not { Length: 5 } saved)
+            return;
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        var placement = new WindowPlacement { Length = System.Runtime.InteropServices.Marshal.SizeOf<WindowPlacement>() };
+        if (!GetWindowPlacement(hwnd, ref placement))
+            return;
+        placement.Normal = new NativeRect { Left = saved[0], Top = saved[1], Right = saved[2], Bottom = saved[3] };
+        // Solo el lugar, todavía oculta (WPF la muestra después); maximizada la deja WPF al mostrarla.
+        placement.ShowCommand = ShowHide;
+        placement.Flags = 0;
+        if (placement.Normal.Right - placement.Normal.Left > 200 && placement.Normal.Bottom - placement.Normal.Top > 200)
+        {
+            SetWindowPlacement(hwnd, ref placement);
+            if (saved[4] == 1)
+                WindowState = WindowState.Maximized;
+        }
+    }
+
+    private void SavePlacement()
+    {
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        var placement = new WindowPlacement { Length = System.Runtime.InteropServices.Marshal.SizeOf<WindowPlacement>() };
+        if (hwnd == IntPtr.Zero || !GetWindowPlacement(hwnd, ref placement))
+            return;
+        var r = placement.Normal;
+        Settings.Current.HubPlacement = [r.Left, r.Top, r.Right, r.Bottom, WindowState == WindowState.Maximized ? 1 : 0];
+        Settings.Save();
+    }
+
+    private const int ShowHide = 0;
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct NativeRect { public int Left, Top, Right, Bottom; }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct NativePoint { public int X, Y; }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct WindowPlacement
+    {
+        public int Length, Flags, ShowCommand;
+        public NativePoint Min, Max;
+        public NativeRect Normal;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetWindowPlacement(IntPtr hwnd, ref WindowPlacement placement);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetWindowPlacement(IntPtr hwnd, ref WindowPlacement placement);
+
+    /// <summary>Las entradas de la navegación con página (también las de dentro de Módulos opcionales).</summary>
+    private IEnumerable<(string Title, Type Page)> NavigationEntries()
+    {
+        IEnumerable<NavigationViewItem> Flatten(System.Collections.IList items) =>
+            items.OfType<NavigationViewItem>().SelectMany(item => Flatten(item.MenuItems).Prepend(item));
+        return Flatten(Nav.MenuItems).Concat(Flatten(Nav.FooterMenuItems))
+            .Where(item => item.TargetPageType != null && item.Content is string)
+            .Select(item => ((string)item.Content, item.TargetPageType!));
+    }
+
+    /// <summary>
+    /// Lleva a la vista la tarjeta con ese título (un resultado del buscador) y la hace parpadear. La
+    /// página (y su pestaña) se arma un momento después de navegar: se busca durante un par de segundos.
+    /// </summary>
+    private async void Highlight(string title)
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            await Task.Delay(100);
+            if (FindText(Nav, title) is not { } text)
+                continue;
+            FrameworkElement target = text;
+            for (DependencyObject? node = text; node != null; node = System.Windows.Media.VisualTreeHelper.GetParent(node))
+            {
+                if (node is CardControl card)
+                {
+                    target = card;
+                    break;
+                }
+            }
+            target.BringIntoView();
+            target.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(1, 0.35, TimeSpan.FromMilliseconds(220))
+            {
+                AutoReverse = true,
+                RepeatBehavior = new System.Windows.Media.Animation.RepeatBehavior(2),
+                FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop,
+            });
+            return;
+        }
+    }
+
+    private static System.Windows.Controls.TextBlock? FindText(DependencyObject root, string text)
+    {
+        for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is System.Windows.Controls.TextBlock { IsVisible: true } block && block.Text == text)
+                return block;
+            if (FindText(child, text) is { } found)
+                return found;
+        }
+        return null;
     }
 
     /// <summary>

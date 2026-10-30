@@ -13,10 +13,10 @@ public sealed class OptimizationPages : IHubModule
 {
     public OptimizationPages()
     {
-        TabbedPage.RegisterHost(typeof(SpeedHubPage), SpeedHubPage.Tabs);
-        TabbedPage.RegisterHost(typeof(CleanupHubPage), CleanupHubPage.Tabs);
-        TabbedPage.RegisterHost(typeof(PrivacyHubPage), PrivacyHubPage.Tabs);
-        TabbedPage.RegisterHost(typeof(WindowsHubPage), WindowsHubPage.Tabs);
+        TabbedPage.RegisterHost(typeof(SpeedHubPage), Loc.T("Rendimiento"), SpeedHubPage.Tabs);
+        TabbedPage.RegisterHost(typeof(CleanupHubPage), Loc.T("Limpieza y apps"), CleanupHubPage.Tabs);
+        TabbedPage.RegisterHost(typeof(PrivacyHubPage), Loc.T("Privacidad"), PrivacyHubPage.Tabs);
+        TabbedPage.RegisterHost(typeof(WindowsHubPage), Loc.T("Personalizar Windows"), WindowsHubPage.Tabs);
     }
 
     public IReadOnlyList<HubModulePage> Pages { get; } =

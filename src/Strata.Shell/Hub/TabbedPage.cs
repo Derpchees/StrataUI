@@ -26,22 +26,30 @@ public abstract class TabbedPage : Page
     /// <summary>Página de cada pestaña → la entrada que la contiene (para abrir "Tray", "Updates"…).</summary>
     public static IReadOnlyDictionary<Type, Type> Hosts => HostTable;
 
-    private static readonly Dictionary<Type, Type> HostTable = new()
-    {
-        [typeof(TaskbarPage)] = typeof(TaskbarHubPage),
-        [typeof(TrayPage)] = typeof(TaskbarHubPage),
-        [typeof(MediaPage)] = typeof(TaskbarHubPage),
-        [typeof(AppearancePage)] = typeof(AppearanceHubPage),
-        [typeof(ColorsPage)] = typeof(AppearanceHubPage),
-        [typeof(GeneralPage)] = typeof(SettingsHubPage),
-        [typeof(UpdatesPage)] = typeof(SettingsHubPage),
-    };
+    private static readonly Dictionary<Type, Type> HostTable = new();
 
-    /// <summary>Las pestañas de una entrada de un módulo (Optimización), para abrirlas por nombre ("--hub Privacy").</summary>
-    public static void RegisterHost(Type host, IEnumerable<Tab> tabs)
+    /// <summary>Cada entrada con pestañas, su título y sus pestañas (para el buscador del Hub).</summary>
+    internal static IReadOnlyList<(Type Host, string Title, IReadOnlyList<Tab> Tabs)> Registered => RegisteredHosts;
+
+    private static readonly List<(Type Host, string Title, IReadOnlyList<Tab> Tabs)> RegisteredHosts = new();
+
+    static TabbedPage()
+    {
+        RegisterHost(typeof(TaskbarHubPage), Loc.T("Barra de tareas"), TaskbarHubPage.Tabs);
+        RegisterHost(typeof(AppearanceHubPage), Loc.T("Tema y colores"), AppearanceHubPage.Tabs);
+        RegisterHost(typeof(SettingsHubPage), Loc.T("General"), SettingsHubPage.Tabs);
+    }
+
+    /// <summary>
+    /// Las pestañas de una entrada, para abrirlas por nombre ("--hub Tray", "--hub Privacy") y
+    /// encontrarlas en el buscador. Las de un módulo (Optimización) las registra el módulo.
+    /// </summary>
+    public static void RegisterHost(Type host, string title, IReadOnlyList<Tab> tabs)
     {
         foreach (var tab in tabs)
             HostTable[tab.PageType] = host;
+        RegisteredHosts.RemoveAll(r => r.Host == host);
+        RegisteredHosts.Add((host, title, tabs));
     }
 
     // Pestaña pedida antes de que la entrada exista (el Hub navega y la entrada la abre al crearse).
@@ -164,25 +172,34 @@ public abstract class TabbedPage : Page
 
 /// <summary>Barra de tareas: la barra, la bandeja del sistema y multimedia.</summary>
 public sealed class TaskbarHubPage() : TabbedPage(SymbolRegular.PanelBottom20, Loc.T("Barra de tareas"),
-    Loc.T("El modo edición, las apps abiertas, la bandeja del sistema y lo que suena."), screenPicker: false,
+    Loc.T("El modo edición, las apps abiertas, la bandeja del sistema y lo que suena."), screenPicker: false, Tabs)
+{
+    internal static readonly IReadOnlyList<Tab> Tabs =
     [
         new(Loc.T("Barra"), SymbolRegular.PanelBottom20, typeof(TaskbarPage)),
         new(Loc.T("Bandeja del sistema"), SymbolRegular.ChevronUp24, typeof(TrayPage)),
         new(Loc.T("Multimedia"), SymbolRegular.MusicNote224, typeof(MediaPage)),
-    ]);
+    ];
+}
 
 /// <summary>Tema y colores.</summary>
 public sealed class AppearanceHubPage() : TabbedPage(SymbolRegular.PaintBrush24, Loc.T("Tema y colores"),
-    Loc.T("Estilo, animaciones, color de acento y fondo de pantalla."), screenPicker: false,
+    Loc.T("Estilo, animaciones, color de acento y fondo de pantalla."), screenPicker: false, Tabs)
+{
+    internal static readonly IReadOnlyList<Tab> Tabs =
     [
         new(Loc.T("Tema"), SymbolRegular.PaintBrush24, typeof(AppearancePage)),
         new(Loc.T("Colores"), SymbolRegular.Color24, typeof(ColorsPage)),
-    ]);
+    ];
+}
 
 /// <summary>General y actualizaciones.</summary>
 public sealed class SettingsHubPage() : TabbedPage(SymbolRegular.Settings24, Loc.T("General"),
-    Loc.T("Inicio con Windows, idioma, actualizaciones y tu configuración."), screenPicker: false,
+    Loc.T("Inicio con Windows, idioma, actualizaciones y tu configuración."), screenPicker: false, Tabs)
+{
+    internal static readonly IReadOnlyList<Tab> Tabs =
     [
         new(Loc.T("General"), SymbolRegular.Settings24, typeof(GeneralPage)),
         new(Loc.T("Actualizaciones"), SymbolRegular.ArrowDownload24, typeof(UpdatesPage)),
-    ]);
+    ];
+}

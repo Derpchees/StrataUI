@@ -6,6 +6,35 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.15.0] - 2026-10-29
+
+### Añadido
+- **Buscador en el Hub** (arriba de la navegación, Ctrl+F): encuentra páginas, pestañas,
+  optimizaciones, elementos de la barra y widgets sin importar mayúsculas ni acentos. Al elegir una
+  optimización, abre su pestaña y resalta la tarjeta.
+- **Widgets de escritorio nuevos**: reproductor (carátula, título, artista y anterior / reproducir /
+  siguiente), calendario del mes, espacio libre de los discos, medidor de RAM y batería.
+- **Elementos nuevos para la barra**: captura de pantalla (Recortes de Windows) y un menú de energía
+  (bloquear, suspender, cerrar sesión, reiniciar, apagar).
+- **13 optimizaciones nuevas**: no pedir opiniones, no aprender de lo que escribes, sin informe de
+  errores, sin portapapeles en la nube, no actualizar controladores con Windows Update, Modo de juego,
+  sin optimizaciones de pantalla completa, sin fecha de último acceso en NTFS, sin descarga de mapas,
+  ruta completa en el Explorador, sin "- Acceso directo", Edge sin compras ni noticias, y Chrome y
+  Firefox (solo si están instalados).
+- El Hub vuelve a abrir donde quedó (tamaño, monitor y maximizado).
+
+### Cambiado
+- **Optimización en pestañas**: cinco entradas (Rendimiento, Limpieza y apps, Privacidad,
+  Personalizar Windows y Respaldo) en lugar de quince páginas sueltas.
+- **Módulos opcionales** pasa al grupo de abajo del Hub, arriba de Importar.
+- Dentro de una pestaña, cada página conserva la línea que dice para qué sirve.
+- **El panel de sonido abre más rápido**: el nombre y el ícono de cada app con sonido se leían
+  recorriendo todos los módulos del proceso (y todos los procesos del sistema), al abrir y cada 1,5 s.
+
+### Corregido
+- Los controles multimedia ya no dejan un error en el registro si la app que sonaba se acaba de cerrar.
+- Si otro hilo cambiaba la configuración mientras se guardaba, el error podía cerrar Strata UI.
+
 ## [3.14.2] - 2026-10-29
 
 ### Cambiado

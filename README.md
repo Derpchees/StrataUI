@@ -85,7 +85,7 @@ and everything goes back to normal.
     <td valign="top">
       <img src="docs/icons/widgets.svg" width="40" align="left" alt="" />
       <b><a href="#widgets">Widgets</a></b><br />
-      Clock, music visualizer and big performance readouts on the desktop.
+      Clock, calendar, media player, drives, battery and performance readouts on the desktop.
     </td>
     <td valign="top">
       <img src="docs/icons/themes.svg" width="40" align="left" alt="" />
@@ -154,7 +154,8 @@ and everything goes back to normal.
 
 - Choose what each bar shows, in which order, and where: the **start, center or end** of the bar.
   Start and open apps are items too, so alignment is simply where you put them.
-- Items: tray, network, Bluetooth, brightness, volume, battery, clock, notifications, media,
+- Items: tray, network, Bluetooth, brightness, volume, battery, clock, notifications, media, a
+  screenshot button, a power menu (lock, sleep, sign out, restart, shut down),
   performance meters and internet speed (with a built-in speed test).
 - Each monitor gets its own Start menu, tray and status items.
 - Rearrange them in edit mode or right on the bar; tray icons move between the bar and the hidden
@@ -284,9 +285,10 @@ and everything goes back to normal.
 
 ### <img src="docs/icons/widgets.svg" width="28" align="center" alt="" /> Widgets
 
-A digital clock (with or without the date), a music visualizer and big CPU, GPU, FPS and internet
-speed readouts on your desktop. Add, move and resize them in edit mode on any monitor; they stay
-visible with Show desktop.
+A digital clock (with or without the date), a month calendar, a media player with cover art and
+controls, a music visualizer, free space on your drives and big CPU, GPU, RAM, FPS, battery and
+internet speed readouts on your desktop. Add, move and resize them in edit mode on any monitor; they
+stay visible with Show desktop.
 
 <a id="themes-and-colors"></a>
 
@@ -305,14 +307,15 @@ visible with Show desktop.
 ### <img src="docs/icons/optimization.svg" width="28" align="center" alt="" /> Optimization
 
 An optional module, installed from Hub > Optional modules with one click. Every change is backed up, so everything
-can be undone.
+can be undone. Its pages are grouped in tabs:
 
-| Area | What it does |
+| Section | Tabs |
 |---|---|
-| **Cleanup** | Temp files, crash dumps, update caches and more. Never the Recycle Bin. |
-| **Performance and memory** | Fewer svchost processes, SysMain, Widgets and other background services. |
-| **Preinstalled apps** | Remove what you don't use, with dedicated cards for **Microsoft Edge** and the **Xbox Game Bar**. |
-| **Privacy and more** | Privacy, AI features, Windows Update, Explorer and more. |
+| **Performance** | General responsiveness, memory (fewer svchost processes, SysMain and other background services), games (Game Mode, Game DVR, fullscreen optimizations) and hardware vendor services. |
+| **Cleanup and apps** | Temp files, crash dumps and update caches (never the Recycle Bin); preinstalled apps, with dedicated cards for **Microsoft Edge** and the **Xbox Game Bar**; browser extras for Edge, Chrome, Firefox and Brave. |
+| **Privacy** | Telemetry, ads, feedback requests, error reporting, AI features and Windows Update (including keeping your own drivers). |
+| **Customize Windows** | System behavior, appearance, File Explorer and multitasking. |
+| **Backup** | Every original value, to undo any change. |
 
 - Where Windows doesn't allow uninstalling Edge (outside the EEA), it is turned off instead (no
   shortcuts, no background processes) and can be restored with one click.

@@ -110,6 +110,7 @@ public static class SettingsTransfer
         to.ParkedMonitors = from.ParkedMonitors;
         to.TaskbarPinsImported = from.TaskbarPinsImported;
         to.LastUpdateCheck = from.LastUpdateCheck;
+        to.HubPlacement = from.HubPlacement;
     }
 
     /// <summary>Muestra el archivo exportado en el Explorador.</summary>

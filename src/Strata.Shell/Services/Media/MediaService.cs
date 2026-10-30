@@ -262,28 +262,34 @@ public static class MediaService
 
     // ── Controles ───────────────────────────────────────────────────────────
 
-    public static async void PlayPause()
+    public static void PlayPause() => Send(session => session.TryTogglePlayPauseAsync());
+
+    public static void Next() => Send(session => session.TrySkipNextAsync());
+
+    public static void Previous() => Send(session => session.TrySkipPreviousAsync());
+
+    public static void Seek(TimeSpan position)
     {
-        if (_session != null)
-            await _session.TryTogglePlayPauseAsync();
+        if (CanSeek)
+            Send(session => session.TryChangePlaybackPositionAsync(position.Ticks));
     }
 
-    public static async void Next()
+    /// <summary>
+    /// Una orden a la app que suena. Si la app se acaba de cerrar, Windows lanza (servidor RPC no
+    /// disponible): no pasa nada, la sesión se va con el próximo aviso de cambios.
+    /// </summary>
+    private static async void Send(Func<GlobalSystemMediaTransportControlsSession, Windows.Foundation.IAsyncOperation<bool>> command)
     {
-        if (_session != null)
-            await _session.TrySkipNextAsync();
-    }
-
-    public static async void Previous()
-    {
-        if (_session != null)
-            await _session.TrySkipPreviousAsync();
-    }
-
-    public static async void Seek(TimeSpan position)
-    {
-        if (_session != null && CanSeek)
-            await _session.TryChangePlaybackPositionAsync(position.Ticks);
+        if (_session is not { } session)
+            return;
+        try
+        {
+            await command(session);
+        }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or InvalidOperationException)
+        {
+            Log.Info($"Multimedia: la app no recibió la orden ({ex.Message})");
+        }
     }
 
     /// <summary>
