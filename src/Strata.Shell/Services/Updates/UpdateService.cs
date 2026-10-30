@@ -9,7 +9,9 @@ using Strata.Shell.Services.Localization;
 namespace Strata.Shell.Services.Updates;
 
 /// <summary>Versión publicada más nueva que la instalada.</summary>
-public sealed record UpdateInfo(Version Version, string Notes, string? InstallerUrl, long InstallerSize, string PageUrl);
+/// <param name="InstallerSha256">El hash que GitHub publica del instalador (hexadecimal; null si no lo trae).</param>
+public sealed record UpdateInfo(Version Version, string Notes, string? InstallerUrl, long InstallerSize, string PageUrl,
+                                string? InstallerSha256 = null);
 
 public enum UpdateState { Idle, Checking, UpToDate, Available, Downloading, Error }
 
@@ -133,7 +135,7 @@ public static class UpdateService
         string tag = root.GetProperty("tag_name").GetString() ?? "";
         if (!Version.TryParse(tag.TrimStart('v', 'V'), out var version))
             return null;
-        string? url = null;
+        string? url = null, sha256 = null;
         long size = 0;
         if (root.TryGetProperty("assets", out var assets))
         {
@@ -144,13 +146,17 @@ public static class UpdateService
                 {
                     url = asset.GetProperty("browser_download_url").GetString();
                     size = asset.TryGetProperty("size", out var s) ? s.GetInt64() : 0;
+                    // "sha256:…" (GitHub lo calcula al subir el archivo).
+                    if (asset.TryGetProperty("digest", out var digest) && digest.ValueKind == JsonValueKind.String
+                        && digest.GetString() is { } d && d.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                        sha256 = d["sha256:".Length..];
                     break;
                 }
             }
         }
         string notes = root.TryGetProperty("body", out var body) ? body.GetString() ?? "" : "";
         string page = root.TryGetProperty("html_url", out var html) ? html.GetString() ?? "" : "";
-        return new UpdateInfo(version, notes.Trim(), url, size, page);
+        return new UpdateInfo(version, notes.Trim(), url, size, page, sha256);
     }
 
     /// <summary>
@@ -185,6 +191,17 @@ public static class UpdateService
                         Changed?.Invoke();
                     }
                 }
+                // Una descarga cortada sin error (Wi-Fi que se cae) dejaba un instalador a medias, y
+                // Strata UI ya se había cerrado: se revisa antes de seguir.
+                if (total > 0 && read != total)
+                    throw new IOException($"descarga incompleta ({read} de {total} bytes)");
+            }
+            if (Available.InstallerSha256 is { } expected)
+            {
+                await using var downloaded = File.OpenRead(file);
+                string actual = Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(downloaded));
+                if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
+                    throw new IOException($"el instalador no coincide con el publicado (SHA-256 {actual})");
             }
             Log.Info($"Instalando Strata UI {Available.Version} desde {file}");
             Process.Start(new ProcessStartInfo(file, "/SILENT /SUPPRESSMSGBOXES /NORESTART") { UseShellExecute = true });

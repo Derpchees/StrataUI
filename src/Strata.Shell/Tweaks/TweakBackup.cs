@@ -128,25 +128,9 @@ public sealed class TweakBackup
         _ => data,
     };
 
-    private Document Load()
-    {
-        try
-        {
-            if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize<Document>(File.ReadAllText(FilePath), Json) ?? new();
-        }
-        catch (Exception ex) when (ex is IOException or JsonException)
-        {
-            Log.Error("Respaldo de ajustes ilegible", ex);
-        }
-        return new();
-    }
+    // Ilegible: se aparta y se lee la copia anterior (perderlo es perder cómo deshacer las optimizaciones).
+    private Document Load() =>
+        SafeFile.Read(FilePath, text => JsonSerializer.Deserialize<Document>(text, Json), "Respaldo de ajustes") ?? new();
 
-    private void Save()
-    {
-        Directory.CreateDirectory(System.IO.Path.GetDirectoryName(FilePath)!);
-        var tmp = FilePath + ".tmp";
-        File.WriteAllText(tmp, JsonSerializer.Serialize(Data, Json));
-        File.Move(tmp, FilePath, overwrite: true);
-    }
+    private void Save() => SafeFile.Write(FilePath, JsonSerializer.Serialize(Data, Json));
 }

@@ -512,12 +512,11 @@ public static class Settings
             return;
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            var tmp = FilePath + ".tmp";
-            File.WriteAllText(tmp, JsonSerializer.Serialize(Current, Json));
-            File.Move(tmp, FilePath, overwrite: true);
+            // Hasta el disco y con copia: un apagón al guardar dejaba el archivo vacío y el
+            // siguiente arranque empezaba de cero (y guardaba encima).
+            SafeFile.Write(FilePath, JsonSerializer.Serialize(Current, Json));
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Log.Error("No se pudo guardar la configuración", ex);
         }
@@ -606,17 +605,6 @@ public static class Settings
         Save();
     }
 
-    private static StrataSettings Load()
-    {
-        try
-        {
-            if (File.Exists(FilePath))
-                return Migrate(JsonSerializer.Deserialize<StrataSettings>(File.ReadAllText(FilePath), Json) ?? new());
-        }
-        catch (Exception ex) when (ex is IOException or JsonException)
-        {
-            Log.Error("Configuración inválida; se usan valores por defecto", ex);
-        }
-        return new();
-    }
+    // Dañado: se aparta (el próximo guardado lo pisaría) y se lee la copia anterior.
+    private static StrataSettings Load() => SafeFile.Read(FilePath, Deserialize, "Configuración") ?? new();
 }

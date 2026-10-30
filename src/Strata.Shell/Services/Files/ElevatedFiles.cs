@@ -297,6 +297,9 @@ public static class ElevatedFiles
             case "copy" or "move":
                 if (job.Folder is null || !SafePath(job.Folder) || !Enum.TryParse<TransferConflict>(job.Conflict, out _))
                     return "destino";
+                // Mover una carpeta del sistema es quitarla de su lugar, como borrarla.
+                if (job.Op == "move" && job.Paths.Any(Protected))
+                    return "protegida";
                 if (job.Targets is { } targets && targets.Any(t => !job.Paths.Contains(t.Key, StringComparer.OrdinalIgnoreCase)
                                                                     || !SafePath(t.Value) || !IsBelow(t.Value, job.Folder)))
                     return "destinos";

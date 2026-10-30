@@ -38,7 +38,8 @@ public sealed class StartAndUpdateTests
           "body": "### Añadido\n- Algo nuevo",
           "assets": [
             { "name": "notes.txt", "browser_download_url": "https://x/notes.txt", "size": 10 },
-            { "name": "StrataUI-Setup-1.2.3.exe", "browser_download_url": "https://x/StrataUI-Setup-1.2.3.exe", "size": 5000 }
+            { "name": "StrataUI-Setup-1.2.3.exe", "browser_download_url": "https://x/StrataUI-Setup-1.2.3.exe", "size": 5000,
+              "digest": "sha256:9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08" }
           ]
         }
         """;
@@ -46,7 +47,17 @@ public sealed class StartAndUpdateTests
         Assert.Equal(new Version(1, 2, 3), info.Version);
         Assert.Equal("https://x/StrataUI-Setup-1.2.3.exe", info.InstallerUrl);
         Assert.Equal(5000, info.InstallerSize);
+        Assert.Equal("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", info.InstallerSha256);
         Assert.StartsWith("### Añadido", info.Notes);
+    }
+
+    [Fact]
+    public void A_release_without_digest_has_no_hash_to_check()
+    {
+        var info = UpdateService.Parse("""
+            { "tag_name": "v1.0.0", "assets": [ { "name": "a.exe", "browser_download_url": "https://x/a.exe", "digest": null } ] }
+            """)!;
+        Assert.Null(info.InstallerSha256);
     }
 
     [Fact]

@@ -6,6 +6,27 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.14.1] - 2026-10-29
+
+### Corregido
+- **La configuración ya no se pierde si se va la luz al guardar.** `settings.json` se escribe hasta
+  el disco antes de reemplazar el anterior, que queda como copia (`settings.json.bak`). Si el
+  archivo está dañado, se aparta (`settings.invalid-fecha.json`) y se usa la copia, en vez de empezar
+  de cero y guardar encima. Lo mismo con el respaldo de las optimizaciones (sin él no se podían deshacer).
+- **Actualizar ya no puede dejar sin Strata UI**: el instalador descargado se revisa (tamaño completo
+  y SHA-256 que publica GitHub) antes de cerrar Strata UI para instalarlo. Una descarga cortada
+  ejecutaba un instalador a medias.
+- Al cerrar Strata UI, un paso que falla ya no impide los siguientes (devolver la barra de Windows,
+  los íconos del escritorio, los avisos de Windows).
+- Lecturas avanzadas: un error al leer las temperaturas ya no cierra el proceso (los FPS siguen), y
+  tampoco un error al liberar la RAM.
+- El reloj de la barra fallaba al dar un tic con una barra que se estaba cerrando, y leer el fondo de
+  una barra transparente que se acababa de recrear (al cambiar los monitores) dejaba un error.
+- Un archivo cualquiera en el escritorio (una descarga, un temporal) ya no vuelve a leer el catálogo
+  del menú Inicio: del escritorio solo cuentan los accesos directos.
+- Archivos: el permiso de administrador ya no mueve las carpetas del sistema ni la raíz de una unidad
+  (borrarlas ya estaba prohibido; moverlas era lo mismo).
+
 ## [3.14.0] - 2026-10-25
 
 ### Añadido

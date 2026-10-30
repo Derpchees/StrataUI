@@ -167,6 +167,9 @@ public partial class Taskbar
                 BackdropCapture.ExcludeFromCapture(hwnd, true);
                 await Task.Delay(100); // que DWM componga al menos un cuadro sin la barra
             }
+            // Mientras tanto la barra pudo cerrarse (se recrean al cambiar los monitores).
+            if (PresentationSource.FromVisual(this) is null)
+                return;
             var origin = PointToScreen(new Point(0, 0));
             var corner = PointToScreen(new Point(ActualWidth, ActualHeight));
             var area = new Int32Rect((int)origin.X, (int)origin.Y, (int)(corner.X - origin.X), (int)(corner.Y - origin.Y));

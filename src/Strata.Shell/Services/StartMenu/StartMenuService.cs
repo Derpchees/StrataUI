@@ -236,10 +236,9 @@ public static class StartMenuService
     {
         // También las bibliotecas de Steam y Epic y el escritorio: instalar o quitar un juego, o un
         // acceso directo de programa, cambia la lista.
-        var extra = ExtraApps.WatchedFolders()
-            .Concat(new[] { Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.CommonDesktopDirectory }
-                        .Select(Environment.GetFolderPath))
-            .Where(Directory.Exists).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var desktops = new[] { Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.CommonDesktopDirectory }
+            .Select(Environment.GetFolderPath).Where(Directory.Exists).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var extra = ExtraApps.WatchedFolders().Where(Directory.Exists).Concat(desktops).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var root in new[] { Environment.SpecialFolder.Programs, Environment.SpecialFolder.CommonPrograms }
                      .Select(Environment.GetFolderPath).Where(Directory.Exists).Concat(extra))
         {
@@ -250,10 +249,23 @@ public static class StartMenuService
                     IncludeSubdirectories = !extra.Contains(root),
                     NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName,
                 };
-                FileSystemEventHandler changed = (_, _) => Application.Current?.Dispatcher.BeginInvoke(Refresh);
+                // Del escritorio solo cuentan los accesos directos (una descarga o un temporal ahí
+                // volvía a leer el catálogo entero, dos veces).
+                bool onlyShortcuts = desktops.Contains(root);
+                bool Counts(string? path) => !onlyShortcuts || path is not null
+                    && (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".url", StringComparison.OrdinalIgnoreCase));
+                FileSystemEventHandler changed = (_, e) =>
+                {
+                    if (Counts(e.FullPath))
+                        Application.Current?.Dispatcher.BeginInvoke(Refresh);
+                };
                 watcher.Created += changed;
                 watcher.Deleted += changed;
-                watcher.Renamed += (_, _) => Application.Current?.Dispatcher.BeginInvoke(Refresh);
+                watcher.Renamed += (_, e) =>
+                {
+                    if (Counts(e.FullPath) || Counts(e.OldFullPath))
+                        Application.Current?.Dispatcher.BeginInvoke(Refresh);
+                };
                 watcher.EnableRaisingEvents = true;
                 _watchers.Add(watcher);
             }

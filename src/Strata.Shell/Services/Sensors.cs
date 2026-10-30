@@ -573,20 +573,30 @@ public static class Sensors
             var opening = Stopwatch.StartNew();
             if (readers is null)
                 return;
-            using var temperatures = readers.OpenTemperatures();
-            pawnIo = temperatures.PawnIo;
-            Log.Info($"Lecturas avanzadas: sensores abiertos en {opening.ElapsedMilliseconds} ms");
-            while (!parent.HasExited)
+            // Una excepción aquí (un controlador que falla) tumbaba el proceso entero, también los FPS:
+            // sin temperaturas, lo demás sigue.
+            try
             {
-                var reading = Stopwatch.StartNew();
-                (cpu, gpu) = temperatures.Read();
-                // Sin los separadores del protocolo en los nombres.
-                slow = string.Join("|", temperatures.Skipped.Select(name => new string(name.Where(c => c is not (';' or '=' or '|')).ToArray())));
-                if (reading.ElapsedMilliseconds > 2000)
-                    Log.Info($"Lecturas avanzadas: leer las temperaturas tardó {reading.ElapsedMilliseconds} ms");
-                // Cada 2 s: las temperaturas cambian despacio y leer el hardware (sobre todo la placa) es
-                // lo que más consume de este proceso. Los FPS siguen saliendo cada segundo.
-                Thread.Sleep(2000);
+                using var temperatures = readers.OpenTemperatures();
+                pawnIo = temperatures.PawnIo;
+                Log.Info($"Lecturas avanzadas: sensores abiertos en {opening.ElapsedMilliseconds} ms");
+                while (!parent.HasExited)
+                {
+                    var reading = Stopwatch.StartNew();
+                    (cpu, gpu) = temperatures.Read();
+                    // Sin los separadores del protocolo en los nombres.
+                    slow = string.Join("|", temperatures.Skipped.Select(name => new string(name.Where(c => c is not (';' or '=' or '|')).ToArray())));
+                    if (reading.ElapsedMilliseconds > 2000)
+                        Log.Info($"Lecturas avanzadas: leer las temperaturas tardó {reading.ElapsedMilliseconds} ms");
+                    // Cada 2 s: las temperaturas cambian despacio y leer el hardware (sobre todo la placa) es
+                    // lo que más consume de este proceso. Los FPS siguen saliendo cada segundo.
+                    Thread.Sleep(2000);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Lecturas avanzadas: se dejan de leer las temperaturas", ex);
+                (cpu, gpu) = (null, null);
             }
         }) { IsBackground = true }.Start();
 
@@ -600,7 +610,14 @@ public static class Sensors
                 {
                     if (command == "free")
                     {
-                        FreeMemory.Run();
+                        try
+                        {
+                            FreeMemory.Run();
+                        }
+                        catch (Exception ex) when (ex is not IOException)
+                        {
+                            Log.Error("Lecturas avanzadas: no se pudo liberar la RAM", ex);
+                        }
                         Send("freed");
                     }
                     else if (command.StartsWith("run ", StringComparison.Ordinal))

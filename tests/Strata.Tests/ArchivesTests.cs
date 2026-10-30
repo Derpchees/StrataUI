@@ -72,6 +72,9 @@ public sealed class ArchivesTests : IDisposable
             Targets = new() { [@"C:\a.txt"] = Path.Combine(windows, "a.txt") },
         }));
         Assert.NotNull(ElevatedFiles.Validate(new ElevatedFiles.Job { Op = "format", Paths = [@"C:\"], FileSystem = "NTFS" }));
+        Assert.NotNull(ElevatedFiles.Validate(new ElevatedFiles.Job { Op = "move", Conflict = "Replace", Folder = _root, Paths = [windows] }));
+        // Copiarla sí se puede (no la quita de su lugar).
+        Assert.Null(ElevatedFiles.Validate(new ElevatedFiles.Job { Op = "copy", Conflict = "Replace", Folder = _root, Paths = [windows] }));
     }
 
     [Fact]

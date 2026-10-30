@@ -802,53 +802,79 @@ public partial class App : Application
         _exiting = true;
         Log.Info(restart ? "Reiniciando Strata UI" : "Cerrando Strata UI");
 
+        // Cada paso por separado: si uno fallaba, los siguientes no corrían y se podía quedar sin la
+        // barra de Windows o sin los íconos del escritorio.
+        static void Step(string name, Action step)
+        {
+            try
+            {
+                step();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Al cerrar: falló {name}", ex);
+            }
+        }
+
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         SystemEvents.UserPreferenceChanged -= OnWindowsPreferenceChanged;
         Settings.Changed -= OnSettingsChanged;
-        EditMode.EditSession.Cancel();
-        StrataTrayIcon.Remove();
-        TrayOwnership.Stop();
-        ExplorerWatch.Stop();
-        TrayMemory.Flush();
-        Services.StartMenu.WinKeyHook.Update(false, false);
-        Services.Notifications.NotificationService.Shutdown();
-        Services.Notifications.WindowsBanners.Restore();
-        Services.Themes.WindowsAnimations.Restore();
-        Notifications.NotificationBannerWindow.CloseAll();
-        Notifications.Osd.Shutdown();
-        Controls.TaskPreviewWindow.CloseAll();
-        Services.StartMenu.StartMenuService.Shutdown();
-        Flyouts.FlyoutManager.CloseAll();
-        _hub?.Close();
-        _shell?.AppBarManager.SignalGracefulShutdown();
-        CloseTaskbars();
-        if (_shell != null)
+        Step("modo edición", EditMode.EditSession.Cancel);
+        Step("ícono de la bandeja", StrataTrayIcon.Remove);
+        Step("bandeja", TrayOwnership.Stop);
+        Step("Explorador", ExplorerWatch.Stop);
+        Step("íconos de la bandeja", TrayMemory.Flush);
+        Step("tecla Windows", () => Services.StartMenu.WinKeyHook.Update(false, false));
+        Step("notificaciones", Services.Notifications.NotificationService.Shutdown);
+        Step("avisos de Windows", Services.Notifications.WindowsBanners.Restore);
+        Step("animaciones de Windows", Services.Themes.WindowsAnimations.Restore);
+        Step("avisos", Notifications.NotificationBannerWindow.CloseAll);
+        Step("OSD", Notifications.Osd.Shutdown);
+        Step("vistas previas", Controls.TaskPreviewWindow.CloseAll);
+        Step("menú Inicio", Services.StartMenu.StartMenuService.Shutdown);
+        Step("paneles", Flyouts.FlyoutManager.CloseAll);
+        Step("Hub", () => _hub?.Close());
+        Step("barras", () =>
         {
-            _shell.ExplorerHelper.HideExplorerTaskbar = false;
-            _shell.Dispose();
-            _shell = null;
-        }
-        Services.Themes.WindowsTheming.Shutdown();
-        ThemeManager.Shutdown();
-        Services.Audio.AudioMirror.Stop();
-        _audio?.Dispose();
-        Services.Brightness.BrightnessService.Shutdown();
-        SystemStatus.Shutdown();
-        Services.Updates.UpdateService.Shutdown();
+            _shell?.AppBarManager.SignalGracefulShutdown();
+            CloseTaskbars();
+        });
+        Step("barra de Windows", () =>
+        {
+            if (_shell != null)
+            {
+                _shell.ExplorerHelper.HideExplorerTaskbar = false;
+                _shell.Dispose();
+                _shell = null;
+            }
+        });
+        Step("tema de Windows", Services.Themes.WindowsTheming.Shutdown);
+        Step("tema", ThemeManager.Shutdown);
+        Step("sonar también en", Services.Audio.AudioMirror.Stop);
+        Step("sonido", () => _audio?.Dispose());
+        Step("brillo", Services.Brightness.BrightnessService.Shutdown);
+        Step("estado del sistema", SystemStatus.Shutdown);
+        Step("actualizaciones", Services.Updates.UpdateService.Shutdown);
 
-        _exitWait?.Unregister(null);
-        _exitEvent?.Dispose();
-        _openHubWait?.Unregister(null);
-        _openHubEvent?.Dispose();
-        Services.StartMenu.ExplorerMenu.Stop();
-        Services.Widgets.WidgetManager.Shutdown();
-        Services.Desktop.DesktopManager.Shutdown();
-        _mutex?.ReleaseMutex();
-        _mutex?.Dispose();
-        _mutex = null;
+        Step("eventos de otras copias", () =>
+        {
+            _exitWait?.Unregister(null);
+            _exitEvent?.Dispose();
+            _openHubWait?.Unregister(null);
+            _openHubEvent?.Dispose();
+        });
+        Step("menú del Explorador", Services.StartMenu.ExplorerMenu.Stop);
+        Step("widgets", Services.Widgets.WidgetManager.Shutdown);
+        Step("escritorio", Services.Desktop.DesktopManager.Shutdown);
+        Step("mutex", () =>
+        {
+            _mutex?.ReleaseMutex();
+            _mutex?.Dispose();
+            _mutex = null;
+        });
 
         if (restart && Environment.ProcessPath is { } exe)
-            Process.Start(exe);
+            Step("reinicio", () => Process.Start(exe));
         Shutdown();
     }
 
