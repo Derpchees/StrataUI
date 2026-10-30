@@ -86,7 +86,7 @@
   "Monitor {0}": "Monitor {0}",
   "Monitor": "Monitor",
   "Ícono sin nombre": "Ícone sem nome",
-  "Cada cambio se puede deshacer en Módulos opcionales › Respaldo.": "Cada alteração pode ser desfeita em Módulos opcionais › Backup.",
+  "Cada cambio se puede deshacer en Optimización › Respaldo.": "Cada alteração pode ser desfeita em Otimização › Backup.",
   "Requiere administrador": "Requer administrador",
   "No se pudo aplicar \"{0}\". Revisa el registro de Strata UI para más detalles.": "Não foi possível aplicar \"{0}\". Veja o log do Strata UI para mais detalhes.",
   "Reiniciar ahora": "Reiniciar agora",
@@ -832,7 +832,7 @@
   "No se pudo descargar el módulo de optimización.": "Não foi possível baixar o módulo de otimização.",
   "La versión {0} todavía no tiene el módulo publicado.": "A versão {0} ainda não tem o módulo publicado.",
   "El módulo descargado no es de esta versión de Strata UI.": "O módulo baixado não é desta versão do Strata UI.",
-  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Módulos opcionales › Respaldo antes.": "Instalado. Ao removê-lo, as alterações que ele já fez no Windows permanecem: para desfazê-las, use Módulos opcionais › Backup antes.",
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Instalado. Ao removê-lo, as alterações que ele já fez no Windows permanecem: para desfazê-las, use Otimização › Backup antes.",
   "Luz nocturna": "Luz noturna",
   "Colores más cálidos para descansar la vista.": "Cores mais quentes para descansar a vista.",
   "Intensidad y horario": "Intensidade e agendamento",
@@ -1359,5 +1359,8 @@
   "Telemetría, anuncios, funciones de IA y actualizaciones automáticas.": "Telemetria, anúncios, recursos de IA e atualizações automáticas.",
   "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "Comportamento do sistema, sua aparência, o Explorador e a multitarefa.",
   "Hub": "Hub",
-  "Buscar en Strata UI": "Pesquisar no Strata UI"
+  "Buscar en Strata UI": "Pesquisar no Strata UI",
+  "Los valores de antes de cada cambio: deshaz uno o todos.": "Os valores de antes de cada alteração: desfaça um ou todos.",
+  "Ajustes de Windows agrupados por tema. Cada cambio se puede deshacer en Respaldo.": "Configurações do Windows agrupadas por tema. Cada alteração pode ser desfeita em Backup.",
+  "{0} de {1} activadas": "{0} de {1} ativadas"
 }

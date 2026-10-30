@@ -6,6 +6,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.16.0] - 2026-10-29
+
+### Añadido
+- **Optimización tiene su propia entrada en el Hub**, aparte de Módulos opcionales, con una página
+  principal: una tarjeta por categoría (Rendimiento, Limpieza y apps, Privacidad, Personalizar
+  Windows y Respaldo) con sus pestañas y cuántas de sus optimizaciones están activadas. Cada categoría
+  tiene arriba "‹ Optimización" para volver, y la entrada queda marcada mientras se está en ella.
+
+### Cambiado
+- Módulos opcionales (abajo, arriba de Importar) es solo para instalar y quitar módulos.
+- El mosaico Optimización del Dashboard abre la página nueva.
+
+### Corregido
+- Las pruebas automáticas ya no escriben en el registro de Strata UI del usuario.
+
 ## [3.15.1] - 2026-10-29
 
 ### Corregido

@@ -9,6 +9,9 @@ public class SafeFileTests : IDisposable
 {
     private readonly string _folder = Directory.CreateTempSubdirectory("strata-safefile-").FullName;
 
+    // Leer un archivo dañado a propósito escribe un error: no en el registro real del usuario.
+    public SafeFileTests() => Log.Muted = true;
+
     public void Dispose() => Directory.Delete(_folder, recursive: true);
 
     private string FileIn(string name) => Path.Combine(_folder, name);

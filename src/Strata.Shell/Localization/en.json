@@ -86,7 +86,7 @@
   "Monitor {0}": "Monitor {0}",
   "Monitor": "Monitor",
   "Ícono sin nombre": "Unnamed icon",
-  "Cada cambio se puede deshacer en Módulos opcionales › Respaldo.": "Every change can be undone in Optional modules › Backup.",
+  "Cada cambio se puede deshacer en Optimización › Respaldo.": "Every change can be undone in Optimization › Backup.",
   "Requiere administrador": "Requires administrator",
   "No se pudo aplicar \"{0}\". Revisa el registro de Strata UI para más detalles.": "Couldn't apply \"{0}\". Check the Strata UI log for details.",
   "Reiniciar ahora": "Restart now",
@@ -832,7 +832,7 @@
   "No se pudo descargar el módulo de optimización.": "Couldn't download the optimization module.",
   "La versión {0} todavía no tiene el módulo publicado.": "Version {0} doesn't have the module published yet.",
   "El módulo descargado no es de esta versión de Strata UI.": "The downloaded module isn't for this version of Strata UI.",
-  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Módulos opcionales › Respaldo antes.": "Installed. Removing it keeps the changes it already made to Windows: to undo them, use Optional modules › Backup first.",
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installed. Removing it keeps the changes it already made to Windows: to undo them, use Optimization › Backup first.",
   "Luz nocturna": "Night light",
   "Colores más cálidos para descansar la vista.": "Warmer colors to rest your eyes.",
   "Intensidad y horario": "Strength and schedule",
@@ -1359,5 +1359,8 @@
   "Telemetría, anuncios, funciones de IA y actualizaciones automáticas.": "Telemetry, ads, AI features and automatic updates.",
   "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "System behavior, its look, File Explorer and multitasking.",
   "Hub": "Hub",
-  "Buscar en Strata UI": "Search Strata UI"
+  "Buscar en Strata UI": "Search Strata UI",
+  "Los valores de antes de cada cambio: deshaz uno o todos.": "The values from before each change: undo one or all of them.",
+  "Ajustes de Windows agrupados por tema. Cada cambio se puede deshacer en Respaldo.": "Windows settings grouped by topic. Every change can be undone in Backup.",
+  "{0} de {1} activadas": "{0} of {1} on"
 }

@@ -74,9 +74,9 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
-                <!-- Módulos opcionales (arriba de Importar): la página para instalarlos y, dentro, las
-                     páginas de los que traen las suyas (HubWindow.FillModules). -->
-                <ui:NavigationViewItem x:Name="ModulesItem" Content="{l:T 'Módulos opcionales'}">
+                <!-- Módulos opcionales (arriba de Importar): instalarlos y quitarlos. Las entradas de los
+                     instalados (Optimización) van al final de la lista de arriba (HubWindow.FillModules). -->
+                <ui:NavigationViewItem x:Name="ModulesItem" Content="{l:T 'Módulos opcionales'}" TargetPageType="{x:Type pages:ModulesPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PuzzlePiece24" />
                     </ui:NavigationViewItem.Icon>

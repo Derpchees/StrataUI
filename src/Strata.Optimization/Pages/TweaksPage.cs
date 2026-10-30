@@ -31,7 +31,7 @@ public abstract class TweaksPage : Page
         {
             Icon = icon,
             Title = title,
-            Subtitle = description + " " + Loc.T("Cada cambio se puede deshacer en Módulos opcionales › Respaldo."),
+            Subtitle = description + " " + Loc.T("Cada cambio se puede deshacer en Optimización › Respaldo."),
         });
 
         _explorerBanner = BuildExplorerBanner();

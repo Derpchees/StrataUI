@@ -86,7 +86,7 @@
   "Monitor {0}": "Écran {0}",
   "Monitor": "Écran",
   "Ícono sin nombre": "Icône sans nom",
-  "Cada cambio se puede deshacer en Módulos opcionales › Respaldo.": "Chaque modification peut être annulée dans Modules facultatifs › Sauvegarde.",
+  "Cada cambio se puede deshacer en Optimización › Respaldo.": "Chaque modification peut être annulée dans Optimisation › Sauvegarde.",
   "Requiere administrador": "Nécessite un administrateur",
   "No se pudo aplicar \"{0}\". Revisa el registro de Strata UI para más detalles.": "Impossible d'appliquer « {0} ». Consultez le journal de Strata UI pour plus de détails.",
   "Reiniciar ahora": "Redémarrer maintenant",
@@ -832,7 +832,7 @@
   "No se pudo descargar el módulo de optimización.": "Impossible de télécharger le module d’optimisation.",
   "La versión {0} todavía no tiene el módulo publicado.": "La version {0} n’a pas encore de module publié.",
   "El módulo descargado no es de esta versión de Strata UI.": "Le module téléchargé ne correspond pas à cette version de Strata UI.",
-  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Módulos opcionales › Respaldo antes.": "Installé. Le supprimer conserve les modifications déjà faites dans Windows : pour les annuler, utilisez d’abord Modules facultatifs › Sauvegarde.",
+  "Instalado. Al quitarlo, los cambios que ya hizo en Windows se quedan: para deshacerlos, usa Optimización › Respaldo antes.": "Installé. Le supprimer conserve les modifications déjà faites dans Windows : pour les annuler, utilisez d’abord Optimisation › Sauvegarde.",
   "Luz nocturna": "Éclairage nocturne",
   "Colores más cálidos para descansar la vista.": "Des couleurs plus chaudes pour reposer les yeux.",
   "Intensidad y horario": "Intensité et planification",
@@ -1359,5 +1359,8 @@
   "Telemetría, anuncios, funciones de IA y actualizaciones automáticas.": "Télémétrie, publicités, fonctions d'IA et mises à jour automatiques.",
   "Comportamiento del sistema, su aspecto, el Explorador y la multitarea.": "Comportement du système, son apparence, l'Explorateur et le multitâche.",
   "Hub": "Hub",
-  "Buscar en Strata UI": "Rechercher dans Strata UI"
+  "Buscar en Strata UI": "Rechercher dans Strata UI",
+  "Los valores de antes de cada cambio: deshaz uno o todos.": "Les valeurs d'avant chaque modification : annulez-en une ou toutes.",
+  "Ajustes de Windows agrupados por tema. Cada cambio se puede deshacer en Respaldo.": "Paramètres de Windows regroupés par thème. Chaque modification peut être annulée dans Sauvegarde.",
+  "{0} de {1} activadas": "{0} sur {1} activées"
 }

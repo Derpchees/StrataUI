@@ -25,8 +25,13 @@ public static class Log
     // tumbaba la escritura): el carácter suelto se cambia por el de reemplazo.
     private static readonly System.Text.UTF8Encoding Utf8 = new(encoderShouldEmitUTF8Identifier: false);
 
+    /// <summary>Solo pruebas: no escribir en el registro real del usuario.</summary>
+    internal static bool Muted { get; set; }
+
     private static void Write(string level, string message)
     {
+        if (Muted)
+            return;
         try
         {
             lock (Gate)

@@ -59,7 +59,10 @@ public abstract class TabbedPage : Page
     private readonly List<RadioButton> _buttons = new();
     private readonly Frame _frame;
 
-    protected TabbedPage(SymbolRegular icon, string title, string subtitle, bool screenPicker, IReadOnlyList<Tab> tabs)
+    /// <param name="parent">Entrada a la que se vuelve (página y título), si esta no está en la navegación
+    /// (las categorías de Optimización): arriba queda "‹ Optimización".</param>
+    protected TabbedPage(SymbolRegular icon, string title, string subtitle, bool screenPicker, IReadOnlyList<Tab> tabs,
+                         (string Page, string Title)? parent = null)
     {
         _tabs = tabs;
         _screenPicker = screenPicker;
@@ -67,6 +70,18 @@ public abstract class TabbedPage : Page
         ScrollViewer.SetCanContentScroll(this, false);
 
         var top = new StackPanel { Style = (Style)FindResource("HubPageContent"), Margin = new Thickness(36, 16, 36, 0) };
+        if (parent is { } back)
+        {
+            var link = new Wpf.Ui.Controls.Button
+            {
+                Content = "‹  " + back.Title,
+                Appearance = ControlAppearance.Transparent,
+                Padding = new Thickness(8, 4, 8, 4),
+                Margin = new Thickness(-8, 0, 0, 0),
+            };
+            link.Click += (_, _) => (Window.GetWindow(this) as HubWindow)?.NavigateTo(back.Page);
+            top.Children.Add(link);
+        }
         top.Children.Add(new PageHeader { Icon = icon, Title = title, Subtitle = subtitle, Margin = new Thickness(0, 4, 0, 16) });
         if (screenPicker)
             top.Children.Add(new ScreenPicker());

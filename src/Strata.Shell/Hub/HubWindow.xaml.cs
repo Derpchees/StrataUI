@@ -31,9 +31,16 @@ public partial class HubWindow : FluentWindow
         Nav.Navigated += (_, e) =>
         {
             _currentPage = e.Page;
-            // Una página de Módulos opcionales (o de Optimización): su entrada se despliega y queda marcada.
-            // En otra se pliega: abajo, desplegada, le quitaba lugar a la lista de arriba (Widgets no se veía).
-            ModulesItem.IsExpanded = e.Page is ModulesPage || e.Page?.GetType().Assembly != typeof(HubWindow).Assembly;
+            // Una categoría de Optimización (no está en la lista): queda marcada su entrada.
+            // (después: WPF-UI desmarca la anterior al terminar de navegar a una página fuera de la lista).
+            if (e.Page != null && e.Page.GetType().Assembly != typeof(HubWindow).Assembly && _moduleItems.FirstOrDefault() is { } optimization)
+            {
+                Dispatcher.BeginInvoke(() =>
+                {
+                    foreach (var item in NavigationItems())
+                        item.IsActive = ReferenceEquals(item, optimization);
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
+            }
             if (e.Page is FrameworkElement page)
             {
                 Motion.In(page, page, TaskbarPosition.Bottom, 0.6);
@@ -130,13 +137,17 @@ public partial class HubWindow : FluentWindow
     private static extern bool SetWindowPlacement(IntPtr hwnd, ref WindowPlacement placement);
 
     /// <summary>Las entradas de la navegación con página (también las de dentro de Módulos opcionales).</summary>
-    private IEnumerable<(string Title, Type Page)> NavigationEntries()
+    private IEnumerable<(string Title, Type Page)> NavigationEntries() =>
+        NavigationItems()
+            .Where(item => item.TargetPageType != null && item.Content is string)
+            .Select(item => ((string)item.Content, item.TargetPageType!));
+
+    /// <summary>Todas las entradas de la navegación, también las de dentro de otras.</summary>
+    private IEnumerable<NavigationViewItem> NavigationItems()
     {
         IEnumerable<NavigationViewItem> Flatten(System.Collections.IList items) =>
             items.OfType<NavigationViewItem>().SelectMany(item => Flatten(item.MenuItems).Prepend(item));
-        return Flatten(Nav.MenuItems).Concat(Flatten(Nav.FooterMenuItems))
-            .Where(item => item.TargetPageType != null && item.Content is string)
-            .Select(item => ((string)item.Content, item.TargetPageType!));
+        return Flatten(Nav.MenuItems).Concat(Flatten(Nav.FooterMenuItems));
     }
 
     /// <summary>
@@ -184,43 +195,42 @@ public partial class HubWindow : FluentWindow
     }
 
     /// <summary>
-    /// Módulos opcionales: la página para instalarlos y, si Optimización está instalado, sus páginas
-    /// debajo. Van al mismo nivel: el menú del Hub solo despliega un nivel (una entrada dentro de otra
-    /// desplegable no mostraba sus páginas).
+    /// Las entradas de los módulos instalados (Optimización) al final de la lista principal, cada una
+    /// sola: sus categorías están en su propia página. Módulos opcionales (abajo) es solo para
+    /// instalarlos y quitarlos.
     /// </summary>
     private void FillModules()
     {
-        ModulesItem.MenuItems.Clear();
-        ModulesItem.MenuItems.Add(new NavigationViewItem
-        {
-            Content = Loc.T("Instalar y quitar"),
-            Icon = new SymbolIcon { Symbol = SymbolRegular.ArrowDownload24 },
-            TargetPageType = typeof(ModulesPage),
-        });
-        _showsOptimization = false;
+        foreach (var item in _moduleItems)
+            Nav.MenuItems.Remove(item);
+        _moduleItems.Clear();
         if (OptionalModules.Optimization.Load() is { } module)
         {
             foreach (var page in module.Pages)
-                ModulesItem.MenuItems.Add(new NavigationViewItem
+            {
+                var item = new NavigationViewItem
                 {
                     Content = page.Title,
                     Icon = new SymbolIcon { Symbol = page.Icon },
                     TargetPageType = page.PageType,
-                });
-            _showsOptimization = true;
+                };
+                _moduleItems.Add(item);
+                Nav.MenuItems.Add(item);
+            }
         }
+        _showsOptimization = _moduleItems.Count > 0;
     }
 
-    /// <summary>Se instaló o se quitó Optimización: aparecen o se van sus páginas.</summary>
+    private readonly List<NavigationViewItem> _moduleItems = new();
+
+    /// <summary>Se instaló o se quitó Optimización: aparece o se va su entrada.</summary>
     private void OnModuleChanged(OptionalModule changed) => Dispatcher.BeginInvoke(() =>
     {
         if (changed != OptionalModules.Optimization || changed.IsDownloading)
             return;
         bool installed = OptionalModules.Optimization.Load() != null;
-        if (installed == _showsOptimization)
-            return;
-        FillModules();
-        ModulesItem.IsExpanded = true;
+        if (installed != _showsOptimization)
+            FillModules();
     });
 
     private static System.Windows.Controls.ScrollViewer? FindScroll(DependencyObject root)

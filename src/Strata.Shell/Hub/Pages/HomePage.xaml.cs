@@ -59,7 +59,7 @@ public partial class HomePage : Page
             new Tile(SymbolRegular.Alert24, Loc.T("Notificaciones"), "Notifications"),
             new Tile(SymbolRegular.PaintBrush24, Loc.T("Tema y colores"), "Appearance"),
             new Tile(SymbolRegular.Apps24, Loc.T("Widgets"), "Widgets"),
-            new Tile(SymbolRegular.Flash24, Loc.T("Optimización"), "Performance"),
+            new Tile(SymbolRegular.Flash24, Loc.T("Optimización"), "Optimization"),
         };
         LoadSwitches();
 

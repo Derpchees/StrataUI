@@ -306,7 +306,8 @@ stay visible with Show desktop.
 
 ### <img src="docs/icons/optimization.svg" width="28" align="center" alt="" /> Optimization
 
-An optional module, installed from Hub > Optional modules with one click. Every change is backed up, so everything
+An optional module, installed from Hub > Optional modules with one click. Once installed it gets its own Hub
+entry, **Optimization**, with a page for each section (and how many of its options are on). Every change is backed up, so everything
 can be undone. Its pages are grouped in tabs:
 
 | Section | Tabs |
