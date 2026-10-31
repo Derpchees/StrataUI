@@ -164,11 +164,39 @@ public abstract class DownloadedModule<T> : OptionalModule where T : class
         return _instance;
     }
 
+    /// <summary>
+    /// Pone el descargado en lugar del anterior. Si otro Strata UI (uno trabado al cerrarse) todavía
+    /// tiene cargado el anterior, Windows no deja sobrescribirlo pero sí cambiarle el nombre: se aparta
+    /// como .old y se borra en un inicio posterior.
+    /// </summary>
+    private void Replace(string fresh, string target)
+    {
+        try
+        {
+            File.Move(fresh, target, overwrite: true);
+        }
+        catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) && File.Exists(target))
+        {
+            File.Move(target, $"{target}.{DateTime.Now:yyyyMMddHHmmss}.old");
+            File.Move(fresh, target);
+            Log.Info($"Módulo {Id}: el anterior seguía en uso; se apartó para borrarlo después");
+        }
+    }
+
     /// <summary>Al iniciar: borra el que se quitó y, si hay uno de otra versión (se actualizó Strata UI), baja el de esta.</summary>
     public override void StartupMaintenance()
     {
         try
         {
+            if (Directory.Exists(Folder))
+                foreach (string old in Directory.EnumerateFiles(Folder, "*.old"))
+                    try
+                    {
+                        File.Delete(old);
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                    }
             if (File.Exists(RemoveMarker))
             {
                 File.Delete(Downloaded);
@@ -225,7 +253,7 @@ public abstract class DownloadedModule<T> : OptionalModule where T : class
                 ErrorText = Loc.T("El módulo descargado no es de esta versión de Strata UI.");
                 return;
             }
-            File.Move(fresh, Downloaded, overwrite: true);
+            Replace(fresh, Downloaded);
             File.Delete(RemoveMarker);
             Log.Info($"Módulo {Id} instalado en {Downloaded}");
         }

@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.17.2] - 2026-10-31
+
+### Corregido
+- Tras actualizar, el explorador de archivos y la optimización no abrían si un Strata UI anterior
+  trabado seguía teniendo cargados sus módulos: el módulo nuevo no podía ponerse en su lugar. Ahora
+  el anterior se aparta y se borra en un inicio posterior.
+
 ## [3.17.1] - 2026-10-31
 
 ### Corregido
