@@ -23,6 +23,13 @@ public static class Motion
         EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
         EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.ClosedEvent, new RoutedEventHandler(OnMenuClosed));
         EventManager.RegisterClassHandler(typeof(ToolTip), ToolTip.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
+        // Los popups de WPF traen su propia animación (la de Windows: fundido o deslizamiento) y
+        // corría a la vez que la nuestra: el menú se animaba dos veces y a tirones.
+        if (Application.Current is { } app)
+        {
+            app.Resources[SystemParameters.MenuPopupAnimationKey] = PopupAnimation.None;
+            app.Resources[SystemParameters.ToolTipPopupAnimationKey] = PopupAnimation.None;
+        }
     }
 
     private static void OnMenuOpened(object sender, RoutedEventArgs e)
@@ -30,11 +37,66 @@ public static class Motion
         if (sender is not FrameworkElement element || !ReferenceEquals(e.OriginalSource, sender))
             return;
         var from = FromPointer(element);
-        // Con recorrido casi de panel: a la mitad, el zoom o el rebote de un menú apenas se notaban.
-        In(element, element, from, element is ToolTip ? 0.5 : 0.85);
-        if (element is ContextMenu)
-            Remember(element, from);
+        AnimatePopup(element, from, element is ToolTip ? 0.5 : 0.85, remember: element is ContextMenu);
     }
+
+    /// <summary>
+    /// Entrada de lo que vive en un popup (menú, tooltip, bandeja oculta). Se mueve la ventana del
+    /// popup, no su contenido: el popup mide justo lo que el menú y, al desplazar el contenido
+    /// dentro, se veía recortado por el borde (como si saliera de una ranura).
+    /// </summary>
+    private static void AnimatePopup(FrameworkElement element, TaskbarPosition from, double size, bool remember)
+    {
+        var mover = PopupMover.For(element);
+        // Recorrido corto: el de una ventana entera (un panel) es demasiado para un menú.
+        In(element, element, from, size, mover is null ? null : mover.Move, mover is null ? 1 : 0.3);
+        if (remember)
+            Remember(element, from, mover);
+    }
+
+    /// <summary>Corre la ventana nativa de un popup respecto de donde la puso WPF.</summary>
+    private sealed class PopupMover
+    {
+        private readonly IntPtr _hwnd;
+        private readonly double _scale;
+        private int _dx, _dy;
+
+        private PopupMover(IntPtr hwnd, double scale) => (_hwnd, _scale) = (hwnd, scale);
+
+        /// <summary>Desplazamiento aplicado ahora (DIP), para saber dónde queda al final.</summary>
+        public double X => _dx / _scale;
+        public double Y => _dy / _scale;
+
+        public static PopupMover? For(FrameworkElement element) =>
+            PresentationSource.FromVisual(element) is System.Windows.Interop.HwndSource { Handle: var hwnd } && hwnd != IntPtr.Zero
+                ? new PopupMover(hwnd, VisualTreeHelper.GetDpi(element).DpiScaleX)
+                : null;
+
+        public void Move(double x, double y)
+        {
+            // Relativo a donde está ahora menos lo ya aplicado: si WPF lo recoloca a media
+            // animación (cambió de tamaño), se sigue su nuevo lugar.
+            if (!GetWindowRect(_hwnd, out var rect))
+                return;
+            int dx = (int)Math.Round(x * _scale), dy = (int)Math.Round(y * _scale);
+            SetWindowPos(_hwnd, IntPtr.Zero, rect.Left - _dx + dx, rect.Top - _dy + dy, 0, 0, NoSize | NoZOrder | NoActivate);
+            (_dx, _dy) = (dx, dy);
+        }
+
+        private const uint NoSize = 0x0001, NoZOrder = 0x0004, NoActivate = 0x0010;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hwnd, out NativeRect rect);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
 
     private static void OnMenuClosed(object sender, RoutedEventArgs e)
     {
@@ -48,13 +110,18 @@ public static class Motion
 
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FrameworkElement, Shown> Opened = new();
 
-    /// <summary>Dónde quedó en pantalla (en DIP) al abrirse, para su salida.</summary>
-    private static void Remember(FrameworkElement element, TaskbarPosition from) =>
+    /// <summary>
+    /// Dónde quedó en pantalla (en DIP) al abrirse, para su salida. Sin el desplazamiento de la
+    /// entrada que todavía corre (si no, la salida salía corrida unos píxeles).
+    /// </summary>
+    private static void Remember(FrameworkElement element, TaskbarPosition from, PopupMover? mover = null) =>
         element.Dispatcher.BeginInvoke(() =>
         {
             if (PresentationSource.FromVisual(element) is { CompositionTarget: { } target } && element.ActualWidth > 0)
             {
                 var corner = target.TransformFromDevice.Transform(element.PointToScreen(new Point(0, 0)));
+                if (mover != null)
+                    corner.Offset(-mover.X, -mover.Y);
                 Opened.AddOrUpdate(element, new Shown(new Rect(corner, new Size(element.ActualWidth, element.ActualHeight)), from));
             }
         }, System.Windows.Threading.DispatcherPriority.Loaded);
@@ -101,7 +168,9 @@ public static class Motion
             };
             ghost.SourceInitialized += (_, _) => ClickThrough(ghost);
             ghost.Show();
-            Out(image, image, shown.From, () => ghost.Close());
+            // Se mueve la ventana de la imagen (como en la entrada), no la imagen dentro: se recortaba.
+            Out(image, image, shown.From, () => ghost.Close(),
+                (x, y) => (ghost.Left, ghost.Top) = (shown.Bounds.X + x, shown.Bounds.Y + y), travel: 0.3);
         }
         catch (Exception ex)
         {
@@ -151,11 +220,8 @@ public static class Motion
         popup.PopupAnimation = PopupAnimation.None;
         popup.Opened += (_, _) =>
         {
-            if (popup.Child is not FrameworkElement child)
-                return;
-            var side = from();
-            In(child, child, side, 0.9);
-            Remember(child, side);
+            if (popup.Child is FrameworkElement child)
+                AnimatePopup(child, from(), 0.9, remember: true);
         };
         popup.Closed += (_, _) =>
         {

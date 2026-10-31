@@ -11,7 +11,7 @@ namespace Strata.Shell.Services.Files;
 
 /// <summary>Una opción del menú contextual de Windows, ya leída (texto, ícono, submenú).</summary>
 public sealed record NativeMenuItem(int Id, string Text, string? Icon, bool Enabled, bool Checked, bool Separator,
-                                   List<NativeMenuItem>? Children);
+                                   List<NativeMenuItem>? Children, string? Verb = null);
 
 /// <summary>
 /// Las opciones que Windows y las apps agregan al menú contextual (NanaZip, un lector de PDF, Enviar
@@ -53,6 +53,73 @@ public sealed class ShellMenuSession : IDisposable
     {
         try
         {
+            // Uno ya abierto y esperando: arrancar el proceso tardaba más que leer el menú (segundos
+            // contra medio segundo), y el menú se veía crecer de a poco.
+            Process? process;
+            lock (SpareLock)
+            {
+                process = _spare is { HasExited: false } ? _spare : null;
+                _spare = null;
+            }
+            process ??= Launch();
+            if (process is null)
+                return null;
+            string request = JsonSerializer.Serialize(new Request(paths.ToList(), background || desktop, (GetKeyState(VkShift) & 0x8000) != 0, desktop));
+            var session = new ShellMenuSession(process, request);
+            // El siguiente, cuando este ya leyó (para no competir con él).
+            _ = session.Items.ContinueWith(_ => Prewarm(), TaskScheduler.Default);
+            return session;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Archivos: no se pudo abrir el menú de Windows", ex);
+            return null;
+        }
+    }
+
+    private static readonly object SpareLock = new();
+    private static Process? _spare;
+    private static Timer? _spareExpiry;
+
+    /// <summary>
+    /// Deja un proceso del menú abierto y esperando, para que el próximo clic derecho no tenga que
+    /// arrancarlo. Si en un rato no se usa, se cierra (no ocupa memoria de más).
+    /// </summary>
+    public static void Prewarm()
+    {
+        lock (SpareLock)
+        {
+            if (_spare is { HasExited: false })
+                return;
+            _spare?.Dispose();
+            _spare = Launch();
+            _spareExpiry ??= new Timer(_ => DropSpare());
+            _spareExpiry.Change(TimeSpan.FromMinutes(10), Timeout.InfiniteTimeSpan);
+        }
+    }
+
+    private static void DropSpare()
+    {
+        lock (SpareLock)
+        {
+            if (_spare is null)
+                return;
+            try
+            {
+                _spare.StandardInput.Close(); // sin pedido, termina solo
+            }
+            catch (Exception)
+            {
+            }
+            _spare.Dispose();
+            _spare = null;
+        }
+    }
+
+    private static Process? Launch()
+    {
+        try
+        {
             var start = new ProcessStartInfo(Environment.ProcessPath!)
             {
                 UseShellExecute = false,
@@ -63,13 +130,9 @@ public sealed class ShellMenuSession : IDisposable
                 CreateNoWindow = true,
             };
             start.ArgumentList.Add(Arg);
-            var process = Process.Start(start);
-            if (process is null)
-                return null;
-            string request = JsonSerializer.Serialize(new Request(paths.ToList(), background || desktop, (GetKeyState(VkShift) & 0x8000) != 0, desktop));
-            return new ShellMenuSession(process, request);
+            return Process.Start(start);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             Log.Error("Archivos: no se pudo abrir el menú de Windows", ex);
             return null;
@@ -273,8 +336,9 @@ public sealed class ShellMenuSession : IDisposable
                 // "Anclar a Inicio de Strata UI" (el menú del Explorador de Strata UI): Archivos ya lo tiene.
                 if (label.Contains("Strata UI", StringComparison.OrdinalIgnoreCase))
                     continue;
-                if (info.wID >= FirstCommand && info.wID <= LastCommand && Verb(menu, info.wID - FirstCommand) is { } verb
-                    && SkippedVerbs.Contains(verb))
+                string? verb = info.hSubMenu == IntPtr.Zero && info.wID >= FirstCommand && info.wID <= LastCommand
+                    ? Verb(menu, info.wID - FirstCommand) : null;
+                if (verb != null && SkippedVerbs.Contains(verb))
                     continue;
                 List<NativeMenuItem>? children = null;
                 if (info.hSubMenu != IntPtr.Zero)
@@ -285,7 +349,7 @@ public sealed class ShellMenuSession : IDisposable
                         continue;
                 }
                 items.Add(new NativeMenuItem((int)info.wID, Clean(label), Png(info.hbmpItem),
-                                             (info.fState & (MfsDisabled | MfsGrayed)) == 0, (info.fState & MfsChecked) != 0, false, children));
+                                             (info.fState & (MfsDisabled | MfsGrayed)) == 0, (info.fState & MfsChecked) != 0, false, children, verb));
             }
             finally
             {

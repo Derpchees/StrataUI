@@ -19,9 +19,19 @@ public static class DragGhost
     private static Window? _window;
     private static Point _grab; // dónde se tomó el elemento, en píxeles físicos desde su esquina
     private static double _dpi = 1;
+    private static Rect? _track; // en una fila: dentro de qué rectángulo (píxeles) se desliza
+    private static bool _vertical;
+    private static Point _origin; // esquina del elemento al tomarlo (píxeles)
+    private static Size _size; // tamaño del elemento (píxeles)
+    private static Point _at; // esquina de la imagen ahora (píxeles)
 
-    /// <summary>Empieza a mostrar <paramref name="element"/> bajo el puntero, tomado en el punto actual.</summary>
-    public static void Begin(FrameworkElement element)
+    /// <summary>
+    /// Empieza a mostrar <paramref name="element"/> bajo el puntero, tomado en el punto actual.
+    /// Con <paramref name="track"/> (en píxeles de pantalla) se arrastra en la fila, como el propio
+    /// botón: sin marco, sin salirse de ese rectángulo y solo a lo largo (horizontal, o vertical
+    /// con <paramref name="vertical"/>).
+    /// </summary>
+    public static void Begin(FrameworkElement element, Rect? track = null, bool vertical = false)
     {
         End();
         if (element.ActualWidth < 1 || element.ActualHeight < 1 || PresentationSource.FromVisual(element) is null)
@@ -32,12 +42,18 @@ public static class DragGhost
             var topLeft = element.PointToScreen(new Point(0, 0));
             GetCursorPos(out var cursor);
             _grab = new Point(cursor.X - topLeft.X, cursor.Y - topLeft.Y);
+            _track = track is { IsEmpty: false } ? track : null;
+            _vertical = vertical;
+            _origin = topLeft;
+            _size = new Size(element.ActualWidth * _dpi, element.ActualHeight * _dpi);
+            _at = topLeft;
+            bool inline = _track != null;
 
             const double pad = 3; // el marco va por fuera de la imagen
             var card = new Border
             {
-                Padding = new Thickness(pad - 1),
-                BorderThickness = new Thickness(2),
+                Padding = new Thickness(inline ? 0 : pad - 1),
+                BorderThickness = new Thickness(inline ? 0 : 2),
                 CornerRadius = new CornerRadius(8),
                 Child = new Image
                 {
@@ -49,12 +65,14 @@ public static class DragGhost
                 RenderTransformOrigin = new Point(0.5, 0.5),
                 RenderTransform = new ScaleTransform(1, 1),
             };
-            card.SetResourceReference(Border.BorderBrushProperty, "StrataAccentBrush");
-            card.SetResourceReference(Border.BackgroundProperty, "StrataPopupBackgroundBrush");
-            card.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 12, ShadowDepth = 2, Opacity = 0.35 };
-
-            // La imagen queda corrida por el margen de la sombra (6), el marco (2) y su relleno (2).
-            _grab.Offset(10 * _dpi, 10 * _dpi);
+            if (!inline)
+            {
+                card.SetResourceReference(Border.BorderBrushProperty, "StrataAccentBrush");
+                card.SetResourceReference(Border.BackgroundProperty, "StrataPopupBackgroundBrush");
+                card.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 12, ShadowDepth = 2, Opacity = 0.35 };
+                // La imagen queda corrida por el margen de la sombra (6), el marco (2) y su relleno (2).
+                _grab.Offset(10 * _dpi, 10 * _dpi);
+            }
             _window = new Window
             {
                 WindowStyle = WindowStyle.None,
@@ -71,7 +89,7 @@ public static class DragGhost
                 MinHeight = 0,
                 Left = -32000,
                 Top = -32000,
-                Content = new Border { Padding = new Thickness(6), Child = card },
+                Content = new Border { Padding = new Thickness(inline ? 0 : 6), Child = card },
             };
             _window.SourceInitialized += (_, _) =>
             {
@@ -84,7 +102,7 @@ public static class DragGhost
             CompositionTarget.Rendering += OnRendering;
 
             // Se "levanta": crece un poco y vuelve, con la velocidad elegida.
-            if (Settings.Current.PanelAnimation != PanelAnimation.None)
+            if (Settings.Current.PanelAnimation != PanelAnimation.None && !inline)
             {
                 var lift = new DoubleAnimation(1, 1.08, TimeSpan.FromMilliseconds(90)) { AutoReverse = true };
                 ((ScaleTransform)card.RenderTransform).BeginAnimation(ScaleTransform.ScaleXProperty, lift);
@@ -104,10 +122,32 @@ public static class DragGhost
         if (_window is null)
             return;
         GetCursorPos(out var cursor);
+        double x = cursor.X - _grab.X, y = cursor.Y - _grab.Y;
+        if (_track is { } track)
+        {
+            // Por la fila: a lo largo sigue al puntero sin pasarse de los extremos; de costado, quieto.
+            if (_vertical)
+            {
+                x = _origin.X;
+                y = Math.Clamp(y, track.Top, Math.Max(track.Top, track.Bottom - _size.Height));
+            }
+            else
+            {
+                y = _origin.Y;
+                x = Math.Clamp(x, track.Left, Math.Max(track.Left, track.Right - _size.Width));
+            }
+        }
+        _at = new Point(x, y);
         SetWindowPos(new WindowInteropHelper(_window).Handle, IntPtr.Zero,
-                     (int)Math.Round(cursor.X - _grab.X), (int)Math.Round(cursor.Y - _grab.Y), 0, 0,
+                     (int)Math.Round(x), (int)Math.Round(y), 0, 0,
                      SwpNoSize | SwpNoZOrder | SwpNoActivate);
     }
+
+    /// <summary>El centro de la imagen en pantalla (píxeles), o null si no se arrastra nada.</summary>
+    public static Point? Center => _window is null ? null : new Point(_at.X + _size.Width / 2, _at.Y + _size.Height / 2);
+
+    /// <summary>La esquina de la imagen en pantalla (píxeles), o null si no se arrastra nada.</summary>
+    public static Point? Position => _window is null ? null : _at;
 
     /// <summary>La vuelve a poner encima (algo que se abrió durante el arrastre, como un Popup, la tapaba).</summary>
     public static void BringToFront()
@@ -124,6 +164,7 @@ public static class DragGhost
         CompositionTarget.Rendering -= OnRendering;
         _window?.Close();
         _window = null;
+        _track = null;
     }
 
     /// <summary>Imagen del elemento tal como se ve (Render lo dibuja corrido por su posición: se recorta).</summary>

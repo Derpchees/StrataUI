@@ -311,9 +311,11 @@ internal sealed class EditOverlay : Window
     private Rect CornerRect(NotificationCorner corner)
     {
         double width = _bannerLayer.ActualWidth, height = _bannerLayer.ActualHeight;
-        bool left = corner is NotificationCorner.TopLeft or NotificationCorner.BottomLeft;
-        bool top = corner is NotificationCorner.TopLeft or NotificationCorner.TopRight;
-        return new Rect(left ? BannerGap : Math.Max(0, width - BannerSize.Width - BannerGap),
+        bool top = corner.IsTop();
+        double x = corner.IsCenter() ? Math.Max(0, (width - BannerSize.Width) / 2)
+                 : corner.IsLeft() ? BannerGap
+                 : Math.Max(0, width - BannerSize.Width - BannerGap);
+        return new Rect(x,
                         top ? BannerGap : Math.Max(0, height - BannerSize.Height - BannerGap),
                         BannerSize.Width, BannerSize.Height);
     }
@@ -529,14 +531,17 @@ internal sealed class EditOverlay : Window
 
             case BannerPayload:
             {
-                // La esquina del cuadrante donde está el puntero.
+                // La esquina o el centro del borde más cercano al puntero (tercios a lo ancho).
                 var point = _bannerLayer.PointFromScreen(screen);
-                bool left = point.X < _bannerLayer.ActualWidth / 2, top = point.Y < _bannerLayer.ActualHeight / 2;
-                var corner = (left, top) switch
+                int column = Math.Clamp((int)(point.X / Math.Max(1, _bannerLayer.ActualWidth) * 3), 0, 2);
+                bool top = point.Y < _bannerLayer.ActualHeight / 2;
+                var corner = (column, top) switch
                 {
-                    (true, true) => NotificationCorner.TopLeft,
-                    (false, true) => NotificationCorner.TopRight,
-                    (true, false) => NotificationCorner.BottomLeft,
+                    (0, true) => NotificationCorner.TopLeft,
+                    (1, true) => NotificationCorner.TopCenter,
+                    (2, true) => NotificationCorner.TopRight,
+                    (0, false) => NotificationCorner.BottomLeft,
+                    (1, false) => NotificationCorner.BottomCenter,
                     _ => NotificationCorner.BottomRight,
                 };
                 return new CornerTarget(corner, _bannerLayer.TransformToVisual(_root).TransformBounds(CornerRect(corner)));

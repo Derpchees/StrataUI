@@ -197,7 +197,7 @@ and everything goes back to normal.
   calendar on the clock.
 - **Grouped by app** like on your phone: each app, website or web app is one card with the newest
   notification and a count; expand it to see the rest in the same card, or clear them all at once.
-- Banners on the monitor and corner you choose, with icons and pictures for every notification
+- Banners on the monitor and corner (or top/bottom center) you choose, with icons and pictures for every notification
   (web apps included), **color emojis**, clickable links, stickers and photos.
 - Clicking a notification takes you where Windows would: a website's opens its installed web app
   or the tab that sent it, and apps with their own activator (WhatsApp, Spotify, Thunderbird...)

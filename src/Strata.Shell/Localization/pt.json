@@ -447,6 +447,8 @@
   "Arriba a la derecha": "Superior direito",
   "Abajo a la izquierda": "Inferior esquerdo",
   "Abajo a la derecha": "Inferior direito",
+  "Arriba al centro": "Superior central",
+  "Abajo al centro": "Inferior central",
   "Versión instalada: {0}": "Versão instalada: {0}",
   "Las versiones se publican en github.com/{0}": "As versões são publicadas em github.com/{0}",
   "Última búsqueda: {0}": "Última verificação: {0}",
@@ -1370,5 +1372,8 @@
   "No se pudo deshacer: {0}": "Não foi possível desfazer: {0}",
   "No hay nada que deshacer": "Nada para desfazer",
   "Volver a la carpeta (Esc)": "Voltar para a pasta (Esc)",
-  "Abrir en otra ventana": "Abrir em outra janela"
+  "Abrir en otra ventana": "Abrir em outra janela",
+  "Abrir y editar": "Abrir e editar",
+  "Compartir y enviar": "Partilhar e enviar",
+  "Nuevo": "Novo"
 }

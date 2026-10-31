@@ -123,8 +123,20 @@ public sealed class WidgetConfig
 /// </summary>
 public enum BarZone { End, Start, Center }
 
-/// <summary>Esquina de la pantalla donde aparecen los avisos.</summary>
-public enum NotificationCorner { BottomRight, BottomLeft, TopRight, TopLeft }
+/// <summary>Esquina (o centro de un borde) de la pantalla donde aparecen los avisos.</summary>
+public enum NotificationCorner { BottomRight, BottomLeft, TopRight, TopLeft, TopCenter, BottomCenter }
+
+public static class NotificationCornerExtensions
+{
+    public static bool IsTop(this NotificationCorner corner) =>
+        corner is NotificationCorner.TopLeft or NotificationCorner.TopRight or NotificationCorner.TopCenter;
+
+    public static bool IsLeft(this NotificationCorner corner) =>
+        corner is NotificationCorner.TopLeft or NotificationCorner.BottomLeft;
+
+    public static bool IsCenter(this NotificationCorner corner) =>
+        corner is NotificationCorner.TopCenter or NotificationCorner.BottomCenter;
+}
 
 /// <summary>Cómo aparecen y se cierran los paneles, el menú Inicio y los avisos.</summary>
 public enum PanelAnimation { Slide, Fade, Zoom, Pop, Rise, None }

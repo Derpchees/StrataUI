@@ -6,6 +6,25 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.18.0] - 2026-10-31
+
+### Añadido
+- **Notificaciones arriba o abajo al centro**, además de las cuatro esquinas (en Notificaciones y en el
+  modo edición, soltando el aviso en el tercio del medio).
+- **El menú del clic derecho trae las opciones de Windows ordenadas** en secciones (Abrir y editar,
+  Aplicaciones, Compartir y enviar, Nuevo, Sistema), con Propiedades al final.
+
+### Cambiado
+- El menú del clic derecho en Archivos y en el escritorio se abre completo, con las opciones de Windows
+  ya puestas, y mucho antes: el proceso que las lee queda listo de antemano.
+- Arrastrar ventanas y anclados en la barra: el botón se desliza por su fila, sin salirse de la barra
+  ni quedar encima de los demás, y los vecinos se corren al hueco.
+
+### Corregido
+- Si llegaban muchas notificaciones seguidas, se encimaban unas sobre otras.
+- Los menús y las descripciones emergentes se animaban dos veces (la animación de Windows y la propia),
+  y lo que entraba deslizándose se veía cortado en el borde.
+- Al reordenar en la barra, el botón arrastrado volvía a verse entero en su lugar viejo.
 ## [3.17.2] - 2026-10-31
 
 ### Corregido

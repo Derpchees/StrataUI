@@ -91,6 +91,8 @@ public sealed class DesktopWindow : Window
         PreviewMouseMove += OnMouseMove;
         PreviewMouseLeftButtonUp += OnLeftUp;
         MouseRightButtonUp += OnRightUp;
+        // El proceso que lee el menú de Windows, listo antes de soltar el botón.
+        PreviewMouseRightButtonDown += (_, _) => ShellMenuSession.Prewarm();
         PreviewKeyDown += OnKeyDown;
         DragOver += OnDragOver;
         Drop += OnDrop;
@@ -839,7 +841,9 @@ public sealed class DesktopWindow : Window
             FillItemMenu(menu, Selection);
         else
             FillDesktopMenu(menu);
-        menu.IsOpen = true;
+        // Completo, con las opciones de Windows ya puestas (no que crezca después).
+        if (!FileMenus.OpenWhenReady(menu, this, e.GetPosition(this)))
+            menu.IsOpen = true;
         e.Handled = true;
     }
 

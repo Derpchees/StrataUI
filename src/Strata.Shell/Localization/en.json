@@ -447,6 +447,8 @@
   "Arriba a la derecha": "Top right",
   "Abajo a la izquierda": "Bottom left",
   "Abajo a la derecha": "Bottom right",
+  "Arriba al centro": "Top center",
+  "Abajo al centro": "Bottom center",
   "Versión instalada: {0}": "Installed version: {0}",
   "Las versiones se publican en github.com/{0}": "Versions are published at github.com/{0}",
   "Última búsqueda: {0}": "Last checked: {0}",
@@ -1370,5 +1372,8 @@
   "No se pudo deshacer: {0}": "Couldn't undo: {0}",
   "No hay nada que deshacer": "Nothing to undo",
   "Volver a la carpeta (Esc)": "Back to the folder (Esc)",
-  "Abrir en otra ventana": "Open in another window"
+  "Abrir en otra ventana": "Open in another window",
+  "Abrir y editar": "Open and edit",
+  "Compartir y enviar": "Share and send",
+  "Nuevo": "New"
 }

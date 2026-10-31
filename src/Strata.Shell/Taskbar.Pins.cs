@@ -95,35 +95,37 @@ public partial class Taskbar
             return true;
         }
         System.Windows.Input.Mouse.OverrideCursor = System.Windows.Input.Cursors.SizeAll;
-        Controls.DragGhost.Begin(source);
-        _taskDragButton = source;
-        source.Opacity = 0.55;
+        BeginRowDrag(source, PinnedList);
+        MarkRowDragging(PinnedList, IsPinDragged);
         return true;
     }
+
+    // Los anclados se vuelven a crear al reordenarse: se reconocen por su id.
+    private static object PinKey(object item) => item is PinSlot slot ? slot.Id : item;
+
+    private bool IsPinDragged(object item) => item is PinSlot slot && slot.Id == _pinDrag;
 
     private void PinDragMove(string id)
     {
         Controls.DragGhost.Move();
-        GetCursorPos(out var cursor);
-        var point = new Point(cursor.X, cursor.Y);
+        if (Controls.DragGhost.Center is not { } point)
+            return;
         int from = _pinSlots.ToList().FindIndex(s => s.Id == id);
         for (int i = 0; i < _pinSlots.Count; i++)
         {
             if (i == from || PinnedList.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement item
-                || !ScreenRect(item, 0).Contains(point))
+                || !SlotRect(item).Contains(point))
                 continue;
-            TaskbarPins.Move(id, i);
+            int index = i;
+            MoveInRow(PinnedList, PinKey, IsPinDragged, () => TaskbarPins.Move(id, index));
             return;
         }
     }
 
     private void EndPinDrag()
     {
+        EndRowDrag(PinnedList, PinKey, IsPinDragged);
         _pinDrag = null;
-        Controls.DragGhost.End();
-        if (_taskDragButton != null)
-            _taskDragButton.Opacity = 1;
-        _taskDragButton = null;
         System.Windows.Input.Mouse.OverrideCursor = null;
         if (IsMouseCaptured)
             ReleaseMouseCapture();

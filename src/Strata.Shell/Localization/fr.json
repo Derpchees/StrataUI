@@ -447,6 +447,8 @@
   "Arriba a la derecha": "En haut à droite",
   "Abajo a la izquierda": "En bas à gauche",
   "Abajo a la derecha": "En bas à droite",
+  "Arriba al centro": "En haut au centre",
+  "Abajo al centro": "En bas au centre",
   "Versión instalada: {0}": "Version installée : {0}",
   "Las versiones se publican en github.com/{0}": "Les versions sont publiées sur github.com/{0}",
   "Última búsqueda: {0}": "Dernière recherche : {0}",
@@ -1370,5 +1372,8 @@
   "No se pudo deshacer: {0}": "Impossible d'annuler : {0}",
   "No hay nada que deshacer": "Rien à annuler",
   "Volver a la carpeta (Esc)": "Revenir au dossier (Échap)",
-  "Abrir en otra ventana": "Ouvrir dans une autre fenêtre"
+  "Abrir en otra ventana": "Ouvrir dans une autre fenêtre",
+  "Abrir y editar": "Ouvrir et modifier",
+  "Compartir y enviar": "Partager et envoyer",
+  "Nuevo": "Nouveau"
 }

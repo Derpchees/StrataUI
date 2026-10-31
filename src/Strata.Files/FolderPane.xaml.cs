@@ -134,7 +134,10 @@ public partial class FolderPane : UserControl
             // Un menú vacío para que llegue ContextMenuOpening; se arma al abrirse.
             list.ContextMenu = new ContextMenu();
             list.ContextMenuOpening += List_ContextMenuOpening;
+            // El proceso que lee el menú de Windows, listo antes de soltar el botón.
+            list.PreviewMouseRightButtonDown += (_, _) => ShellMenuSession.Prewarm();
         }
+        ShellMenuSession.Prewarm();
         PreviewMouseDown += (_, _) => Activated?.Invoke();
         GotKeyboardFocus += (_, _) => Activated?.Invoke();
         SizeChanged += (_, e) => FitColumns(e.NewSize.Width);
@@ -1648,6 +1651,9 @@ public partial class FolderPane : UserControl
             if (!Places.IsServer(folder))
                 AddWindowsItems(menu, [folder], background: true);
         }
+        // Que se abra completo, con las opciones de Windows ya puestas (no que crezca después).
+        if (e.CursorLeft >= 0 && FileMenus.OpenWhenReady(menu, list, Mouse.GetPosition(list)))
+            e.Handled = true;
     }
 
     internal static void AddWindowsItems(ContextMenu menu, IReadOnlyList<string> paths, bool background, bool desktop = false) =>

@@ -33,6 +33,7 @@ public partial class NotificationBannerWindow : Window
             // Sin activar y fuera de Alt+Tab.
             var hwnd = new WindowInteropHelper(this).Handle;
             SetWindowLong(hwnd, GwlExStyle, GetWindowLong(hwnd, GwlExStyle) | WsExNoActivate | WsExToolWindow);
+            HwndSource.FromHwnd(hwnd)?.AddHook(WndProc);
         };
         SizeChanged += (_, _) => Dispatcher.BeginInvoke(PlaceInCorner, DispatcherPriority.Render);
         // Vidrio detrás de cada aviso con los temas translúcidos (también al cambiar de tema).
@@ -78,8 +79,15 @@ public partial class NotificationBannerWindow : Window
             MoveToScreen();
     }
 
-    private bool IsTop => Corner is NotificationCorner.TopLeft or NotificationCorner.TopRight;
-    private bool IsLeft => Corner is NotificationCorner.TopLeft or NotificationCorner.BottomLeft;
+    private static bool IsTop => Corner.IsTop();
+
+    /// <summary>Borde desde el que entran y hacia el que salen: el lateral más cercano, o arriba/abajo en el centro.</summary>
+    private static TaskbarPosition Edge => Corner switch
+    {
+        NotificationCorner.TopCenter => TaskbarPosition.Top,
+        NotificationCorner.BottomCenter => TaskbarPosition.Bottom,
+        var corner => corner.IsLeft() ? TaskbarPosition.Left : TaskbarPosition.Right,
+    };
 
     /// <summary>Esquina elegida para el monitor de los avisos.</summary>
     private static NotificationCorner Corner => Settings.Current.For(TargetScreen().DeviceName).NotificationCorner;
@@ -165,11 +173,35 @@ public partial class NotificationBannerWindow : Window
         if (!_timers.Remove(item, out var timer))
             return; // ya se está yendo
         timer.Stop();
-        // Sale hacia el borde con la animación elegida; después se quita de la lista.
+        // Sale hacia el borde con la animación elegida; después su hueco se cierra poco a poco (los
+        // demás se acomodan deslizándose, no de golpe) y se quita de la lista.
         if (IsVisible && BannerList.ItemContainerGenerator.ContainerFromItem(item) is FrameworkElement banner)
-            Services.Themes.Motion.Out(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right, () => Discard(item), travel: 4);
+            Services.Themes.Motion.Out(banner, banner, Edge, () => Collapse(banner, () => Discard(item)), travel: 4);
         else
             Discard(item);
+    }
+
+    private static bool Animated => Settings.Current.PanelAnimation != PanelAnimation.None || Settings.Current.AnimationModule != null;
+
+    /// <summary>Alto de un aviso de <paramref name="from"/> a <paramref name="to"/> (la ventana crece o se encoge con él).</summary>
+    private static void AnimateHeight(FrameworkElement banner, double from, double to, Action done)
+    {
+        var animation = new System.Windows.Media.Animation.DoubleAnimation(from, to, TimeSpan.FromMilliseconds(180))
+        {
+            EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
+        };
+        animation.Completed += (_, _) => done();
+        banner.BeginAnimation(HeightProperty, animation);
+    }
+
+    private static void Collapse(FrameworkElement banner, Action done)
+    {
+        if (!Animated || banner.ActualHeight <= 0)
+        {
+            done();
+            return;
+        }
+        AnimateHeight(banner, banner.ActualHeight, 0, done);
     }
 
     private void Discard(StrataNotification item)
@@ -185,9 +217,12 @@ public partial class NotificationBannerWindow : Window
         Opacity = 1;
         if (BannerList.ItemContainerGenerator.ContainerFromItem(item) is not FrameworkElement banner)
             return;
-        // Entra desde el borde de la pantalla más cercano, con la animación elegida en el Hub y un
-        // recorrido largo (como los de Windows; con el de un panel casi no se notaba).
-        Services.Themes.Motion.In(banner, banner, IsLeft ? TaskbarPosition.Left : TaskbarPosition.Right, travel: 4);
+        // Abre su hueco poco a poco (si no, los demás avisos saltaban de golpe) y entra desde el borde
+        // de la pantalla más cercano, con la animación elegida en el Hub y un recorrido largo (como
+        // los de Windows; con el de un panel casi no se notaba).
+        if (Animated && _banners.Count > 1 && banner.ActualHeight > 0)
+            AnimateHeight(banner, 0, banner.ActualHeight, () => banner.BeginAnimation(HeightProperty, null));
+        Services.Themes.Motion.In(banner, banner, Edge, travel: 4);
     }
 
     // ── Posición ────────────────────────────────────────────────────────────
@@ -218,14 +253,41 @@ public partial class NotificationBannerWindow : Window
     {
         if (!IsVisible)
             return;
-        var work = TargetScreen().WorkingArea;
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
-        int width = (int)Math.Ceiling(ActualWidth * scale), height = (int)Math.Ceiling(ActualHeight * scale);
-        // El margen interno de la lista ya separa del borde; se suma un poco más.
-        int gap = (int)(4 * scale);
-        int x = IsLeft ? work.Left + gap : work.Right - width - gap;
-        int y = IsTop ? work.Top + gap : work.Bottom - height - gap;
+        var (x, y) = CornerPosition((int)Math.Ceiling(ActualWidth * scale), (int)Math.Ceiling(ActualHeight * scale));
         SetWindowPos(Handle, HwndTopmost, x, y, 0, 0, SwpNoSize | SwpNoActivate);
+    }
+
+    /// <summary>Dónde va la ventana (en píxeles) con ese tamaño para quedar pegada a su esquina.</summary>
+    private (int X, int Y) CornerPosition(int width, int height)
+    {
+        var work = TargetScreen().WorkingArea;
+        var corner = Corner;
+        // El margen interno de la lista ya separa del borde; se suma un poco más.
+        int gap = (int)(4 * VisualTreeHelper.GetDpi(this).DpiScaleX);
+        int x = corner.IsCenter() ? work.Left + (work.Width - width) / 2
+              : corner.IsLeft() ? work.Left + gap
+              : work.Right - width - gap;
+        int y = corner.IsTop() ? work.Top + gap : work.Bottom - height - gap;
+        return (x, y);
+    }
+
+    /// <summary>
+    /// Cada vez que la ventana cambia de alto (llega o se va un aviso) se coloca en el mismo paso.
+    /// Antes WPF la agrandaba o encogía con el borde de arriba fijo y se recolocaba un cuadro después:
+    /// en las esquinas de abajo los avisos brincaban y se veían encimados un momento.
+    /// </summary>
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        if (msg != WmWindowPosChanging || !IsVisible)
+            return IntPtr.Zero;
+        var pos = Marshal.PtrToStructure<WindowPos>(lParam);
+        if ((pos.Flags & SwpNoSize) != 0)
+            return IntPtr.Zero; // solo se mueve: quien la mueve ya calculó dónde
+        (pos.X, pos.Y) = CornerPosition(pos.Cx, pos.Cy);
+        pos.Flags &= ~SwpNoMove;
+        Marshal.StructureToPtr(pos, lParam, false);
+        return IntPtr.Zero;
     }
 
     private IntPtr Handle => new WindowInteropHelper(this).Handle;
@@ -266,8 +328,17 @@ public partial class NotificationBannerWindow : Window
 
     private const int GwlExStyle = -20;
     private const int WsExNoActivate = 0x08000000, WsExToolWindow = 0x00000080;
-    private const uint SwpNoSize = 0x0001, SwpNoZOrder = 0x0004, SwpNoActivate = 0x0010;
+    private const uint SwpNoSize = 0x0001, SwpNoMove = 0x0002, SwpNoZOrder = 0x0004, SwpNoActivate = 0x0010;
+    private const int WmWindowPosChanging = 0x0046;
     private static readonly IntPtr HwndTopmost = new(-1);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WindowPos
+    {
+        public IntPtr Hwnd, InsertAfter;
+        public int X, Y, Cx, Cy;
+        public uint Flags;
+    }
 
     [DllImport("user32.dll")]
     private static extern int GetWindowLong(IntPtr hwnd, int index);

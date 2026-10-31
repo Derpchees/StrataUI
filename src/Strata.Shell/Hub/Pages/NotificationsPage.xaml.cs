@@ -66,6 +66,8 @@ public partial class NotificationsPage : Page
             NotificationCorner.TopLeft => Loc.T("Arriba a la izquierda"),
             NotificationCorner.TopRight => Loc.T("Arriba a la derecha"),
             NotificationCorner.BottomLeft => Loc.T("Abajo a la izquierda"),
+            NotificationCorner.TopCenter => Loc.T("Arriba al centro"),
+            NotificationCorner.BottomCenter => Loc.T("Abajo al centro"),
             _ => Loc.T("Abajo a la derecha"),
         };
         CornerText.Text = (index >= 0 && screens.Count > 1 ? ScreenPicker.NameOf(screens[index], index, screens.Count) + " · " : "") + corner
