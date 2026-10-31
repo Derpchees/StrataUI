@@ -92,7 +92,7 @@ public sealed class ShellMenuSession : IDisposable
             if (_spare is { HasExited: false })
                 return;
             _spare?.Dispose();
-            _spare = Launch();
+            _spare = Launch(warm: true);
             _spareExpiry ??= new Timer(_ => DropSpare());
             _spareExpiry.Change(TimeSpan.FromMinutes(10), Timeout.InfiniteTimeSpan);
         }
@@ -116,7 +116,9 @@ public sealed class ShellMenuSession : IDisposable
         }
     }
 
-    private static Process? Launch()
+    private const string WarmArg = "--warm";
+
+    private static Process? Launch(bool warm = false)
     {
         try
         {
@@ -130,6 +132,8 @@ public sealed class ShellMenuSession : IDisposable
                 CreateNoWindow = true,
             };
             start.ArgumentList.Add(Arg);
+            if (warm)
+                start.ArgumentList.Add(WarmArg);
             return Process.Start(start);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
@@ -221,6 +225,8 @@ public sealed class ShellMenuSession : IDisposable
     {
         using var input = new StreamReader(Console.OpenStandardInput(), new UTF8Encoding(false), true);
         using var output = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true };
+        if (Environment.GetCommandLineArgs().Contains(WarmArg))
+            WarmUp();
         Request? request;
         try
         {
@@ -303,6 +309,68 @@ public sealed class ShellMenuSession : IDisposable
                 Marshal.ReleaseComObject(menu);
             pidls.ForEach(Marshal.FreeCoTaskMem);
             owner.DestroyHandle();
+        }
+    }
+
+    /// <summary>
+    /// Mientras espera el pedido, arma y descarta los menús de un archivo, una carpeta y su fondo: así
+    /// las extensiones (7-Zip, Defender, Git, Enviar a…) ya quedan cargadas y el menú de verdad sale en
+    /// una fracción del tiempo (cargarlas era más de un segundo de cada clic derecho).
+    /// </summary>
+    private static void WarmUp()
+    {
+        string file = Environment.ProcessPath!;
+        string folder = Path.GetDirectoryName(file)!;
+        foreach (var kind in new[] { 0, 1, 2 })
+        {
+            // Llegó el pedido de verdad: lo cargado hasta acá ya sirve, no se lo hace esperar.
+            if (RequestWaiting())
+                return;
+            var owner = new OwnerWindow();
+            var pidls = new List<IntPtr>();
+            IContextMenu? menu = null;
+            IntPtr hmenu = IntPtr.Zero;
+            try
+            {
+                menu = kind == 2 ? BackgroundMenu(folder, owner.Handle, pidls)
+                    : ItemsMenu([kind == 0 ? file : folder], owner.Handle, pidls);
+                if (menu is null)
+                    continue;
+                owner.Menu = menu;
+                hmenu = CreatePopupMenu();
+                if (menu.QueryContextMenu(hmenu, 0, FirstCommand, LastCommand, CmfNormal | CmfExplore) >= 0)
+                    Read(menu, owner, hmenu);
+            }
+            catch (Exception ex)
+            {
+                Log.Info($"Menú de Windows: no se pudo preparar ({ex.Message.Trim()})");
+            }
+            finally
+            {
+                if (hmenu != IntPtr.Zero)
+                    DestroyMenu(hmenu);
+                if (menu != null)
+                    Marshal.ReleaseComObject(menu);
+                pidls.ForEach(Marshal.FreeCoTaskMem);
+                owner.DestroyHandle();
+            }
+        }
+    }
+
+    /// <summary>Si ya llegó una línea entera por la entrada (sin leerla), o se cerró.</summary>
+    private static bool RequestWaiting()
+    {
+        var buffer = new byte[4096];
+        var pinned = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+        try
+        {
+            if (!PeekNamedPipe(GetStdHandle(-10), pinned.AddrOfPinnedObject(), (uint)buffer.Length, out uint read, out uint available, IntPtr.Zero))
+                return true;
+            return available > read || Array.IndexOf(buffer, (byte)'\n', 0, (int)read) >= 0;
+        }
+        finally
+        {
+            pinned.Free();
         }
     }
 
@@ -646,6 +714,10 @@ public sealed class ShellMenuSession : IDisposable
 
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr param);
 
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr GetStdHandle(int handle);
+    [DllImport("kernel32.dll")]
+    private static extern bool PeekNamedPipe(IntPtr pipe, IntPtr buffer, uint size, out uint read, out uint available, IntPtr left);
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern int SHParseDisplayName(string name, IntPtr bindContext, out IntPtr pidl, uint attributesIn, out uint attributesOut);
     [DllImport("shell32.dll")]

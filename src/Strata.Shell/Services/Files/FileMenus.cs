@@ -39,6 +39,7 @@ public static class FileMenus
     /// </summary>
     public static Task AddWindowsItems(ContextMenu menu, IReadOnlyList<string> paths, bool background, bool desktop = false)
     {
+        const string TerminalVerb = "{9F156763-7844-4DC4-B2B1-901F640F5155}";
         if (ShellMenuSession.Start(paths, background, desktop) is not { } session)
             return Task.CompletedTask;
         var separator = new Separator();
@@ -64,6 +65,9 @@ public static class FileMenus
             if (index < 0)
                 return; // el menú ya se volvió a armar
             menu.Items.Remove(loading);
+            // El fondo ya trae «Abrir terminal aquí» propio: el de Windows Terminal quedaría repetido.
+            if (background)
+                items = items.Where(i => !string.Equals(i.Verb, TerminalVerb, StringComparison.OrdinalIgnoreCase)).ToList();
             if (items.Count == 0)
             {
                 menu.Items.Remove(separator);
@@ -99,6 +103,9 @@ public static class FileMenus
         async Task OpenAsync()
         {
             await Task.WhenAny(pending, Task.Delay(1500));
+            // Otro clic derecho mientras tanto volvió a armar el menú: lo abre ese, no este.
+            if (!Pending.TryGetValue(menu, out var latest) || latest != pending || menu.IsOpen)
+                return;
             // Donde se hizo clic (no donde esté ahora el puntero); al cerrarse vuelve a lo de siempre.
             menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Relative;
             menu.PlacementTarget = target;

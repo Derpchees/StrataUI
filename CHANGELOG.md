@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.18.1] - 2026-10-31
+
+### Cambiado
+- El menú del clic derecho se abre en la mitad del tiempo: el proceso que lee las opciones de Windows
+  las deja cargadas de antemano. «Enviar a» además sale completo, con sus íconos.
+
+### Corregido
+- Dos clics derechos seguidos podían abrir el menú viejo encima del nuevo.
+- En el fondo de una carpeta y en el escritorio, «Abrir terminal» aparecía dos veces.
+
 ## [3.18.0] - 2026-10-31
 
 ### Añadido
