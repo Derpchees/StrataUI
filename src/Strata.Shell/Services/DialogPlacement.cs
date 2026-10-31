@@ -63,6 +63,10 @@ public static class DialogPlacement
         {
             Width = 1,
             Height = 1,
+            // Sin el estilo de WPF-UI, que impone un tamaño mínimo y la corría del centro.
+            Style = null,
+            MinWidth = 0,
+            MinHeight = 0,
             WindowStyle = WindowStyle.None,
             ResizeMode = ResizeMode.NoResize,
             ShowInTaskbar = false,

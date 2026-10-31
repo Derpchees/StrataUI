@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.18.2] - 2026-10-31
+
+### Corregido
+- Al cerrarse la bandeja de íconos ocultos (y los menús del clic derecho), su imagen aparecía un instante
+  lejos de donde estaba: la ventana de la animación tomaba un tamaño mínimo de 460×320.
+- Los diálogos de Windows (abrir archivo) quedaban algo corridos del centro de la pantalla por el mismo motivo.
+
 ## [3.18.1] - 2026-10-31
 
 ### Cambiado

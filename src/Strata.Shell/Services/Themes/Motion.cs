@@ -79,8 +79,10 @@ public static class Motion
             if (!GetWindowRect(_hwnd, out var rect))
                 return;
             int dx = (int)Math.Round(x * _scale), dy = (int)Math.Round(y * _scale);
-            SetWindowPos(_hwnd, IntPtr.Zero, rect.Left - _dx + dx, rect.Top - _dy + dy, 0, 0, NoSize | NoZOrder | NoActivate);
+            int left = rect.Left - _dx + dx, top = rect.Top - _dy + dy;
+            // Antes de mover: quien escucha el cambio de posición ya ve el desplazamiento nuevo.
             (_dx, _dy) = (dx, dy);
+            SetWindowPos(_hwnd, IntPtr.Zero, left, top, 0, 0, NoSize | NoZOrder | NoActivate);
         }
 
         private const uint NoSize = 0x0001, NoZOrder = 0x0004, NoActivate = 0x0010;
@@ -114,17 +116,31 @@ public static class Motion
     /// Dónde quedó en pantalla (en DIP) al abrirse, para su salida. Sin el desplazamiento de la
     /// entrada que todavía corre (si no, la salida salía corrida unos píxeles).
     /// </summary>
-    private static void Remember(FrameworkElement element, TaskbarPosition from, PopupMover? mover = null) =>
-        element.Dispatcher.BeginInvoke(() =>
-        {
-            if (PresentationSource.FromVisual(element) is { CompositionTarget: { } target } && element.ActualWidth > 0)
+    private static void Remember(FrameworkElement element, TaskbarPosition from, PopupMover? mover = null)
+    {
+        // Mientras está abierto se sigue cada movimiento de su ventana: WPF lo recoloca si su botón
+        // se corre en la barra (cambia el texto de al lado) o si cambia de tamaño, y la salida
+        // aparecía donde estaba al abrirse, lejos de donde se veía.
+        if (PresentationSource.FromVisual(element) is System.Windows.Interop.HwndSource source)
+            source.AddHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) =>
             {
-                var corner = target.TransformFromDevice.Transform(element.PointToScreen(new Point(0, 0)));
-                if (mover != null)
-                    corner.Offset(-mover.X, -mover.Y);
-                Opened.AddOrUpdate(element, new Shown(new Rect(corner, new Size(element.ActualWidth, element.ActualHeight)), from));
-            }
-        }, System.Windows.Threading.DispatcherPriority.Loaded);
+                const int WindowPosChanged = 0x0047;
+                if (msg == WindowPosChanged)
+                    Measure(element, from, mover);
+                return IntPtr.Zero;
+            });
+        element.Dispatcher.BeginInvoke(() => Measure(element, from, mover), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    private static void Measure(FrameworkElement element, TaskbarPosition from, PopupMover? mover)
+    {
+        if (PresentationSource.FromVisual(element) is not { CompositionTarget: { } target } || element.ActualWidth <= 0)
+            return;
+        var corner = target.TransformFromDevice.Transform(element.PointToScreen(new Point(0, 0)));
+        if (mover != null)
+            corner.Offset(-mover.X, -mover.Y);
+        Opened.AddOrUpdate(element, new Shown(new Rect(corner, new Size(element.ActualWidth, element.ActualHeight)), from));
+    }
 
     /// <summary>
     /// Un menú o popup se cierra sin esperar (WPF no deja retrasarlo): queda una imagen de cómo se
@@ -160,6 +176,11 @@ public static class Motion
                 ShowInTaskbar = false,
                 ShowActivated = false,
                 Topmost = true,
+                // El estilo de ventanas de WPF-UI impone un tamaño mínimo (460×320): la imagen quedaba
+                // centrada en esa ventana grande, lejos de donde estaba el popup.
+                Style = null,
+                MinWidth = 0,
+                MinHeight = 0,
                 Left = shown.Bounds.X,
                 Top = shown.Bounds.Y,
                 Width = size.Width,
