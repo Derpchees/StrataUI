@@ -199,9 +199,77 @@ begin
   end;
 end;
 
+function CreateFile(lpFileName: String; dwDesiredAccess, dwShareMode, lpSecurityAttributes,
+  dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile: Cardinal): Integer;
+  external 'CreateFileW@kernel32.dll stdcall';
+function CloseHandle(hObject: Integer): Boolean;
+  external 'CloseHandle@kernel32.dll stdcall';
+function MoveFileEx(lpExistingFileName: String; lpNewFileName: Cardinal; dwFlags: Cardinal): Boolean;
+  external 'MoveFileExW@kernel32.dll stdcall';
+
+// Un proceso lo tiene abierto o cargado (un .dll o .exe en uso no se puede borrar ni sobrescribir).
+function IsLocked(FileName: String): Boolean;
+var
+  Handle: Integer;
+  Error: Integer;
+begin
+  Result := False;
+  // GENERIC_WRITE sin compartir, OPEN_EXISTING.
+  Handle := CreateFile(FileName, $40000000, 0, 0, 3, 0, 0);
+  if Handle <> -1 then
+    CloseHandle(Handle)
+  else
+  begin
+    Error := DLLGetLastError;
+    Result := (Error = 32) or (Error = 5);
+  end;
+end;
+
+// Un Strata UI que no termina de cerrarse (trabado dentro de Windows: ni taskkill lo termina hasta
+// reiniciar) deja sus archivos en uso, y sin esto la instalación se deshacía entera. Windows sí deja
+// cambiarles el nombre: se apartan como .old, se borran al reiniciar (o en la siguiente instalación)
+// y los nuevos se ponen en su lugar. La copia de las lecturas avanzadas (Lecturas) la maneja su tarea.
+procedure MoveAsideLocked(Dir: String; Stamp: String);
+var
+  Find: TFindRec;
+  Path, Aside: String;
+begin
+  if not FindFirst(AddBackslash(Dir) + '*', Find) then
+    exit;
+  try
+    repeat
+      Path := AddBackslash(Dir) + Find.Name;
+      if (Find.Name = '.') or (Find.Name = '..') then
+        continue;
+      if (Find.Attributes and FILE_ATTRIBUTE_DIRECTORY) <> 0 then
+      begin
+        if CompareText(Find.Name, 'Lecturas') <> 0 then
+          MoveAsideLocked(Path, Stamp);
+      end
+      else if CompareText(ExtractFileExt(Find.Name), '.old') = 0 then
+        DeleteFile(Path)
+      else if (CompareText(Copy(Find.Name, 1, 5), 'unins') <> 0) and IsLocked(Path) then
+      begin
+        Aside := Path + '.' + Stamp + '.old';
+        if RenameFile(Path, Aside) then
+        begin
+          Log('Archivo en uso apartado: ' + Path);
+          // MOVEFILE_DELAY_UNTIL_REBOOT (con administrador; si no, lo borra la siguiente instalación).
+          MoveFileEx(Aside, 0, 4);
+        end
+        else
+          Log('No se pudo apartar el archivo en uso: ' + Path);
+      end;
+    until not FindNext(Find);
+  finally
+    FindClose(Find);
+  end;
+end;
+
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
-  Code: Integer;
+  Code, Waited: Integer;
+  Exe: String;
 begin
   CloseApp(ExpandConstant('{app}'), 'StrataUI.exe');
   // Actualización desde cuando se llamaba WINX (en su carpeta vieja o ya con el nombre nuevo).
@@ -211,7 +279,22 @@ begin
   // El proceso elevado de las lecturas avanzadas se cierra solo poco después que Strata UI; por si
   // quedó trabado leyendo el hardware, se termina (si no, sus archivos no se pueden reemplazar).
   if IsAdminInstallMode then
-    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM StrataUI.exe', '', SW_HIDE, ewWaitUntilTerminated, Code);
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM StrataUI.exe', '', SW_HIDE, ewWaitUntilTerminated, Code)
+  else
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM StrataUI.exe /FI "USERNAME eq ' + GetUserNameString + '"', '',
+         SW_HIDE, ewWaitUntilTerminated, Code);
+  // Windows tarda un poco en soltar los archivos de un proceso terminado.
+  Exe := ExpandConstant('{app}\StrataUI.exe');
+  Waited := 0;
+  while IsLocked(Exe) and (Waited < 5000) do
+  begin
+    Sleep(250);
+    Waited := Waited + 250;
+  end;
+  if IsLocked(Exe) then
+    Log('Strata UI sigue en uso tras cerrarlo: se apartan sus archivos');
+  if DirExists(ExpandConstant('{app}')) then
+    MoveAsideLocked(ExpandConstant('{app}'), GetDateTimeString('yyyymmddhhnnss', #0, #0));
   Result := '';
 end;
 

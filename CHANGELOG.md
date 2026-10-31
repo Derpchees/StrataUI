@@ -6,6 +6,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.17.1] - 2026-10-31
+
+### Corregido
+- La actualización se deshacía entera si un Strata UI anterior se quedaba trabado al cerrarse (Windows
+  no deja terminarlo hasta reiniciar) y seguía usando sus archivos: ahora el instalador los aparta,
+  pone los nuevos y los viejos se borran al reiniciar.
+
 ## [3.17.0] - 2026-10-30
 
 ### Añadido
