@@ -132,6 +132,9 @@ public enum PanelAnimation { Slide, Fade, Zoom, Pop, Rise, None }
 /// <summary>Duración de las animaciones.</summary>
 public enum AnimationSpeed { Fast, Normal, Slow }
 
+/// <summary>Cómo se ven los archivos en el explorador de Strata UI.</summary>
+public enum FilesViewMode { Details, List, Tiles, Icons, LargeIcons }
+
 /// <summary>Preferencias de Strata UI, guardadas en %LOCALAPPDATA%\StrataUI\settings.json.</summary>
 public sealed class StrataSettings
 {
@@ -247,8 +250,12 @@ public sealed class StrataSettings
     public Dictionary<string, double[]> StartMenuSizes { get; set; } = new();
 
     // Archivos (explorador de Strata UI)
-    /// <summary>Vista del explorador: lista con detalles o cuadrícula con miniaturas.</summary>
+    /// <summary>Vista de antes (lista o cuadrícula); solo se lee si todavía no se eligió <see cref="FilesView"/>.</summary>
     public bool FilesGridView { get; set; }
+    /// <summary>Vista del explorador: detalles, lista, mosaicos, íconos o íconos grandes.</summary>
+    public FilesViewMode? FilesView { get; set; }
+    [JsonIgnore]
+    public FilesViewMode FilesViewEffective => FilesView ?? (FilesGridView ? FilesViewMode.Icons : FilesViewMode.Details);
     /// <summary>El explorador muestra los archivos y carpetas ocultos.</summary>
     public bool FilesShowHidden { get; set; }
     /// <summary>Panel de vista previa a la derecha de cada carpeta (Alt+P).</summary>

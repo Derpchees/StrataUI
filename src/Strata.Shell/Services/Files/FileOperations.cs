@@ -17,20 +17,32 @@ namespace Strata.Shell.Services.Files;
 public static class FileOperations
 {
     /// <summary>Copia (pegar en la misma carpeta hace "nombre - copia", sin preguntar). False si se canceló o falló algo.</summary>
-    public static async Task<bool> CopyAsync(IReadOnlyList<string> sources, string folder, IntPtr owner)
+    /// <param name="placed">Si se pasa, se llena con dónde quedó cada origen (para poder deshacerlo).</param>
+    public static async Task<bool> CopyAsync(IReadOnlyList<string> sources, string folder, IntPtr owner,
+                                             List<(string From, string To)>? placed = null)
     {
         if (sources.Count == 0 || await ConflictAsync(sources, folder, Loc.T("Copiar"), owner) is not { } conflict)
             return false;
-        return await TransferAsync(TransferKind.Copy, sources, folder, conflict, owner);
+        return await TransferAsync(TransferKind.Copy, sources, folder, conflict, owner, placed);
     }
 
-    public static async Task<bool> MoveAsync(IReadOnlyList<string> sources, string folder, IntPtr owner)
+    public static async Task<bool> MoveAsync(IReadOnlyList<string> sources, string folder, IntPtr owner,
+                                             List<(string From, string To)>? placed = null)
     {
         // Lo que ya está en esa carpeta no se mueve.
         var moving = sources.Where(s => !SameFolder(s, folder)).ToList();
         if (moving.Count == 0 || await ConflictAsync(moving, folder, Loc.T("Mover"), owner) is not { } conflict)
             return false;
-        return await TransferAsync(TransferKind.Move, moving, folder, conflict, owner);
+        return await TransferAsync(TransferKind.Move, moving, folder, conflict, owner, placed);
+    }
+
+    /// <summary>Lo que llegó bien a su destino (sin lo que tuvo errores).</summary>
+    private static void Collect(FileTransfer transfer, List<(string From, string To)>? placed)
+    {
+        if (placed is null)
+            return;
+        lock (transfer.Errors)
+            placed.AddRange(transfer.Resolved.Where(r => !transfer.FailedSources.Contains(r.Key)).Select(r => (r.Key, r.Value)));
     }
 
     /// <summary>
@@ -38,7 +50,8 @@ public static class FileOperations
     /// permiso de administrador desde el principio; si algo falla por permisos en una carpeta normal,
     /// se pregunta al terminar y se reintenta solo eso.
     /// </summary>
-    private static async Task<bool> TransferAsync(TransferKind kind, IReadOnlyList<string> sources, string folder, TransferConflict conflict, IntPtr owner)
+    private static async Task<bool> TransferAsync(TransferKind kind, IReadOnlyList<string> sources, string folder, TransferConflict conflict,
+                                                  IntPtr owner, List<(string From, string To)>? placed)
     {
         if (!CanWrite(folder))
         {
@@ -46,11 +59,16 @@ public static class FileOperations
                     ? Loc.F("Para copiar a «{0}» hace falta permiso de administrador.", FileTransfers.FolderNameOf(folder))
                     : Loc.F("Para mover a «{0}» hace falta permiso de administrador.", FileTransfers.FolderNameOf(folder))))
                 return false;
+            // Con permiso de administrador no se guarda para deshacer (deshacerlo pediría permiso otra vez).
             return await ElevatedFiles.StartTransfer(new FileTransfer(kind, sources, folder, conflict) { Elevated = true }).Finished.Task;
         }
         var transfer = FileTransfers.Begin(new FileTransfer(kind, sources, folder, conflict));
         if (await transfer.Finished.Task)
+        {
+            Collect(transfer, placed);
             return true;
+        }
+        Collect(transfer, placed);
         return transfer.CanRetryAsAdmin && await FileTransfers.RetryAsAdminAsync(transfer, owner);
     }
 

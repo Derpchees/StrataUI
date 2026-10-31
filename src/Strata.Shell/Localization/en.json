@@ -1362,5 +1362,13 @@
   "Buscar en Strata UI": "Search Strata UI",
   "Los valores de antes de cada cambio: deshaz uno o todos.": "The values from before each change: undo one or all of them.",
   "Ajustes de Windows agrupados por tema. Cada cambio se puede deshacer en Respaldo.": "Windows settings grouped by topic. Every change can be undone in Backup.",
-  "{0} de {1} activadas": "{0} of {1} on"
+  "{0} de {1} activadas": "{0} of {1} on",
+  "Detalles": "Details",
+  "Mosaicos": "Tiles",
+  "Vista: {0}": "View: {0}",
+  "Se deshizo: {0}": "Undone: {0}",
+  "No se pudo deshacer: {0}": "Couldn't undo: {0}",
+  "No hay nada que deshacer": "Nothing to undo",
+  "Volver a la carpeta (Esc)": "Back to the folder (Esc)",
+  "Abrir en otra ventana": "Open in another window"
 }

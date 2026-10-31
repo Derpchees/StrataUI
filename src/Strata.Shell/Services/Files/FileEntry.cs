@@ -120,7 +120,15 @@ public sealed class FileEntry : INotifyPropertyChanged
     /// <summary>Lo que leen la automatización y los lectores de pantalla de cada fila (si no, el nombre de la clase).</summary>
     public override string ToString() => Name;
 
-    public string SizeText => IsFolder ? "" : FormatSize(Size);
+    public string SizeText => IsFolder ? _folderSize is { } total ? FormatSize(total) : "" : FormatSize(Size);
+
+    private long? _folderSize;
+    /// <summary>Lo que pesa todo lo de adentro de una carpeta; lo calcula Archivos en segundo plano (null mientras tanto).</summary>
+    public long? FolderSize
+    {
+        get => _folderSize;
+        set { _folderSize = value; Changed(); Changed(nameof(SizeText)); }
+    }
     public string ModifiedText => Modified == default ? "" : Modified.ToString("g", CultureInfo.CurrentCulture);
 
     private ImageSource? _icon;

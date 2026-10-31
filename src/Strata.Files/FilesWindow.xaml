@@ -201,6 +201,14 @@
                                     <TextBlock Text="{l:T 'Ordenar'}" FontSize="13" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
+                            <!-- Vista: detalles, lista, mosaicos, íconos medianos o grandes -->
+                            <Button x:Name="ViewButton" Style="{StaticResource CommandButton}" Click="View_Click" Margin="4,0,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:SymbolIcon x:Name="ViewIcon" Symbol="TextBulletListLtr24" FontSize="16" Margin="0,0,8,0" />
+                                    <TextBlock Text="{l:T 'Vista'}" FontSize="13" VerticalAlignment="Center" />
+                                    <ui:SymbolIcon Symbol="ChevronDown24" FontSize="10" Margin="6,1,0,0" />
+                                </StackPanel>
+                            </Button>
                             <Border Padding="2" CornerRadius="8" Margin="8,0,0,0" VerticalAlignment="Center"
                                     Background="{DynamicResource ControlFillColorDefaultBrush}">
                                 <StackPanel Orientation="Horizontal">
@@ -209,16 +217,8 @@
                                         <TextBlock Text=".ext" FontSize="11" FontWeight="SemiBold" />
                                     </files:CommandToggle>
                                     <files:CommandToggle x:Name="HiddenToggle" Style="{StaticResource ViewToggle}" Click="Hidden_Click"
-                                                  ToolTip="{l:T 'Mostrar archivos ocultos'}" Margin="0,0,2,0">
+                                                  ToolTip="{l:T 'Mostrar archivos ocultos'}">
                                         <ui:SymbolIcon Symbol="Eye24" FontSize="15" />
-                                    </files:CommandToggle>
-                                    <files:CommandToggle x:Name="DetailsToggle" Style="{StaticResource ViewToggle}" Click="DetailsView_Click"
-                                                  ToolTip="{l:T 'Lista'}">
-                                        <ui:SymbolIcon Symbol="TextBulletListLtr24" FontSize="15" />
-                                    </files:CommandToggle>
-                                    <files:CommandToggle x:Name="GridToggle" Style="{StaticResource ViewToggle}" Click="GridView_Click"
-                                                  ToolTip="{l:T 'Cuadrícula'}">
-                                        <ui:SymbolIcon Symbol="Grid24" FontSize="15" />
                                     </files:CommandToggle>
                                 </StackPanel>
                             </Border>

@@ -223,8 +223,9 @@ and everything goes back to normal.
 ### <img src="docs/icons/files.svg" width="28" align="center" alt="" /> Files
 
 - A **file explorer** that matches the rest of Strata UI: a home page with your folders, drives (with
-  free space) and recent files, and every folder as a list or a grid with previews of pictures,
-  videos, music, PDFs and documents.
+  free space) and recent files, and every folder in five views (large icons, medium icons, list,
+  details and tiles, Ctrl+Shift+2…7) with previews of pictures, videos, music, PDFs and documents.
+  Folder sizes are measured in the background and shown in the Size column.
 - **Tabs** in the title bar (Ctrl+T, middle-click a folder to open it in a new tab) and a **dual
   pane** view with two folders side by side (Ctrl+Shift+D) to drag files between them.
 - Select with a box by dragging over empty space, drop files on any folder in the sidebar (or on
@@ -237,7 +238,8 @@ and everything goes back to normal.
   stay above the icons, and turning it off in the Hub brings the Windows desktop back as it was.
 - Breadcrumb path you can also type into (Ctrl+L), search that also looks inside subfolders (each
   result says where it is), sorting, hidden files, back/forward with the mouse side buttons and the
-  usual keyboard shortcuts (Shift+Delete deletes permanently).
+  usual keyboard shortcuts (Shift+Delete deletes permanently). **Ctrl+Z undoes** renames, new
+  folders, copies, moves and sending to the Recycle Bin.
 - A **preview pane** (Alt+P) for the selected file: pictures with their real size, the first page
   of a PDF, the start of text and code files, covers of video and music, and a folder's item count.
 - Copy and move show their **progress inside Files** (speed, time left, cancel) instead of a
@@ -256,7 +258,8 @@ and everything goes back to normal.
   **Compress** to 7z (the smallest, one click) or pick zip or tar, the level and an AES-256 password.
 - **Format drives** from their right-click menu (NTFS, exFAT or FAT32, label, quick format). The
   Windows drive, and the ones holding Strata UI or your profile, can never be formatted.
-- A built-in **viewer** for pictures (animated GIFs, SVG, camera RAW, HEIF/AVIF too), video and
+- A built-in **viewer** that opens right inside Files (Esc goes back to the folder, or pop it out
+  to its own window) for pictures (animated GIFs, SVG, camera RAW, HEIF/AVIF too), video and
   music with the modern Windows player and your Store codecs (webm, AV1, HEVC, ogg, opus...): zoom
   where the mouse is, drag to pan, real size with a double click, phone photos the right way up,
   playback controls that hide on their own, full screen, and the arrow keys to go through the

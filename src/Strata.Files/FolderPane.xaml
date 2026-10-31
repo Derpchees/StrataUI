@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:l="clr-namespace:Strata.Shell.Services.Localization;assembly=StrataUI"
              xmlns:controls="clr-namespace:Strata.Shell.Controls;assembly=StrataUI"
+             xmlns:files="clr-namespace:Strata.Shell.Files"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -14,8 +15,19 @@
                 <Setter Property="Padding" Value="6,3" />
                 <Setter Property="MinHeight" Value="0" />
                 <Setter Property="FontSize" Value="13" />
+                <!-- Fondo opaco: el nombre de abajo no se transparenta mientras se escribe -->
+                <Setter Property="Background" Value="{DynamicResource ControlFillColorInputActiveBrush}" />
                 <EventSetter Event="PreviewKeyDown" Handler="RenameBox_PreviewKeyDown" />
                 <EventSetter Event="LostKeyboardFocus" Handler="RenameBox_LostKeyboardFocus" />
+            </Style>
+
+            <!-- El nombre se esconde mientras se renombra (si no, se encima con el texto del cuadro) -->
+            <Style x:Key="NameLabel" TargetType="TextBlock">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding IsRenaming}" Value="True">
+                        <Setter Property="Visibility" Value="Hidden" />
+                    </DataTrigger>
+                </Style.Triggers>
             </Style>
 
             <!-- Vista de lista: ícono y nombre, fecha, tipo y tamaño (anchos iguales a la cabecera) -->
@@ -34,7 +46,7 @@
                     </Grid>
                     <Grid Margin="32,0,12,0">
                         <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                   Style="{StaticResource NameLabel}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Center"
                                  Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
                     </Grid>
@@ -90,12 +102,119 @@
                     <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="16" Margin="0,0,14,6" />
                     <Grid Grid.Row="1" Margin="0,8,0,0">
                         <TextBlock Text="{Binding DisplayName}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="34"
-                                   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                   TextTrimming="CharacterEllipsis" Style="{StaticResource NameLabel}"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
                         <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Top"
+                                 FontSize="12" TextWrapping="Wrap" TextAlignment="Center" Panel.ZIndex="1"
                                  Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
                     </Grid>
                 </Grid>
             </DataTemplate>
+
+            <!-- Vista de lista: ícono chico y nombre, en columnas -->
+            <DataTemplate x:Key="ListTemplate">
+                <Grid Width="236" Height="28" Margin="8,0" Style="{StaticResource FileContent}" ToolTip="{Binding TypeName}">
+                    <Grid Width="20" Height="20" HorizontalAlignment="Left">
+                        <Image Source="{Binding Icon}" Width="16" Height="16" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="10" Margin="0,0,-2,-2" />
+                    </Grid>
+                    <Grid Margin="26,0,4,0">
+                        <TextBlock Text="{Binding DisplayName}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Style="{StaticResource NameLabel}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Center"
+                                 Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+                </Grid>
+            </DataTemplate>
+
+            <!-- Vista de mosaicos: carátula o ícono a la izquierda; nombre, tipo y tamaño a la derecha -->
+            <DataTemplate x:Key="TilesTemplate">
+                <Grid Width="264" Height="64" Margin="8,4" Style="{StaticResource FileContent}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="64" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Image Source="{Binding Preview}" MaxWidth="60" MaxHeight="56" Stretch="Uniform"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="13" Margin="0,0,4,2" />
+                    <StackPanel Grid.Column="1" Margin="10,0,4,0" VerticalAlignment="Center">
+                        <Grid>
+                            <TextBlock Text="{Binding DisplayName}" FontSize="13" TextTrimming="CharacterEllipsis"
+                                       Style="{StaticResource NameLabel}" Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged"
+                                     Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
+                        </Grid>
+                        <TextBlock Text="{Binding TypeName}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="{Binding SizeText}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+
+            <!-- Vista de íconos grandes: carátulas amplias para fotos y videos -->
+            <DataTemplate x:Key="LargeTemplate">
+                <Grid Width="184" Margin="8,10,8,8" Style="{StaticResource FileContent}" ToolTip="{Binding TypeName}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="138" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Image Source="{Binding Preview}" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality">
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Width" Value="96" />
+                                <Setter Property="Height" Value="96" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasThumbnail}" Value="True">
+                                        <Setter Property="Width" Value="184" />
+                                        <Setter Property="Height" Value="138" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
+                    </Image>
+                    <Border Width="34" Height="34" CornerRadius="17" Background="#99000000" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsVideo}" Value="True" />
+                                            <Condition Binding="{Binding HasThumbnail}" Value="True" />
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <ui:SymbolIcon Symbol="Play24" Filled="True" FontSize="16" Foreground="White" Margin="2,0,0,0" />
+                    </Border>
+                    <ui:SymbolIcon Style="{StaticResource CloudBadge}" FontSize="18" Margin="0,0,8,6" />
+                    <Grid Grid.Row="1" Margin="0,8,0,0">
+                        <TextBlock Text="{Binding DisplayName}" FontSize="12" TextAlignment="Center" TextWrapping="Wrap" MaxHeight="34"
+                                   TextTrimming="CharacterEllipsis" Style="{StaticResource NameLabel}"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBox Style="{StaticResource RenameBox}" IsVisibleChanged="RenameBox_IsVisibleChanged" VerticalAlignment="Top"
+                                 FontSize="12" TextWrapping="Wrap" TextAlignment="Center" Panel.ZIndex="1"
+                                 Visibility="{Binding IsRenaming, Converter={StaticResource BoolToVis}}" />
+                    </Grid>
+                </Grid>
+            </DataTemplate>
+
+            <!-- Paneles de cada vista (mismo panel virtualizado, distinto tamaño de celda) -->
+            <ItemsPanelTemplate x:Key="ListPanel">
+                <ui:VirtualizingWrapPanel ItemSize="256,30" Orientation="Vertical" SpacingMode="None" />
+            </ItemsPanelTemplate>
+            <ItemsPanelTemplate x:Key="TilesPanel">
+                <ui:VirtualizingWrapPanel ItemSize="286,78" Orientation="Vertical" SpacingMode="Uniform" />
+            </ItemsPanelTemplate>
+            <ItemsPanelTemplate x:Key="IconsPanel">
+                <ui:VirtualizingWrapPanel ItemSize="124,142" Orientation="Vertical" SpacingMode="Uniform" />
+            </ItemsPanelTemplate>
+            <ItemsPanelTemplate x:Key="LargePanel">
+                <ui:VirtualizingWrapPanel ItemSize="206,214" Orientation="Vertical" SpacingMode="Uniform" />
+            </ItemsPanelTemplate>
 
             <!-- Mosaico de la portada: carpeta del usuario, de la nube o de la red -->
             <DataTemplate x:Key="HomeFolderTemplate">
@@ -198,7 +317,7 @@
         </Grid>
 
         <!-- Contenido: tarjeta con la portada, la lista o la cuadrícula; a la derecha, la vista previa -->
-        <Grid Grid.Row="1">
+        <Grid x:Name="ContentArea" Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -318,13 +437,7 @@
                          ItemContainerStyle="{StaticResource GridItem}"
                          VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                          VirtualizingPanel.ScrollUnit="Pixel" controls:SmoothScroll.Enabled="True"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                    <ListBox.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ui:VirtualizingWrapPanel ItemSize="124,142" Orientation="Vertical" SpacingMode="Uniform" />
-                        </ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                </ListBox>
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemsPanel="{StaticResource IconsPanel}" />
 
                 <!-- Recuadro de selección (arrastrar desde el espacio libre) -->
                 <Canvas x:Name="MarqueeLayer" IsHitTestVisible="False" ClipToBounds="True">
@@ -383,6 +496,13 @@
             </Grid>
         </Border>
         </Grid>
+
+        <!-- Visor de imágenes, video y audio dentro del panel, en lugar de la lista (Esc vuelve a la carpeta) -->
+        <Border x:Name="ViewerCard" Grid.Row="1" CornerRadius="12" BorderThickness="1" ClipToBounds="True" Visibility="Collapsed"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+            <files:MediaViewer x:Name="Viewer" IsEmbedded="True" />
+        </Border>
 
         <!-- Estado: cuántos elementos y la selección; a la derecha, avisos breves -->
         <Grid Grid.Row="2" Margin="6,8,6,0">

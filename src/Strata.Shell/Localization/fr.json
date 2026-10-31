@@ -1362,5 +1362,13 @@
   "Buscar en Strata UI": "Rechercher dans Strata UI",
   "Los valores de antes de cada cambio: deshaz uno o todos.": "Les valeurs d'avant chaque modification : annulez-en une ou toutes.",
   "Ajustes de Windows agrupados por tema. Cada cambio se puede deshacer en Respaldo.": "Paramètres de Windows regroupés par thème. Chaque modification peut être annulée dans Sauvegarde.",
-  "{0} de {1} activadas": "{0} sur {1} activées"
+  "{0} de {1} activadas": "{0} sur {1} activées",
+  "Detalles": "Détails",
+  "Mosaicos": "Mosaïques",
+  "Vista: {0}": "Affichage : {0}",
+  "Se deshizo: {0}": "Annulé : {0}",
+  "No se pudo deshacer: {0}": "Impossible d'annuler : {0}",
+  "No hay nada que deshacer": "Rien à annuler",
+  "Volver a la carpeta (Esc)": "Revenir au dossier (Échap)",
+  "Abrir en otra ventana": "Ouvrir dans une autre fenêtre"
 }

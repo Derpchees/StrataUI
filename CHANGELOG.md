@@ -6,6 +6,24 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.17.0] - 2026-10-30
+
+### Añadido
+- **Cinco vistas en Archivos**: Íconos grandes, Íconos medianos, Lista, Detalles y Mosaicos, desde el
+  botón Vista, el menú del clic derecho o Ctrl+Shift+2, 3, 5, 6 y 7 (como en Windows).
+- **El visor se abre dentro de Archivos**: imágenes, video y audio se ven en el mismo panel, en lugar
+  de la lista. Esc, Atrás o Alt+Izquierda vuelven a la carpeta con lo último visto seleccionado, y un
+  botón lo saca a su propia ventana. Al cambiar de pestaña, lo que suena se pausa.
+- **Ctrl+Z deshace** cambiar nombre, crear carpeta, copiar, mover (también al arrastrar) y enviar a la
+  Papelera (las últimas 30 acciones).
+- **Peso de las carpetas** en la columna Tamaño, medido en segundo plano (no en red, comprimidos ni la
+  Papelera).
+
+### Corregido
+- Al cambiar el nombre de un archivo, el nombre anterior se veía encimado detrás del cuadro de texto.
+- Ctrl+C, Ctrl+X y Ctrl+V no funcionaban si el foco estaba en el buscador o en la vista previa.
+- Algunos avisos de Archivos se mostraban con el color equivocado (error o información).
+
 ## [3.16.0] - 2026-10-29
 
 ### Añadido

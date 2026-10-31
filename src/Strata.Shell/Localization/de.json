@@ -1362,5 +1362,13 @@
   "Buscar en Strata UI": "Strata UI durchsuchen",
   "Los valores de antes de cada cambio: deshaz uno o todos.": "Die Werte vor jeder Änderung: eine oder alle rückgängig machen.",
   "Ajustes de Windows agrupados por tema. Cada cambio se puede deshacer en Respaldo.": "Windows-Einstellungen nach Thema geordnet. Jede Änderung lässt sich unter Sicherung rückgängig machen.",
-  "{0} de {1} activadas": "{0} von {1} aktiv"
+  "{0} de {1} activadas": "{0} von {1} aktiv",
+  "Detalles": "Details",
+  "Mosaicos": "Kacheln",
+  "Vista: {0}": "Ansicht: {0}",
+  "Se deshizo: {0}": "Rückgängig gemacht: {0}",
+  "No se pudo deshacer: {0}": "Konnte nicht rückgängig gemacht werden: {0}",
+  "No hay nada que deshacer": "Nichts rückgängig zu machen",
+  "Volver a la carpeta (Esc)": "Zurück zum Ordner (Esc)",
+  "Abrir en otra ventana": "In einem anderen Fenster öffnen"
 }

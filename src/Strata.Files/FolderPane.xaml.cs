@@ -189,11 +189,11 @@ public partial class FolderPane : UserControl
             StatusText.Text = Loc.F("{0} unidades", places.Drives.Count);
     }
 
-    /// <summary>Cambió la vista (lista o cuadrícula) para todos: se aplica y, en la cuadrícula, se leen las carátulas.</summary>
+    /// <summary>Cambió la vista para todos: se aplica y, si muestra carátulas, se leen.</summary>
     public void ViewChanged()
     {
         ApplyView();
-        if (Settings.Current.FilesGridView && _loading is { } loading && _path != null)
+        if (ShowsThumbnails && _loading is { } loading && _path != null)
             FileIcons.Load(_entries.ToList(), Thumbnails(_path), Dispatcher, loading.Token);
         UpdateStatus();
     }
@@ -208,11 +208,67 @@ public partial class FolderPane : UserControl
             entry.RefreshName();
     }
 
-    public void FocusList() => ActiveList.Focus();
+    public void FocusList()
+    {
+        if (ViewerOpen)
+            Viewer.Focus();
+        else
+            ActiveList.Focus();
+    }
+
+    // ── Visor integrado ─────────────────────────────────────────────────────
+
+    /// <summary>Una imagen, un video o un audio se ven aquí mismo, en lugar de la lista.</summary>
+    public bool ViewerOpen => ViewerCard.Visibility == Visibility.Visible;
+
+    private void ShowViewer(IReadOnlyList<string> items, int index)
+    {
+        if (!ViewerOpen)
+        {
+            Viewer.CloseRequested -= CloseViewer;
+            Viewer.CloseRequested += CloseViewer;
+            ContentArea.Visibility = Visibility.Hidden;
+            ViewerCard.Visibility = Visibility.Visible;
+            ViewerCard.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+        }
+        Viewer.Open(items, index);
+        StateChanged?.Invoke();
+    }
+
+    /// <summary>De vuelta a la carpeta, con lo último que se vio seleccionado.</summary>
+    public void CloseViewer()
+    {
+        if (!ViewerOpen)
+            return;
+        string? last = Viewer.CurrentPath;
+        Viewer.Release();
+        ViewerCard.Visibility = Visibility.Collapsed;
+        ContentArea.Visibility = Visibility.Visible;
+        if (last != null && _entries.FirstOrDefault(e => SamePath(e.FullPath, last)) is { } entry)
+        {
+            ActiveList.SelectedItem = entry;
+            ActiveList.ScrollIntoView(entry);
+        }
+        _ = Dispatcher.BeginInvoke(FocusSelected, DispatcherPriority.Loaded);
+        StateChanged?.Invoke();
+    }
+
+    /// <summary>El foco en lo seleccionado (para seguir con las flechas), o en la lista.</summary>
+    private void FocusSelected()
+    {
+        if (ActiveList.SelectedItem is { } item && ActiveList.ItemContainerGenerator.ContainerFromItem(item) is ListBoxItem container)
+            container.Focus();
+        else
+            ActiveList.Focus();
+    }
+
+    /// <summary>Al dejar de verse el panel (otra pestaña): lo que suena se pausa.</summary>
+    public void PauseViewer() => Viewer.Pause();
 
     /// <summary>Deja de leer y de vigilar (al cerrar su pestaña o la ventana).</summary>
     public void Close()
     {
+        Viewer.Release();
         _loading?.Cancel();
         _watcher?.Dispose();
         _watcher = null;
@@ -239,6 +295,12 @@ public partial class FolderPane : UserControl
 
     public void Navigate(string? path, bool record = true)
     {
+        if (ViewerOpen)
+        {
+            Viewer.Release();
+            ViewerCard.Visibility = Visibility.Collapsed;
+            ContentArea.Visibility = Visibility.Visible;
+        }
         // Un comprimido con la barra al final ("C:\fotos.zip\"), o desde el historial: se entra en él.
         bool intoArchive = path != null && (path.EndsWith('\\') || !record) && File.Exists(path.TrimEnd('\\'))
                            && Archives.IsArchive(path.TrimEnd('\\'));
@@ -262,6 +324,12 @@ public partial class FolderPane : UserControl
 
     public void GoBack()
     {
+        // Atrás con el visor abierto vuelve a la carpeta (como en el teléfono).
+        if (ViewerOpen)
+        {
+            CloseViewer();
+            return;
+        }
         if (_back.Count == 0)
             return;
         _forward.Add(_path);
@@ -311,6 +379,94 @@ public partial class FolderPane : UserControl
     /// Lee la carpeta actual. Al navegar se reemplaza todo; con <paramref name="merge"/> (cambios en
     /// la carpeta, F5, ocultos) solo entra y sale lo que cambió: no se pierde el lugar ni la selección.
     /// </summary>
+    // ── Peso de las carpetas ────────────────────────────────────────────────
+
+    /// <summary>Lo que ya se midió (un minuto): al volver a leer la carpeta no se mide todo otra vez.</summary>
+    private static readonly Dictionary<string, (long Size, DateTime When)> FolderSizes = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>En la red medir cada carpeta es lento (y pesa sobre el servidor): ahí no se mide.</summary>
+    private static bool IsNetwork(string path)
+    {
+        if (path.StartsWith(@"\\", StringComparison.Ordinal))
+            return true;
+        try
+        {
+            return System.IO.Path.GetPathRoot(path) is { Length: > 0 } root && new DriveInfo(root).DriveType == DriveType.Network;
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Mide cada carpeta de la vista en segundo plano, una por una, y pone su peso en la columna Tamaño.
+    /// No entra en uniones ni vínculos simbólicos (pueden dar vueltas o contar dos veces lo mismo) ni
+    /// descarga nada de la nube: cuenta el tamaño que muestra cada archivo.
+    /// </summary>
+    private async Task LoadFolderSizesAsync(CancellationToken token)
+    {
+        var folders = _entries.Where(e => e.IsFolder && e.FolderSize is null).ToList();
+        var pending = new List<FileEntry>();
+        foreach (var folder in folders)
+        {
+            lock (FolderSizes)
+            {
+                if (FolderSizes.TryGetValue(folder.FullPath, out var known) && DateTime.UtcNow - known.When < TimeSpan.FromMinutes(1))
+                    folder.FolderSize = known.Size;
+                else
+                    pending.Add(folder);
+            }
+        }
+        foreach (var folder in pending)
+        {
+            long? size;
+            try
+            {
+                size = await Task.Run(() => MeasureFolder(folder.FullPath, token), token);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            if (token.IsCancellationRequested)
+                return;
+            if (size is not { } total)
+                continue;
+            lock (FolderSizes)
+                FolderSizes[folder.FullPath] = (total, DateTime.UtcNow);
+            folder.FolderSize = total;
+        }
+        if (pending.Count > 0)
+            UpdateStatus();
+    }
+
+    private static long? MeasureFolder(string path, CancellationToken token)
+    {
+        try
+        {
+            var options = new EnumerationOptions { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = 0 };
+            var files = new System.IO.Enumeration.FileSystemEnumerable<long>(path,
+                (ref System.IO.Enumeration.FileSystemEntry entry) => entry.Length, options)
+            {
+                ShouldIncludePredicate = (ref System.IO.Enumeration.FileSystemEntry entry) => !entry.IsDirectory,
+                ShouldRecursePredicate = (ref System.IO.Enumeration.FileSystemEntry entry) =>
+                    (entry.Attributes & FileAttributes.ReparsePoint) == 0,
+            };
+            long total = 0;
+            foreach (long length in files)
+            {
+                token.ThrowIfCancellationRequested();
+                total += length;
+            }
+            return total;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {
+            return null;
+        }
+    }
+
     private async Task LoadAsync(bool merge)
     {
         _loading?.Cancel();
@@ -378,7 +534,7 @@ public partial class FolderPane : UserControl
         if (merge && _view != null)
         {
             // Lo nuevo y lo que una carga anterior (cancelada por esta) dejó sin ícono o sin carátula.
-            bool grid = Settings.Current.FilesGridView;
+            bool grid = ShowsThumbnails;
             toLoad = Merge(fresh).Concat(_entries.Where(e => e.Icon is null || (grid && !e.ThumbnailTried))).Distinct().ToList();
         }
         else
@@ -406,7 +562,9 @@ public partial class FolderPane : UserControl
             _renameAfterLoad = false;
         }
         UpdateStatus();
-        FileIcons.Load(toLoad, Settings.Current.FilesGridView && Thumbnails(path), Dispatcher, cts.Token);
+        FileIcons.Load(toLoad, ShowsThumbnails && Thumbnails(path), Dispatcher, cts.Token);
+        if (_archive is null && path != Places.RecycleBin && !Places.IsServer(path) && !IsNetwork(path))
+            _ = LoadFolderSizesAsync(cts.Token);
         RememberNetwork(path);
     }
 
@@ -539,7 +697,10 @@ public partial class FolderPane : UserControl
 
     // ── Lo que se ve ────────────────────────────────────────────────────────
 
-    private ListBox ActiveList => Settings.Current.FilesGridView ? GridList : DetailsList;
+    private static FilesViewMode ViewMode => Settings.Current.FilesViewEffective;
+    /// <summary>Mosaicos e íconos muestran la carátula de fotos y videos; detalles y lista, solo el ícono.</summary>
+    private static bool ShowsThumbnails => ViewMode is FilesViewMode.Tiles or FilesViewMode.Icons or FilesViewMode.LargeIcons;
+    private ListBox ActiveList => ViewMode == FilesViewMode.Details ? DetailsList : GridList;
 
     public List<FileEntry> SelectedEntries => ActiveList.SelectedItems.OfType<FileEntry>().ToList();
 
@@ -649,9 +810,40 @@ public partial class FolderPane : UserControl
     {
         if (_path is null || _view is null)
             return;
-        bool grid = Settings.Current.FilesGridView;
+        var mode = ViewMode;
+        bool grid = mode != FilesViewMode.Details;
+        if (grid)
+        {
+            // Las vistas que no son de detalles comparten la lista con celdas: cambian plantilla y panel.
+            var (template, panel) = mode switch
+            {
+                FilesViewMode.List => ("ListTemplate", "ListPanel"),
+                FilesViewMode.Tiles => ("TilesTemplate", "TilesPanel"),
+                FilesViewMode.LargeIcons => ("LargeTemplate", "LargePanel"),
+                _ => ("GridTemplate", "IconsPanel"),
+            };
+            var itemTemplate = (DataTemplate)FindResource(template);
+            if (GridList.ItemTemplate != itemTemplate)
+            {
+                var selected = GridList.SelectedItems.OfType<FileEntry>().ToList();
+                GridList.ItemTemplate = itemTemplate;
+                GridList.ItemsPanel = (ItemsPanelTemplate)FindResource(panel);
+                foreach (var entry in selected)
+                    GridList.SelectedItems.Add(entry);
+            }
+        }
+        // La selección pasa de una lista a la otra (si no, Ctrl+C o Supr actuarían sobre nada).
+        var from = grid ? DetailsList : GridList;
+        var to = grid ? GridList : DetailsList;
+        if (from.Visibility == Visibility.Visible && from.SelectedItems.Count > 0 && to.SelectedItems.Count == 0)
+        {
+            foreach (var entry in from.SelectedItems.OfType<FileEntry>().ToList())
+                to.SelectedItems.Add(entry);
+        }
         DetailsPanel.Visibility = grid ? Visibility.Collapsed : Visibility.Visible;
         GridList.Visibility = grid ? Visibility.Visible : Visibility.Collapsed;
+        if (to.SelectedItem is { } first)
+            to.ScrollIntoView(first);
     }
 
     private void UpdateEmptyState()
@@ -709,25 +901,36 @@ public partial class FolderPane : UserControl
         StatusText.Text = text;
     }
 
-    private void ShowMessage(string message)
+    /// <summary>Un aviso de error (en rojo).</summary>
+    private void ShowMessage(string message) => ShowMessage(message, "SystemFillColorCriticalBrush");
+
+    /// <summary>Un aviso informativo (en gris). Cada aviso pone su color: uno no se queda con el del anterior.</summary>
+    private void ShowMessageInfo(string message) => ShowMessage(message, "TextFillColorSecondaryBrush");
+
+    private void ShowMessage(string message, string brush)
     {
+        MessageText.SetResourceReference(TextBlock.ForegroundProperty, brush);
         MessageText.Text = message;
         MessageText.BeginAnimation(OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(150)));
         _messageTimer.Stop();
         _messageTimer.Start();
     }
 
-    private void ShowMessageInfo(string message)
+    /// <summary>Ctrl+Z: deshace lo último que se hizo en Archivos y vuelve a leer la carpeta.</summary>
+    public async void Undo()
     {
-        MessageText.SetResourceReference(TextBlock.ForegroundProperty, "TextFillColorSecondaryBrush");
-        ShowMessage(message);
-        // El próximo aviso (un error) vuelve a su color.
-        _messageTimer.Tick += Restore;
-        void Restore(object? s, EventArgs e)
+        if (await FileUndo.UndoAsync(Handle) is not { } result)
         {
-            _messageTimer.Tick -= Restore;
-            MessageText.SetResourceReference(TextBlock.ForegroundProperty, "SystemFillColorCriticalBrush");
+            ShowMessageInfo(Loc.T("No hay nada que deshacer"));
+            return;
         }
+        if (result.Ok)
+            ShowMessageInfo(result.Message);
+        else
+            ShowMessage(result.Message);
+        _reload.Stop();
+        _ = LoadAsync(merge: true);
+        StateChanged?.Invoke();
     }
 
     // ── Cabecera de la lista y orden ────────────────────────────────────────
@@ -865,7 +1068,7 @@ public partial class FolderPane : UserControl
         {
             var media = _view.Cast<FileEntry>().Where(e => !e.IsFolder && MediaKinds.Of(e.FullPath) != MediaKind.None)
                              .Select(e => e.FullPath).ToList();
-            MediaViewerWindow.Open(media, media.IndexOf(single.FullPath));
+            ShowViewer(media, media.IndexOf(single.FullPath));
             return;
         }
         foreach (var entry in entries)
@@ -893,7 +1096,7 @@ public partial class FolderPane : UserControl
             }
             if (MediaKinds.Of(single) != MediaKind.None)
             {
-                MediaViewerWindow.Open([single], 0);
+                ShowViewer([single], 0);
                 return;
             }
         }
@@ -981,6 +1184,7 @@ public partial class FolderPane : UserControl
             // En una carpeta protegida, pregunta y la crea con permiso de administrador.
             if (await FileOperations.NewFolderAsync(_path, Loc.T("Nueva carpeta"), Handle) is not { } created)
                 return;
+            FileUndo.Created(created);
             _selectAfterLoad = created;
             _renameAfterLoad = true;
             _reload.Stop();
@@ -1019,10 +1223,13 @@ public partial class FolderPane : UserControl
         string? target = into ?? _path;
         if (target is null || FileOperations.ReadClipboard() is not { } clip)
             return;
+        var placed = new List<(string From, string To)>();
         if (clip.Cut)
         {
             var moving = clip.Paths.Where(p => !SamePath(System.IO.Path.GetDirectoryName(p), target)).ToList();
-            if (moving.Count > 0 && await FileOperations.MoveAsync(moving, target, Handle))
+            bool moved = moving.Count > 0 && await FileOperations.MoveAsync(moving, target, Handle, placed);
+            FileUndo.Moved(placed);
+            if (moved)
             {
                 _cutPaths.Clear();
                 try
@@ -1036,7 +1243,8 @@ public partial class FolderPane : UserControl
         }
         else
         {
-            await FileOperations.CopyAsync(clip.Paths, target, Handle);
+            await FileOperations.CopyAsync(clip.Paths, target, Handle, placed);
+            FileUndo.Copied(placed);
         }
         StateChanged?.Invoke();
     }
@@ -1056,8 +1264,14 @@ public partial class FolderPane : UserControl
         int index = list.Items.IndexOf(selected[^1]);
         var next = list.Items.Cast<FileEntry>().Skip(index + 1).FirstOrDefault(e => !selected.Contains(e))
                    ?? list.Items.Cast<FileEntry>().Take(index).LastOrDefault(e => !selected.Contains(e));
-        if (await FileOperations.RecycleAsync(selected.Select(e => e.FullPath).ToList(), Handle) && next != null)
-            _selectAfterLoad = next.FullPath;
+        var paths = selected.Select(e => e.FullPath).ToList();
+        var since = DateTime.Now;
+        if (await FileOperations.RecycleAsync(paths, Handle))
+        {
+            FileUndo.Recycled(paths, since);
+            if (next != null)
+                _selectAfterLoad = next.FullPath;
+        }
         _reload.Stop();
         _ = LoadAsync(merge: true);
     }
@@ -1160,6 +1374,7 @@ public partial class FolderPane : UserControl
             return;
         }
         _selectAfterLoad = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(entry.FullPath)!, name);
+        FileUndo.Renamed(entry.FullPath, _selectAfterLoad, entry.IsFolder);
         _reload.Stop();
         _ = LoadAsync(merge: true);
     }
@@ -1252,6 +1467,46 @@ public partial class FolderPane : UserControl
         items.Add(ascending);
         items.Add(descending);
         return items;
+    }
+
+    /// <summary>Las vistas del explorador, con su ícono y su atajo (los mismos números que el Explorador).</summary>
+    internal static (FilesViewMode Mode, string Text, SymbolRegular Icon, string Shortcut)[] ViewModes() =>
+    [
+        (FilesViewMode.LargeIcons, Loc.T("Íconos grandes"), SymbolRegular.Image24, "Ctrl+Shift+2"),
+        (FilesViewMode.Icons, Loc.T("Íconos medianos"), SymbolRegular.Grid24, "Ctrl+Shift+3"),
+        (FilesViewMode.List, Loc.T("Lista"), SymbolRegular.List24, "Ctrl+Shift+5"),
+        (FilesViewMode.Details, Loc.T("Detalles"), SymbolRegular.TextBulletListLtr24, "Ctrl+Shift+6"),
+        (FilesViewMode.Tiles, Loc.T("Mosaicos"), SymbolRegular.AppsListDetail24, "Ctrl+Shift+7"),
+    ];
+
+    private static List<Control> ViewItems()
+    {
+        var items = new List<Control>();
+        foreach (var (mode, text, icon, shortcut) in ViewModes())
+        {
+            var item = Item(text, icon, () => FilesWindow.SetView(mode));
+            item.InputGestureText = shortcut;
+            item.IsChecked = ViewMode == mode;
+            items.Add(item);
+        }
+        return items;
+    }
+
+    private static MenuItem ViewMenu()
+    {
+        var menu = new MenuItem { Header = Loc.T("Vista"), Icon = new SymbolIcon { Symbol = SymbolRegular.Grid24 } };
+        foreach (var item in ViewItems())
+            menu.Items.Add(item);
+        return menu;
+    }
+
+    /// <summary>El botón de vista de la barra: las cinco vistas.</summary>
+    public static void ShowViewMenu(UIElement target)
+    {
+        var menu = new ContextMenu { PlacementTarget = target, Placement = PlacementMode.Bottom };
+        foreach (var item in ViewItems())
+            menu.Items.Add(item);
+        menu.IsOpen = true;
     }
 
     private MenuItem SortMenu()
@@ -1378,14 +1633,7 @@ public partial class FolderPane : UserControl
             menu.Items.Add(Item(Loc.T("Pegar"), SymbolRegular.ClipboardPaste24, () => _ = PasteAsync(), enabled: FileOperations.ClipboardHasFiles()));
             menu.Items.Add(new Separator());
             menu.Items.Add(SortMenu());
-            var view = new MenuItem { Header = Loc.T("Vista"), Icon = new SymbolIcon { Symbol = SymbolRegular.Grid24 } };
-            var details = Item(Loc.T("Lista"), SymbolRegular.TextBulletListLtr24, () => FilesWindow.SetGridView(false));
-            details.IsChecked = !Settings.Current.FilesGridView;
-            var grid = Item(Loc.T("Cuadrícula"), SymbolRegular.Grid24, () => FilesWindow.SetGridView(true));
-            grid.IsChecked = Settings.Current.FilesGridView;
-            view.Items.Add(details);
-            view.Items.Add(grid);
-            menu.Items.Add(view);
+            menu.Items.Add(ViewMenu());
             var hidden = Item(Loc.T("Mostrar archivos ocultos"), SymbolRegular.Eye24, () => FilesWindow.SetShowHidden(!Settings.Current.FilesShowHidden));
             hidden.IsChecked = Settings.Current.FilesShowHidden;
             menu.Items.Add(hidden);
@@ -1680,7 +1928,9 @@ public partial class FolderPane : UserControl
             if (InRecycleBin && e.Data.GetData(DataFormats.FileDrop) is string[] recycled)
             {
                 e.Handled = true;
-                await FileOperations.RecycleAsync(recycled, Handle);
+                var since = DateTime.Now;
+                if (await FileOperations.RecycleAsync(recycled, Handle))
+                    FileUndo.Recycled(recycled, since);
                 _ = LoadAsync(merge: true);
                 return;
             }
@@ -1688,10 +1938,17 @@ public partial class FolderPane : UserControl
                 return;
             var effect = DropEffect(e, target, files) & e.AllowedEffects;
             e.Handled = true;
+            var placed = new List<(string From, string To)>();
             if (effect == DragDropEffects.Move)
-                await FileOperations.MoveAsync(files, target, Handle);
+            {
+                await FileOperations.MoveAsync(files, target, Handle, placed);
+                FileUndo.Moved(placed);
+            }
             else if (effect == DragDropEffects.Copy)
-                await FileOperations.CopyAsync(files, target, Handle);
+            {
+                await FileOperations.CopyAsync(files, target, Handle, placed);
+                FileUndo.Copied(placed);
+            }
         }
         catch (Exception ex)
         {
@@ -1705,8 +1962,21 @@ public partial class FolderPane : UserControl
     public bool HandleKey(KeyEventArgs e)
     {
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        // Con el visor abierto, sus teclas (flechas, Espacio, Esc…) son para él; Alt+Izquierda vuelve a la carpeta.
+        if (ViewerOpen)
+        {
+            if ((key == Key.Left && Keyboard.Modifiers == ModifierKeys.Alt) || key == Key.BrowserBack)
+            {
+                CloseViewer();
+                return true;
+            }
+            return false;
+        }
         var mods = Keyboard.Modifiers;
-        bool typing = Keyboard.FocusedElement is TextBox;
+        // Se está escribiendo solo en un cuadro editable (la ruta, la búsqueda o un nombre); el texto de la vista
+        // previa es de solo lectura y no debe robarse Ctrl+C/V/X/Z, salvo Ctrl+C con texto marcado.
+        bool typing = Keyboard.FocusedElement is TextBox box
+                      && (!box.IsReadOnly || (key == Key.C && mods == ModifierKeys.Control && box.SelectionLength > 0));
         switch (key)
         {
             case Key.Left when mods == ModifierKeys.Alt:
@@ -1761,6 +2031,9 @@ public partial class FolderPane : UserControl
                 return true;
             case Key.V when mods == ModifierKeys.Control && CanModify:
                 _ = PasteAsync();
+                return true;
+            case Key.Z when mods == ModifierKeys.Control:
+                Undo();
                 return true;
             case Key.N when mods == (ModifierKeys.Control | ModifierKeys.Shift) && CanModify:
                 NewFolder();

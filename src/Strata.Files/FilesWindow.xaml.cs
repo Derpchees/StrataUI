@@ -173,6 +173,10 @@ public partial class FilesWindow : FluentWindow
     {
         foreach (var other in _tabs)
             other.IsSelected = other == tab;
+        // Lo que suena en la pestaña que se deja de ver se pausa.
+        if (_tab != null && _tab != tab)
+            foreach (var pane in _tab.Panes)
+                pane.PauseViewer();
         _tab = tab;
         TabHost.Content = tab.Host;
         SplitToggle.IsChecked = tab.Right != null;
@@ -314,9 +318,10 @@ public partial class FilesWindow : FluentWindow
 
     private void ApplyViewToggles()
     {
-        bool grid = Settings.Current.FilesGridView;
-        DetailsToggle.IsChecked = !grid;
-        GridToggle.IsChecked = grid;
+        var mode = Settings.Current.FilesViewEffective;
+        var (_, text, icon, _) = FolderPane.ViewModes().First(v => v.Mode == mode);
+        ViewIcon.Symbol = icon;
+        ViewButton.ToolTip = Loc.F("Vista: {0}", text);
     }
 
     private PlacesData CurrentPlaces() => new(_home, _folders, _drives, _cloud, _network);
@@ -352,11 +357,11 @@ public partial class FilesWindow : FluentWindow
     private static IEnumerable<FolderPane> AllPanes =>
         Application.Current.Windows.OfType<FilesWindow>().SelectMany(w => w._tabs).SelectMany(t => t.Panes);
 
-    /// <summary>Lista o cuadrícula, para todas las ventanas y pestañas.</summary>
-    internal static void SetGridView(bool grid)
+    /// <summary>La vista (detalles, lista, mosaicos o íconos), para todas las ventanas y pestañas.</summary>
+    internal static void SetView(FilesViewMode mode)
     {
-        if (Settings.Current.FilesGridView != grid)
-            Settings.Update(s => s.FilesGridView = grid);
+        if (Settings.Current.FilesView != mode)
+            Settings.Update(s => s.FilesView = mode);
         foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
             window.ApplyViewToggles();
         foreach (var pane in AllPanes)
@@ -415,6 +420,22 @@ public partial class FilesWindow : FluentWindow
             case Key.P when mods == ModifierKeys.Alt:
                 SetPreview(!Settings.Current.FilesPreviewPane);
                 break;
+            // Vistas con los números del Explorador (Ctrl+Shift+2, 3, 5, 6 y 7).
+            case Key.D2 or Key.NumPad2 when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                SetView(FilesViewMode.LargeIcons);
+                break;
+            case Key.D3 or Key.NumPad3 when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                SetView(FilesViewMode.Icons);
+                break;
+            case Key.D5 or Key.NumPad5 when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                SetView(FilesViewMode.List);
+                break;
+            case Key.D6 or Key.NumPad6 when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                SetView(FilesViewMode.Details);
+                break;
+            case Key.D7 or Key.NumPad7 when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                SetView(FilesViewMode.Tiles);
+                break;
             default:
                 handled = Pane.HandleKey(e);
                 break;
@@ -469,8 +490,7 @@ public partial class FilesWindow : FluentWindow
     private void Delete_Click(object sender, RoutedEventArgs e) => _ = Pane.RecycleSelectionAsync();
     private void ExtractAll_Click(object sender, RoutedEventArgs e) => Pane.ExtractAll();
     private void Sort_Click(object sender, RoutedEventArgs e) => Pane.ShowSortMenu(SortButton);
-    private void DetailsView_Click(object sender, RoutedEventArgs e) => SetGridView(false);
-    private void GridView_Click(object sender, RoutedEventArgs e) => SetGridView(true);
+    private void View_Click(object sender, RoutedEventArgs e) => FolderPane.ShowViewMenu(ViewButton);
     private void Hidden_Click(object sender, RoutedEventArgs e) => SetShowHidden(HiddenToggle.IsChecked == true);
     private void Extensions_Click(object sender, RoutedEventArgs e) => SetShowExtensions(ExtensionsToggle.IsChecked == true);
 
@@ -675,12 +695,23 @@ public partial class FilesWindow : FluentWindow
             }
             var files = (string[])e.Data.GetData(DataFormats.FileDrop)!;
             var handle = new WindowInteropHelper(this).Handle;
+            var placed = new List<(string From, string To)>();
             if (target == Places.RecycleBin)
-                await FileOperations.RecycleAsync(files, handle);
+            {
+                var since = DateTime.Now;
+                if (await FileOperations.RecycleAsync(files, handle))
+                    FileUndo.Recycled(files, since);
+            }
             else if (effect == DragDropEffects.Move)
-                await FileOperations.MoveAsync(files, target, handle);
+            {
+                await FileOperations.MoveAsync(files, target, handle, placed);
+                FileUndo.Moved(placed);
+            }
             else if (effect == DragDropEffects.Copy)
-                await FileOperations.CopyAsync(files, target, handle);
+            {
+                await FileOperations.CopyAsync(files, target, handle, placed);
+                FileUndo.Copied(placed);
+            }
         }
         catch (Exception ex)
         {
