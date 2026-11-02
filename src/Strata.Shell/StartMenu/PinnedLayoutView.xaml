@@ -16,6 +16,8 @@
                 <Button.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="{l:T 'Abrir'}" Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" FontWeight="SemiBold" />
+                        <MenuItem Header="{Binding PrivateWindowLabel}" Command="{x:Static start:StartCommands.OpenPrivateWindow}" CommandParameter="{Binding}"
+                                  Visibility="{Binding CanOpenPrivateWindow, Converter={StaticResource BoolToVis}}" />
                         <MenuItem Header="{l:T 'Ejecutar como administrador'}" Command="{x:Static start:StartCommands.RunAsAdmin}" CommandParameter="{Binding}"
                                   Visibility="{Binding CanRunAsAdmin, Converter={StaticResource BoolToVis}}" />
                         <MenuItem Header="{l:T 'Abrir ubicación del archivo'}" Command="{x:Static start:StartCommands.OpenLocation}" CommandParameter="{Binding}"

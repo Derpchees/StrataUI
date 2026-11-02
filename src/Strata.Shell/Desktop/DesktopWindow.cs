@@ -576,12 +576,14 @@ public sealed class DesktopWindow : Window
         ReleaseMouseCapture();
         _press = null;
         _pressedTile = null;
-        var paths = Selection.Select(s => s.FullPath).ToArray();
+        var selection = Selection;
+        var paths = selection.Select(s => s.FullPath).ToArray();
         var data = new DataObject(DataFormats.FileDrop, paths);
         data.SetData(Marker, _device);
         try
         {
-            DragDrop.DoDragDrop(this, data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+            DragGhost.Run(this, data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link,
+                          selection.FirstOrDefault()?.Icon, selection.Count);
         }
         catch (Exception ex)
         {

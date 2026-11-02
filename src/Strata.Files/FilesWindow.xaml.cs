@@ -448,11 +448,132 @@ public partial class FilesWindow : FluentWindow
 
     private void NewTab_Click(object sender, RoutedEventArgs e) => AddTab(null);
 
+    // ── Arrastrar pestañas: reordenarlas o sacarlas a su propia ventana ──────
+
+    private FilesTab? _dragTab;
+    private System.Windows.Point _dragStart;
+    private bool _tabDragging;
+
     private void Tab_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (((FrameworkElement)sender).DataContext is FilesTab tab && tab != _tab)
+        if (((FrameworkElement)sender).DataContext is not FilesTab tab)
+            return;
+        if (tab != _tab)
             SelectTab(tab);
+        // La captura va en la tira (no en la pestaña): al reordenar, la pestaña se vuelve a crear.
+        _dragTab = tab;
+        _dragStart = e.GetPosition(TabStrip);
+        _tabDragging = false;
+        TabStrip.CaptureMouse();
+        e.Handled = true;
     }
+
+    private void TabStrip_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_dragTab is not { } tab || !TabStrip.IsMouseCaptured)
+            return;
+        if (e.LeftButton != MouseButtonState.Pressed)
+        {
+            TabStrip.ReleaseMouseCapture();
+            return;
+        }
+        var point = e.GetPosition(TabStrip);
+        if (!_tabDragging && Math.Abs(point.X - _dragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+                          && Math.Abs(point.Y - _dragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+            return;
+        _tabDragging = true;
+        // Lejos de la tira, hacia arriba o abajo: sale a su ventana (si es la única, se mueve la ventana).
+        if (point.Y < -30 || point.Y > TabStrip.ActualHeight + 30)
+        {
+            TabStrip.ReleaseMouseCapture();
+            TearOut(tab);
+            return;
+        }
+        // Su lugar: después de las pestañas cuyo centro ya pasó el puntero.
+        int from = _tabs.IndexOf(tab), to = 0;
+        for (int i = 0; i < _tabs.Count; i++)
+        {
+            if (i == from || TabStrip.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement other)
+                continue;
+            double center = other.TranslatePoint(new System.Windows.Point(other.ActualWidth / 2, 0), TabStrip).X;
+            if (point.X > center)
+                to++;
+        }
+        if (to != from)
+            _tabs.Move(from, to);
+    }
+
+    private void TabStrip_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (TabStrip.IsMouseCaptured)
+            TabStrip.ReleaseMouseCapture();
+    }
+
+    private void TabStrip_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        _dragTab = null;
+        _tabDragging = false;
+    }
+
+    /// <summary>
+    /// Abre la pestaña en una ventana nueva bajo el puntero y la sigue moviendo mientras el botón
+    /// siga apretado, como en un navegador.
+    /// </summary>
+    private void TearOut(FilesTab tab)
+    {
+        if (_tabs.Count == 1)
+        {
+            MoveWithMouse(this);
+            return;
+        }
+        string? left = tab.Left.CurrentPath, right = tab.Right?.CurrentPath;
+        bool split = tab.Right != null;
+        var size = WindowState == WindowState.Normal ? new Size(ActualWidth, ActualHeight) : RestoreBounds.Size;
+        CloseTab(tab);
+        var cursor = PointToScreen(Mouse.GetPosition(this));
+        if (PresentationSource.FromVisual(this)?.CompositionTarget is { } target)
+            cursor = target.TransformFromDevice.Transform(cursor);
+        var window = new FilesWindow(left)
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Width = size.Width,
+            Height = size.Height,
+            Left = cursor.X - 140,
+            Top = cursor.Y - 20,
+        };
+        if (split)
+            window.OpenSplit(right);
+        window.Show();
+        window.Activate();
+        MoveWithMouse(window);
+    }
+
+    private void OpenSplit(string? path)
+    {
+        SetSplit(true);
+        _tab?.Right?.Navigate(path);
+    }
+
+    /// <summary>Arrastre de la ventana por su barra de título con el botón ya apretado.</summary>
+    private static void MoveWithMouse(Window window)
+    {
+        if (Mouse.LeftButton != MouseButtonState.Pressed)
+            return;
+        var handle = new WindowInteropHelper(window).Handle;
+        if (window.WindowState == WindowState.Maximized)
+            return;
+        ReleaseCapture();
+        SendMessage(handle, WmNcLButtonDown, HtCaption, IntPtr.Zero);
+    }
+
+    private const int WmNcLButtonDown = 0xA1;
+    private static readonly IntPtr HtCaption = new(2);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ReleaseCapture();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr SendMessage(IntPtr hwnd, int message, IntPtr wParam, IntPtr lParam);
 
     /// <summary>Clic con la rueda en una pestaña: se cierra, como en un navegador.</summary>
     private void Tab_MouseDown(object sender, MouseButtonEventArgs e)
@@ -670,10 +791,15 @@ public partial class FilesWindow : FluentWindow
             e.Effects = DragDropEffects.None;
         }
         button.Tag = e.Effects != DragDropEffects.None ? "drop" : null;
+        DragGhost.Caption(e.Effects, (button.DataContext as Place)?.Name);
         e.Handled = true;
     }
 
-    private void Place_DragLeave(object sender, DragEventArgs e) => ((FrameworkElement)sender).Tag = null;
+    private void Place_DragLeave(object sender, DragEventArgs e)
+    {
+        ((FrameworkElement)sender).Tag = null;
+        DragGhost.Caption(DragDropEffects.None, null);
+    }
 
     private async void Place_Drop(object sender, DragEventArgs e)
     {

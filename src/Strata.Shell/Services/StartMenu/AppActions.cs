@@ -105,6 +105,24 @@ public static class AppActions
     /// <summary>Hay un archivo que mostrar (las apps de la Tienda no tienen: como en Windows, no la ofrecen).</summary>
     public static bool CanOpenLocation(StartApp app) => app.IsFile || TargetPath(app) != null || ShortcutPath(app) != null;
 
+    /// <summary>Cómo abrir una ventana privada si la app es un navegador conocido.</summary>
+    public static (string Label, string Argument)? PrivateWindow(StartApp app) =>
+        app.IsFile && !app.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? null : WebApps.WebSites.PrivateWindow(TargetPath(app));
+
+    public static void OpenPrivateWindow(StartApp app)
+    {
+        if (TargetPath(app) is not { } exe || WebApps.WebSites.PrivateWindow(exe) is not { } privateWindow)
+            return;
+        try
+        {
+            Process.Start(new ProcessStartInfo(exe, privateWindow.Argument) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+        {
+            Log.Error($"No se pudo abrir la ventana privada de {app.Name}", ex);
+        }
+    }
+
     public static bool CanRunAsAdmin(StartApp app) =>
         TargetPath(app) is { } path && path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 

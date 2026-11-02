@@ -147,6 +147,11 @@
                             <Setter TargetName="Sel" Property="Opacity" Value="0.18" />
                             <Setter TargetName="Edge" Property="Opacity" Value="0.45" />
                         </Trigger>
+                        <!-- Una carpeta con algo arrastrado encima que se puede soltar en ella -->
+                        <Trigger Property="Tag" Value="drop">
+                            <Setter TargetName="Sel" Property="Opacity" Value="0.25" />
+                            <Setter TargetName="Edge" Property="Opacity" Value="1" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

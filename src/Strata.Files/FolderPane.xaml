@@ -324,8 +324,18 @@
             </Grid.ColumnDefinitions>
         <Border x:Name="Card" CornerRadius="12" BorderThickness="1" ClipToBounds="True"
                 Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
-                AllowDrop="True" DragOver="Card_DragOver" Drop="Card_Drop">
+                AllowDrop="True" DragOver="Card_DragOver" DragLeave="Card_DragLeave" Drop="Card_Drop">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                    <Style.Triggers>
+                        <!-- Algo arrastrado que cae en esta carpeta -->
+                        <Trigger Property="Tag" Value="drop">
+                            <Setter Property="BorderBrush" Value="{DynamicResource StrataAccentBrush}" />
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid x:Name="Body">
                 <!-- Portada (Este equipo): carpetas, nube, unidades, red y recientes -->
                 <ScrollViewer x:Name="HomePanel" VerticalScrollBarVisibility="Auto" CanContentScroll="False" Visibility="Collapsed"

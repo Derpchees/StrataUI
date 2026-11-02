@@ -53,6 +53,9 @@ public sealed class StartApp : INotifyPropertyChanged
     public bool CanOpenLocation => AppActions.CanOpenLocation(this);
     public bool CanRunAsAdmin => AppActions.CanRunAsAdmin(this);
     public bool CanUninstall => !IsFile && _extra is null && AppActions.CanUninstall(this);
+    /// <summary>"Nueva ventana de incógnito/privada/InPrivate" si es un navegador (null si no).</summary>
+    public string? PrivateWindowLabel => AppActions.PrivateWindow(this)?.Label;
+    public bool CanOpenPrivateWindow => PrivateWindowLabel != null;
 
     /// <summary>Herramienta de Windows (Servicios, Desfragmentar…): no va en "Todas las apps", sí en la búsqueda.</summary>
     public bool IsSystemTool => _systemTool ??= !IsFile && _extra is null && SystemTools.IsTool(Id);

@@ -1379,5 +1379,8 @@
   "Abrir en otra ventana": "Ouvrir dans une autre fenêtre",
   "Abrir y editar": "Ouvrir et modifier",
   "Compartir y enviar": "Partager et envoyer",
-  "Nuevo": "Nouveau"
+  "Nuevo": "Nouveau",
+  "Mover a {0}": "Déplacer vers {0}",
+  "Copiar a {0}": "Copier vers {0}",
+  "Crear acceso directo en {0}": "Créer un raccourci dans {0}"
 }

@@ -144,6 +144,13 @@ public static class StartCommands
             AppActions.OpenLocation(app);
     });
 
+    public static ICommand OpenPrivateWindow { get; } = new Relay(p =>
+    {
+        FlyoutManager.CloseAll();
+        if (p is StartApp app)
+            AppActions.OpenPrivateWindow(app);
+    });
+
     public static ICommand RunAsAdmin { get; } = new Relay(p =>
     {
         FlyoutManager.CloseAll();

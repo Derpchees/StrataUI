@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -81,7 +82,7 @@ public static class FileMenus
                 first = false;
                 menu.Items.Insert(index++, Caption(category));
                 foreach (var item in group)
-                    menu.Items.Insert(index++, WindowsItem(item, session));
+                    menu.Items.Insert(index++, WindowsItem(item, session, paths));
             }
         }
     }
@@ -219,7 +220,7 @@ public static class FileMenus
     private static bool StartsWithAny(string text, string[] words) =>
         words.Any(w => text.StartsWith(w, StringComparison.CurrentCultureIgnoreCase));
 
-    private static Control WindowsItem(NativeMenuItem item, ShellMenuSession session)
+    private static Control WindowsItem(NativeMenuItem item, ShellMenuSession session, IReadOnlyList<string> paths)
     {
         if (item.Separator)
             return new Separator();
@@ -230,12 +231,30 @@ public static class FileMenus
         if (item.Children is { } children)
         {
             foreach (var child in children)
-                menuItem.Items.Add(WindowsItem(child, session));
+                menuItem.Items.Add(WindowsItem(child, session, paths));
+        }
+        else if (string.Equals(item.Verb, OpenContainingVerb, StringComparison.OrdinalIgnoreCase)
+                 && Modules.OptionalModules.Files.ReplacesExplorer && paths.Count == 1)
+        {
+            menuItem.Click += (_, _) => OpenContaining(paths[0], session, item.Id);
         }
         else
         {
             menuItem.Click += (_, _) => session.Invoke(item.Id);
         }
         return menuItem;
+    }
+
+    /// <summary>«Abrir ubicación del archivo» de un acceso directo (Windows lo abre en el Explorador).</summary>
+    private const string OpenContainingVerb = "opencontaining";
+
+    /// <summary>Con Archivos en lugar del Explorador, el destino del acceso directo se muestra en Archivos.</summary>
+    private static void OpenContaining(string link, ShellMenuSession session, int id)
+    {
+        var target = link.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) ? StartMenu.ExtraApps.ShortcutTarget(link) : null;
+        if (target is { Length: > 0 } && (File.Exists(target) || Directory.Exists(target)))
+            StartMenu.StartMenuService.OpenPath(target, select: true);
+        else
+            session.Invoke(id);
     }
 }

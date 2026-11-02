@@ -1379,5 +1379,8 @@
   "Abrir en otra ventana": "Abrir em outra janela",
   "Abrir y editar": "Abrir e editar",
   "Compartir y enviar": "Partilhar e enviar",
-  "Nuevo": "Novo"
+  "Nuevo": "Novo",
+  "Mover a {0}": "Mover para {0}",
+  "Copiar a {0}": "Copiar para {0}",
+  "Crear acceso directo en {0}": "Criar atalho em {0}"
 }

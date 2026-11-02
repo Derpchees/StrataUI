@@ -15,6 +15,8 @@
     <!-- Menú contextual común a cualquier app: abrir, anclar, ubicación, administrador, desinstalar -->
     <ContextMenu x:Key="AppContextMenu" x:Shared="False">
         <MenuItem Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}" Header="{l:T 'Abrir'}" FontWeight="SemiBold" />
+        <MenuItem Command="{x:Static start:StartCommands.OpenPrivateWindow}" CommandParameter="{Binding}" Header="{Binding PrivateWindowLabel}"
+                  Visibility="{Binding CanOpenPrivateWindow, Converter={StaticResource BoolToVis}}" />
         <MenuItem Command="{x:Static start:StartCommands.RunAsAdmin}" CommandParameter="{Binding}" Header="{l:T 'Ejecutar como administrador'}"
                   Visibility="{Binding CanRunAsAdmin, Converter={StaticResource BoolToVis}}" />
         <MenuItem Command="{x:Static start:StartCommands.OpenLocation}" CommandParameter="{Binding}" Header="{l:T 'Abrir ubicación del archivo'}"

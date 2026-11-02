@@ -97,7 +97,9 @@
             </ui:TitleBar.Icon>
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,4,0,0">
-                    <ItemsControl x:Name="TabStrip" ItemTemplate="{StaticResource TabTemplate}">
+                    <ItemsControl x:Name="TabStrip" ItemTemplate="{StaticResource TabTemplate}"
+                                  MouseMove="TabStrip_MouseMove" MouseLeftButtonUp="TabStrip_MouseLeftButtonUp"
+                                  LostMouseCapture="TabStrip_LostMouseCapture">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <StackPanel Orientation="Horizontal" />

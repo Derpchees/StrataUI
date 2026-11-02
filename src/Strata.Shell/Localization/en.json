@@ -1379,5 +1379,8 @@
   "Abrir en otra ventana": "Open in another window",
   "Abrir y editar": "Open and edit",
   "Compartir y enviar": "Share and send",
-  "Nuevo": "New"
+  "Nuevo": "New",
+  "Mover a {0}": "Move to {0}",
+  "Copiar a {0}": "Copy to {0}",
+  "Crear acceso directo en {0}": "Create shortcut in {0}"
 }

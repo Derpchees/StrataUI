@@ -1765,7 +1765,8 @@ public partial class FolderPane : UserControl
         var data = new DataObject(DataFormats.FileDrop, selected.Select(s => s.FullPath).ToArray());
         try
         {
-            DragDrop.DoDragDrop((DependencyObject)sender, data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link);
+            DragGhost.Run((UIElement)sender, data, DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link,
+                          selected[0].Thumbnail ?? selected[0].Icon, selected.Count);
         }
         catch (Exception ex)
         {
@@ -1929,12 +1930,14 @@ public partial class FolderPane : UserControl
 
     private void Card_DragOver(object sender, DragEventArgs e)
     {
+        string? target = null;
         try
         {
+            target = InArchive ? null : InRecycleBin ? Places.RecycleBin : DropTarget(e);
             e.Effects = InArchive ? DragDropEffects.None
                 : InRecycleBin
                 ? (e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Move & e.AllowedEffects : DragDropEffects.None)
-                : DropTarget(e) is { } target && e.Data.GetData(DataFormats.FileDrop) is string[] files
+                : target is not null && e.Data.GetData(DataFormats.FileDrop) is string[] files
                 ? DropEffect(e, target, files) & e.AllowedEffects
                 : DragDropEffects.None;
         }
@@ -1943,11 +1946,38 @@ public partial class FolderPane : UserControl
             Log.Error("Archivos: falló el arrastre", ex);
             e.Effects = DragDropEffects.None;
         }
+        // La carpeta de la lista donde va a caer se resalta; en el espacio libre, todo el panel.
+        bool can = e.Effects != DragDropEffects.None;
+        var item = can && !InRecycleBin ? Ancestor<ListBoxItem>(e.OriginalSource as DependencyObject) : null;
+        MarkDrop(item is { DataContext: FileEntry { IsFolder: true } } ? item : null, can && item?.DataContext is not FileEntry { IsFolder: true });
+        DragGhost.Caption(e.Effects, InRecycleBin ? Loc.T("Papelera de reciclaje") : target);
         e.Handled = true;
+    }
+
+    private void Card_DragLeave(object sender, DragEventArgs e)
+    {
+        MarkDrop(null, false);
+        DragGhost.Caption(DragDropEffects.None, null);
+    }
+
+    private ListBoxItem? _dropItem;
+
+    private void MarkDrop(ListBoxItem? item, bool wholeFolder)
+    {
+        if (_dropItem != item)
+        {
+            if (_dropItem != null)
+                _dropItem.Tag = null;
+            _dropItem = item;
+            if (item != null)
+                item.Tag = "drop";
+        }
+        Card.Tag = wholeFolder ? "drop" : null;
     }
 
     private async void Card_Drop(object sender, DragEventArgs e)
     {
+        MarkDrop(null, false);
         try
         {
             if (InArchive)

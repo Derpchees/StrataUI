@@ -6,6 +6,19 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.22.0] - 2026-11-02
+
+### Añadido
+- Archivos: las pestañas se reordenan arrastrándolas y, si se sacan de la barra, se abren en su
+  propia ventana (que sigue al mouse).
+- Archivos y escritorio: al arrastrar archivos aparece su ícono junto al puntero, con cuántos son y
+  a dónde van («Mover a…», «Copiar a…»); la carpeta de destino se resalta.
+- Menú Inicio: «Nueva ventana privada / de incógnito / InPrivate» en el clic derecho de los navegadores.
+
+### Corregido
+- «Abrir ubicación del archivo» del menú de Windows abría el Explorador de Windows en vez de Archivos
+  de Strata UI cuando este lo reemplaza.
+
 ## [3.21.0] - 2026-11-02
 
 ### Añadido
