@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.20.0] - 2026-11-02
+
+### Cambiado
+- Clic en el botón de una app con varias ventanas: ahora va directo a una en vez de abrir la vista
+  previa. Si ninguna está al frente trae la última que usaste; si una lo está, pasa a la siguiente
+  (con dos ventanas, cada clic alterna entre ellas). La vista previa sigue al pasar el mouse y marca
+  la ventana que está al frente.
+- Las listas desplegables, las notificaciones que se despliegan en el panel y el visor de archivos
+  usan la animación y la velocidad elegidas en Hub › Tema (y no se animan si están apagadas).
+
 ## [3.19.1] - 2026-11-02
 
 ### Corregido

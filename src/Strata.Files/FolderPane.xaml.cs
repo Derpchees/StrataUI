@@ -232,7 +232,7 @@ public partial class FolderPane : UserControl
             Viewer.CloseRequested += CloseViewer;
             ContentArea.Visibility = Visibility.Hidden;
             ViewerCard.Visibility = Visibility.Visible;
-            ViewerCard.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(160)));
+            Motion.Fade(ViewerCard, 0);
         }
         Viewer.Open(items, index);
         StateChanged?.Invoke();

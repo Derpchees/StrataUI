@@ -23,6 +23,8 @@ public static class Motion
         EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
         EventManager.RegisterClassHandler(typeof(ContextMenu), ContextMenu.ClosedEvent, new RoutedEventHandler(OnMenuClosed));
         EventManager.RegisterClassHandler(typeof(ToolTip), ToolTip.OpenedEvent, new RoutedEventHandler(OnMenuOpened));
+        // Las listas desplegables también: su popup viene en la plantilla del ComboBox.
+        EventManager.RegisterClassHandler(typeof(ComboBox), FrameworkElement.LoadedEvent, new RoutedEventHandler(OnComboLoaded));
         // Los popups de WPF traen su propia animación (la de Windows: fundido o deslizamiento) y
         // corría a la vez que la nuestra: el menú se animaba dos veces y a tirones.
         if (Application.Current is { } app)
@@ -293,19 +295,61 @@ public static class Motion
     }
 
     /// <summary>Un popup propio (bandeja oculta, carpeta del menú Inicio) se anima al abrirse y al cerrarse.</summary>
-    public static void Attach(Popup popup, Func<TaskbarPosition> from)
+    public static void Attach(Popup popup, Func<TaskbarPosition> from, double size = 0.9)
     {
+        // Una sola vez por popup (el Loaded de una lista se repite al cambiar de página).
+        if (!Attached.TryAdd(popup, popup))
+            return;
         popup.PopupAnimation = PopupAnimation.None;
         popup.Opened += (_, _) =>
         {
             if (popup.Child is FrameworkElement child)
-                AnimatePopup(child, from(), 0.9, remember: true);
+                AnimatePopup(child, from(), size, remember: true);
         };
         popup.Closed += (_, _) =>
         {
             if (popup.Child is FrameworkElement child)
                 LeaveAsGhost(child);
         };
+    }
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Popup, Popup> Attached = new();
+
+    /// <summary>La lista baja desde el cuadro si se abrió debajo y sube si no cabía y quedó encima.</summary>
+    private static void OnComboLoaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ComboBox combo || combo.Template?.FindName("PART_Popup", combo) is not Popup popup)
+            return;
+        Attach(popup, () =>
+        {
+            try
+            {
+                return popup.Child is FrameworkElement child
+                       && child.PointToScreen(new Point(0, 0)).Y < combo.PointToScreen(new Point(0, 0)).Y
+                    ? TaskbarPosition.Bottom
+                    : TaskbarPosition.Top;
+            }
+            catch (InvalidOperationException)
+            {
+                return TaskbarPosition.Top; // aún sin ventana
+            }
+        }, 0.8);
+    }
+
+    /// <summary>
+    /// Fundido de un contenido que cambia dentro de una ventana (el visor, una lista que se despliega)
+    /// con la velocidad elegida; con las animaciones apagadas, cambia de una vez.
+    /// </summary>
+    public static void Fade(UIElement element, double from, double to = 1, double size = 1)
+    {
+        if (Settings.Current.PanelAnimation == PanelAnimation.None && Imported is null)
+        {
+            element.BeginAnimation(UIElement.OpacityProperty, null);
+            element.Opacity = to;
+            return;
+        }
+        element.BeginAnimation(UIElement.OpacityProperty,
+                               new DoubleAnimation(from, to, Duration(closing: to < from) * size) { EasingFunction = CubicOut });
     }
 
     /// <summary>

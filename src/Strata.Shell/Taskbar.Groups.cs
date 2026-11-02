@@ -78,13 +78,38 @@ public partial class Taskbar
         {
             gone.PropertyChanged -= OnWatchedWindowChanged;
             _watchedWindows.Remove(gone);
+            lock (LastActive)
+                LastActive.Remove(gone.Handle);
         }
         foreach (var window in current.Where(w => _watchedWindows.Add(w)))
+        {
             window.PropertyChanged += OnWatchedWindowChanged;
+            NoteActive(window);
+        }
+    }
+
+    /// <summary>Cuándo estuvo al frente cada ventana por última vez (todas las barras comparten la cuenta).</summary>
+    private static readonly Dictionary<IntPtr, long> LastActive = new();
+
+    private static void NoteActive(ApplicationWindow window)
+    {
+        if (window.State != ApplicationWindow.WindowState.Active)
+            return;
+        lock (LastActive)
+            LastActive[window.Handle] = Environment.TickCount64;
+    }
+
+    /// <summary>De <paramref name="windows"/>, la que se usó por última vez (la primera si no se sabe).</summary>
+    public static ApplicationWindow MostRecent(IReadOnlyList<ApplicationWindow> windows)
+    {
+        lock (LastActive)
+            return windows.MaxBy(w => LastActive.GetValueOrDefault(w.Handle, long.MinValue)) ?? windows[0];
     }
 
     private void OnWatchedWindowChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(ApplicationWindow.State) && sender is ApplicationWindow changed)
+            NoteActive(changed);
         // Con anclados, el estado de una ventana cambia el indicador de su botón anclado.
         if (!_combine && _pinSlots.Count == 0)
             return;

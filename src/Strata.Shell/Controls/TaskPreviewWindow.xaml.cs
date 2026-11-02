@@ -100,15 +100,6 @@ public partial class TaskPreviewWindow : Window
         ShowTimer.Start();
     }
 
-    /// <summary>Muestra ya las ventanas (clic en un botón con varias ventanas agrupadas).</summary>
-    public static void ShowNow(FrameworkElement anchor, IReadOnlyList<ApplicationWindow> windows)
-    {
-        ShowTimer.Stop();
-        HideTimer.Stop();
-        _pendingAnchor = anchor;
-        Show(anchor, windows);
-    }
-
     /// <summary>El mouse salió del botón: se oculta si tampoco está sobre la vista previa.</summary>
     public static void HoverEnd()
     {
@@ -125,9 +116,6 @@ public partial class TaskPreviewWindow : Window
         _pendingAnchor = null;
         _instance?.HidePreview();
     }
-
-    public static bool IsShowingFor(FrameworkElement anchor) =>
-        _instance is { IsVisible: true } preview && ReferenceEquals(preview._anchor, anchor);
 
     public static void CloseAll()
     {
@@ -162,6 +150,14 @@ public partial class TaskPreviewWindow : Window
             double maxWidth = windows.Count > 4 ? 170 : windows.Count > 2 ? 200 : 240;
             foreach (var window in windows)
                 AddEntry(window, maxWidth, maxWidth * 0.625);
+        }
+        // Con varias, la que está al frente se marca: así se sabe a cuál pasa el próximo clic.
+        foreach (var entry in _entries)
+        {
+            if (_entries.Count > 1 && entry.Window.State == ApplicationWindow.WindowState.Active && !entry.Window.IsMinimized)
+                entry.Root.SetResourceReference(Border.BorderBrushProperty, "StrataAccentBrush");
+            else
+                entry.Root.BorderBrush = Brushes.Transparent;
         }
         if (appearing)
         {
@@ -219,6 +215,8 @@ public partial class TaskPreviewWindow : Window
             Padding = new Thickness(6, 4, 6, 6),
             Margin = new Thickness(2),
             CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(1),
+            BorderBrush = Brushes.Transparent,
             Background = Brushes.Transparent,
             Cursor = Cursors.Hand,
             Child = content,

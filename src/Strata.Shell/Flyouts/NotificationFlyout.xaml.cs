@@ -67,12 +67,8 @@ public partial class NotificationFlyout : FlyoutWindow
     {
         if (sender is not FrameworkElement list || !list.IsVisible)
             return;
-        var duration = TimeSpan.FromMilliseconds(220);
-        var move = new TranslateTransform(0, -8);
-        list.RenderTransform = move;
-        move.BeginAnimation(TranslateTransform.YProperty,
-                           new DoubleAnimation(0, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
-        list.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, duration));
+        // Con la animación y la velocidad elegidas, como el resto (sin animaciones, aparece de una vez).
+        Services.Themes.Motion.In(list, list, Services.TaskbarPosition.Top, 0.6);
     }
 
     private void DismissGroup_Click(object sender, RoutedEventArgs e)

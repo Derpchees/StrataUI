@@ -187,7 +187,7 @@ public partial class MediaViewer : UserControl
         ZoomButtons.Visibility = _kind == MediaKind.Image ? Visibility.Visible : Visibility.Collapsed;
         FullScreenButton.Visibility = _kind == MediaKind.Audio ? Visibility.Collapsed : Visibility.Visible;
         SetChromeVisible(true);
-        Stage.BeginAnimation(OpacityProperty, new DoubleAnimation(0.3, 1, TimeSpan.FromMilliseconds(180)));
+        Motion.Fade(Stage, 0.3);
 
         switch (_kind)
         {

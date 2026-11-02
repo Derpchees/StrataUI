@@ -297,11 +297,13 @@ public partial class TaskButton : UserControl
     // La ventana estaba al frente al presionar: al soltar puede que ya no (el clic en la barra le
     // quita el primer plano) y el botón la traería al frente en vez de minimizarla.
     private bool _activeAtPress;
+    private IntPtr _foregroundAtPress;
 
     protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
     {
         base.OnPreviewMouseLeftButtonDown(e);
         _pressedAt = e.GetPosition(this);
+        _foregroundAtPress = GetForegroundWindow();
         _activeAtPress = Window is { IsMinimized: false } window
                          && (window.State == ApplicationWindow.WindowState.Active || window.Handle == GetForegroundWindow());
     }
@@ -338,17 +340,13 @@ public partial class TaskButton : UserControl
         }
         if (Window is not { } window)
             return;
-        // Varias ventanas agrupadas: el clic muestra todas para elegir (otro clic las oculta).
         var members = Members();
+        TaskPreviewWindow.Dismiss();
         if (members.Count > 1)
         {
-            if (TaskPreviewWindow.IsShowingFor(this))
-                TaskPreviewWindow.Dismiss();
-            else
-                TaskPreviewWindow.ShowNow(this, members);
+            SwitchWithin(members);
             return;
         }
-        TaskPreviewWindow.Dismiss();
 
         // Como en Windows: clic en la ventana activa la minimiza; en otra, la trae al frente.
         bool active = _activeAtPress || window.State == ApplicationWindow.WindowState.Active && !window.IsMinimized;
@@ -357,6 +355,24 @@ public partial class TaskButton : UserControl
             window.Minimize();
         else
             window.BringToFront();
+    }
+
+    /// <summary>
+    /// Varias ventanas en el botón: un clic va directo a una, sin pasar por la vista previa (que sigue
+    /// al pasar el mouse, para elegir). Si ninguna está al frente, trae la última que se usó; si una
+    /// lo está, la siguiente del botón, en el orden de la vista previa, y así en cada clic.
+    /// </summary>
+    private void SwitchWithin(IReadOnlyList<ApplicationWindow> members)
+    {
+        IntPtr foreground = _foregroundAtPress;
+        _foregroundAtPress = IntPtr.Zero;
+        _activeAtPress = false;
+        int current = -1;
+        for (int i = 0; i < members.Count && current < 0; i++)
+            if (!members[i].IsMinimized && (members[i].Handle == foreground || members[i].State == ApplicationWindow.WindowState.Active))
+                current = i;
+        var target = current < 0 ? Taskbar.MostRecent(members) : members[(current + 1) % members.Count];
+        target.BringToFront();
     }
 
     private void CloseWindow_Click(object sender, RoutedEventArgs e)
