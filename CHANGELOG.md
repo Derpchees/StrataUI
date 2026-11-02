@@ -6,6 +6,19 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.21.0] - 2026-11-02
+
+### Añadido
+- Clic derecho en un navegador de la barra: «Nueva ventana privada» (o de incógnito / InPrivate,
+  según el navegador: Brave, Chrome, Edge, Firefox, Opera y Vivaldi).
+- «Abrir otra ventana» también en las apps abiertas sin anclar (antes solo en las ancladas).
+
+### Corregido
+- Los menús del clic derecho (barra, menú Inicio, botón Inicio y el resto) se abrían invisibles
+  desde la 3.19.0: el deslizamiento de la entrada cortaba el fundido y el menú se quedaba transparente.
+- Clic en una app con varias ventanas: ahora sí pasa a la siguiente. Al hacer clic la barra ya tiene
+  el foco, así que no se sabía cuál estaba al frente y siempre se traía la misma.
+
 ## [3.20.0] - 2026-11-02
 
 ### Cambiado

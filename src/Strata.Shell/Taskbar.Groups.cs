@@ -106,6 +106,16 @@ public partial class Taskbar
             return windows.MaxBy(w => LastActive.GetValueOrDefault(w.Handle, long.MinValue)) ?? windows[0];
     }
 
+    /// <summary>
+    /// <paramref name="window"/> es la última que estuvo al frente. Sirve al hacer clic en la barra: al
+    /// presionar, la barra toma el primer plano y la ventana ya no aparece como activa.
+    /// </summary>
+    public static bool WasLastActive(ApplicationWindow window)
+    {
+        lock (LastActive)
+            return LastActive.Count > 0 && LastActive.MaxBy(pair => pair.Value).Key == window.Handle;
+    }
+
     private void OnWatchedWindowChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ApplicationWindow.State) && sender is ApplicationWindow changed)

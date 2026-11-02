@@ -152,7 +152,7 @@ public static class TaskbarPins
     private static readonly Dictionary<string, string?> ExeCache = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Ejecutable de una app (null en las empaquetadas o si no apunta a un .exe).</summary>
-    private static string? TargetExe(string id)
+    public static string? TargetExe(string id)
     {
         if (ExeCache.TryGetValue(id, out var cached))
             return cached;

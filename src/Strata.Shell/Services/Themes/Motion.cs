@@ -405,12 +405,15 @@ public static class Motion
     /// (para lo que no es una propiedad animable, como la posición de una ventana nativa). El tiempo
     /// avanza con los cuadros dibujados y como mucho 1/20 s por cuadro: el primero de una ventana
     /// nueva puede tardar cientos de ms y, con un reloj normal, el recorrido ya habría terminado
-    /// cuando se ve. Un recorrido nuevo sobre el mismo <paramref name="target"/> corta el anterior:
-    /// si no, al reabrir un panel que se está cerrando los dos pelearían cuadro a cuadro.
+    /// cuando se ve. Un recorrido nuevo sobre el mismo <paramref name="target"/> y <paramref name="what"/>
+    /// corta el anterior: si no, al reabrir un panel que se está cerrando los dos pelearían cuadro a
+    /// cuadro. Distinto <paramref name="what"/> no se corta: un menú se desvanece y se mueve a la vez
+    /// (con una sola clave el movimiento cortaba el fundido y el menú quedaba invisible).
     /// </summary>
-    private static void Drive(object target, TimeSpan duration, IEasingFunction? ease, double from, double to, Action<double> apply)
+    private static void Drive(object target, string what, TimeSpan duration, IEasingFunction? ease, double from, double to, Action<double> apply)
     {
-        if (Driving.Remove(target, out var previous))
+        var key = (target, what);
+        if (Driving.Remove(key, out var previous))
             CompositionTarget.Rendering -= previous;
         var clock = System.Diagnostics.Stopwatch.StartNew();
         TimeSpan last = TimeSpan.Zero, elapsed = TimeSpan.Zero;
@@ -426,15 +429,15 @@ public static class Motion
             if (t < 1)
                 return;
             CompositionTarget.Rendering -= tick;
-            if (Driving.TryGetValue(target, out var current) && current == tick)
-                Driving.Remove(target);
+            if (Driving.TryGetValue(key, out var current) && current == tick)
+                Driving.Remove(key);
         };
-        Driving[target] = tick;
+        Driving[key] = tick;
         CompositionTarget.Rendering += tick;
     }
 
     /// <summary>Recorridos de <see cref="Drive"/> en marcha, por lo que mueven (todo en el hilo de la interfaz).</summary>
-    private static readonly Dictionary<object, EventHandler> Driving = new(ReferenceEqualityComparer.Instance);
+    private static readonly Dictionary<(object Target, string What), EventHandler> Driving = new();
 
     /// <summary>Desliza con <paramref name="window"/> o, sin ella, con una transformación de <paramref name="moving"/>.</summary>
     private static void Slide(FrameworkElement moving, WindowMover? window, TaskbarPosition side, double from, double to,
@@ -444,7 +447,7 @@ public static class Motion
         if (window != null)
         {
             bool vertical = property == TranslateTransform.YProperty;
-            Drive(moving, duration, ease, from * sign, to * sign, v => window(vertical ? 0 : v, vertical ? v : 0));
+            Drive(moving, "slide", duration, ease, from * sign, to * sign, v => window(vertical ? 0 : v, vertical ? v : 0));
             return;
         }
         var slide = moving.RenderTransform as TranslateTransform ?? new TranslateTransform();
@@ -463,7 +466,7 @@ public static class Motion
         {
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            Drive(scale, duration, ease, from, to, v =>
+            Drive(scale, "scale", duration, ease, from, to, v =>
             {
                 scale.ScaleX = v;
                 scale.ScaleY = v;
@@ -481,7 +484,7 @@ public static class Motion
         if (framed)
         {
             fade.BeginAnimation(UIElement.OpacityProperty, null);
-            Drive(fade, duration, ease, from, 1, v => fade.Opacity = v);
+            Drive(fade, "opacity", duration, ease, from, 1, v => fade.Opacity = v);
         }
         else
             fade.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(from, 1, duration) { EasingFunction = ease });

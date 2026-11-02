@@ -146,8 +146,12 @@ public partial class TaskButton : UserControl
         bool running = Window != null;
         string? pinId = Slot?.Id ?? (Window is { } window ? TaskbarPins.IdFor(window) : null);
         bool pinned = pinId != null && TaskbarPins.IsPinned(pinId);
-        LaunchItem.Visibility = Slot != null ? Visibility.Visible : Visibility.Collapsed;
+        // Sin anclar también se puede abrir otra ventana: con su ejecutable.
+        LaunchItem.Visibility = Slot != null || Exe() != null ? Visibility.Visible : Visibility.Collapsed;
         LaunchItem.Header = running ? Loc.T("Abrir otra ventana") : Loc.T("Abrir");
+        var privateWindow = WebSites.PrivateWindow(Exe());
+        PrivateItem.Visibility = privateWindow != null ? Visibility.Visible : Visibility.Collapsed;
+        PrivateItem.Header = privateWindow?.Label;
         PinItem.Visibility = pinId != null ? Visibility.Visible : Visibility.Collapsed;
         PinItem.Header = pinned ? Loc.T("Desanclar de la barra de tareas") : Loc.T("Anclar a la barra de tareas");
         PinItem.Tag = pinId;
@@ -155,7 +159,45 @@ public partial class TaskButton : UserControl
         CloseItem.Visibility = ForceCloseItem.Visibility = running ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void Launch_Click(object sender, RoutedEventArgs e) => Slot?.Launch();
+    /// <summary>Ejecutable de la app: el de su ventana o, anclada y cerrada, el de su acceso directo.</summary>
+    private string? Exe() =>
+        Window?.WinFileName is { Length: > 0 } path ? (Launchable(path) ? path : null)
+        : Slot is { } slot ? TaskbarPins.TargetExe(slot.Id) : null;
+
+    /// <summary>
+    /// Si abrir el ejecutable de una ventana abre la app: no el de Strata UI (sus ventanas de
+    /// Archivos), ni el anfitrión de las apps de la Tienda, ni uno empaquetado (Windows no deja).
+    /// </summary>
+    private static bool Launchable(string path) =>
+        !string.Equals(path, Environment.ProcessPath, StringComparison.OrdinalIgnoreCase)
+        && !string.Equals(System.IO.Path.GetFileName(path), "ApplicationFrameHost.exe", StringComparison.OrdinalIgnoreCase)
+        && !path.Contains(@"\WindowsApps\", StringComparison.OrdinalIgnoreCase);
+
+    private void Launch_Click(object sender, RoutedEventArgs e)
+    {
+        if (Slot != null)
+            Slot.Launch();
+        else if (Exe() is { } exe)
+            Start(exe, WebSites.IsBrowserExe(exe) ? "--new-window" : "");
+    }
+
+    private void PrivateWindow_Click(object sender, RoutedEventArgs e)
+    {
+        if (Exe() is { } exe && WebSites.PrivateWindow(exe) is { } privateWindow)
+            Start(exe, privateWindow.Argument);
+    }
+
+    private static void Start(string exe, string arguments)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe, arguments) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            Log.Info($"No se pudo abrir {exe}: {ex.Message}");
+        }
+    }
 
     private void TogglePin_Click(object sender, RoutedEventArgs e)
     {
@@ -369,7 +411,8 @@ public partial class TaskButton : UserControl
         _activeAtPress = false;
         int current = -1;
         for (int i = 0; i < members.Count && current < 0; i++)
-            if (!members[i].IsMinimized && (members[i].Handle == foreground || members[i].State == ApplicationWindow.WindowState.Active))
+            if (!members[i].IsMinimized && (members[i].Handle == foreground || members[i].State == ApplicationWindow.WindowState.Active
+                                            || Taskbar.WasLastActive(members[i])))
                 current = i;
         var target = current < 0 ? Taskbar.MostRecent(members) : members[(current + 1) % members.Count];
         target.BringToFront();

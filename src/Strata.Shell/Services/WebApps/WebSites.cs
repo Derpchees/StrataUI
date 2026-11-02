@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services.WebApps;
 
@@ -86,6 +87,21 @@ public static class WebSites
 
     public static bool IsBrowserExe(string? path) =>
         !string.IsNullOrEmpty(path) && BrowserExes.Contains(Path.GetFileName(path));
+
+    /// <summary>
+    /// Cómo pedirle al navegador una ventana privada: su nombre en ese navegador y el argumento
+    /// (null si no es un navegador conocido).
+    /// </summary>
+    public static (string Label, string Argument)? PrivateWindow(string? path) =>
+        Path.GetFileName(path ?? "").ToLowerInvariant() switch
+        {
+            "msedge.exe" => (Loc.T("Nueva ventana InPrivate"), "--inprivate"),
+            "firefox.exe" => (Loc.T("Nueva ventana privada"), "-private-window"),
+            "opera.exe" => (Loc.T("Nueva ventana privada"), "--private"),
+            "brave.exe" => (Loc.T("Nueva ventana privada"), "--incognito"),
+            "chrome.exe" or "vivaldi.exe" => (Loc.T("Nueva ventana de incógnito"), "--incognito"),
+            _ => null,
+        };
 
     public static bool IsBrowserId(string? appId) =>
         !string.IsNullOrEmpty(appId) && (BrowserIds.Contains(appId) || BrowserIds.Contains(Path.GetFileName(appId)));
