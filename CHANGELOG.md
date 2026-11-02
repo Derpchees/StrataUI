@@ -6,6 +6,19 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.19.1] - 2026-11-02
+
+### Corregido
+- Con la barra transparente, la barra ya no desaparece un instante de grabaciones y capturas cada 5 s
+  si el fondo no se mueve: solo se vuelve a leer cuando cambia lo que se ve junto a ella.
+- La imagen con la que se cierra un menú podía aparecer corrida en otro lugar entre monitores con
+  distinta escala, o si el menú tenía sombra o partes que sobresalían.
+
+### Cambiado
+- Las animaciones reutilizan sus curvas y la animación importada elegida, y los menús abiertos ya no
+  se vuelven a medir en cada cuadro de su entrada.
+- Los últimos programas y páginas que se abrían sin liberar el proceso ya lo liberan.
+
 ## [3.19.0] - 2026-11-02
 
 ### Agregado

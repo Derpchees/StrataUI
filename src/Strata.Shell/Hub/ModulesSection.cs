@@ -136,7 +136,7 @@ public sealed class ModulesSection : StackPanel
         try
         {
             Process.Start(new ProcessStartInfo($"https://github.com/{Services.Updates.UpdateService.Repository}/blob/main/docs/modules/README.md")
-            { UseShellExecute = true });
+            { UseShellExecute = true })?.Dispose();
         }
         catch (System.ComponentModel.Win32Exception)
         {

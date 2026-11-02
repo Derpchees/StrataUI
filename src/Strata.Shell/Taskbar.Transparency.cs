@@ -21,7 +21,8 @@ namespace Strata.Shell;
 /// (si ya lo estaba por el vidrio líquido, se deja así). Detrás de una barra casi siempre está el
 /// fondo de pantalla (las ventanas maximizadas no la tapan): se lee cuando algo cambia (el fondo, el
 /// tamaño o el contenido de la barra) y, como los fondos animados (Wallpaper Engine) cambian solos,
-/// también cada pocos segundos con un único temporizador para todas las barras transparentes.
+/// también cada pocos segundos con un único temporizador para todas las barras transparentes, pero
+/// solo si cambió lo que se ve justo al lado de la barra (<see cref="EdgeChanged"/>).
 /// </remarks>
 public partial class Taskbar
 {
@@ -115,9 +116,59 @@ public partial class Taskbar
         _contrastRefresh ??= new DispatcherTimer(RefreshInterval, DispatcherPriority.Background, (_, _) =>
         {
             foreach (var bar in TransparentBars.ToList())
-                bar.SampleContrast();
+                if (bar.EdgeChanged())
+                    bar.SampleContrast();
         }, Dispatcher);
         _contrastRefresh.Start();
+    }
+
+    private byte[]? _edgeLast, _edgeSpare;
+
+    /// <summary>
+    /// Para la relectura periódica: lee una franja fina justo afuera de la barra, del lado de la
+    /// pantalla (sin excluir la barra de la captura), y dice si cambió desde la vez anterior. Así la
+    /// barra solo desaparece un instante de grabaciones y capturas cuando el fondo de verdad se mueve
+    /// (antes, cada 5 s aunque fuera una foto fija).
+    /// </summary>
+    private bool EdgeChanged()
+    {
+        if (!_transparent || _sampling || !IsVisible || PresentationSource.FromVisual(this) is null || ActualWidth <= 0)
+            return false;
+        try
+        {
+            var origin = PointToScreen(new Point(0, 0));
+            var corner = PointToScreen(new Point(ActualWidth, ActualHeight));
+            int left = (int)origin.X, top = (int)origin.Y, right = (int)corner.X, bottom = (int)corner.Y;
+            const int Gap = 2, Thick = 2, Samples = 64;
+            bool vertical = Position is TaskbarPosition.Left or TaskbarPosition.Right;
+            var strip = Position switch
+            {
+                TaskbarPosition.Top => new Int32Rect(left, bottom + Gap, right - left, Thick),
+                TaskbarPosition.Left => new Int32Rect(right + Gap, top, Thick, bottom - top),
+                TaskbarPosition.Right => new Int32Rect(left - Gap - Thick, top, Thick, bottom - top),
+                _ => new Int32Rect(left, top - Gap - Thick, right - left, Thick),
+            };
+            if (strip.Width <= 0 || strip.Height <= 0)
+                return true;
+            int w = vertical ? 1 : Samples, h = vertical ? Samples : 1;
+            // Dos búferes que se turnan: el de esta lectura y el de la anterior.
+            var fresh = _edgeSpare ?? new byte[Samples * 4];
+            if (!BackdropCapture.Grab(strip, w, h, fresh))
+                return true;
+            var previous = _edgeLast;
+            (_edgeLast, _edgeSpare) = (fresh, previous);
+            if (previous is null)
+                return true;
+            // Diferencia media por canal: el ruido del escalado no cuenta como cambio.
+            long diff = 0;
+            for (int i = 0; i < fresh.Length; i++)
+                diff += Math.Abs(fresh[i] - previous[i]);
+            return diff > fresh.Length * 3;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            return true;
+        }
     }
 
     /// <summary>La barra se cierra: deja de leerse el fondo detrás de ella.</summary>

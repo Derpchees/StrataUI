@@ -86,7 +86,7 @@ public sealed class StartApp : INotifyPropertyChanged
                 ? new ProcessStartInfo(extra.Launch) { UseShellExecute = true, WorkingDirectory = extra.WorkingDirectory ?? "" }
                 : IsFile
                 ? new ProcessStartInfo(Id) { UseShellExecute = true }
-                : new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{Id}") { UseShellExecute = true });
+                : new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{Id}") { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex)
         {

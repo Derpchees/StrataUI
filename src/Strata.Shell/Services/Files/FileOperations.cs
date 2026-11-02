@@ -347,7 +347,7 @@ public static class FileOperations
             {
                 UseShellExecute = true,
                 WorkingDirectory = Path.GetDirectoryName(path) ?? "",
-            });
+            })?.Dispose();
             return true;
         }
         catch (Exception ex)

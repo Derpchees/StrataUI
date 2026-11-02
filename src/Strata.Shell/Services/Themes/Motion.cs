@@ -30,6 +30,11 @@ public static class Motion
             app.Resources[SystemParameters.MenuPopupAnimationKey] = PopupAnimation.None;
             app.Resources[SystemParameters.ToolTipPopupAnimationKey] = PopupAnimation.None;
         }
+        ModuleStore.Changed += kind =>
+        {
+            if (kind == ModuleKind.Animation)
+                _imported = null;
+        };
     }
 
     private static void OnMenuOpened(object sender, RoutedEventArgs e)
@@ -66,6 +71,10 @@ public static class Motion
         /// <summary>Desplazamiento aplicado ahora (DIP), para saber dónde queda al final.</summary>
         public double X => _dx / _scale;
         public double Y => _dy / _scale;
+
+        /// <summary>El mismo desplazamiento en píxeles físicos.</summary>
+        public int PixelX => _dx;
+        public int PixelY => _dy;
 
         public static PopupMover? For(FrameworkElement element) =>
             PresentationSource.FromVisual(element) is System.Windows.Interop.HwndSource { Handle: var hwnd } && hwnd != IntPtr.Zero
@@ -108,9 +117,15 @@ public static class Motion
 
     // ── Salida de lo que WPF cierra de golpe (menús y popups) ────────────────
 
-    private sealed record Shown(Rect Bounds, TaskbarPosition From);
+    /// <summary>Dónde se vio: en DIP (con la escala de su monitor) y su esquina en píxeles físicos.</summary>
+    private sealed record Shown(Rect Bounds, Point Pixels, TaskbarPosition From);
 
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FrameworkElement, Shown> Opened = new();
+
+    /// <summary>El gancho que sigue los movimientos de cada popup abierto (para quitarlo al cerrarse).</summary>
+    private sealed record Watch(System.Windows.Interop.HwndSource Source, System.Windows.Interop.HwndSourceHook Hook);
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<FrameworkElement, Watch> Watched = new();
 
     /// <summary>
     /// Dónde quedó en pantalla (en DIP) al abrirse, para su salida. Sin el desplazamiento de la
@@ -118,28 +133,52 @@ public static class Motion
     /// </summary>
     private static void Remember(FrameworkElement element, TaskbarPosition from, PopupMover? mover = null)
     {
+        Unwatch(element);
         // Mientras está abierto se sigue cada movimiento de su ventana: WPF lo recoloca si su botón
         // se corre en la barra (cambia el texto de al lado) o si cambia de tamaño, y la salida
-        // aparecía donde estaba al abrirse, lejos de donde se veía.
+        // aparecía donde estaba al abrirse, lejos de donde se veía. La entrada mueve la ventana en
+        // cada cuadro: los movimientos seguidos se miden una sola vez, cuando el hilo queda libre.
         if (PresentationSource.FromVisual(element) is System.Windows.Interop.HwndSource source)
-            source.AddHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) =>
+        {
+            bool pending = false;
+            System.Windows.Interop.HwndSourceHook hook = (IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) =>
             {
                 const int WindowPosChanged = 0x0047;
-                if (msg == WindowPosChanged)
-                    Measure(element, from, mover);
+                if (msg == WindowPosChanged && !pending)
+                {
+                    pending = true;
+                    element.Dispatcher.BeginInvoke(() =>
+                    {
+                        pending = false;
+                        Measure(element, from, mover);
+                    }, System.Windows.Threading.DispatcherPriority.Input);
+                }
                 return IntPtr.Zero;
-            });
+            };
+            source.AddHook(hook);
+            Watched.AddOrUpdate(element, new Watch(source, hook));
+        }
         element.Dispatcher.BeginInvoke(() => Measure(element, from, mover), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    private static void Unwatch(FrameworkElement element)
+    {
+        if (!Watched.TryGetValue(element, out var watch))
+            return;
+        Watched.Remove(element);
+        if (!watch.Source.IsDisposed)
+            watch.Source.RemoveHook(watch.Hook);
     }
 
     private static void Measure(FrameworkElement element, TaskbarPosition from, PopupMover? mover)
     {
         if (PresentationSource.FromVisual(element) is not { CompositionTarget: { } target } || element.ActualWidth <= 0)
             return;
-        var corner = target.TransformFromDevice.Transform(element.PointToScreen(new Point(0, 0)));
+        var pixels = element.PointToScreen(new Point(0, 0));
         if (mover != null)
-            corner.Offset(-mover.X, -mover.Y);
-        Opened.AddOrUpdate(element, new Shown(new Rect(corner, new Size(element.ActualWidth, element.ActualHeight)), from));
+            pixels.Offset(-mover.PixelX, -mover.PixelY);
+        var corner = target.TransformFromDevice.Transform(pixels);
+        Opened.AddOrUpdate(element, new Shown(new Rect(corner, new Size(element.ActualWidth, element.ActualHeight)), pixels, from));
     }
 
     /// <summary>
@@ -148,6 +187,7 @@ public static class Motion
     /// </summary>
     private static void LeaveAsGhost(FrameworkElement element)
     {
+        Unwatch(element);
         if (!Opened.TryGetValue(element, out var shown))
             return;
         Opened.Remove(element);
@@ -159,7 +199,16 @@ public static class Motion
             var dpi = VisualTreeHelper.GetDpi(element);
             var drawing = new DrawingVisual();
             using (var context = drawing.RenderOpen())
-                context.DrawRectangle(new VisualBrush(element) { Stretch = Stretch.None }, null, new Rect(size));
+                // El recuadro del propio elemento, no el de lo que dibuja (una sombra o un hijo que se
+                // sale lo agrandan y la imagen quedaba corrida).
+                context.DrawRectangle(new VisualBrush(element)
+                {
+                    Stretch = Stretch.None,
+                    ViewboxUnits = BrushMappingMode.Absolute,
+                    Viewbox = new Rect(size),
+                    AlignmentX = AlignmentX.Left,
+                    AlignmentY = AlignmentY.Top,
+                }, null, new Rect(size));
             var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
                 Math.Max(1, (int)Math.Ceiling(size.Width * dpi.DpiScaleX)), Math.Max(1, (int)Math.Ceiling(size.Height * dpi.DpiScaleY)),
                 dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
@@ -187,7 +236,15 @@ public static class Motion
                 Height = size.Height,
                 Content = image,
             };
-            ghost.SourceInitialized += (_, _) => ClickThrough(ghost);
+            ghost.SourceInitialized += (_, _) =>
+            {
+                ClickThrough(ghost);
+                // Left y Top se convierten con la escala del monitor donde WPF crea la ventana, que
+                // puede no ser el del menú (100 % y 125 %): se lleva en píxeles al lugar exacto y,
+                // ya en ese monitor, la salida la mueve en DIP con la misma escala que se midió.
+                SetWindowPos(new System.Windows.Interop.WindowInteropHelper(ghost).Handle, IntPtr.Zero,
+                             (int)Math.Round(shown.Pixels.X), (int)Math.Round(shown.Pixels.Y), 0, 0, 0x0001 | 0x0004 | 0x0010);
+            };
             ghost.Show();
             // Se mueve la ventana de la imagen (como en la entrada), no la imagen dentro: se recortaba.
             Out(image, image, shown.From, () => ghost.Close(),
@@ -227,7 +284,7 @@ public static class Motion
         }
         var turn = new DoubleAnimation(angle, Duration(closing: false))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut },
+            EasingFunction = CubicInOut,
             FillBehavior = FillBehavior.Stop,
         };
         // Al terminar queda el valor final como propio (sin que la animación lo retenga).
@@ -376,7 +433,7 @@ public static class Motion
     /// <summary>Fundido de entrada; <paramref name="framed"/> como en <see cref="Grow"/>.</summary>
     private static void FadeIn(UIElement fade, double from, TimeSpan duration, bool framed)
     {
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var ease = CubicOut;
         if (framed)
         {
             fade.BeginAnimation(UIElement.OpacityProperty, null);
@@ -412,7 +469,7 @@ public static class Motion
             window?.Invoke(0, 0);
             return;
         }
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var ease = CubicOut;
         // Una ventana entera aparece rápido y el resto del tiempo se ve deslizarse (si el fundido
         // dura lo mismo, casi todo el recorrido pasa mientras todavía es transparente).
         FadeIn(fade, 0, window != null ? duration * 0.5 : duration, framed: window != null);
@@ -424,8 +481,8 @@ public static class Motion
                     // Una ventana entera sale de detrás de la barra: recorre más que un contenido.
                     double distance = (style == PanelAnimation.Rise ? 80 : window != null ? 48 : 16) * size * travel;
                     IEasingFunction slideEase = window != null
-                        ? new CubicEase { EasingMode = EasingMode.EaseOut }
-                        : style == PanelAnimation.Rise ? new QuinticEase { EasingMode = EasingMode.EaseOut } : ease;
+                        ? CubicOut
+                        : style == PanelAnimation.Rise ? QuinticOut : ease;
                     moving.RenderTransform = Transform.Identity;
                     Slide(moving, window, from, distance, 0, style == PanelAnimation.Rise ? duration * 1.4 : duration * 1.2, slideEase);
                     break;
@@ -437,7 +494,7 @@ public static class Motion
                     moving.RenderTransform = scale;
                     double start = 1 - (style == PanelAnimation.Pop ? 0.2 : 0.08) * size;
                     IEasingFunction grow = style == PanelAnimation.Pop
-                        ? new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.45 }
+                        ? PopOut
                         : ease;
                     var span = style == PanelAnimation.Pop ? duration * 1.5 : duration;
                     Grow(scale, start, 1, span, grow, framed: window != null);
@@ -475,7 +532,7 @@ public static class Motion
             return;
         }
         var duration = Duration(closing: true);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
+        var ease = CubicIn;
         var fadeOut = new DoubleAnimation(0, duration) { EasingFunction = ease };
         bool finished = false;
         void Finish()
@@ -528,8 +585,23 @@ public static class Motion
     }
 
     /// <summary>La animación importada elegida (null: una de las incluidas).</summary>
-    private static AnimationModule? Imported =>
-        Settings.Current.AnimationModule is { } id ? ModuleStore.Get<AnimationModule>(ModuleKind.Animation, id) : null;
+    private static AnimationModule? Imported
+    {
+        get
+        {
+            // Se pide en cada apertura y cierre: se guarda hasta que cambie la elegida o los módulos.
+            string? id = Settings.Current.AnimationModule;
+            if (id is null)
+                return null;
+            if (_imported is { } cached && cached.Id == id)
+                return cached.Module;
+            var module = ModuleStore.Get<AnimationModule>(ModuleKind.Animation, id);
+            _imported = (id, module);
+            return module;
+        }
+    }
+
+    private static (string Id, AnimationModule? Module)? _imported;
 
     /// <summary>Entrada de una animación importada: se desvanece, se desliza y crece a la vez.</summary>
     private static void CustomIn(UIElement fade, FrameworkElement moving, TaskbarPosition from, double size, MotionStep step,
@@ -590,23 +662,45 @@ public static class Motion
             finished = true;
             done();
         }
-        var fadeOut = new DoubleAnimation(step.Opacity, duration) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        var fadeOut = new DoubleAnimation(step.Opacity, duration) { EasingFunction = CubicIn };
         fadeOut.Completed += (_, _) => Finish();
         fade.BeginAnimation(UIElement.OpacityProperty, fadeOut);
         _ = Task.Delay(duration + TimeSpan.FromMilliseconds(150)).ContinueWith(
             _ => Application.Current?.Dispatcher.BeginInvoke(Finish));
     }
 
-    private static IEasingFunction? Ease(MotionStep step, EasingMode mode) => step.Easing switch
+    // Curvas congeladas y compartidas: cada apertura y cierre creaba las suyas.
+    private static readonly IEasingFunction CubicOut = Frozen(new CubicEase { EasingMode = EasingMode.EaseOut });
+    private static readonly IEasingFunction CubicIn = Frozen(new CubicEase { EasingMode = EasingMode.EaseIn });
+    private static readonly IEasingFunction CubicInOut = Frozen(new CubicEase { EasingMode = EasingMode.EaseInOut });
+    private static readonly IEasingFunction QuinticOut = Frozen(new QuinticEase { EasingMode = EasingMode.EaseOut });
+    private static readonly IEasingFunction PopOut = Frozen(new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.45 });
+
+    private static IEasingFunction Frozen(EasingFunctionBase ease)
     {
-        MotionEasing.Linear => null,
-        MotionEasing.Sine => new SineEase { EasingMode = mode },
-        MotionEasing.Quint => new QuinticEase { EasingMode = mode },
-        MotionEasing.Back => new BackEase { EasingMode = mode, Amplitude = step.Amplitude },
-        MotionEasing.Elastic => new ElasticEase { EasingMode = mode, Oscillations = 2, Springiness = Math.Max(1, 8 - step.Amplitude * 2) },
-        MotionEasing.Bounce => new BounceEase { EasingMode = mode, Bounces = 2, Bounciness = Math.Max(1.5, 4 - step.Amplitude) },
-        _ => new CubicEase { EasingMode = mode },
-    };
+        ease.Freeze();
+        return ease;
+    }
+
+    /// <summary>Las de las animaciones importadas, por curva, sentido y amplitud (también congeladas).</summary>
+    private static readonly Dictionary<(MotionEasing, EasingMode, double), IEasingFunction?> Eases = new();
+
+    private static IEasingFunction? Ease(MotionStep step, EasingMode mode)
+    {
+        var key = (step.Easing, mode, step.Amplitude);
+        if (!Eases.TryGetValue(key, out var ease))
+            Eases[key] = ease = step.Easing switch
+            {
+                MotionEasing.Linear => null,
+                MotionEasing.Sine => Frozen(new SineEase { EasingMode = mode }),
+                MotionEasing.Quint => Frozen(new QuinticEase { EasingMode = mode }),
+                MotionEasing.Back => Frozen(new BackEase { EasingMode = mode, Amplitude = step.Amplitude }),
+                MotionEasing.Elastic => Frozen(new ElasticEase { EasingMode = mode, Oscillations = 2, Springiness = Math.Max(1, 8 - step.Amplitude * 2) }),
+                MotionEasing.Bounce => Frozen(new BounceEase { EasingMode = mode, Bounces = 2, Bounciness = Math.Max(1.5, 4 - step.Amplitude) }),
+                _ => Frozen(new CubicEase { EasingMode = mode }),
+            };
+        return ease;
+    }
 
     /// <summary>Desplazamiento inicial: del lado de la barra hacia el interior de la pantalla.</summary>
     private static (DependencyProperty Property, double Offset) Offset(TaskbarPosition from, double distance) => from switch
