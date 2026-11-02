@@ -113,6 +113,12 @@ public partial class App : Application
             Shutdown(SensorsTask.RunRemove(e.Args));
             return;
         }
+        // Borra la tarea de inicio automático que creó un Strata UI elevado (ver AutoStart.RepairAsync).
+        if (e.Args.Length > 0 && e.Args[0] == AutoStart.RepairArg)
+        {
+            Shutdown(AutoStart.RunRepair(e.Args));
+            return;
+        }
         // Limpieza de las carpetas de Windows, con permiso de administrador (ver Services/Cleanup).
         if (e.Args.Length > 0 && e.Args[0] == Services.Cleanup.JunkCleaner.ElevatedArg)
         {

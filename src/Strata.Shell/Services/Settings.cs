@@ -186,6 +186,11 @@ public sealed class StrataSettings
     public bool StartAppsZoned { get; set; }
     /// <summary>Al iniciar con Windows también se abre el Hub (por defecto, solo las barras).</summary>
     public bool HubAtStartup { get; set; }
+    /// <summary>
+    /// Ejecutable cuya tarea de inicio automático (creada elevada) no se pudo actualizar: no se vuelve
+    /// a intentar en cada arranque; se repara con UAC desde Hub › General (<see cref="AutoStart.RepairAsync"/>).
+    /// </summary>
+    public string? AutoStartLockedTask { get; set; }
     /// <summary>Dónde quedó el Hub al cerrarlo (izquierda, arriba, derecha, abajo en píxeles y si estaba maximizado); null = centrado.</summary>
     public int[]? HubPlacement { get; set; }
     /// <summary>Clic en el medidor de RAM: la libera (si no, abre el Administrador de tareas). Clic derecho para cambiarlo.</summary>
@@ -497,8 +502,46 @@ public static class Settings
     private static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
+        Converters = { new BarItemListConverter(), new JsonStringEnumConverter() },
     };
+
+    /// <summary>
+    /// Listas de elementos de barra que se saltan los que esta versión no conoce (de una versión más nueva
+    /// o ya quitados): uno solo hacía descartar toda la configuración y empezar de cero.
+    /// </summary>
+    private sealed class BarItemListConverter : JsonConverter<List<BarItem>>
+    {
+        public override List<BarItem> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.StartArray)
+                throw new JsonException("Se esperaba una lista de elementos de barra");
+            var items = new List<BarItem>();
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+            {
+                if (reader.TokenType == JsonTokenType.String
+                    && Enum.TryParse(reader.GetString(), ignoreCase: true, out BarItem item)
+                    && Enum.IsDefined(item))
+                    items.Add(item);
+                else if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out int n)
+                    && Enum.IsDefined((BarItem)n))
+                    items.Add((BarItem)n);
+                else
+                {
+                    Log.Info($"Configuración: se ignora un elemento de barra desconocido ({reader.TokenType})");
+                    reader.Skip();
+                }
+            }
+            return items;
+        }
+
+        public override void Write(Utf8JsonWriter writer, List<BarItem> value, JsonSerializerOptions options)
+        {
+            writer.WriteStartArray();
+            foreach (var item in value)
+                writer.WriteStringValue(item.ToString());
+            writer.WriteEndArray();
+        }
+    }
 
     public static string FilePath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrataUI", "settings.json");

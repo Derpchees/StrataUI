@@ -1382,5 +1382,10 @@
   "Nuevo": "Neu",
   "Mover a {0}": "Nach {0} verschieben",
   "Copiar a {0}": "Nach {0} kopieren",
-  "Crear acceso directo en {0}": "Verknüpfung in {0} erstellen"
+  "Crear acceso directo en {0}": "Verknüpfung in {0} erstellen",
+  "Reparar el inicio automático": "Automatischen Start reparieren",
+  "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "Die Startaufgabe wurde von Strata UI als Administrator erstellt und kann nicht aktualisiert werden. Zum Reparieren wird einmal um Erlaubnis gefragt.",
+  "Reparar": "Reparieren",
+  "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Reparieren fehlgeschlagen. Versuche es erneut und erlaube den Administratorzugriff.",
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Es wurde verschoben oder gelöscht. Löse es und hefte es erneut an."
 }

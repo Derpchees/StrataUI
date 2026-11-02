@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using Strata.Shell.Services.Files;
+using Strata.Shell.Services.Localization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -83,18 +84,41 @@ public sealed class StartApp : INotifyPropertyChanged
 
     public void Launch()
     {
+        // Un anclado cuyo archivo ya no está (se borró o se movió): avisar en vez de fallar en silencio.
+        if (_extra is null && IsFile && !File.Exists(Id) && !Directory.Exists(Id))
+        {
+            Log.Info($"No se pudo abrir {Name}: ya no existe {Id}");
+            Notifications.NotificationService.ShowLocal(Loc.F("No se encontró {0}", Name),
+                Loc.T("Se movió o se borró. Quítalo y vuelve a anclarlo."));
+            StartMenuService.Refresh();
+            return;
+        }
         try
         {
+            // Sin carpeta de trabajo, el programa abría en la de Strata UI (C:\Program Files\StrataUI);
+            // un acceso directo usa la suya de todas formas.
             Process.Start(_extra is { } extra
                 ? new ProcessStartInfo(extra.Launch) { UseShellExecute = true, WorkingDirectory = extra.WorkingDirectory ?? "" }
                 : IsFile
-                ? new ProcessStartInfo(Id) { UseShellExecute = true }
+                ? new ProcessStartInfo(Id) { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(Id) ?? "" }
                 : new ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{Id}") { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex)
         {
-            Log.Error($"No se pudo abrir {Name}", ex);
+            LogLaunchError(Name, ex);
         }
+    }
+
+    /// <summary>
+    /// Registra que no se pudo abrir algo. Cancelar el permiso de administrador (o el aviso de
+    /// Windows de un acceso directo roto) no es un error.
+    /// </summary>
+    internal static void LogLaunchError(string name, Exception ex)
+    {
+        if (ex is System.ComponentModel.Win32Exception { NativeErrorCode: Tweaks.Elevation.Cancelled })
+            Log.Info($"Abrir {name}: cancelado por el usuario");
+        else
+            Log.Error($"No se pudo abrir {name}", ex);
     }
 
     private static string GroupOf(string name)
@@ -119,7 +143,7 @@ public sealed record RecentItem(string Name, string Path, DateTime When, ImageSo
         }
         catch (Exception ex)
         {
-            Log.Error($"No se pudo abrir {Name}", ex);
+            StartApp.LogLaunchError(Name, ex);
         }
     }
 }

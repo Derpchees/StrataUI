@@ -65,15 +65,31 @@ public static class AutoStart
             bool legacy = RemoveLegacy();
             bool runKey = RunKeyEnabled();
             var (task, arguments) = TaskCommand();
+            bool sameExe = task is not null && task.Equals(ExePath, StringComparison.OrdinalIgnoreCase);
+            // Solo le falta el argumento y ya se vio que no se puede cambiar: no se reintenta cada vez.
+            if (!legacy && !runKey && sameExe && arguments != Arg
+                && string.Equals(Settings.Current.AutoStartLockedTask, ExePath, StringComparison.OrdinalIgnoreCase))
+            {
+                NeedsRepair = true;
+                return;
+            }
             // También la tarea de antes, sin el argumento de inicio automático.
-            if (legacy || runKey || (task is not null && (!task.Equals(ExePath, StringComparison.OrdinalIgnoreCase) || arguments != Arg)))
+            if (legacy || runKey || (task is not null && (!sameExe || arguments != Arg)))
             {
                 if (CreateTask())
                 {
                     SetRunKey(false);
+                    RememberLocked(null);
                     Log.Info("Inicio automático: ahora con una tarea programada al iniciar sesión");
+                    return;
                 }
-                else if (runKey && task is not null && task.Equals(ExePath, StringComparison.OrdinalIgnoreCase))
+                if (sameExe && arguments != Arg)
+                {
+                    // Creada por un Strata UI elevado: sin administrador no se puede actualizar.
+                    NeedsRepair = true;
+                    RememberLocked(ExePath);
+                }
+                if (runKey && sameExe)
                 {
                     // La tarea (creada elevada, no se puede actualizar) ya abre este Strata UI: la clave
                     // Run que dejó el instalador solo lo abría dos veces.
@@ -93,6 +109,60 @@ public static class AutoStart
         {
             Log.Error("No se pudo actualizar el inicio automático", ex);
         }
+    }
+
+    /// <summary>
+    /// La tarea abre este Strata UI pero sin <see cref="Arg"/> y no se pudo actualizar (la creó un
+    /// Strata UI elevado): por eso el Hub se abría al iniciar Windows. Se arregla con <see cref="RepairAsync"/>.
+    /// </summary>
+    public static bool NeedsRepair { get; private set; }
+
+    /// <summary>Argumento del proceso elevado que borra la tarea bloqueada (ver <see cref="RunRepair"/>).</summary>
+    public const string RepairArg = "--repair-autostart";
+
+    /// <summary>Borra la tarea con UAC y la vuelve a crear sin elevar. False si se canceló o falló.</summary>
+    public static async Task<bool> RepairAsync()
+    {
+        int code = await Tweaks.Elevation.RunSelfAsync(RepairArg, TaskName);
+        if (code != 0)
+        {
+            if (code != Tweaks.Elevation.Cancelled)
+                Log.Info($"Inicio automático: no se pudo borrar la tarea bloqueada (código {code})");
+            return false;
+        }
+        if (!await Task.Run(CreateTask))
+            return false;
+        SetRunKey(false);
+        NeedsRepair = false;
+        RememberLocked(null);
+        Log.Info("Inicio automático: tarea reparada");
+        return true;
+    }
+
+    /// <summary>
+    /// En el proceso elevado: solo borra una tarea de inicio automático de Strata UI ("StrataUI (usuario)").
+    /// </summary>
+    public static int RunRepair(string[] args)
+    {
+        if (args.Length != 2 || !System.Text.RegularExpressions.Regex.IsMatch(args[1], @"^StrataUI \([^""\\/:*?<>|]+\)$"))
+            return 2;
+        return Schtasks($"/Delete /TN \"{args[1]}\" /F").Code;
+    }
+
+    private static void RememberLocked(string? exe)
+    {
+        if (string.Equals(Settings.Current.AutoStartLockedTask, exe, StringComparison.OrdinalIgnoreCase))
+            return;
+        // Migrate corre en segundo plano: se guarda en el hilo de la interfaz (sin avisar a nadie).
+        void Save()
+        {
+            Settings.Current.AutoStartLockedTask = exe;
+            Settings.Save();
+        }
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher)
+            dispatcher.BeginInvoke(Save);
+        else
+            Save();
     }
 
     /// <summary>Quita el inicio automático de cuando se llamaba WINX; true si estaba activado.</summary>

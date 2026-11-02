@@ -273,7 +273,8 @@ public abstract class StartMenuBase : FlyoutWindow
                 if (vertical)
                 {
                     double dy = (now.Y - start.Y) / scale * (verticalEdge == VerticalAlignment.Top ? -1 : 1);
-                    Height = Math.Clamp(startSize.Height + dy, MinHeightDip, MaxHeight);
+                    // En una pantalla chica el alto máximo puede quedar por debajo del mínimo.
+                    Height = Math.Clamp(startSize.Height + dy, MinHeightDip, Math.Max(MinHeightDip, MaxHeight));
                 }
             };
             thumb.DragCompleted += (_, _) => SaveSize();

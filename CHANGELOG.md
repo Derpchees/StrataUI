@@ -6,6 +6,22 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.22.1] - 2026-11-02
+
+### Corregido
+- Inicio automático: si la tarea de inicio la creó Strata UI como administrador, ya no se intenta
+  actualizar en cada arranque (fallaba con «Acceso denegado» y el Hub se abría al iniciar Windows).
+  General muestra «Reparar el inicio automático», que pide permiso una sola vez.
+- Los paneles y el menú Inicio ya no se cierran con error cuando el área de trabajo de la pantalla es
+  más angosta o más baja que ellos.
+- Lecturas avanzadas: al reiniciar Strata UI se espera a que la copia anterior suelte la conexión en
+  vez de fallar con «All pipe instances are busy».
+- Menú Inicio: un acceso anclado cuyo archivo se movió o borró avisa en lugar de fallar en silencio,
+  y los accesos directos abren con su propia carpeta como carpeta de trabajo. Cancelar el permiso de
+  administrador ya no se registra como error.
+- Configuración: un elemento de barra desconocido (de otra versión) se ignora en lugar de descartar
+  toda la configuración y empezar de cero.
+
 ## [3.22.0] - 2026-11-02
 
 ### Añadido

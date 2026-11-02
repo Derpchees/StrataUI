@@ -454,7 +454,8 @@ public abstract class FlyoutWindow : FluentWindow
                 FlyoutPlacement.Left => (int)anchorLeft.X,
                 _ => (int)anchorRight.X - width,
             };
-            x = Math.Clamp(preferred, work.Left + gap, work.Right - width - gap);
+            // Más ancho que la pantalla (pantalla chica o escala alta): pegado al borde izquierdo.
+            x = Math.Clamp(preferred, work.Left + gap, Math.Max(work.Left + gap, work.Right - width - gap));
             y = BarPosition == TaskbarPosition.Top ? top : work.Bottom - height - gap;
         }
         MoveTo(x, y);

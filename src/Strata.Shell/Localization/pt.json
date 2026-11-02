@@ -1382,5 +1382,10 @@
   "Nuevo": "Novo",
   "Mover a {0}": "Mover para {0}",
   "Copiar a {0}": "Copiar para {0}",
-  "Crear acceso directo en {0}": "Criar atalho em {0}"
+  "Crear acceso directo en {0}": "Criar atalho em {0}",
+  "Reparar el inicio automático": "Reparar a inicialização automática",
+  "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "A tarefa de inicialização foi criada pelo Strata UI como administrador e não pode ser atualizada. Repará-la pede permissão uma vez.",
+  "Reparar": "Reparar",
+  "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Não foi possível reparar. Tente de novo e aceite a permissão de administrador.",
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Foi movido ou excluído. Desafixe e fixe de novo."
 }

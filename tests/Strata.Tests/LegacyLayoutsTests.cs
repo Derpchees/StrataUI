@@ -123,4 +123,23 @@ public sealed class LegacyLayoutsTests
         Assert.Equal([BarItem.Start, BarItem.Apps], bar.Items.Take(2));
         Assert.Equal(BarItem.Clock, bar.Items[^1]);
     }
+
+    [Fact]
+    public void Unknown_bar_items_are_skipped_instead_of_resetting_settings()
+    {
+        const string json = """
+            {
+              "TaskbarMainScreen": "\\\\.\\DISPLAY1",
+              "TaskbarPositions": { "\\\\.\\DISPLAY1": "Left" },
+              "BarItems": { "\\\\.\\DISPLAY1|1": [ "Start", "Weather", 99, "Clock" ] },
+              "NotificationBellAdded": true,
+              "Screens": { "\\\\.\\DISPLAY1": { "TaskbarAlignment": "Left" } }
+            }
+            """;
+        var s = Settings.Deserialize(json);
+        var bar = s.Layouts[D1].Bars.Single();
+        Assert.Equal(TaskbarPosition.Left, bar.Edge);
+        Assert.Equal(BarItem.Start, bar.Items[0]);
+        Assert.Equal(BarItem.Clock, bar.Items[^1]);
+    }
 }

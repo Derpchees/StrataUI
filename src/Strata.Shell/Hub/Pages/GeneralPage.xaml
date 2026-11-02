@@ -21,6 +21,18 @@
                 <ui:ToggleSwitch x:Name="AutoStartSwitch" Click="AutoStart_Click" />
             </ui:CardControl>
 
+            <ui:CardControl x:Name="AutoStartRepairCard" Style="{StaticResource HubCard}" Visibility="Collapsed">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Warning24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Reparar el inicio automático'}" />
+                        <TextBlock x:Name="AutoStartRepairText" Style="{StaticResource CardDescription}"
+                                   Text="{l:T 'La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:Button x:Name="AutoStartRepairButton" Content="{l:T 'Reparar'}" Click="AutoStartRepair_Click" />
+            </ui:CardControl>
+
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Window24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>

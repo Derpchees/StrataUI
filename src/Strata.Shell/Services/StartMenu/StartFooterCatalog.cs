@@ -57,7 +57,7 @@ public static class StartFooterCatalog
         }
         catch (Exception ex)
         {
-            Log.Error($"No se pudo abrir {target}", ex);
+            StartApp.LogLaunchError(target, ex);
         }
     }
 }

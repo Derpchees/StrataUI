@@ -227,7 +227,9 @@ public static class Sensors
             if (!ready)
                 return Fail("Lecturas avanzadas: no se aceptó el permiso");
             string name = SensorsTask.PipeName(SensorsTask.UserSid);
-            _pipe = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            _pipe = await CreatePipeAsync(name);
+            if (_pipe is null)
+                return Fail("Lecturas avanzadas: otra copia de Strata UI todavía tiene abierta la conexión");
             var wait = _pipe.WaitForConnectionAsync();
             if (!await Task.Run(SensorsTask.Run))
                 return Fail("No se pudo iniciar la tarea de lecturas avanzadas");
@@ -310,6 +312,29 @@ public static class Sensors
         Log.Info("Lecturas avanzadas: ningún medidor las usa; se detienen");
         Close();
         _quietTried = false;
+    }
+
+    /// <summary>
+    /// La tubería admite una sola instancia: al actualizar o reiniciar, la copia anterior puede tenerla
+    /// abierta unos segundos más. Se reintenta hasta 10 s; null si sigue ocupada.
+    /// </summary>
+    private static async Task<NamedPipeServerStream?> CreatePipeAsync(string name)
+    {
+        for (int attempt = 0; ; attempt++)
+        {
+            try
+            {
+                return new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+            }
+            catch (IOException) when (attempt < 20)
+            {
+                await Task.Delay(500);
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+        }
     }
 
     private static bool Fail(string message)

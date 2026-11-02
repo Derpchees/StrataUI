@@ -1382,5 +1382,10 @@
   "Nuevo": "Nouveau",
   "Mover a {0}": "Déplacer vers {0}",
   "Copiar a {0}": "Copier vers {0}",
-  "Crear acceso directo en {0}": "Créer un raccourci dans {0}"
+  "Crear acceso directo en {0}": "Créer un raccourci dans {0}",
+  "Reparar el inicio automático": "Réparer le démarrage automatique",
+  "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "La tâche de démarrage a été créée par Strata UI en tant qu'administrateur et ne peut pas être mise à jour. La réparer demande l'autorisation une fois.",
+  "Reparar": "Réparer",
+  "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Impossible de réparer. Réessayez et acceptez l'autorisation d'administrateur.",
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Il a été déplacé ou supprimé. Désépinglez-le puis épinglez-le de nouveau."
 }

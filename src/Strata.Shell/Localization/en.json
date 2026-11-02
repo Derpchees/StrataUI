@@ -1382,5 +1382,10 @@
   "Nuevo": "New",
   "Mover a {0}": "Move to {0}",
   "Copiar a {0}": "Copy to {0}",
-  "Crear acceso directo en {0}": "Create shortcut in {0}"
+  "Crear acceso directo en {0}": "Create shortcut in {0}",
+  "Reparar el inicio automático": "Repair automatic startup",
+  "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "The startup task was created by Strata UI as administrator and can't be updated. Repairing it asks for permission once.",
+  "Reparar": "Repair",
+  "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Couldn't repair it. Try again and accept the administrator prompt.",
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "It was moved or deleted. Unpin it and pin it again."
 }

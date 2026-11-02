@@ -15,6 +15,7 @@ public partial class GeneralPage : Page
     {
         InitializeComponent();
         AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
+        AutoStartRepairCard.Visibility = AutoStart.NeedsRepair ? Visibility.Visible : Visibility.Collapsed;
         HubAtStartupSwitch.IsChecked = Settings.Current.HubAtStartup;
         ReplaceExplorerSwitch.IsChecked = Settings.Current.FilesReplaceExplorer;
         DesktopSwitch.IsChecked = Settings.Current.DesktopEnabled;
@@ -49,6 +50,29 @@ public partial class GeneralPage : Page
         {
             Log.Error("No se pudo cambiar el inicio automático", ex);
             AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
+        }
+    }
+
+    private async void AutoStartRepair_Click(object sender, RoutedEventArgs e)
+    {
+        AutoStartRepairButton.IsEnabled = false;
+        try
+        {
+            if (await AutoStart.RepairAsync())
+            {
+                AutoStartRepairCard.Visibility = Visibility.Collapsed;
+                AutoStartSwitch.IsChecked = AutoStart.IsEnabled;
+            }
+            else
+                AutoStartRepairText.Text = Loc.T("No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo reparar el inicio automático", ex);
+        }
+        finally
+        {
+            AutoStartRepairButton.IsEnabled = true;
         }
     }
 
