@@ -58,7 +58,7 @@ public static class NightLight
 
     /// <summary>Abre Configuración › Pantalla › Luz nocturna (intensidad y horario).</summary>
     public static void OpenSettings() =>
-        Process.Start(new ProcessStartInfo("ms-settings:nightlight") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("ms-settings:nightlight") { UseShellExecute = true })?.Dispose();
 
     private const string SettingsKey =
         @"Software\Microsoft\Windows\CurrentVersion\CloudStore\Store\DefaultAccount\Current\" +

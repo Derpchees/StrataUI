@@ -581,10 +581,18 @@ public partial class Taskbar : AppBarWindow
     internal static string ShortDateWithoutYear(System.Globalization.CultureInfo? culture = null)
     {
         string pattern = (culture ?? System.Globalization.CultureInfo.CurrentCulture).DateTimeFormat.ShortDatePattern;
+        // Se pide en cada tic del reloj: el resultado se guarda mientras el formato no cambie.
+        var cached = _withoutYear;
+        if (cached?.Pattern == pattern)
+            return cached.Value.Result;
         // Quita el año y el separador que lo une al resto ("dd/MM/yyyy", "yyyy-MM-dd", "M/d/yyyy").
         string withoutYear = System.Text.RegularExpressions.Regex.Replace(pattern, @"[^dMy]*y+[^dMy]*", "");
-        return withoutYear.Length > 0 ? withoutYear : pattern;
+        string result = withoutYear.Length > 0 ? withoutYear : pattern;
+        _withoutYear = (pattern, result);
+        return result;
     }
+
+    private static (string Pattern, string Result)? _withoutYear;
 
     private void UpdateStatus()
     {
@@ -642,7 +650,7 @@ public partial class Taskbar : AppBarWindow
     }
 
     private static void OpenUri(string uri) =>
-        Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })?.Dispose();
 
     // Mientras no existan los paneles propios (próximas versiones), se abren los de Windows.
 

@@ -1254,6 +1254,7 @@
   "Modificado: {0}": "Modificado: {0}",
   "Continuar": "Continuar",
   "Extraer aquí": "Extrair aqui",
+  "Extraer en «{0}»": "Extrair em \"{0}\"",
   "Comprimir en «{0}.7z»": "Compactar em \"{0}.7z\"",
   "Comprimir…": "Compactar…",
   "No se pudo abrir el comprimido: está dañado o su formato no es compatible.": "Não foi possível abrir o arquivo compactado: está danificado ou o formato não é compatível.",

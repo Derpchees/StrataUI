@@ -144,6 +144,9 @@ public static class NotificationService
             var access = _listener.GetAccessStatus();
             if (access == UserNotificationListenerAccessStatus.Unspecified)
                 access = await _listener.RequestAccessAsync();
+            // Mientras Windows preguntaba se pudo apagar (o arrancar desde otra llamada).
+            if (!Settings.Current.NotificationsEnabled || Running)
+                return;
             AccessDenied = access != UserNotificationListenerAccessStatus.Allowed;
             if (AccessDenied)
             {

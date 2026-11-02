@@ -304,11 +304,13 @@ public static class Motion
     /// (para lo que no es una propiedad animable, como la posición de una ventana nativa). El tiempo
     /// avanza con los cuadros dibujados y como mucho 1/20 s por cuadro: el primero de una ventana
     /// nueva puede tardar cientos de ms y, con un reloj normal, el recorrido ya habría terminado
-    /// cuando se ve.
+    /// cuando se ve. Un recorrido nuevo sobre el mismo <paramref name="target"/> corta el anterior:
+    /// si no, al reabrir un panel que se está cerrando los dos pelearían cuadro a cuadro.
     /// </summary>
-    private static void Drive(TimeSpan duration, IEasingFunction? ease, double from, double to, Action<double> apply,
-                              Action? completed = null)
+    private static void Drive(object target, TimeSpan duration, IEasingFunction? ease, double from, double to, Action<double> apply)
     {
+        if (Driving.Remove(target, out var previous))
+            CompositionTarget.Rendering -= previous;
         var clock = System.Diagnostics.Stopwatch.StartNew();
         TimeSpan last = TimeSpan.Zero, elapsed = TimeSpan.Zero;
         apply(from);
@@ -323,10 +325,15 @@ public static class Motion
             if (t < 1)
                 return;
             CompositionTarget.Rendering -= tick;
-            completed?.Invoke();
+            if (Driving.TryGetValue(target, out var current) && current == tick)
+                Driving.Remove(target);
         };
+        Driving[target] = tick;
         CompositionTarget.Rendering += tick;
     }
+
+    /// <summary>Recorridos de <see cref="Drive"/> en marcha, por lo que mueven (todo en el hilo de la interfaz).</summary>
+    private static readonly Dictionary<object, EventHandler> Driving = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>Desliza con <paramref name="window"/> o, sin ella, con una transformación de <paramref name="moving"/>.</summary>
     private static void Slide(FrameworkElement moving, WindowMover? window, TaskbarPosition side, double from, double to,
@@ -336,7 +343,7 @@ public static class Motion
         if (window != null)
         {
             bool vertical = property == TranslateTransform.YProperty;
-            Drive(duration, ease, from * sign, to * sign, v => window(vertical ? 0 : v, vertical ? v : 0));
+            Drive(moving, duration, ease, from * sign, to * sign, v => window(vertical ? 0 : v, vertical ? v : 0));
             return;
         }
         var slide = moving.RenderTransform as TranslateTransform ?? new TranslateTransform();
@@ -355,7 +362,7 @@ public static class Motion
         {
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            Drive(duration, ease, from, to, v =>
+            Drive(scale, duration, ease, from, to, v =>
             {
                 scale.ScaleX = v;
                 scale.ScaleY = v;
@@ -373,7 +380,7 @@ public static class Motion
         if (framed)
         {
             fade.BeginAnimation(UIElement.OpacityProperty, null);
-            Drive(duration, ease, from, 1, v => fade.Opacity = v);
+            Drive(fade, duration, ease, from, 1, v => fade.Opacity = v);
         }
         else
             fade.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(from, 1, duration) { EasingFunction = ease });
@@ -554,7 +561,13 @@ public static class Motion
     {
         var duration = Duration(closing: true) * step.Duration;
         var ease = Ease(step, EasingMode.EaseIn);
-        var scale = new ScaleTransform(1, 1);
+        // La escala que ya tiene (si se cierra a media entrada sigue desde ahí, sin saltar a 1).
+        var scale = moving.RenderTransform switch
+        {
+            ScaleTransform s => s,
+            TransformGroup g => g.Children.OfType<ScaleTransform>().FirstOrDefault(),
+            _ => null,
+        } ?? new ScaleTransform(1, 1);
         moving.RenderTransformOrigin = Origin(toward);
         moving.RenderTransform = scale;
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(step.Scale, duration) { EasingFunction = ease });

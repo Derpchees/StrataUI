@@ -89,7 +89,7 @@ public static class WinXMenu
     {
         try
         {
-            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true, Verb = elevated ? "runas" : "" });
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true, Verb = elevated ? "runas" : "" })?.Dispose();
         }
         catch (System.ComponentModel.Win32Exception ex) when (ex.NativeErrorCode == Tweaks.Elevation.Cancelled)
         {

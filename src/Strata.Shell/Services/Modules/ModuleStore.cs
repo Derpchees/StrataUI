@@ -239,7 +239,7 @@ public static class ModuleStore
         {
             Directory.CreateDirectory(Folder(kind));
             var args = select != null ? $"/select,\"{select}\"" : $"\"{Folder(kind)}\"";
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", args) { UseShellExecute = true });
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", args) { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
         {

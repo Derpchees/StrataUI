@@ -128,7 +128,7 @@ public partial class BatteryFlyout : FlyoutWindow
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
         CloseFlyout();
-        Process.Start(new ProcessStartInfo("ms-settings:batterysaver") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("ms-settings:batterysaver") { UseShellExecute = true })?.Dispose();
     }
 
     // Modo de energía (el control deslizante de Windows 10/11): esquemas superpuestos al plan activo.

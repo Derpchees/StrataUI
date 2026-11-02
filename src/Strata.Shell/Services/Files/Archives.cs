@@ -282,13 +282,30 @@ public static class Archives
         var top = listing.Children("");
         if (top is [{ IsFolder: true }])
             return Extract(archive, [], "", parent, TransferConflict.KeepBoth, owner);
+        return ExtractToOwnFolder(archive, owner).Transfer;
+    }
+
+    /// <summary>Nombre de la carpeta que lleva el nombre del comprimido ("fotos.zip" → "fotos", "datos.tar.gz" → "datos").</summary>
+    public static string FolderNameFor(string archive)
+    {
         string name = Path.GetFileNameWithoutExtension(archive);
         if (name.EndsWith(".tar", StringComparison.OrdinalIgnoreCase))
             name = Path.GetFileNameWithoutExtension(name);
+        return name;
+    }
+
+    /// <summary>
+    /// "Extraer en «nombre»": siempre en una carpeta nueva junto al comprimido, con su nombre (o
+    /// "nombre (2)" si ya existe). Devuelve la tarea y la carpeta.
+    /// </summary>
+    public static (FileTransfer Transfer, string Folder) ExtractToOwnFolder(string archive, IntPtr owner)
+    {
+        string parent = Path.GetDirectoryName(archive)!;
+        string name = FolderNameFor(archive);
         string target = Path.Combine(parent, name);
         for (int i = 2; Directory.Exists(target) || File.Exists(target); i++)
             target = Path.Combine(parent, $"{name} ({i})");
-        return Extract(archive, [], "", target, TransferConflict.KeepBoth, owner);
+        return (Extract(archive, [], "", target, TransferConflict.KeepBoth, owner), target);
     }
 
     /// <summary>

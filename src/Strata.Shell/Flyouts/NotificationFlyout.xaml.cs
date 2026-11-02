@@ -103,6 +103,6 @@ public partial class NotificationFlyout : FlyoutWindow
     private void Privacy_Click(object sender, RoutedEventArgs e)
     {
         CloseFlyout();
-        Process.Start(new ProcessStartInfo("ms-settings:privacy-notifications") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("ms-settings:privacy-notifications") { UseShellExecute = true })?.Dispose();
     }
 }

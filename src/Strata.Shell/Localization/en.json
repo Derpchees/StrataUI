@@ -1254,6 +1254,7 @@
   "Modificado: {0}": "Modified: {0}",
   "Continuar": "Continue",
   "Extraer aquí": "Extract here",
+  "Extraer en «{0}»": "Extract to \"{0}\"",
   "Comprimir en «{0}.7z»": "Compress to \"{0}.7z\"",
   "Comprimir…": "Compress…",
   "No se pudo abrir el comprimido: está dañado o su formato no es compatible.": "Couldn't open the archive: it's damaged or its format isn't supported.",

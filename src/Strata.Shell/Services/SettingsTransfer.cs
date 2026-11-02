@@ -118,7 +118,7 @@ public static class SettingsTransfer
     {
         try
         {
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true })?.Dispose();
         }
         catch (System.ComponentModel.Win32Exception)
         {

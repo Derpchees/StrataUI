@@ -6,6 +6,23 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.19.0] - 2026-11-02
+
+### Agregado
+- En el clic derecho de un comprimido, «Extraer en «nombre»» lo descomprime en una carpeta nueva con el
+  nombre del archivo (o «nombre (2)» si ya existe), en Archivos y en el escritorio.
+
+### Corregido
+- Al reabrir un panel o menú mientras se cerraba, la animación de cierre y la de apertura se peleaban la
+  posición de la ventana y se veía temblar.
+- Con una animación personalizada, cerrar a media entrada hacía saltar el tamaño antes de encogerse.
+- Si se apagaban las notificaciones mientras Windows pedía permiso para leerlas, se leían igual.
+
+### Cambiado
+- La barra transparente reutiliza la memoria al releer el fondo y el reloj vertical ya no recalcula el
+  formato de fecha en cada tic.
+- Los programas y páginas que se abren desde Strata ya no dejan identificadores de proceso sin liberar.
+
 ## [3.18.2] - 2026-10-31
 
 ### Corregido

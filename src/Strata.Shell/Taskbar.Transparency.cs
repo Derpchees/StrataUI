@@ -28,6 +28,7 @@ public partial class Taskbar
     private bool _transparent;
     private bool _contrastHooked;
     private bool _sampling;
+    private byte[]? _contrastPixels;
 
     private static readonly Brush DarkText = Frozen(Color.FromRgb(0x1A, 0x1A, 0x1A));
     private static readonly Brush LightText = Frozen(Colors.White);
@@ -177,7 +178,10 @@ public partial class Taskbar
                 return;
             // A la mitad de resolución: sobra para un promedio y es la cuarta parte de trabajo.
             int w = Math.Max(1, area.Width / 2), h = Math.Max(1, area.Height / 2);
-            var pixels = new byte[w * h * 4];
+            // El mismo búfer en cada lectura (se repite cada pocos segundos) mientras no cambie el tamaño.
+            if (_contrastPixels?.Length != w * h * 4)
+                _contrastPixels = new byte[w * h * 4];
+            var pixels = _contrastPixels;
             bool ok = BackdropCapture.Grab(area, w, h, pixels);
             if (toggle)
             {

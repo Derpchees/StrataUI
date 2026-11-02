@@ -878,7 +878,11 @@ public sealed class DesktopWindow : Window
                                       }));
         var owner = new WindowInteropHelper(this).Handle;
         if (selection.Count == 1 && Archives.IsArchive(first.FullPath))
+        {
             menu.Items.Add(FileMenus.Item(Loc.T("Extraer aquí"), SymbolRegular.FolderZip24, () => _ = ExtractHereAsync(first.FullPath, owner)));
+            menu.Items.Add(FileMenus.Item(Loc.F("Extraer en «{0}»", Archives.FolderNameFor(first.FullPath)), SymbolRegular.FolderZip24,
+                                          () => Archives.ExtractToOwnFolder(first.FullPath, owner)));
+        }
         if (Archives.Available)
         {
             var paths = selection.Select(s => s.FullPath).ToList();

@@ -681,7 +681,7 @@ public partial class App : Application
             // Windows suele relanzarlo solo (AutoRestartShell); si no, lo iniciamos.
             await Task.Delay(1500);
             if (Process.GetProcessesByName("explorer").Length == 0)
-                Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true })?.Dispose();
             await Task.Delay(2000);
         });
         ExitShell(restart: true);

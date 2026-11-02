@@ -112,7 +112,7 @@ public sealed record RecentItem(string Name, string Path, DateTime When, ImageSo
     {
         try
         {
-            Process.Start(new ProcessStartInfo(Path) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(Path) { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex)
         {
@@ -713,7 +713,7 @@ public static class StartMenuService
     {
         try
         {
-            Process.Start(new ProcessStartInfo(command.Trim()) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(command.Trim()) { UseShellExecute = true })?.Dispose();
             return true;
         }
         catch (Exception)
@@ -740,11 +740,11 @@ public static class StartMenuService
             return;
         }
         if (path is null)
-            Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true })?.Dispose();
         else if (select)
-            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true })?.Dispose();
         else
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
     }
 
     // ── Energía ─────────────────────────────────────────────────────────────
@@ -756,7 +756,7 @@ public static class StartMenuService
     public static void PowerOff() => Shutdown("/s /t 0");
 
     private static void Shutdown(string args) =>
-        Process.Start(new ProcessStartInfo("shutdown.exe", args) { CreateNoWindow = true, UseShellExecute = false });
+        Process.Start(new ProcessStartInfo("shutdown.exe", args) { CreateNoWindow = true, UseShellExecute = false })?.Dispose();
 
     /// <summary>
     /// Hay actualizaciones de Windows esperando un reinicio: el menú de energía ofrece "Actualizar y

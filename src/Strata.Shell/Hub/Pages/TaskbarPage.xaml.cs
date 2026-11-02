@@ -197,7 +197,7 @@ public partial class TaskbarPage : Page
         catch (System.ComponentModel.Win32Exception)
         {
             // Sin winget: la página de PawnIO.
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://pawnio.eu") { UseShellExecute = true });
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://pawnio.eu") { UseShellExecute = true })?.Dispose();
         }
         finally
         {

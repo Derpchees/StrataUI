@@ -74,7 +74,7 @@ public static class RichText
         {
             string url = link.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? "https://" + link : link;
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
-                Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex)
         {

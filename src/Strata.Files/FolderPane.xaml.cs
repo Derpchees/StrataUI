@@ -1129,6 +1129,25 @@ public partial class FolderPane : UserControl
         }
     }
 
+    /// <summary>"Extraer en «nombre»": en una carpeta nueva con el nombre del comprimido; al terminar queda seleccionada.</summary>
+    private async Task ExtractToOwnFolderAsync(string archive)
+    {
+        try
+        {
+            var (transfer, folder) = Archives.ExtractToOwnFolder(archive, Handle);
+            if (await transfer.Finished.Task && Directory.Exists(folder))
+            {
+                _selectAfterLoad = folder;
+                _ = LoadAsync(merge: true);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+        {
+            ShowMessage(Loc.F("No se pudo extraer {0}", System.IO.Path.GetFileName(archive)));
+            Log.Error($"Archivos: no se pudo extraer {archive}", ex);
+        }
+    }
+
     /// <summary>Extrae (lo elegido o todo el comprimido) en una carpeta que se elige.</summary>
     private async Task ExtractToAsync(string archive, IReadOnlyList<string> inner, string baseFolder)
     {
@@ -1587,6 +1606,8 @@ public partial class FolderPane : UserControl
                 if (!Archives.OpensInside(first.FullPath))
                     menu.Items.Add(Item(Loc.T("Explorar el contenido"), SymbolRegular.FolderOpen24, () => Navigate(first.FullPath + "\\")));
                 menu.Items.Add(Item(Loc.T("Extraer aquí"), SymbolRegular.FolderZip24, () => _ = ExtractHereAsync(first.FullPath)));
+                menu.Items.Add(Item(Loc.F("Extraer en «{0}»", Archives.FolderNameFor(first.FullPath)), SymbolRegular.FolderZip24,
+                                    () => _ = ExtractToOwnFolderAsync(first.FullPath)));
                 menu.Items.Add(Item(Loc.T("Extraer en…"), SymbolRegular.FolderArrowRight24, () => _ = ExtractToAsync(first.FullPath, [], "")));
             }
             if (Archives.Available)

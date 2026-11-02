@@ -1254,6 +1254,7 @@
   "Modificado: {0}": "Modifié : {0}",
   "Continuar": "Continuer",
   "Extraer aquí": "Extraire ici",
+  "Extraer en «{0}»": "Extraire dans « {0} »",
   "Comprimir en «{0}.7z»": "Compresser dans « {0}.7z »",
   "Comprimir…": "Compresser…",
   "No se pudo abrir el comprimido: está dañado o su formato no es compatible.": "Impossible d’ouvrir l’archive : elle est endommagée ou son format n’est pas pris en charge.",

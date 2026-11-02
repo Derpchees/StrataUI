@@ -316,7 +316,7 @@ public static class MediaService
                 window.BringToFront();
                 return;
             }
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{id}") { UseShellExecute = true });
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", $"shell:AppsFolder\\{id}") { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex)
         {

@@ -204,7 +204,7 @@ public static class UpdateService
                     throw new IOException($"el instalador no coincide con el publicado (SHA-256 {actual})");
             }
             Log.Info($"Instalando Strata UI {Available.Version} desde {file}");
-            Process.Start(new ProcessStartInfo(file, "/SILENT /SUPPRESSMSGBOXES /NORESTART") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(file, "/SILENT /SUPPRESSMSGBOXES /NORESTART") { UseShellExecute = true })?.Dispose();
             App.Current.ExitShell();
         }
         catch (Exception ex)
@@ -220,7 +220,7 @@ public static class UpdateService
     public static void OpenReleasePage()
     {
         string url = Available?.PageUrl is { Length: > 0 } page ? page : $"https://github.com/{Repository}/releases";
-        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true })?.Dispose();
     }
 
     private static void SetState(UpdateState state)

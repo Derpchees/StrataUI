@@ -64,7 +64,7 @@ public partial class GeneralPage : Page
     private void OpenData_Click(object sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(DataFolder);
-        Process.Start(new ProcessStartInfo(DataFolder) { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(DataFolder) { UseShellExecute = true })?.Dispose();
     }
 
     // ── Tu configuración ────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ public partial class GeneralPage : Page
     private void OpenModules_Click(object sender, RoutedEventArgs e)
     {
         Directory.CreateDirectory(Services.Modules.ModuleStore.Root);
-        Process.Start(new ProcessStartInfo(Services.Modules.ModuleStore.Root) { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo(Services.Modules.ModuleStore.Root) { UseShellExecute = true })?.Dispose();
     }
 
     private void ModuleFormat_Click(object sender, RoutedEventArgs e) => ModulesSection.OpenFormat();

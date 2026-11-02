@@ -53,7 +53,7 @@ public static class StartFooterCatalog
     {
         try
         {
-            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(target) { UseShellExecute = true })?.Dispose();
         }
         catch (Exception ex)
         {

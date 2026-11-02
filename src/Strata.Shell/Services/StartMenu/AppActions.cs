@@ -128,7 +128,7 @@ public static class AppActions
             return;
         try
         {
-            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true, Verb = "runas" });
+            Process.Start(new ProcessStartInfo(path) { UseShellExecute = true, Verb = "runas" })?.Dispose();
         }
         catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
         {
@@ -179,7 +179,7 @@ public static class AppActions
             }
             return;
         }
-        Process.Start(new ProcessStartInfo("ms-settings:appsfeatures") { UseShellExecute = true });
+        Process.Start(new ProcessStartInfo("ms-settings:appsfeatures") { UseShellExecute = true })?.Dispose();
     }
 
     private static async Task UninstallEdgeAsync()

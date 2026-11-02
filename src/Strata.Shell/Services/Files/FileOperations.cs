@@ -403,7 +403,7 @@ public static class FileOperations
     {
         try
         {
-            Process.Start(new ProcessStartInfo(file, arguments) { UseShellExecute = true, WorkingDirectory = workingDirectory ?? "" });
+            Process.Start(new ProcessStartInfo(file, arguments) { UseShellExecute = true, WorkingDirectory = workingDirectory ?? "" })?.Dispose();
             return true;
         }
         catch (Exception ex)
