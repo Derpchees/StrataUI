@@ -22,7 +22,8 @@ public static class WinKeyHook
     private const int VkCapital = 0x14, VkNumLock = 0x90, VkScroll = 0x91;
     private const int VkVolumeMute = 0xAD, VkVolumeDown = 0xAE, VkVolumeUp = 0xAF;
     private const uint LlkhfInjected = 0x10;
-    private const uint KeyEventFKeyUp = 0x0002;
+    private const uint KeyEventFKeyUp = 0x0002, KeyEventFExtendedKey = 0x0001;
+    private const uint WmTimer = 0x0113;
 
     private const uint WmQuit = 0x0012;
 
@@ -33,6 +34,7 @@ public static class WinKeyHook
     private static bool _winDown;
     private static bool _comboUsed;
     private static bool _maskOnRelease;
+    private static int _lastDownVk;
     private static volatile bool _handleWin;
     private static volatile bool _handleWinN;
     private static volatile bool _handleWinE;
@@ -95,14 +97,31 @@ public static class WinKeyHook
     {
         _threadId = GetCurrentThreadId();
         _proc = Callback;
-        using (var module = Process.GetCurrentProcess().MainModule!)
-            _hook = SetWindowsHookEx(WhKeyboardLl, _proc, GetModuleHandle(module.ModuleName), 0);
+        IntPtr module;
+        using (var main = Process.GetCurrentProcess().MainModule!)
+            module = GetModuleHandle(main.ModuleName);
+        _hook = SetWindowsHookEx(WhKeyboardLl, _proc, module, 0);
         if (_hook == IntPtr.Zero)
             Log.Error($"No se pudo instalar el hook de teclado (error {Marshal.GetLastWin32Error()})");
         ready.Set();
 
+        // Windows quita en silencio un gancho que tardó en responder (una pausa del proceso) y no
+        // avisa: entonces la tecla Windows abría su Inicio y su OSD de volumen. Se reinstala seguido.
+        SetTimer(IntPtr.Zero, IntPtr.Zero, 5000, IntPtr.Zero);
         while (GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0)
         {
+            if (msg.Message == WmTimer && msg.Hwnd == IntPtr.Zero)
+            {
+                var fresh = SetWindowsHookEx(WhKeyboardLl, _proc, module, 0);
+                if (fresh != IntPtr.Zero)
+                {
+                    var old = _hook;
+                    _hook = fresh;
+                    if (old != IntPtr.Zero)
+                        UnhookWindowsHookEx(old);
+                }
+                continue;
+            }
             TranslateMessage(ref msg);
             DispatchMessage(ref msg);
         }
@@ -140,9 +159,15 @@ public static class WinKeyHook
                     System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => LockKeyPressed?.Invoke(vk));
                 }
 
+                int lastDown = _lastDownVk;
+                if (down)
+                    _lastDownVk = info.VkCode;
+
                 if (isWin && down)
                 {
-                    if (!_winDown)
+                    // Una pulsación nueva (no la repetición de la misma): si se perdió el soltar
+                    // anterior, el estado viejo haría que no se abriera Inicio.
+                    if (!_winDown || lastDown != info.VkCode)
                         _comboUsed = _maskOnRelease = false;
                     _winDown = true;
                 }
@@ -175,14 +200,15 @@ public static class WinKeyHook
                 else if (isWin && up)
                 {
                     _winDown = false;
-                    if (!_comboUsed && _handleWin)
+                    bool open = !_comboUsed && _handleWin;
+                    if (open || _maskOnRelease)
                     {
-                        SendMaskKey();
-                        System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => WinPressed?.Invoke());
-                    }
-                    else if (_maskOnRelease)
-                    {
-                        SendMaskKey();
+                        // Se traga el soltar y se repite detrás de la tecla sin función: así Windows
+                        // ve siempre la máscara antes y nunca abre su Inicio.
+                        SendMaskKey(info);
+                        if (open)
+                            System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => WinPressed?.Invoke());
+                        return (IntPtr)1;
                     }
                 }
             }
@@ -190,12 +216,13 @@ public static class WinKeyHook
         return CallNextHookEx(_hook, code, wParam, lParam);
     }
 
-    private static void SendMaskKey()
+    private static void SendMaskKey(KbdLlHookStruct win)
     {
         var inputs = new[]
         {
             new Input { Type = 1, Keyboard = new KeybdInput { Vk = VkMask } },
             new Input { Type = 1, Keyboard = new KeybdInput { Vk = VkMask, Flags = KeyEventFKeyUp } },
+            new Input { Type = 1, Keyboard = new KeybdInput { Vk = (ushort)win.VkCode, Scan = (ushort)win.ScanCode, Flags = KeyEventFKeyUp | KeyEventFExtendedKey } },
         };
         SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
     }
@@ -241,6 +268,9 @@ public static class WinKeyHook
 
     [DllImport("user32.dll")]
     private static extern uint SendInput(uint count, Input[] inputs, int size);
+
+    [DllImport("user32.dll")]
+    private static extern UIntPtr SetTimer(IntPtr hwnd, IntPtr id, uint ms, IntPtr proc);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr GetModuleHandle(string name);

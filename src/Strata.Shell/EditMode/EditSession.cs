@@ -232,6 +232,9 @@ public static class EditSession
             case (BannerPayload, CornerTarget corner):
                 PlaceBanner(overlay.Device, corner.Corner);
                 break;
+            case (OsdPayload, CornerTarget corner):
+                PlaceOsd(overlay.Device, corner.Corner);
+                break;
         }
     }
 
@@ -357,6 +360,13 @@ public static class EditSession
     {
         NotificationScreen = device;
         ScreenOf(device).NotificationCorner = corner;
+        Touch();
+    }
+
+    /// <summary>Los avisos en pantalla de ese monitor salen en esa esquina (null: junto a la barra).</summary>
+    internal static void PlaceOsd(string device, NotificationCorner? corner)
+    {
+        ScreenOf(device).OsdCorner = corner;
         Touch();
     }
 

@@ -17,6 +17,9 @@ internal sealed record WidgetPayload(WidgetConfig Widget, Size Size, Vector Grab
 /// <summary>El aviso de ejemplo: dónde salen las notificaciones.</summary>
 internal sealed record BannerPayload : DragPayload;
 
+/// <summary>El aviso en pantalla (volumen, brillo) de ejemplo de un monitor.</summary>
+internal sealed record OsdPayload(string Device) : DragPayload;
+
 /// <summary>Dónde caería lo arrastrado, con el rectángulo a resaltar (en DIP de la capa).</summary>
 internal abstract record DropTarget(Rect Marker);
 

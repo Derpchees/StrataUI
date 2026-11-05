@@ -74,7 +74,8 @@ public sealed class AudioEndpoint : IDisposable
 
     public float Volume
     {
-        get => _device?.AudioEndpointVolume.MasterVolumeLevelScalar ?? 0;
+        // Un dispositivo recién quitado da AUDCLNT_E_DEVICE_INVALIDATED hasta que llega el aviso del cambio.
+        get { try { return _device?.AudioEndpointVolume.MasterVolumeLevelScalar ?? 0; } catch (System.Runtime.InteropServices.COMException) { return 0; } }
         set
         {
             if (_device != null)
@@ -84,7 +85,7 @@ public sealed class AudioEndpoint : IDisposable
 
     public bool Mute
     {
-        get => _device?.AudioEndpointVolume.Mute ?? true;
+        get { try { return _device?.AudioEndpointVolume.Mute ?? true; } catch (System.Runtime.InteropServices.COMException) { return true; } }
         set
         {
             if (_device != null)

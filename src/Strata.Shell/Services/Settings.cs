@@ -489,6 +489,9 @@ public sealed class ScreenSettings
     public bool OsdScrollLock { get; set; } = true;
 
     /// <summary>Algún aviso en pantalla activo (el gancho de teclado se queda con las teclas de volumen).</summary>
+    /// <summary>Dónde salen los avisos en pantalla (modo edición); null: junto a la barra.</summary>
+    public NotificationCorner? OsdCorner { get; set; }
+
     public bool AnyOsd => OsdVolume || OsdMute || OsdBrightness || OsdCapsLock || OsdNumLock || OsdScrollLock;
 
     // Notificaciones

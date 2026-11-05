@@ -181,6 +181,10 @@ public partial class OsdWindow : Window
 
     private (Forms.Screen Screen, TaskbarPosition Edge) Target()
     {
+        // Ubicación elegida en el modo edición: el borde de la esquina (para la animación).
+        if (Settings.Current.For(_device).OsdCorner is { } corner
+            && Forms.Screen.AllScreens.FirstOrDefault(s => s.DeviceName == _device) is { } own)
+            return (own, corner.IsTop() ? TaskbarPosition.Top : TaskbarPosition.Bottom);
         if (Bar() is { } bar)
         {
             var center = bar.PointToScreen(new Point(bar.ActualWidth / 2, bar.ActualHeight / 2));
@@ -194,6 +198,13 @@ public partial class OsdWindow : Window
         var (screen, edge) = Target();
         _edge = edge;
         var work = screen.WorkingArea;
+        // Ya en su monitor: directo a su lugar. Pasar por la esquina en cada paso de volumen
+        // hacía que el aviso parpadeara ahí.
+        if (Forms.Screen.FromHandle(Handle).DeviceName == screen.DeviceName)
+        {
+            Dispatcher.BeginInvoke(Place, DispatcherPriority.Render);
+            return;
+        }
         // Primero al monitor (WPF toma su escala) y luego a su lugar, con el tamaño ya definitivo.
         SetWindowPos(Handle, IntPtr.Zero, work.Left + GapPx, work.Top + GapPx, 0, 0, SwpNoSize | SwpNoZOrder | SwpNoActivate);
         Dispatcher.BeginInvoke(Place, DispatcherPriority.Render);
@@ -221,6 +232,13 @@ public partial class OsdWindow : Window
             TaskbarPosition.Bottom => work.Bottom - height - gap * 4,
             _ => work.Top + (work.Height - height) / 2,
         };
+        if (Settings.Current.For(_device).OsdCorner is { } corner)
+        {
+            x = corner.IsCenter() ? work.Left + (work.Width - width) / 2
+              : corner.IsLeft() ? work.Left + gap * 2
+              : work.Right - width - gap * 2;
+            y = corner.IsTop() ? work.Top + gap * 2 : work.Bottom - height - gap * 2;
+        }
         SetWindowPos(Handle, HwndTopmost, x, y, 0, 0, SwpNoSize | SwpNoActivate);
     }
 

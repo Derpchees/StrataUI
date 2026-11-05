@@ -6,6 +6,28 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.23.0] - 2026-11-05
+
+### Añadido
+- Modo edición: un aviso en pantalla (volumen, brillo, teclas de bloqueo) de ejemplo en cada
+  monitor; se arrastra a una esquina o al centro de un borde, y con clic derecho › "Junto a la
+  barra" vuelve a su lugar de siempre.
+- Modo edición: cuadrícula de fondo (se apaga con "Cuadrícula" en su barra) y los widgets se ajustan a ella al soltarlos; cada widget lleva
+  un borde, rojo si se encima con otro.
+
+### Cambiado
+- La barra del modo edición es más pequeña y simple (una fila; la explicación va en la descripción
+  del título) y sale en el centro de la pantalla.
+
+### Corregido
+- La tecla Windows a veces no abría Inicio o abría el de Windows, y salía también el aviso de
+  volumen de Windows encima del de Strata UI: el gancho de teclado se reinstala solo si Windows lo
+  quita, el estado de la tecla no queda trabado y la máscara llega siempre antes de soltar Win.
+- Cerrar el menú Inicio (o un panel) desde Alt+Tab lo dejaba sin abrir: los paneles ya no salen en
+  Alt+Tab ni en la vista de tareas, y un cierre desde fuera solo lo oculta.
+- El aviso de volumen parpadeaba en la esquina del monitor con cada paso de volumen.
+- Al quitar un dispositivo de audio, la barra ya no llena el registro de errores al leer su volumen.
+
 ## [3.22.1] - 2026-11-02
 
 ### Corregido

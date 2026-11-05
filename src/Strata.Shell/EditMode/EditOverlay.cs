@@ -85,10 +85,11 @@ internal sealed class EditOverlay : Window
         // Fondo de pantalla, un velo leve y un marco del color de acento: se nota que es el modo edición.
         _root.Children.Add(WallpaperImage());
         _root.Children.Add(new Rectangle { Fill = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)), IsHitTestVisible = false });
+        _desktop.Children.Add(_gridLines);
         _desktop.Children.Add(_edgeHints);
         _desktop.Children.Add(_widgets);
         _desktop.Children.Add(_bannerLayer);
-        _bannerLayer.SizeChanged += (_, _) => PlaceBanner();
+        _bannerLayer.SizeChanged += (_, _) => { PlaceBanner(); PlaceOsd(); };
         _desktop.ContextMenu = DesktopMenu();
         _desktop.ContextMenuOpening += (_, _) => _desktop.ContextMenu = DesktopMenu();
         _widgets.SizeChanged += (_, _) => PlaceWidgets();
@@ -112,8 +113,7 @@ internal sealed class EditOverlay : Window
         _library.Visibility = Visibility.Collapsed;
         var toolbar = Toolbar();
         toolbar.HorizontalAlignment = HorizontalAlignment.Center;
-        toolbar.VerticalAlignment = VerticalAlignment.Top;
-        toolbar.Margin = new Thickness(0, EdgeHint + 16, 0, 0);
+        toolbar.VerticalAlignment = VerticalAlignment.Center;
         _desktop.Children.Add(_library);
         _desktop.Children.Add(toolbar);
         Content = _root;
@@ -126,11 +126,14 @@ internal sealed class EditOverlay : Window
             bool byUs = _closing;
             _closing = true;
             EditSession.Changed -= Rebuild;
+            GridToggled -= OnGridToggled;
             BarPreview.EditColor -= OnEditColor;
             if (!byUs)
                 EditSession.Cancel(); // Alt+F4 u otra forma de cerrarla: es cancelar
         };
         EditSession.Changed += Rebuild;
+        GridToggled += OnGridToggled;
+        OnGridToggled();
         BarPreview.EditColor += OnEditColor;
         Rebuild();
     }
@@ -249,6 +252,76 @@ internal sealed class EditOverlay : Window
         _mainBox.IsEnabled = !isMain;
         BuildWidgets();
         BuildBanner();
+        BuildOsd();
+    }
+
+    // ── Avisos en pantalla (volumen, brillo) ────────────────────────────────
+
+    private FrameworkElement? _osd;
+    private static readonly Size OsdSize = new(260, 56);
+
+    /// <summary>Un aviso de volumen de ejemplo donde saldrá en este monitor: se arrastra a una esquina o al centro de un borde.</summary>
+    private void BuildOsd()
+    {
+        _osd = null;
+        if (!Settings.Current.ShowOsd || !EditSession.ScreenOf(Device).AnyOsd)
+            return;
+        var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        row.Children.Add(new SymbolIcon { Symbol = SymbolRegular.Speaker224, FontSize = 20, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center });
+        row.Children.Add(new TextBlock { Text = Loc.T("Volumen, brillo y teclas de bloqueo"), FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
+        var card = new Border
+        {
+            Width = OsdSize.Width,
+            Height = OsdSize.Height,
+            Padding = new Thickness(16, 0, 16, 0),
+            CornerRadius = new CornerRadius(OsdSize.Height / 2),
+            BorderThickness = new Thickness(1),
+            Child = row,
+            Cursor = Cursors.SizeAll,
+            ToolTip = Loc.T("Dónde salen los avisos en pantalla"),
+        };
+        card.SetResourceReference(Border.BackgroundProperty, "StrataPopupBackgroundBrush");
+        card.SetResourceReference(Border.BorderBrushProperty, "StrataFlyoutBorderBrush");
+        card.MouseLeftButtonDown += (_, e) => EditDrag.Press(card, new OsdPayload(Device), e);
+        var menu = new ContextMenu();
+        var auto = BarPreview.Entry(Loc.T("Junto a la barra"), () => EditSession.PlaceOsd(Device, null));
+        auto.IsCheckable = true;
+        auto.IsChecked = EditSession.ScreenOf(Device).OsdCorner is null;
+        menu.Items.Add(auto);
+        card.ContextMenu = menu;
+        _osd = card;
+        _bannerLayer.Children.Add(card);
+        PlaceOsd();
+    }
+
+    private void PlaceOsd()
+    {
+        if (_osd is null)
+            return;
+        var rect = OsdRect(EditSession.ScreenOf(Device).OsdCorner);
+        Canvas.SetLeft(_osd, rect.Left);
+        Canvas.SetTop(_osd, rect.Top);
+    }
+
+    /// <summary>Lugar del aviso en pantalla; sin esquina, junto a la barra del reloj (como el de verdad).</summary>
+    private Rect OsdRect(NotificationCorner? corner)
+    {
+        double width = _bannerLayer.ActualWidth, height = _bannerLayer.ActualHeight;
+        double centerX = Math.Max(0, (width - OsdSize.Width) / 2), centerY = Math.Max(0, (height - OsdSize.Height) / 2);
+        double right = Math.Max(0, width - OsdSize.Width - BannerGap), bottom = Math.Max(0, height - OsdSize.Height - BannerGap);
+        if (corner is { } c)
+            return new Rect(c.IsCenter() ? centerX : c.IsLeft() ? BannerGap : right,
+                            c.IsTop() ? BannerGap : bottom, OsdSize.Width, OsdSize.Height);
+        var bars = EditSession.LayoutOf(Device).Bars;
+        var edge = (bars.FirstOrDefault(b => b.Items.Contains(BarItem.Clock)) ?? bars.FirstOrDefault())?.Edge ?? TaskbarPosition.Bottom;
+        var (x, y) = edge switch
+        {
+            TaskbarPosition.Left => (BannerGap, centerY),
+            TaskbarPosition.Right => (right, centerY),
+            TaskbarPosition.Top => (centerX, BannerGap),
+            _ => (centerX, Math.Max(0, height - OsdSize.Height - BannerGap * 4)),
+        };
+        return new Rect(x, y, OsdSize.Width, OsdSize.Height);
     }
 
     // ── Avisos ──────────────────────────────────────────────────────────────
@@ -403,6 +476,51 @@ internal sealed class EditOverlay : Window
 
     // ── Widgets ─────────────────────────────────────────────────────────────
 
+    /// <summary>Separación de la cuadrícula; los bordes de los widgets se ajustan a sus líneas.</summary>
+    private const double GridStep = 40;
+
+    /// <summary>Cuadrícula tenue de fondo (un mosaico, no miles de líneas) para alinear widgets.</summary>
+    private static Rectangle GridLines()
+    {
+        var pen = new Pen(new SolidColorBrush(Color.FromArgb(46, 255, 255, 255)), 1);
+        pen.Freeze();
+        var lines = new GeometryGroup();
+        lines.Children.Add(new LineGeometry(new Point(0, 0), new Point(GridStep, 0)));
+        lines.Children.Add(new LineGeometry(new Point(0, 0), new Point(0, GridStep)));
+        var tile = new DrawingBrush(new GeometryDrawing(null, pen, lines))
+        {
+            TileMode = TileMode.Tile,
+            Viewport = new Rect(0, 0, GridStep, GridStep),
+            ViewportUnits = BrushMappingMode.Absolute,
+            Viewbox = new Rect(0, 0, GridStep, GridStep),
+            ViewboxUnits = BrushMappingMode.Absolute,
+        };
+        tile.Freeze();
+        return new Rectangle { Fill = tile, IsHitTestVisible = false };
+    }
+
+    /// <summary>La cuadrícula se ve (y ajusta) en todos los monitores a la vez; dura mientras Strata UI siga abierto.</summary>
+    private static bool _showGrid = true;
+    private static event Action? GridToggled;
+    private readonly Rectangle _gridLines = GridLines();
+    private readonly CheckBox _gridBox = new();
+
+    private void OnGridToggled()
+    {
+        _gridLines.Visibility = _showGrid ? Visibility.Visible : Visibility.Collapsed;
+        _gridBox.IsChecked = _showGrid;
+    }
+
+    /// <summary>Lleva a una línea el borde (inicio o fin) que quede más cerca de una.</summary>
+    private static double Snap(double start, double length)
+    {
+        if (!_showGrid)
+            return start;
+        double byStart = Math.Round(start / GridStep) * GridStep;
+        double byEnd = Math.Round((start + length) / GridStep) * GridStep - length;
+        return Math.Abs(byStart - start) <= Math.Abs(byEnd - start) ? byStart : byEnd;
+    }
+
     private void BuildWidgets()
     {
         _widgets.Children.Clear();
@@ -446,11 +564,12 @@ internal sealed class EditOverlay : Window
         }
         grid.Width = size.Width;
         grid.Height = size.Height;
-        var outline = new Rectangle { StrokeThickness = 1.5, StrokeDashArray = [4, 3], RadiusX = 10, RadiusY = 10, Opacity = 0.7 };
-        outline.SetResourceReference(Shape.StrokeProperty, "StrataForegroundBrush");
+        // Borde sólido: se ve hasta dónde llega cada widget; en rojo si se encima con otro (PlaceWidgets).
+        var outline = new Rectangle { StrokeThickness = 2, RadiusX = 10, RadiusY = 10, Opacity = 0.85 };
         grid.Children.Add(outline);
         grid.MouseEnter += (_, _) => outline.SetResourceReference(Shape.StrokeProperty, "StrataAccentBrush");
-        grid.MouseLeave += (_, _) => outline.SetResourceReference(Shape.StrokeProperty, "StrataForegroundBrush");
+        grid.MouseLeave += (_, _) => PaintOutline(outline);
+        PaintOutline(outline);
         grid.MouseLeftButtonDown += (_, e) =>
         {
             var grab = e.GetPosition(grid);
@@ -470,7 +589,21 @@ internal sealed class EditOverlay : Window
             Canvas.SetLeft(entry.Box, Math.Clamp(widget.X, 0, 1) * Math.Max(0, width - entry.Size.Width));
             Canvas.SetTop(entry.Box, Math.Clamp(widget.Y, 0, 1) * Math.Max(0, height - entry.Size.Height));
         }
+        var rects = _widgetBoxes.Values.Select(e => (e.Box, Rect: new Rect(Canvas.GetLeft(e.Box), Canvas.GetTop(e.Box), e.Size.Width, e.Size.Height))).ToList();
+        foreach (var (box, rect) in rects)
+        {
+            bool overlaps = rects.Any(o => o.Box != box && o.Rect.IntersectsWith(rect)
+                                           && Rect.Intersect(o.Rect, rect) is { Width: > 0.5, Height: > 0.5 }); // tocarse no es encimarse
+            if (box is Grid { Children: var children } && children.OfType<Rectangle>().LastOrDefault() is { } outline)
+            {
+                outline.Tag = overlaps;
+                PaintOutline(outline);
+            }
+        }
     }
+
+    private static void PaintOutline(Rectangle outline) =>
+        outline.SetResourceReference(Shape.StrokeProperty, outline.Tag is true ? "SystemFillColorCriticalBrush" : "StrataForegroundBrush");
 
     private ContextMenu WidgetMenu(WidgetConfig widget)
     {
@@ -521,12 +654,32 @@ internal sealed class EditOverlay : Window
                 // La esquina del widget donde quedaría, dentro del escritorio (lo que dejan las barras).
                 var point = _widgets.PointFromScreen(screen) - widget.Grab;
                 double width = _widgets.ActualWidth, height = _widgets.ActualHeight;
-                double left = Math.Clamp(point.X, 0, Math.Max(0, width - widget.Size.Width));
-                double top = Math.Clamp(point.Y, 0, Math.Max(0, height - widget.Size.Height));
+                double left = Math.Clamp(Snap(point.X, widget.Size.Width), 0, Math.Max(0, width - widget.Size.Width));
+                double top = Math.Clamp(Snap(point.Y, widget.Size.Height), 0, Math.Max(0, height - widget.Size.Height));
                 double x = width > widget.Size.Width ? left / (width - widget.Size.Width) : 0;
                 double y = height > widget.Size.Height ? top / (height - widget.Size.Height) : 0;
                 var marker = _widgets.TransformToVisual(_root).TransformBounds(new Rect(left, top, widget.Size.Width, widget.Size.Height));
                 return new DesktopTarget(x, y, marker);
+            }
+
+            case OsdPayload osd:
+            {
+                // Cada monitor tiene su aviso: solo se mueve dentro del suyo.
+                if (osd.Device != Device)
+                    return null;
+                var point = _bannerLayer.PointFromScreen(screen);
+                int column = Math.Clamp((int)(point.X / Math.Max(1, _bannerLayer.ActualWidth) * 3), 0, 2);
+                bool top = point.Y < _bannerLayer.ActualHeight / 2;
+                var corner = (column, top) switch
+                {
+                    (0, true) => NotificationCorner.TopLeft,
+                    (1, true) => NotificationCorner.TopCenter,
+                    (2, true) => NotificationCorner.TopRight,
+                    (0, false) => NotificationCorner.BottomLeft,
+                    (1, false) => NotificationCorner.BottomCenter,
+                    _ => NotificationCorner.BottomRight,
+                };
+                return new CornerTarget(corner, _bannerLayer.TransformToVisual(_root).TransformBounds(OsdRect(corner)));
             }
 
             case BannerPayload:
@@ -649,14 +802,17 @@ internal sealed class EditOverlay : Window
     {
         var screens = Forms.Screen.AllScreens.ToList();
         int index = screens.FindIndex(sc => sc.DeviceName == Device);
-        var title = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 18, 0) };
-        title.Children.Add(new TextBlock { Text = Loc.T("Modo edición"), FontSize = 15, FontWeight = FontWeights.SemiBold });
-        title.Children.Add(new TextBlock
+        // Compacta: el monitor y la explicación van en la descripción emergente del título.
+        var title = new TextBlock
         {
-            Text = screens.Count > 1 ? Hub.ScreenPicker.NameOf(_screen, index, screens.Count) : Loc.T("Este monitor"),
-            FontSize = 12,
-            Opacity = 0.7,
-        });
+            Text = Loc.T("Modo edición"),
+            FontSize = 14,
+            FontWeight = FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 10, 0),
+            ToolTip = (screens.Count > 1 ? Hub.ScreenPicker.NameOf(_screen, index, screens.Count) : Loc.T("Este monitor")) + "\n"
+                      + Loc.T("Arrastra los elementos entre barras y monitores, o fuera de la barra para quitarlos. Clic derecho para más opciones."),
+        };
 
         var library = ToolButton(SymbolRegular.Library24, Loc.T("Biblioteca"), () =>
             _library.Visibility = _library.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible);
@@ -673,18 +829,36 @@ internal sealed class EditOverlay : Window
         };
         _mainBox.Visibility = screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
 
+        _gridBox.Content = Loc.T("Cuadrícula");
+        _gridBox.ToolTip = Loc.T("Muestra una cuadrícula y ajusta los widgets a ella al soltarlos");
+        _gridBox.Margin = new Thickness(6, 0, 4, 0);
+        _gridBox.MinWidth = _mainBox.MinWidth = 0; // el estilo de WPF-UI deja mucho espacio después del texto
+        _gridBox.VerticalAlignment = VerticalAlignment.Center;
+        RoutedEventHandler toggled = (_, _) =>
+        {
+            if (_showGrid == (_gridBox.IsChecked == true))
+                return; // lo puso OnGridToggled
+            _showGrid = !_showGrid;
+            GridToggled?.Invoke();
+        };
+        _gridBox.Checked += toggled;
+        _gridBox.Unchecked += toggled;
+
         var reset = ToolButton(SymbolRegular.ArrowReset24, Loc.T("Restablecer"), () => EditSession.ResetScreen(Device));
-        reset.ToolTip = Loc.T("Este monitor vuelve a una barra abajo con lo de siempre");
+        reset.ToolTip = Loc.T("Restablecer") + ": " + Loc.T("Este monitor vuelve a una barra abajo con lo de siempre");
+        reset.Content = null;
         var cancel = ToolButton(SymbolRegular.Dismiss24, Loc.T("Cancelar"), EditSession.Cancel);
         cancel.ToolTip = Loc.T("Descarta los cambios (Esc)");
+        cancel.Content = null;
         var apply = ToolButton(SymbolRegular.Checkmark24, Loc.T("Aplicar"), EditSession.Apply);
         apply.Appearance = ControlAppearance.Primary;
         apply.ToolTip = Loc.T("Guarda y aplica el diseño de todos los monitores (Enter)");
 
         var row = new StackPanel { Orientation = Orientation.Horizontal };
-        row.Children.Add(new SymbolIcon { Symbol = SymbolRegular.DesignIdeas24, FontSize = 22, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center });
+        row.Children.Add(new SymbolIcon { Symbol = SymbolRegular.DesignIdeas24, FontSize = 18, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
         row.Children.Add(title);
         row.Children.Add(library);
+        row.Children.Add(_gridBox);
         row.Children.Add(_mainBox);
         row.Children.Add(reset);
         row.Children.Add(cancel);
@@ -692,17 +866,11 @@ internal sealed class EditOverlay : Window
 
         var stack = new StackPanel();
         stack.Children.Add(row);
-        stack.Children.Add(new TextBlock
-        {
-            Text = Loc.T("Arrastra los elementos entre barras y monitores, o fuera de la barra para quitarlos. Clic derecho para más opciones."),
-            FontSize = 11.5,
-            Opacity = 0.65,
-            Margin = new Thickness(0, 8, 0, 0),
-            TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 640,
-        });
+        _message.MaxWidth = 560;
         stack.Children.Add(_message);
-        return Floating(stack);
+        var bar = Floating(stack);
+        bar.Padding = new Thickness(12, 6, 8, 6);
+        return bar;
     }
 
     private static Button ToolButton(SymbolRegular icon, string text, Action action)

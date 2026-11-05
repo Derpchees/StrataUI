@@ -60,6 +60,13 @@ public abstract class FlyoutWindow : FluentWindow
         ContentRendered += (_, _) => ApplyRegion();
         WindowCornerPreference = WindowCornerPreference.Round;
         Opacity = 0; // se muestra al terminar de posicionarse, sin parpadeo
+        // Ventana de herramientas: no sale en Alt+Tab ni en la vista de tareas (cerrarla desde ahí
+        // destruía el menú Inicio reutilizable y no volvía a abrir).
+        SourceInitialized += (_, _) =>
+        {
+            var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+            SetWindowLong(hwnd, GwlExStyle, GetWindowLong(hwnd, GwlExStyle) | WsExToolWindow);
+        };
 
         Deactivated += (_, _) =>
         {
@@ -190,7 +197,10 @@ public abstract class FlyoutWindow : FluentWindow
                 if (Reusable && FlyoutManager.Keep(this))
                     Hide();
                 else
+                {
+                    _closing = true; // un cierre de verdad, no el de Alt+Tab (ver OnClosing)
                     Close();
+                }
             }, System.Windows.Threading.DispatcherPriority.Background);
         };
         Show();
@@ -323,6 +333,26 @@ public abstract class FlyoutWindow : FluentWindow
         };
         System.Windows.Media.CompositionTarget.Rendering += handler;
     }
+
+    /// <summary>Un cierre de fuera (Alt+Tab, Alt+F4) pasa por el cierre normal: oculta el reutilizable.</summary>
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        if (!_closing && IsVisible)
+        {
+            e.Cancel = true;
+            CloseFlyout();
+            return;
+        }
+        base.OnClosing(e);
+    }
+
+    private const int GwlExStyle = -20, WsExToolWindow = 0x80;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int GetWindowLong(IntPtr hwnd, int index);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern int SetWindowLong(IntPtr hwnd, int index, int value);
 
     public void CloseFlyout()
     {
