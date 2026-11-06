@@ -52,19 +52,35 @@ public partial class NotificationBannerWindow : Window
         // Si se cambia el monitor o la esquina con avisos en pantalla, se mueven ahí.
         Settings.Changed += OnSettingsChanged;
         Closed += (_, _) => Settings.Changed -= OnSettingsChanged;
+        // Si la notificación se quitó (desde el centro, al abrirla o la retiró la app), su aviso se va.
+        NotificationService.Changed += SyncWithCenter;
+        Closed += (_, _) => NotificationService.Changed -= SyncWithCenter;
         MouseEnter += (_, _) => { foreach (var t in _timers.Values) t.Stop(); };
         MouseLeave += (_, _) => { foreach (var t in _timers.Values) t.Start(); };
     }
 
     private static NotificationBannerWindow? _instance;
+    private static DateTime _lastSound;
 
     /// <summary>Muestra un aviso (se crea la ventana la primera vez).</summary>
     public static void ShowBanner(StrataNotification item)
     {
         _instance ??= new NotificationBannerWindow();
-        _instance.Add(item);
-        if (Settings.Current.NotificationSounds)
+        if (!_instance.Add(item))
+            return;
+        // Varias de golpe (un chat que manda tres mensajes) suenan una sola vez.
+        if (Settings.Current.NotificationSounds && DateTime.UtcNow - _lastSound > TimeSpan.FromSeconds(1.5))
+        {
+            _lastSound = DateTime.UtcNow;
             Services.Notifications.NotificationSound.Play();
+        }
+    }
+
+    private void SyncWithCenter()
+    {
+        var ids = NotificationService.Items.Select(i => i.Id).ToHashSet();
+        foreach (var gone in _banners.Where(b => !b.IsLocal && !ids.Contains(b.Id)).ToList())
+            Remove(gone);
     }
 
     public static void CloseAll()
@@ -75,6 +91,15 @@ public partial class NotificationBannerWindow : Window
 
     private void OnSettingsChanged()
     {
+        if (!IsVisible)
+            return;
+        // Con "No molestar" o sin avisos, se van los de las apps (los propios de Strata UI se quedan).
+        var s = Settings.Current;
+        if (s.NotificationDoNotDisturb || !s.NotificationBanners || !s.NotificationsEnabled)
+        {
+            foreach (var banner in _banners.Where(b => !b.IsLocal).ToList())
+                Remove(banner);
+        }
         if (IsVisible)
             MoveToScreen();
     }
@@ -137,8 +162,11 @@ public partial class NotificationBannerWindow : Window
         }
     }
 
-    private void Add(StrataNotification item)
+    /// <summary>Agrega el aviso; false si ya estaba en pantalla.</summary>
+    private bool Add(StrataNotification item)
     {
+        if (_banners.Contains(item) || !item.IsLocal && _banners.Any(b => !b.IsLocal && b.Id == item.Id))
+            return false;
         // El más nuevo junto a la esquina: arriba si los avisos van arriba, abajo si van abajo.
         if (IsTop)
             _banners.Insert(0, item);
@@ -156,7 +184,9 @@ public partial class NotificationBannerWindow : Window
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(Math.Max(2, Settings.Current.NotificationSeconds)) };
         timer.Tick += (_, _) => Remove(item);
         _timers[item] = timer;
-        if (!IsMouseOver)
+        // Por la posición real del puntero: IsMouseOver podía quedar en true tras ocultarse la ventana
+        // con el puntero encima, y entonces el aviso siguiente nunca se cerraba.
+        if (!IsVisible || !PointerInside())
             timer.Start();
 
         if (!IsVisible)
@@ -166,7 +196,12 @@ public partial class NotificationBannerWindow : Window
             MoveToScreen();
         }
         Dispatcher.BeginInvoke(() => AnimateIn(item), DispatcherPriority.Loaded);
+        return true;
     }
+
+    private bool PointerInside() =>
+        GetCursorPos(out var p) && GetWindowRect(Handle, out var r)
+        && p.X >= r.Left && p.X < r.Right && p.Y >= r.Top && p.Y < r.Bottom;
 
     private void Remove(StrataNotification item)
     {
@@ -339,6 +374,24 @@ public partial class NotificationBannerWindow : Window
         public int X, Y, Cx, Cy;
         public uint Flags;
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Point32
+    {
+        public int X, Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Rect32
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetCursorPos(out Point32 point);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hwnd, out Rect32 rect);
 
     [DllImport("user32.dll")]
     private static extern int GetWindowLong(IntPtr hwnd, int index);

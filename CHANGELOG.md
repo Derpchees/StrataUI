@@ -6,6 +6,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.23.1] - 2026-11-06
+
+### Corregido
+- **Clic en las notificaciones**: ahora abre la app o la app web de donde vienen, en el chat, correo o
+  pestaña del aviso. Windows guarda cada aviso un momento después de mostrarlo y Strata UI lo leía
+  antes, así que el clic no sabía a dónde ir (y WhatsApp Web u otros sitios salían como «Brave», sin
+  foto). Ahora espera a que Windows lo guarde y, si aún faltaba, lo vuelve a leer al hacer clic.
+- Los avisos que piden abrir un enlace al hacer clic (Outlook, Teams, sitios) ahora lo abren.
+- Un aviso que se quitaba o se borraba mientras se buscaba su ícono podía volver a aparecer, y
+  «Borrar todo» podía dejar volver los avisos borrados si Windows tardaba en quitarlos.
+- El mismo aviso podía mostrarse dos veces; el sonido ya no se repite si llegan varios avisos juntos.
+- Los avisos en pantalla se quitan al borrarlos desde el centro de notificaciones o al activar
+  «No molestar», y ya no se quedan fijos si el mouse había pasado por encima antes.
+
 ## [3.23.0] - 2026-11-05
 
 ### Añadido

@@ -12,7 +12,9 @@ namespace Strata.Shell.Services.Notifications;
 /// <param name="CircleCrop">Windows la recorta en círculo (hint-crop="circle").</param>
 /// <param name="Launch">Lo que Windows le pasa a la app al hacer clic (en Chromium, el origen y la pestaña).</param>
 /// <param name="Hero">Imagen grande del contenido (sticker, foto): ruta local o https.</param>
-public sealed record ToastDetails(string? Domain, string? Picture, bool CircleCrop, string? Launch = null, string? Hero = null);
+/// <param name="Protocol">El clic abre "launch" como dirección (activationType="protocol").</param>
+public sealed record ToastDetails(string? Domain, string? Picture, bool CircleCrop, string? Launch = null, string? Hero = null,
+                                  bool Protocol = false);
 
 /// <summary>
 /// Lee el XML de una notificación de la base de datos de Windows
@@ -28,6 +30,9 @@ public static class NotificationDb
         "Microsoft", "Windows", "Notifications", "wpndatabase.db");
 
     private static bool _failed;
+
+    /// <summary>Se puede consultar la base (existe y el SQLite de Windows cargó).</summary>
+    public static bool CanRead => !_failed && System.IO.File.Exists(File);
 
     /// <summary>XML de la notificación; null si no está o no se puede leer.</summary>
     public static string? Payload(uint id)
@@ -94,7 +99,9 @@ public static class NotificationDb
             bool circle = (string?)logo?.Attribute("hint-crop") == "circle";
             // La imagen del contenido: la de arriba (hero) o la que va en el cuerpo (sin placement).
             var hero = toast.Descendants("image").FirstOrDefault(i => (string?)i.Attribute("placement") is null or "hero");
-            return new ToastDetails(domain, picture, circle, (string?)toast.Attribute("launch"), Source((string?)hero?.Attribute("src")));
+            bool protocol = string.Equals((string?)toast.Attribute("activationType"), "protocol", StringComparison.OrdinalIgnoreCase);
+            return new ToastDetails(domain, picture, circle, (string?)toast.Attribute("launch"), Source((string?)hero?.Attribute("src")),
+                                    protocol);
         }
         catch (System.Xml.XmlException)
         {

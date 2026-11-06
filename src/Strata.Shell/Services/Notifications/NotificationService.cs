@@ -34,7 +34,7 @@ public sealed class StrataNotification : System.ComponentModel.INotifyPropertyCh
     private ImageSource? _icon;
 
     /// <summary>Sitio que la envió desde el navegador (WhatsApp Web, Gmail…): de ahí sale el ícono.</summary>
-    public string? SiteDomain { get; init; }
+    public string? SiteDomain { get; internal set; }
 
     /// <summary>Imagen del aviso (foto del remitente, logotipo del sitio), como la muestra Windows a la izquierda.</summary>
     public ImageSource? Picture
@@ -70,7 +70,25 @@ public sealed class StrataNotification : System.ComponentModel.INotifyPropertyCh
     public bool HasHero => Hero != null;
 
     /// <summary>El "launch" del aviso: lo que recibe la app al hacer clic (ver <see cref="NotificationService.Activate"/>).</summary>
-    public string? Launch { get; init; }
+    public string? Launch { get; internal set; }
+
+    /// <summary>El clic abre <see cref="Launch"/> como dirección (activationType="protocol").</summary>
+    public bool LaunchIsProtocol { get; internal set; }
+
+    /// <summary>
+    /// Completa lo que faltaba porque Windows guarda el aviso en su base un momento después de
+    /// mostrarlo (más de un segundo): el "launch" y, si llegó del navegador, el sitio.
+    /// </summary>
+    internal void Fill(ToastDetails details)
+    {
+        if (Launch is null)
+        {
+            Launch = details.Launch;
+            LaunchIsProtocol = details.Protocol;
+        }
+        if (SiteDomain is null && details.Domain is { } domain && (WebSites.IsBrowserId(AppId) || WebSites.IsBrowserId(AppName)))
+            SiteDomain = WebSites.FromDomain(domain)?.Domain ?? domain;
+    }
 
     private void Notify(string name) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
 
@@ -101,11 +119,16 @@ public static class NotificationService
     private static bool _polling;
     private static bool _loaded;
     private static int _waitedForCatalog;
+    /// <summary>
+    /// Sube con cada "Borrar todo" o al apagar la función: una consulta que estaba esperando (el ícono,
+    /// Windows) no mete de vuelta lo que se borró mientras tanto.
+    /// </summary>
+    private static int _generation;
     private static readonly Dictionary<string, ImageSource?> IconCache = new();
 
     /// <summary>
-    /// Descartadas en Strata UI que Windows no quiso quitar de su centro: no se vuelven a mostrar mientras
-    /// sigan allí (si no, "Borrar todo" las traería de vuelta en la siguiente consulta).
+    /// Descartadas en Strata UI: no se vuelven a mostrar mientras Windows las siga dando (si no quiso
+    /// quitarlas o aún no termina, "Borrar todo" las traería de vuelta en la siguiente consulta).
     /// </summary>
     private static readonly HashSet<uint> Dismissed = new();
 
@@ -129,8 +152,11 @@ public static class NotificationService
         if (!Settings.Current.NotificationsEnabled)
         {
             _timer?.Stop();
+            _generation++;
             Items.Clear();
+            Dismissed.Clear();
             _loaded = false;
+            _waitedForCatalog = 0;
             Changed?.Invoke();
             return;
         }
@@ -189,13 +215,17 @@ public static class NotificationService
         if (!_loaded && StartMenu.StartMenuService.Apps.Count == 0 && _waitedForCatalog++ < 5)
             return;
         _polling = true;
+        int generation = _generation;
         try
         {
             var current = await _listener.GetNotificationsAsync(NotificationKinds.Toast);
+            // Se borró todo o se apagó mientras Windows respondía: esta lectura ya no vale.
+            if (generation != _generation)
+                return;
             var ids = current.Select(n => n.Id).ToHashSet();
             Dismissed.IntersectWith(ids); // las que Windows ya quitó no hace falta recordarlas
             current = current.Where(n => !Dismissed.Contains(n.Id)).ToList();
-            bool changed = false;
+            bool changed = false, pending = false;
 
             foreach (var gone in Items.Where(i => !ids.Contains(i.Id)).ToList())
             {
@@ -206,12 +236,25 @@ public static class NotificationService
             var known = Items.Select(i => i.Id).ToHashSet();
             foreach (var raw in current.Where(n => !known.Contains(n.Id)).OrderBy(n => n.CreationTime))
             {
+                // Windows la guarda en su base más de un segundo después de mostrarla: sin esperarla
+                // faltaban el sitio (WhatsApp Web salía como «Brave»), la foto y el "launch" del clic.
+                if (_loaded && NotificationDb.CanRead && NotificationDb.Payload(raw.Id) is null
+                    && DateTimeOffset.Now - raw.CreationTime < TimeSpan.FromSeconds(4))
+                {
+                    pending = true;
+                    continue;
+                }
                 if (Convert(raw) is not { } item)
                     continue;
                 // Del navegador: el ícono del sitio (si aún no se descargó, llega con WebSites.IconsChanged).
                 item.Icon = item.SiteDomain is { } domain
                     ? WebSites.Icon(domain) ?? await IconFor(raw, item.AppId, item.AppName)
                     : await IconFor(raw, item.AppId, item.AppName);
+                // Mientras se buscaba el ícono se pudo borrar todo, quitarla o apagar la función.
+                if (generation != _generation)
+                    break;
+                if (Dismissed.Contains(item.Id) || Items.Any(i => i.Id == item.Id))
+                    continue;
                 int index = 0;
                 while (index < Items.Count && Items[index].Time > item.Time)
                     index++;
@@ -222,9 +265,13 @@ public static class NotificationService
                 if (_loaded && DateTimeOffset.Now - item.Time < TimeSpan.FromMinutes(1))
                     Arrived?.Invoke(item);
             }
-            _loaded = true;
+            if (generation == _generation)
+                _loaded = true;
             if (changed)
                 Changed?.Invoke();
+            // Alguna aún no estaba en la base: se vuelve a mirar enseguida, no en el siguiente ciclo.
+            if (pending)
+                _ = RetrySoonAsync();
         }
         catch (Exception ex)
         {
@@ -234,6 +281,12 @@ public static class NotificationService
         {
             _polling = false;
         }
+    }
+
+    private static async Task RetrySoonAsync()
+    {
+        await Task.Delay(400);
+        await PollAsync();
     }
 
     private static StrataNotification? Convert(UserNotification raw)
@@ -292,6 +345,7 @@ public static class NotificationService
                 AppId = appId,
                 SiteDomain = siteDomain,
                 Launch = details?.Launch,
+                LaunchIsProtocol = details?.Protocol == true,
                 PictureIsCircle = details?.CircleCrop == true,
                 Title = texts.FirstOrDefault() ?? "",
                 Body = string.Join("\n", texts.Skip(1)),
@@ -370,6 +424,10 @@ public static class NotificationService
     {
         var items = Items.Where(i => !i.IsLocal).ToList();
         Items.Clear();
+        _generation++;
+        // Hasta que Windows deje de darlas (si no las quita, no vuelven).
+        foreach (var item in items)
+            Dismissed.Add(item.Id);
         bool cleared = false;
         try
         {
@@ -391,13 +449,14 @@ public static class NotificationService
     /// <summary>Quita una notificación del centro de Windows; si no se puede, al menos no vuelve a Strata UI.</summary>
     private static void Remove(uint id)
     {
+        // Se recuerda siempre (no solo si falla): Windows a veces tarda y la siguiente consulta la traía.
+        Dismissed.Add(id);
         try
         {
             _listener?.RemoveNotification(id);
         }
         catch (Exception ex)
         {
-            Dismissed.Add(id);
             Log.Info($"Windows no quitó la notificación {id} ({ex.Message.Trim()}); se oculta en Strata UI");
         }
     }
@@ -414,19 +473,47 @@ public static class NotificationService
     /// </summary>
     public static async void Activate(StrataNotification item)
     {
+        // Si al llegar Windows aún no la había guardado, se relee ahora (antes de quitarla): sin el
+        // "launch" el clic no llega al chat ni a la pestaña.
+        if (!item.IsLocal && item.Launch is null && NotificationDb.Details(item.Id) is { } details)
+            item.Fill(details);
+        Log.Info($"Clic en notificación de {item.AppName} (app {item.AppId ?? "sin identidad"}, sitio {item.SiteDomain ?? "ninguno"}, launch {(item.Launch is null ? "no" : "sí")})");
         Dismiss(item);
         // El clic fue en Strata UI: la app que se abre puede pasar al frente (si no, Windows solo hace
         // parpadear su botón en la barra).
         AllowSetForegroundWindow(AsfwAny);
         try
         {
-            if (BrowserActivation.TryActivate(item) || await ToastActivator.TryActivateAsync(item) || OpenApp(item))
+            if (OpenProtocol(item) || BrowserActivation.TryActivate(item) || await ToastActivator.TryActivateAsync(item) || OpenApp(item))
                 return;
             Log.Info($"Notificación de {item.AppName} ({item.AppId ?? "sin identidad"}): no se encontró cómo abrir la app");
         }
         catch (Exception ex)
         {
             Log.Error($"No se pudo abrir {item.AppName}", ex);
+        }
+    }
+
+    /// <summary>
+    /// El aviso pide abrir una dirección (activationType="protocol": "https://…", "mailto:…",
+    /// "ms-outlook:…"), como hace Windows. Solo direcciones con esquema, nunca rutas ni programas.
+    /// </summary>
+    private static bool OpenProtocol(StrataNotification item)
+    {
+        if (!item.LaunchIsProtocol || item.Launch is not { } launch
+            || !Uri.TryCreate(launch.Trim(), UriKind.Absolute, out var uri) || uri.IsFile || uri.IsUnc
+            || uri.Scheme.Length < 2)
+            return false;
+        try
+        {
+            Process.Start(new ProcessStartInfo(uri.OriginalString) { UseShellExecute = true })?.Dispose();
+            Log.Info($"Notificación de {item.AppName}: se abre {uri.Scheme}:");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo abrir la dirección de la notificación de {item.AppName}", ex);
+            return false;
         }
     }
 

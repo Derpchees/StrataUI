@@ -135,6 +135,15 @@ public class AccentAndToastTests
     }
 
     [Fact]
+    public void Protocol_activation_is_detected()
+    {
+        var details = NotificationDb.Parse("""<toast activationType="protocol" launch="https://example.com/x"><visual><binding template="ToastGeneric"><text>Hi</text></binding></visual></toast>""");
+        Assert.True(details?.Protocol);
+        Assert.Equal("https://example.com/x", details?.Launch);
+        Assert.False(NotificationDb.Parse("""<toast launch="action=open"><visual><binding template="ToastGeneric"><text>Hi</text></binding></visual></toast>""")?.Protocol);
+    }
+
+    [Fact]
     public void Broken_xml_is_ignored() => Assert.Null(NotificationDb.Parse("<toast"));
 
     [Fact]
