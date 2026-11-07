@@ -6,6 +6,25 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.24.0] - 2026-11-06
+
+### Añadido
+- **Alt+Tab de Strata UI**: un selector de ventanas propio con vistas previas en vivo, que se abre con
+  la animación elegida para los paneles. Un toque rápido cambia a la ventana anterior sin mostrar nada.
+  Se activa o desactiva en *Barra de tareas › Cambiar de ventana*.
+- **Alt+Tab por monitor**: opcional, muestra solo las ventanas del monitor actual; Ctrl+Alt+Tab
+  muestra las de todos.
+- **Nuevas animaciones de paneles**: Resorte, Desplegar, Expandir desde el centro y Deslizar de lado.
+- Las ventanas se minimizan hacia su ícono en la barra de Strata UI y se restauran desde ahí.
+
+### Corregido
+- **El botón de Inicio a veces no abría el menú**: el panel se quedaba abierto fuera de la pantalla
+  (sin dibujarse) y el clic siguiente solo lo «cerraba». Ahora se coloca siempre, y un panel trabado
+  se vuelve a abrir con el siguiente clic.
+- **Transparencia**: el menú de Inicio, los paneles, los menús contextuales y las notificaciones se
+  veían grises u opacos (Windows pintaba el color de la barra de título detrás). Ahora se ve el
+  vidrio de verdad, con el desenfoque opcional.
+
 ## [3.23.1] - 2026-11-06
 
 ### Corregido

@@ -269,6 +269,19 @@ public partial class App : Application
         Services.StartMenu.WinKeyHook.WinXPressed += () => AppsTaskbar?.ShowWinXMenu();
         Services.StartMenu.WinKeyHook.WinNPressed += () => StatusTaskbar?.ToggleNotificationCenter();
         Services.StartMenu.WinKeyHook.WinEPressed += () => OpenFiles();
+        Services.StartMenu.WinKeyHook.AltTabPressed += Controls.AltTabWindow.Step;
+        Controls.AltTabWindow.Preload();
+        Services.StartMenu.WinKeyHook.AltTabReleased += Controls.AltTabWindow.Commit;
+        Services.StartMenu.WinKeyHook.AltTabKey += vk =>
+        {
+            switch (vk)
+            {
+                case 0x1B: Controls.AltTabWindow.Cancel(); break;
+                case 0x0D: Controls.AltTabWindow.Commit(); break;
+                case 0x2E: Controls.AltTabWindow.CloseSelected(); break;
+                default: Controls.AltTabWindow.Arrow(vk); break;
+            }
+        };
         // Win+E abre Archivos solo con el módulo instalado.
         Services.Modules.OptionalModules.Changed += module =>
         {
@@ -585,7 +598,7 @@ public partial class App : Application
 
     private static void UpdateKeyHook() =>
         Services.StartMenu.WinKeyHook.Update(Settings.Current.StartUseWinKey, Settings.Current.NotificationsEnabled, AnyVolumeOsd(),
-                                             Services.Modules.OptionalModules.Files.ReplacesExplorer);
+                                             Services.Modules.OptionalModules.Files.ReplacesExplorer, Settings.Current.AltTabEnabled);
 
     /// <summary>Barra con el botón Inicio en el monitor del mouse (null si ese monitor no tiene).</summary>
     private Taskbar? MouseMonitorStartTaskbar()

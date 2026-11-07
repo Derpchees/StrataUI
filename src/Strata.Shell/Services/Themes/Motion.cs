@@ -43,6 +43,8 @@ public static class Motion
     {
         if (sender is not FrameworkElement element || !ReferenceEquals(e.OriginalSource, sender))
             return;
+        if (element is ContextMenu menu)
+            GlassSurface.ApplyPopup(menu, menu);
         var from = FromPointer(element);
         AnimatePopup(element, from, element is ToolTip ? 0.5 : 0.85, remember: element is ContextMenu);
     }
@@ -304,7 +306,10 @@ public static class Motion
         popup.Opened += (_, _) =>
         {
             if (popup.Child is FrameworkElement child)
+            {
+                GlassSurface.ApplyPopup(child);
                 AnimatePopup(child, from(), size, remember: true);
+            }
         };
         popup.Closed += (_, _) =>
         {
@@ -477,6 +482,31 @@ public static class Motion
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(from, to, duration) { EasingFunction = ease });
     }
 
+    /// <summary>Como <see cref="Grow"/>, en un solo eje (vertical: alto; si no, ancho).</summary>
+    private static void StretchAxis(ScaleTransform scale, bool vertical, double from, double to, TimeSpan duration, IEasingFunction? ease, bool framed)
+    {
+        var property = vertical ? ScaleTransform.ScaleYProperty : ScaleTransform.ScaleXProperty;
+        if (framed)
+        {
+            scale.BeginAnimation(property, null);
+            Drive(scale, "stretch", duration, ease, from, to, v => scale.SetValue(property, v));
+            return;
+        }
+        scale.BeginAnimation(property, new DoubleAnimation(from, to, duration) { EasingFunction = ease });
+    }
+
+    /// <summary>El costado a lo largo de la barra (para Deslizar de lado).</summary>
+    private static TaskbarPosition Across(TaskbarPosition side) =>
+        side is TaskbarPosition.Bottom or TaskbarPosition.Top ? TaskbarPosition.Left : TaskbarPosition.Top;
+
+    private static TaskbarPosition Opposite(TaskbarPosition side) => side switch
+    {
+        TaskbarPosition.Top => TaskbarPosition.Bottom,
+        TaskbarPosition.Bottom => TaskbarPosition.Top,
+        TaskbarPosition.Left => TaskbarPosition.Right,
+        _ => TaskbarPosition.Left,
+    };
+
     /// <summary>Fundido de entrada; <paramref name="framed"/> como en <see cref="Grow"/>.</summary>
     private static void FadeIn(UIElement fade, double from, TimeSpan duration, bool framed)
     {
@@ -550,6 +580,41 @@ public static class Motion
                         Slide(moving, window, from, 12 * size, 0, span, ease);
                     break;
                 }
+            case PanelAnimation.Spring:
+                {
+                    // Se desliza de más lejos y se pasa un poco antes de quedarse (como un resorte).
+                    moving.RenderTransform = Transform.Identity;
+                    Slide(moving, window, from, (window != null ? 56 : 22) * size * travel, 0, duration * 1.6, SpringOut);
+                    break;
+                }
+            case PanelAnimation.Unfold:
+                {
+                    // Se abre como una persiana desde el lado de la barra.
+                    var scale = new ScaleTransform(1, 1);
+                    moving.RenderTransformOrigin = Origin(from);
+                    moving.RenderTransform = scale;
+                    bool vertical = from is TaskbarPosition.Bottom or TaskbarPosition.Top;
+                    StretchAxis(scale, vertical, 1 - 0.6 * size, 1, duration * 1.3, QuinticOut, framed: window != null);
+                    if (window != null)
+                        Slide(moving, window, from, 10 * size, 0, duration * 1.3, ease);
+                    break;
+                }
+            case PanelAnimation.Expand:
+                {
+                    // Crece desde el centro, no desde la barra.
+                    var scale = new ScaleTransform(1, 1);
+                    moving.RenderTransformOrigin = new Point(0.5, 0.5);
+                    moving.RenderTransform = scale;
+                    Grow(scale, 1 - 0.25 * size, 1, duration * 1.3, QuinticOut, framed: window != null);
+                    break;
+                }
+            case PanelAnimation.Drift:
+                {
+                    // Entra de costado, a lo largo de la barra.
+                    moving.RenderTransform = Transform.Identity;
+                    Slide(moving, window, Across(from), (window != null ? 40 : 18) * size * travel, 0, duration * 1.2, QuinticOut);
+                    break;
+                }
             default:
                 moving.RenderTransform = Transform.Identity;
                 // Desvanecer una ventana entera (panel, menú Inicio): su fondo de DWM no se puede
@@ -617,6 +682,50 @@ public static class Motion
                     scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(end, duration) { EasingFunction = ease });
                     if (window != null)
                         Slide(moving, window, toward, 0, 10, duration, ease);
+                    break;
+                }
+            case PanelAnimation.Spring:
+                {
+                    double distance = (window != null ? 32 : 14) * travel;
+                    if (window != null)
+                        Slide(moving, window, toward, 0, distance, duration, ease);
+                    else
+                    {
+                        var (property, offset) = Offset(toward, distance);
+                        var slide = moving.RenderTransform as TranslateTransform ?? new TranslateTransform();
+                        moving.RenderTransform = slide;
+                        slide.BeginAnimation(property, new DoubleAnimation(offset, duration) { EasingFunction = BackIn });
+                    }
+                    break;
+                }
+            case PanelAnimation.Unfold or PanelAnimation.Expand:
+                {
+                    var scale = moving.RenderTransform as ScaleTransform ?? new ScaleTransform(1, 1);
+                    bool unfold = style == PanelAnimation.Unfold;
+                    moving.RenderTransformOrigin = unfold ? Origin(toward) : new Point(0.5, 0.5);
+                    moving.RenderTransform = scale;
+                    bool vertical = toward is TaskbarPosition.Bottom or TaskbarPosition.Top;
+                    var shrink = new DoubleAnimation(unfold ? 0.5 : 0.85, duration) { EasingFunction = ease };
+                    if (!unfold || !vertical)
+                        scale.BeginAnimation(ScaleTransform.ScaleXProperty, shrink);
+                    if (!unfold || vertical)
+                        scale.BeginAnimation(ScaleTransform.ScaleYProperty, shrink);
+                    break;
+                }
+            case PanelAnimation.Drift:
+                {
+                    // Sale por el otro costado.
+                    var side = Opposite(Across(toward));
+                    double distance = (window != null ? 28 : 14) * travel;
+                    if (window != null)
+                        Slide(moving, window, side, 0, distance, duration, ease);
+                    else
+                    {
+                        var (property, offset) = Offset(side, distance);
+                        var slide = moving.RenderTransform as TranslateTransform ?? new TranslateTransform();
+                        moving.RenderTransform = slide;
+                        slide.BeginAnimation(property, new DoubleAnimation(offset, duration) { EasingFunction = ease });
+                    }
                     break;
                 }
             default:
@@ -722,6 +831,8 @@ public static class Motion
     private static readonly IEasingFunction CubicInOut = Frozen(new CubicEase { EasingMode = EasingMode.EaseInOut });
     private static readonly IEasingFunction QuinticOut = Frozen(new QuinticEase { EasingMode = EasingMode.EaseOut });
     private static readonly IEasingFunction PopOut = Frozen(new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.45 });
+    private static readonly IEasingFunction SpringOut = Frozen(new ElasticEase { EasingMode = EasingMode.EaseOut, Oscillations = 1, Springiness = 5 });
+    private static readonly IEasingFunction BackIn = Frozen(new BackEase { EasingMode = EasingMode.EaseIn, Amplitude = 0.3 });
 
     private static IEasingFunction Frozen(EasingFunctionBase ease)
     {

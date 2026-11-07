@@ -139,7 +139,7 @@ public static class NotificationCornerExtensions
 }
 
 /// <summary>Cómo aparecen y se cierran los paneles, el menú Inicio y los avisos.</summary>
-public enum PanelAnimation { Slide, Fade, Zoom, Pop, Rise, None }
+public enum PanelAnimation { Slide, Fade, Zoom, Pop, Rise, None, Spring, Unfold, Expand, Drift }
 
 /// <summary>Duración de las animaciones.</summary>
 public enum AnimationSpeed { Fast, Normal, Slow }
@@ -247,6 +247,10 @@ public sealed class StrataSettings
     /// <summary>Botones del pie del menú, en orden (IDs de StartFooterCatalog).</summary>
     public List<string> StartFooterButtons { get; set; } = ["Explorer", "StrataSettings", "Power"];
     public bool StartUseWinKey { get; set; } = true;
+    /// <summary>Alt+Tab abre el selector de ventanas de Strata UI (Controls/AltTabWindow) en lugar del de Windows.</summary>
+    public bool AltTabEnabled { get; set; } = true;
+    /// <summary>Alt+Tab solo con las ventanas del monitor de la activa; Ctrl+Alt+Tab, todas.</summary>
+    public bool AltTabPerMonitor { get; set; }
     /// <summary>La tecla Windows abre Inicio en el monitor donde está el mouse (si ahí hay una barra con Inicio).</summary>
     public bool StartOnMouseMonitor { get; set; } = true;
     /// <summary>"Anclar a Inicio de Strata UI" en el menú contextual del Explorador (Services/StartMenu/ExplorerMenu).</summary>
@@ -384,6 +388,12 @@ public sealed class StrataSettings
     public string? CustomBarColor { get; set; }
     /// <summary>Color propio de los paneles y el menú Inicio ("#AARRGGBB"); null = el del tema.</summary>
     public string? CustomPanelColor { get; set; }
+
+    /// <summary>Transparencia (0–100) de los paneles, menús y avisos con los temas Translúcido y Transparente total.</summary>
+    public int PanelTransparency { get; set; } = 55;
+
+    /// <summary>Desenfocar lo que hay detrás de la barra, los paneles, menús y avisos translúcidos (si no, se ve nítido).</summary>
+    public bool PanelBlur { get; set; }
     /// <summary>
     /// Acento de Windows antes de que Strata UI le pusiera el suyo ("Aplicar el tema a Windows"):
     /// [color de Inicio, color de acento] en ABGR; se devuelve al desactivarlo. Null: no lo cambió.

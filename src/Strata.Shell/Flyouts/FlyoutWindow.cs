@@ -42,21 +42,27 @@ public abstract class FlyoutWindow : FluentWindow
         NextDevice = null;
         var theme = ThemeManager.ThemeFor(_device);
         // Se decide aquí: cambiar WindowBackdropType más tarde hace que WPF-UI deshaga el efecto.
-        WindowBackdropType = theme.Backdrop == Backdrop.Acrylic ? WindowBackdropType.Acrylic : WindowBackdropType.None;
-        if (theme.Backdrop == Backdrop.Blur)
+        // Translúcido va con el desenfoque limpio, no con el Acrylic del sistema (gris y opaco).
+        WindowBackdropType = WindowBackdropType.None;
+        if (theme.Backdrop is Backdrop.Acrylic or Backdrop.Blur)
         {
             // WPF-UI pone el fondo sólido del tema al inicializar la ventana: se vuelve a
             // dejar transparente después, o taparía el desenfoque.
             SourceInitialized += (_, _) =>
             {
                 Background = Brushes.Transparent;
+                WindowEffects.RemoveCaption(new System.Windows.Interop.WindowInteropHelper(this).Handle);
                 WindowEffects.SetBlur(this, Backdrop.Blur);
             };
             Loaded += (_, _) => Background = Brushes.Transparent;
         }
         // WindowChrome (lo usa WPF-UI) borra la región de la ventana al cambiar de tamaño:
         // se reaplica después de que termine de procesar el cambio.
-        SizeChanged += (_, _) => Dispatcher.BeginInvoke(ApplyRegion, System.Windows.Threading.DispatcherPriority.Background);
+        SizeChanged += (_, _) => Dispatcher.BeginInvoke(() =>
+        {
+            ApplyRegion();
+            ReapplyGlass();
+        }, System.Windows.Threading.DispatcherPriority.Background);
         ContentRendered += (_, _) => ApplyRegion();
         WindowCornerPreference = WindowCornerPreference.Round;
         Opacity = 0; // se muestra al terminar de posicionarse, sin parpadeo
@@ -149,6 +155,26 @@ public abstract class FlyoutWindow : FluentWindow
     protected virtual double TopOverflow => 0;
 
     /// <summary>Recorta la ventana con esquinas redondeadas si el tema las pide más grandes que las de DWM.</summary>
+    /// <summary>
+    /// Vuelve a poner el vidrio (desenfoque o transparencia) de los temas translúcidos. WindowChrome
+    /// de WPF-UI deshace la extensión del marco de DWM al mostrarse y al cambiar de tamaño: sin ella
+    /// DWM ignora el alfa y pinta el fondo blanco detrás del tinte, y el panel se veía opaco.
+    /// </summary>
+    private void ReapplyGlass()
+    {
+        if (ThemeManager.ThemeFor(_device).Backdrop is not (Backdrop.Acrylic or Backdrop.Blur)
+            || new System.Windows.Interop.WindowInteropHelper(this).Handle == IntPtr.Zero)
+            return;
+        // WindowChrome extiende el marco con su GlassFrameThickness cada vez que recalcula la ventana:
+        // con -1 lo deja extendido a todo el cliente en lugar de deshacerlo.
+        if (System.Windows.Shell.WindowChrome.GetWindowChrome(this) is { } chrome
+            && chrome.GlassFrameThickness != new Thickness(-1))
+            chrome.GlassFrameThickness = new Thickness(-1);
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        WindowEffects.RemoveCaption(hwnd);
+        WindowEffects.SetBlur(hwnd, Backdrop.Blur);
+    }
+
     private void ApplyRegion()
     {
         double radius = ThemeManager.ThemeFor(_device).PanelRadius;
@@ -226,6 +252,9 @@ public abstract class FlyoutWindow : FluentWindow
     private double _offsetX, _offsetY;
     private bool _placed;
 
+    /// <summary>Ya se llevó a su lugar en la pantalla (no sigue en -32000).</summary>
+    internal bool Placed => _placed || FillWorkArea;
+
     public void ShowAt(FrameworkElement anchor)
     {
         if (Window.GetWindow(anchor) is Taskbar bar)
@@ -248,6 +277,7 @@ public abstract class FlyoutWindow : FluentWindow
         // Se arma fuera de la pantalla: el Acrylic de Windows se dibuja con la ventana ya activa y el
         // primer cuadro salía opaco. Se trae a su lugar un par de cuadros después.
         Left = Top = -32000;
+        ReapplyGlass();
         Show();
         if (!FillWorkArea)
             LimitHeightToScreen(anchor);
@@ -257,6 +287,7 @@ public abstract class FlyoutWindow : FluentWindow
             if (_closing)
                 return;
             PositionAbove(anchor);
+            ReapplyGlass();
             // Si el contenido cambia de tamaño (secciones que se expanden, listas que terminan de cargar),
             // se mantiene pegado a la barra. Se difiere hasta después del render: al disparar SizeChanged
             // la ventana nativa todavía tiene el tamaño anterior.
@@ -306,7 +337,7 @@ public abstract class FlyoutWindow : FluentWindow
             Close();
     }
 
-    private void FinishClosing()
+    internal void FinishClosing()
     {
         if (Reusable && IsLoaded)
         {
@@ -323,15 +354,28 @@ public abstract class FlyoutWindow : FluentWindow
     private static void AfterFrames(int frames, Action action)
     {
         int left = frames;
+        bool done = false;
         EventHandler? handler = null;
-        handler = (_, _) =>
+        // Respaldo: si WPF no llega a dibujar (ventana fuera de la pantalla sin nada que cambie), el
+        // panel quedaba abierto en -32000, invisible, y el siguiente clic solo lo "cerraba".
+        var fallback = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        void Run()
         {
-            if (--left > 0)
+            if (done)
                 return;
+            done = true;
+            fallback.Stop();
             System.Windows.Media.CompositionTarget.Rendering -= handler;
             action();
+        }
+        handler = (_, _) =>
+        {
+            if (--left <= 0)
+                Run();
         };
+        fallback.Tick += (_, _) => Run();
         System.Windows.Media.CompositionTarget.Rendering += handler;
+        fallback.Start();
     }
 
     /// <summary>Un cierre de fuera (Alt+Tab, Alt+F4) pasa por el cierre normal: oculta el reutilizable.</summary>
@@ -354,11 +398,17 @@ public abstract class FlyoutWindow : FluentWindow
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern int SetWindowLong(IntPtr hwnd, int index, int value);
 
+    /// <summary>Empezó a cerrarse hace más de un segundo y sigue visible.</summary>
+    internal bool StuckClosing => _closing && IsVisible && DateTime.UtcNow - _closingAt > TimeSpan.FromSeconds(1);
+
+    private DateTime _closingAt;
+
     public void CloseFlyout()
     {
         if (_closing)
             return;
         _closing = true;
+        _closingAt = DateTime.UtcNow;
         if (!IsVisible)
         {
             Dispatcher.BeginInvoke(FinishClosing);
@@ -392,7 +442,7 @@ public abstract class FlyoutWindow : FluentWindow
     /// fijas sobre el Acrylic); al acercar o rebotar, el panel entero.
     /// </summary>
     private FrameworkElement Moving() =>
-        Settings.Current.PanelAnimation is PanelAnimation.Zoom or PanelAnimation.Pop || _root is null
+        Settings.Current.PanelAnimation is PanelAnimation.Zoom or PanelAnimation.Pop or PanelAnimation.Unfold or PanelAnimation.Expand || _root is null
             ? (FrameworkElement?)_root ?? this
             : _content ?? _root;
 
@@ -531,11 +581,29 @@ public static class FlyoutManager
         // Un panel que no llegó a mostrarse (falló al abrir) no cuenta como abierto.
         if (_open is { IsVisible: false })
             _open = null;
+        // Uno que quedó a medio cerrar (visible pero ya cerrándose desde hace rato) no debe tragarse
+        // el clic: CloseFlyout no haría nada y el botón dejaba de abrir el panel.
+        if (_open is { } stuck && stuck.StuckClosing)
+        {
+            Log.Info($"Panel {stuck.GetType().Name} trabado al cerrarse: se oculta a la fuerza");
+            stuck.FinishClosing();
+            _open = null;
+        }
 
         if (_open is T current)
         {
-            current.CloseFlyout();
-            return;
+            // Abierto pero nunca colocado (sigue fuera de la pantalla): se vuelve a abrir en vez de cerrarlo.
+            if (!current.Placed && !current.StuckClosing)
+            {
+                Log.Info($"Panel {current.GetType().Name} abierto fuera de la pantalla: se vuelve a colocar");
+                current.FinishClosing();
+                _open = null;
+            }
+            else
+            {
+                current.CloseFlyout();
+                return;
+            }
         }
 
         // El clic sobre el botón ya cerró el panel al quitarle el foco: no reabrirlo.

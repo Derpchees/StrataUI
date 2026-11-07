@@ -26,6 +26,9 @@ public static class WinKeyHook
     private const uint WmTimer = 0x0113;
 
     private const uint WmQuit = 0x0012;
+    private const int VkTab = 0x09, VkReturn = 0x0D, VkShift = 0x10, VkControl = 0x11, VkMenu = 0x12, VkEscape = 0x1B;
+    private const int VkLeft = 0x25, VkUp = 0x26, VkRight = 0x27, VkDown = 0x28, VkDelete = 0x2E;
+    private const int VkLMenu = 0xA4, VkRMenu = 0xA5;
 
     private static IntPtr _hook;
     private static HookProc? _proc; // referencia viva para el GC
@@ -39,6 +42,9 @@ public static class WinKeyHook
     private static volatile bool _handleWinN;
     private static volatile bool _handleWinE;
     private static volatile bool _watchLocks;
+    private static volatile bool _handleAltTab;
+    private static bool _altTabbing;     // Alt+Tab de Strata UI abierto (hasta soltar Alt)
+    private static bool _maskAltRelease; // al soltar Alt hay que enmascararlo (se tragó un Tab)
 
     /// <summary>Win se pulsó y soltó sola (se invoca en el hilo de la UI).</summary>
     public static event Action? WinPressed;
@@ -62,6 +68,15 @@ public static class WinKeyHook
     /// </summary>
     public static event Action<int>? VolumeKeyPressed;
 
+    /// <summary>Alt+Tab: (hacia atrás con Shift, todas las ventanas con Ctrl). En el hilo de la UI.</summary>
+    public static event Action<bool, bool>? AltTabPressed;
+
+    /// <summary>Con Alt+Tab abierto: flechas, Supr, Esc o Enter (código de tecla; en el hilo de la UI).</summary>
+    public static event Action<int>? AltTabKey;
+
+    /// <summary>Se soltó Alt con Alt+Tab abierto: cambiar a la ventana elegida (en el hilo de la UI).</summary>
+    public static event Action? AltTabReleased;
+
     /// <summary>
     /// El hook vive en un hilo propio con su bucle de mensajes: si la UI se bloquea un momento,
     /// el teclado del sistema no se retrasa (Windows espera al hook en cada tecla) ni Windows
@@ -71,13 +86,15 @@ public static class WinKeyHook
     /// <param name="winN">Win+N (centro de notificaciones de Strata UI).</param>
     /// <param name="lockKeys">OSD: avisar de las teclas de bloqueo (sin interceptarlas) y atender las de volumen.</param>
     /// <param name="winE">Win+E (Archivos de Strata UI).</param>
-    public static void Update(bool winKey, bool winN, bool lockKeys = false, bool winE = false)
+    /// <param name="altTab">Alt+Tab (el selector de ventanas de Strata UI).</param>
+    public static void Update(bool winKey, bool winN, bool lockKeys = false, bool winE = false, bool altTab = false)
     {
+        _handleAltTab = altTab;
         _handleWin = winKey;
         _handleWinN = winN;
         _handleWinE = winE;
         _watchLocks = lockKeys;
-        bool enabled = winKey || winN || lockKeys || winE;
+        bool enabled = winKey || winN || lockKeys || winE || altTab;
         if (enabled && _thread == null)
         {
             var ready = new ManualResetEventSlim();
@@ -145,6 +162,14 @@ public static class WinKeyHook
                     System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => VolumeKeyPressed?.Invoke(vk));
                 }
                 return (IntPtr)1;
+            }
+            // Alt+Tab también con teclas simuladas (teclados de macros, AutoHotkey). La máscara que se
+            // inyecta al soltar Alt no vuelve a entrar: el estado ya se limpió antes de enviarla.
+            if (info.VkCode != VkMask)
+            {
+                int msg = (int)wParam;
+                if (AltTab(info, msg is WmKeyDown or WmSysKeyDown, msg is WmKeyUp or WmSysKeyUp) is { } altTabResult)
+                    return altTabResult;
             }
             if ((info.Flags & LlkhfInjected) == 0)
             {
@@ -216,13 +241,66 @@ public static class WinKeyHook
         return CallNextHookEx(_hook, code, wParam, lParam);
     }
 
-    private static void SendMaskKey(KbdLlHookStruct win)
+    /// <summary>
+    /// Alt+Tab: el Tab no llega a Windows (no abre su selector) y, mientras el de Strata UI está abierto,
+    /// tampoco las flechas, Supr, Esc ni Enter. Al soltar Alt se enmascara como Win: si no, la app del
+    /// frente vería un Alt solo y activaría su barra de menús. Devuelve null si la tecla sigue su curso.
+    /// </summary>
+    private static IntPtr? AltTab(KbdLlHookStruct info, bool down, bool up)
+    {
+        bool isAlt = info.VkCode is VkMenu or VkLMenu or VkRMenu;
+        if (isAlt && up && (_altTabbing || _maskAltRelease))
+        {
+            bool commit = _altTabbing;
+            _altTabbing = _maskAltRelease = false;
+            SendMaskKey(info, (info.Flags & 1) != 0);
+            if (commit)
+                System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => AltTabReleased?.Invoke());
+            return (IntPtr)1;
+        }
+        if (!down)
+            return null;
+        bool altHeld = (GetAsyncKeyState(VkMenu) & 0x8000) != 0;
+        if (!altHeld)
+        {
+            // Se perdió el soltar de Alt (otra app lo tragó): el estado viejo ya no vale.
+            if (_altTabbing)
+            {
+                _altTabbing = _maskAltRelease = false;
+                System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => AltTabKey?.Invoke(VkEscape));
+            }
+            return null;
+        }
+        if (info.VkCode == VkTab && (_handleAltTab || _altTabbing))
+        {
+            bool backward = (GetAsyncKeyState(VkShift) & 0x8000) != 0;
+            // Ctrl+Alt+Tab: todas las ventanas aunque Alt+Tab sea por monitor.
+            bool all = (GetAsyncKeyState(VkControl) & 0x8000) != 0;
+            _altTabbing = _maskAltRelease = true;
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => AltTabPressed?.Invoke(backward, all));
+            return (IntPtr)1;
+        }
+        if (_altTabbing && info.VkCode is VkLeft or VkRight or VkUp or VkDown or VkDelete or VkEscape or VkReturn)
+        {
+            int vk = info.VkCode;
+            // Esc y Enter cierran el selector; el soltar de Alt se sigue enmascarando.
+            if (vk is VkEscape or VkReturn)
+                _altTabbing = false;
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(() => AltTabKey?.Invoke(vk));
+            return (IntPtr)1;
+        }
+        return null;
+    }
+
+    private static void SendMaskKey(KbdLlHookStruct win) => SendMaskKey(win, true);
+
+    private static void SendMaskKey(KbdLlHookStruct win, bool extended)
     {
         var inputs = new[]
         {
             new Input { Type = 1, Keyboard = new KeybdInput { Vk = VkMask } },
             new Input { Type = 1, Keyboard = new KeybdInput { Vk = VkMask, Flags = KeyEventFKeyUp } },
-            new Input { Type = 1, Keyboard = new KeybdInput { Vk = (ushort)win.VkCode, Scan = (ushort)win.ScanCode, Flags = KeyEventFKeyUp | KeyEventFExtendedKey } },
+            new Input { Type = 1, Keyboard = new KeybdInput { Vk = (ushort)win.VkCode, Scan = (ushort)win.ScanCode, Flags = KeyEventFKeyUp | (extended ? KeyEventFExtendedKey : 0) } },
         };
         SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<Input>());
     }
@@ -265,6 +343,9 @@ public static class WinKeyHook
 
     [DllImport("user32.dll")]
     private static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vk);
 
     [DllImport("user32.dll")]
     private static extern uint SendInput(uint count, Input[] inputs, int size);

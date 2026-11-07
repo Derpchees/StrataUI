@@ -22,6 +22,9 @@ public partial class TaskbarPage : Page
         Select(AppsModeBox, s.TaskbarAppsMode.ToString());
         AppsModeCard.Visibility = ScreenPicker.Screens().Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         SensorsStartupSwitch.IsChecked = s.SensorsAtStartup;
+        AltTabSwitch.IsChecked = s.AltTabEnabled;
+        AltTabMonitorSwitch.IsChecked = s.AltTabPerMonitor;
+        AltTabMonitorCard.IsEnabled = s.AltTabEnabled;
         UpdateSensors();
         LoadScreen();
         BuildSummary();
@@ -116,6 +119,18 @@ public partial class TaskbarPage : Page
     {
         if (!_loading && AppsModeBox.SelectedItem is ComboBoxItem { Tag: string tag })
             Settings.Update(s => s.TaskbarAppsMode = Enum.Parse<TaskbarAppsMode>(tag));
+    }
+
+    private void AltTab_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading)
+            return;
+        Settings.Update(s =>
+        {
+            s.AltTabEnabled = AltTabSwitch.IsChecked == true;
+            s.AltTabPerMonitor = AltTabMonitorSwitch.IsChecked == true;
+        });
+        AltTabMonitorCard.IsEnabled = AltTabSwitch.IsChecked == true;
     }
 
     private void Global_Changed(object sender, RoutedEventArgs e)

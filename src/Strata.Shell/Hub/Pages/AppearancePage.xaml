@@ -1,4 +1,4 @@
-<Page x:Class="Strata.Shell.Hub.Pages.AppearancePage"
+﻿<Page x:Class="Strata.Shell.Hub.Pages.AppearancePage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
@@ -36,6 +36,35 @@
                 <ui:ToggleSwitch x:Name="WindowsThemeSwitch" Click="WindowsTheme_Click" />
             </ui:CardControl>
 
+            <ui:CardControl x:Name="TransparencyCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Blur24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Transparencia'}" />
+                        <TextBlock x:Name="TransparencyHint" Style="{StaticResource CardDescription}"
+                                   Text="{l:T 'Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Horizontal">
+                    <Slider x:Name="TransparencySlider" Width="180" Minimum="0" Maximum="100" SmallChange="5" LargeChange="10"
+                            IsMoveToPointEnabled="True" VerticalAlignment="Center" ValueChanged="Transparency_Changed" />
+                    <TextBlock x:Name="TransparencyValue" Style="{StaticResource CardDescription}" Width="40" Margin="10,0,0,0"
+                               VerticalAlignment="Center" TextAlignment="Right" />
+                </StackPanel>
+            </ui:CardControl>
+
+            <ui:CardControl x:Name="BlurCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="DropletHalfFilled24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Desenfocar el fondo'}" />
+                        <TextBlock Style="{StaticResource CardDescription}"
+                                   Text="{l:T 'Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="BlurSwitch" Click="Blur_Click" />
+            </ui:CardControl>
+
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Animaciones'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">
@@ -52,6 +81,10 @@
                     <ComboBoxItem Content="{l:T 'Acercar'}" Tag="Zoom" />
                     <ComboBoxItem Content="{l:T 'Rebote'}" Tag="Pop" />
                     <ComboBoxItem Content="{l:T 'Subir desde lejos'}" Tag="Rise" />
+                    <ComboBoxItem Content="{l:T 'Resorte'}" Tag="Spring" />
+                    <ComboBoxItem Content="{l:T 'Desplegar'}" Tag="Unfold" />
+                    <ComboBoxItem Content="{l:T 'Expandir desde el centro'}" Tag="Expand" />
+                    <ComboBoxItem Content="{l:T 'Deslizar de lado'}" Tag="Drift" />
                     <ComboBoxItem Content="{l:T 'Sin animación'}" Tag="None" />
                 </ComboBox>
             </ui:CardControl>

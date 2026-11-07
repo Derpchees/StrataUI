@@ -62,6 +62,7 @@ public partial class TaskButton : UserControl
             _watchedLeader = null;
             WebSites.IconsChanged -= UpdateIcon;
             AppIconOverrides.Changed -= UpdateIcon;
+            WatchButtonRect([]);
         };
     }
 
@@ -228,6 +229,51 @@ public partial class TaskButton : UserControl
         BrowserBadge.Visibility = siteIcon != null ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private readonly List<ApplicationWindow> _rectWatched = [];
+
+    /// <summary>
+    /// Al minimizar o restaurar una ventana, Windows pregunta a la barra dónde está su botón y la anima
+    /// hacia él (o desde él). Sin esto, la ventana se iba a una esquina de la pantalla.
+    /// </summary>
+    private void WatchButtonRect(IReadOnlyList<ApplicationWindow> members)
+    {
+        foreach (var window in _rectWatched.Except(members).ToList())
+        {
+            window.GetButtonRect -= OnGetButtonRect;
+            _rectWatched.Remove(window);
+        }
+        foreach (var window in members.Except(_rectWatched).ToList())
+        {
+            window.GetButtonRect += OnGetButtonRect;
+            _rectWatched.Add(window);
+        }
+    }
+
+    private void OnGetButtonRect(ref ManagedShell.Interop.NativeMethods.ShortRect rect)
+    {
+        if (!IsVisible || PresentationSource.FromVisual(this) is null)
+            return;
+        try
+        {
+            var topLeft = PointToScreen(new Point(0, 0));
+            var bottomRight = PointToScreen(new Point(ActualWidth, ActualHeight));
+            // Con una barra en cada monitor, la del monitor de la ventana manda (si ya hay otra, no se pisa).
+            bool filled = rect.Right > rect.Left;
+            if (filled && _bar != null && Window is { } window
+                && System.Windows.Forms.Screen.FromHandle(window.Handle).DeviceName
+                   != System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point((int)topLeft.X, (int)topLeft.Y)).DeviceName)
+                return;
+            rect.Left = (short)topLeft.X;
+            rect.Top = (short)topLeft.Y;
+            rect.Right = (short)bottomRight.X;
+            rect.Bottom = (short)bottomRight.Y;
+        }
+        catch (InvalidOperationException)
+        {
+            // El botón dejó la ventana justo ahora: Windows usa su posición de siempre.
+        }
+    }
+
     /// <summary>Ventanas de este botón: la suya o, con las ventanas agrupadas, todas las de la app.</summary>
     private IReadOnlyList<ApplicationWindow> Members() =>
         Window is not { } window ? [] : _bar?.GroupMembers(window) ?? [window];
@@ -240,6 +286,7 @@ public partial class TaskButton : UserControl
     private void UpdateGroup()
     {
         var members = Members();
+        WatchButtonRect(IsLoaded ? members : []);
         bool grouped = members.Count > 1;
         _layers = Math.Min(members.Count - 1, 2);
         StackEdge.Visibility = grouped ? Visibility.Visible : Visibility.Collapsed;

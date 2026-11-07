@@ -1391,5 +1391,17 @@
   "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "Die Startaufgabe wurde von Strata UI als Administrator erstellt und kann nicht aktualisiert werden. Zum Reparieren wird einmal um Erlaubnis gefragt.",
   "Reparar": "Reparieren",
   "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Reparieren fehlgeschlagen. Versuche es erneut und erlaube den Administratorzugriff.",
-  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Es wurde verschoben oder gelöscht. Löse es und hefte es erneut an."
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Es wurde verschoben oder gelöscht. Löse es und hefte es erneut an.",
+  "Cambiar de ventana": "Fenster wechseln",
+  "Alt+Tab de Strata UI": "Strata UI Alt+Tab",
+  "Cambia de ventana con vistas en vivo. Las flechas eligen, Supr o la rueda del mouse cierran una ventana y Esc cancela. Apagado, se usa el de Windows.": "Fenster mit Live-Vorschauen wechseln. Pfeiltasten wählen, Entf oder das Mausrad schließt ein Fenster und Esc bricht ab. Ausgeschaltet wird das von Windows verwendet.",
+  "Alt+Tab por monitor": "Alt+Tab pro Monitor",
+  "Alt+Tab muestra solo las ventanas del monitor de la ventana activa. Con Ctrl+Alt+Tab se ven todas.": "Alt+Tab zeigt nur die Fenster auf dem Monitor des aktiven Fensters. Mit Strg+Alt+Tab werden alle angezeigt.",
+  "Resorte": "Feder",
+  "Desplegar": "Aufklappen",
+  "Expandir desde el centro": "Aus der Mitte vergrößern",
+  "Deslizar de lado": "Seitlich gleiten",
+  "Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.": "Wie viel vom Hintergrund durch das Startmenü, die Bereiche, die Menüs, den Infobereich und die Benachrichtigungen scheint. Mit den Designs Durchscheinend und Vollständig transparent.",
+  "Desenfocar el fondo": "Hintergrund weichzeichnen",
+  "Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.": "Zeichnet weich, was hinter dem Glas zu sehen ist, wie Acrylic von Windows. Aus: scharf."
 }

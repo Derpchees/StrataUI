@@ -162,7 +162,7 @@
                         <Popup x:Name="HiddenTrayPopup" PlacementTarget="{Binding ElementName=ChevronButton}"
                                Placement="Top" VerticalOffset="-8" StaysOpen="False"
                                AllowsTransparency="True" PopupAnimation="Fade">
-                            <Border Background="{DynamicResource StrataPopupBackgroundBrush}"
+                            <Border Background="{DynamicResource StrataGlassPopupBrush}"
                                     BorderBrush="{DynamicResource StrataFlyoutBorderBrush}"
                                     BorderThickness="1" CornerRadius="{DynamicResource StrataLargeCornerRadius}" Padding="6">
                                 <ItemsControl x:Name="HiddenTray" MaxWidth="168">

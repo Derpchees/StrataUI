@@ -1391,5 +1391,17 @@
   "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "A tarefa de inicialização foi criada pelo Strata UI como administrador e não pode ser atualizada. Repará-la pede permissão uma vez.",
   "Reparar": "Reparar",
   "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Não foi possível reparar. Tente de novo e aceite a permissão de administrador.",
-  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Foi movido ou excluído. Desafixe e fixe de novo."
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Foi movido ou excluído. Desafixe e fixe de novo.",
+  "Cambiar de ventana": "Alternar janela",
+  "Alt+Tab de Strata UI": "Alt+Tab do Strata UI",
+  "Cambia de ventana con vistas en vivo. Las flechas eligen, Supr o la rueda del mouse cierran una ventana y Esc cancela. Apagado, se usa el de Windows.": "Alterne entre janelas com prévias ao vivo. As setas escolhem, Delete ou a roda do mouse fecham uma janela e Esc cancela. Desligado, usa-se o do Windows.",
+  "Alt+Tab por monitor": "Alt+Tab por monitor",
+  "Alt+Tab muestra solo las ventanas del monitor de la ventana activa. Con Ctrl+Alt+Tab se ven todas.": "O Alt+Tab mostra só as janelas do monitor da janela ativa. Com Ctrl+Alt+Tab aparecem todas.",
+  "Resorte": "Mola",
+  "Desplegar": "Desdobrar",
+  "Expandir desde el centro": "Expandir do centro",
+  "Deslizar de lado": "Deslizar de lado",
+  "Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.": "Quanto do fundo aparece através do menu Iniciar, dos painéis, dos menus, da bandeja e dos avisos. Com os temas Translúcido e Totalmente transparente.",
+  "Desenfocar el fondo": "Desfocar o fundo",
+  "Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.": "Desfoca o que aparece atrás do vidro, como o Acrylic do Windows. Desligado, fica nítido."
 }

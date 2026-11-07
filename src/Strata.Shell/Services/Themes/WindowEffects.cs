@@ -24,6 +24,11 @@ public static class WindowEffects
         if (hwnd == IntPtr.Zero)
             return;
         bool enabled = clear || backdrop is Backdrop.Acrylic or Backdrop.Blur;
+        // Sin "Desenfocar el fondo" (Hub › Tema), los temas translúcidos dejan ver lo de detrás tal
+        // cual, solo con el tinte de WPF: el desenfoque de Windows es tan fuerte que lo convertía en
+        // un gris parejo y se veía opaco.
+        if (enabled && !Settings.Current.PanelBlur)
+            clear = true;
 
         if (HwndSource.FromHwnd(hwnd) is { CompositionTarget: { } target })
             target.BackgroundColor = enabled ? Colors.Transparent : SystemColors.WindowColor;
@@ -32,10 +37,11 @@ public static class WindowEffects
         {
             // Transparente: sin acento. (El "gradiente transparente" de DWM pinta el color de acento
             // de Windows o, con su bandera y alfa 0, esconde también el contenido de WPF.)
+            // Translúcido también usa el desenfoque limpio: el Acrylic de DWM agrega una capa de
+            // luminosidad y ruido que dejaba los menús y avisos grises y casi opacos.
             AccentState = clear ? AccentDisabled : backdrop switch
             {
-                Backdrop.Acrylic => AccentEnableAcrylicBlurBehind,
-                Backdrop.Blur => AccentEnableBlurBehind,
+                Backdrop.Acrylic or Backdrop.Blur => AccentEnableBlurBehind,
                 _ => AccentDisabled,
             },
             // Tinte casi nulo: el tinte real lo pinta WPF con la paleta del tema.
@@ -60,6 +66,35 @@ public static class WindowEffects
         var margins = enabled ? new Margins(-1) : new Margins(0);
         DwmExtendFrameIntoClientArea(hwnd, ref margins);
     }
+
+    /// <summary>
+    /// Quita el estilo de barra de título (WS_CAPTION) que deja WindowChrome. Con él, DWM pinta el
+    /// color gris del marco detrás de lo transparente de WPF y el vidrio se veía opaco.
+    /// </summary>
+    public static void RemoveCaption(IntPtr hwnd)
+    {
+        if (hwnd == IntPtr.Zero)
+            return;
+        int style = GetWindowLongW(hwnd, GwlStyle);
+        if ((style & WsCaption) == 0)
+            return;
+        SetWindowLongW(hwnd, GwlStyle, style & ~WsCaption);
+        // Sin esto Windows no vuelve a calcular el marco con el estilo nuevo.
+        SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0, SwpFrameChanged | SwpNoMove | SwpNoSize | SwpNoZOrder | SwpNoActivate);
+    }
+
+    private const int GwlStyle = -16;
+    private const int WsCaption = 0x00C00000;
+    private const uint SwpNoSize = 0x1, SwpNoMove = 0x2, SwpNoZOrder = 0x4, SwpNoActivate = 0x10, SwpFrameChanged = 0x20;
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    private static extern int GetWindowLongW(IntPtr hwnd, int index);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongW")]
+    private static extern int SetWindowLongW(IntPtr hwnd, int index, int value);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
 
     /// <summary>
     /// Recorta la ventana (y su desenfoque) a un rectángulo redondeado, en coordenadas de
@@ -102,7 +137,6 @@ public static class WindowEffects
     private const int WcaAccentPolicy = 19;
     private const int AccentDisabled = 0;
     private const int AccentEnableBlurBehind = 3;
-    private const int AccentEnableAcrylicBlurBehind = 4;
 
     [DllImport("gdi32.dll")]
     private static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int widthEllipse, int heightEllipse);

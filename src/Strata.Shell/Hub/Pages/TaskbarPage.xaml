@@ -81,6 +81,28 @@
                 </ComboBox>
             </ui:CardControl>
 
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="TabDesktopMultiple20" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Alt+Tab de Strata UI'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Cambia de ventana con vistas en vivo. Las flechas eligen, Supr o la rueda del mouse cierran una ventana y Esc cancela. Apagado, se usa el de Windows.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="AltTabSwitch" Click="AltTab_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl x:Name="AltTabMonitorCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Alt+Tab por monitor'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Alt+Tab muestra solo las ventanas del monitor de la ventana activa. Con Ctrl+Alt+Tab se ven todas.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="AltTabMonitorSwitch" Click="AltTab_Changed" />
+            </ui:CardControl>
+
             <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon DeveloperBoard24}" IsExpanded="True">
                 <ui:CardExpander.Header>
                     <StackPanel>

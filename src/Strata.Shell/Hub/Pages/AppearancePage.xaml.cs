@@ -22,17 +22,23 @@ public partial class AppearancePage : Page
 
         var s = Settings.Current;
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
+        TransparencySlider.Value = s.PanelTransparency;
+        BlurSwitch.IsChecked = s.PanelBlur;
+        TransparencyValue.Text = $"{s.PanelTransparency} %";
+        UpdateTransparencyCard();
         BuildAnimationChoices();
         Select(SpeedBox, s.AnimationSpeed.ToString());
         _loading = false;
         BuildThemeGallery();
 
         ThemeManager.ThemeChanged += BuildThemeGallery;
+        ThemeManager.ThemeChanged += UpdateTransparencyCard;
         ScreenPicker.Changed += OnScreenChanged;
         ModuleStore.Changed += OnModulesChanged;
         Unloaded += (_, _) =>
         {
             ThemeManager.ThemeChanged -= BuildThemeGallery;
+            ThemeManager.ThemeChanged -= UpdateTransparencyCard;
             ScreenPicker.Changed -= OnScreenChanged;
             ModuleStore.Changed -= OnModulesChanged;
         };
@@ -300,6 +306,41 @@ public partial class AppearancePage : Page
         });
         // Vista previa: un aviso de prueba con la animación elegida.
         Services.Notifications.NotificationService.ShowTest();
+    }
+
+    private System.Windows.Threading.DispatcherTimer? _transparencySave;
+
+    /// <summary>Se guarda al dejar de mover (cada guardado reconstruye la paleta de toda la app).</summary>
+    private void Transparency_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        int value = (int)Math.Round(e.NewValue);
+        if (TransparencyValue is not null)
+            TransparencyValue.Text = $"{value} %";
+        if (_loading)
+            return;
+        _transparencySave ??= new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+        _transparencySave.Stop();
+        _transparencySave.Tick -= SaveTransparency;
+        _transparencySave.Tick += SaveTransparency;
+        _transparencySave.Start();
+    }
+
+    private void SaveTransparency(object? sender, EventArgs e)
+    {
+        _transparencySave?.Stop();
+        int value = (int)Math.Round(TransparencySlider.Value);
+        if (Settings.Current.PanelTransparency != value)
+            Settings.Update(s => s.PanelTransparency = value);
+    }
+
+    /// <summary>Solo los temas translúcidos usan la transparencia.</summary>
+    private void UpdateTransparencyCard() =>
+        TransparencyCard.IsEnabled = BlurCard.IsEnabled = ThemeManager.Theme.Backdrop == Backdrop.Acrylic;
+
+    private void Blur_Click(object sender, RoutedEventArgs e)
+    {
+        bool on = BlurSwitch.IsChecked == true;
+        Settings.Update(s => s.PanelBlur = on);
     }
 
     private void WindowsTheme_Click(object sender, RoutedEventArgs e) =>

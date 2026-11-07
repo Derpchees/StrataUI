@@ -12,6 +12,10 @@ public static class Palette
     /// <param name="shown">Acento tal como lo pintan los controles (el de WPF-UI); si falta, se calcula.</param>
     /// <param name="barColor">Color propio de la barra (Hub › Colores), con su opacidad; null = el del tema.</param>
     /// <param name="panelColor">Color propio de los paneles y el menú Inicio; null = el del tema.</param>
+    /// <summary>Opacidad del tinte de los paneles translúcidos: 0 % de transparencia casi sólido, 100 % casi solo el desenfoque.</summary>
+    public static byte GlassAlpha(int transparency) =>
+        (byte)Math.Round(0xF0 - Math.Clamp(transparency, 0, 100) / 100.0 * (0xF0 - 0x26));
+
     public static ResourceDictionary Build(ThemeInfo theme, bool light, Color accent, double barHeight = 48,
                                            Color? shown = null, Color? barColor = null, Color? panelColor = null)
     {
@@ -90,10 +94,15 @@ public static class Palette
         }
         else if (theme.Backdrop == Backdrop.Acrylic)
         {
-            // Translúcido: el mismo color base, semitransparente sobre el Acrylic. En Transparente total
-            // casi sin tinte: el Acrylic solo ya se lee y así se ve el fondo (con más parecía Mica).
-            background = WithAlpha(background, light ? (byte)0xB3 : (byte)0x99);
-            flyout = WithAlpha(flyout, theme.ClearBar ? (byte)0x1F : (byte)0x66);
+            // Translúcido y Transparente total: el color base, semitransparente sobre el desenfoque
+            // limpio (sin la capa gris del Acrylic de Windows, que lo dejaba opaco). Cuánto se ve el
+            // fondo lo elige el usuario (Hub › Tema › Transparencia). En oscuro el gris neutro se
+            // cambia por uno casi negro: con la misma transparencia oscurece más lo de detrás y el
+            // texto se sigue leyendo sobre una ventana blanca.
+            background = WithAlpha(background, light ? (byte)0xA6 : (byte)0x8C);
+            if (!light && flyout == Hex("#2B2B2B"))
+                flyout = Hex("#18181B");
+            flyout = WithAlpha(flyout, GlassAlpha(Settings.Current.PanelTransparency));
             hubTint = WithAlpha(flyout, theme.ClearBar ? (byte)0x0F : (byte)0x33);
         }
 

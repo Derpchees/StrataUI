@@ -1391,5 +1391,17 @@
   "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "The startup task was created by Strata UI as administrator and can't be updated. Repairing it asks for permission once.",
   "Reparar": "Repair",
   "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Couldn't repair it. Try again and accept the administrator prompt.",
-  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "It was moved or deleted. Unpin it and pin it again."
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "It was moved or deleted. Unpin it and pin it again.",
+  "Cambiar de ventana": "Switch window",
+  "Alt+Tab de Strata UI": "Strata UI Alt+Tab",
+  "Cambia de ventana con vistas en vivo. Las flechas eligen, Supr o la rueda del mouse cierran una ventana y Esc cancela. Apagado, se usa el de Windows.": "Switch windows with live previews. Arrows choose, Delete or the mouse wheel closes a window, and Esc cancels. When off, the Windows one is used.",
+  "Alt+Tab por monitor": "Alt+Tab per monitor",
+  "Alt+Tab muestra solo las ventanas del monitor de la ventana activa. Con Ctrl+Alt+Tab se ven todas.": "Alt+Tab shows only the windows on the active window's monitor. Ctrl+Alt+Tab shows them all.",
+  "Resorte": "Spring",
+  "Desplegar": "Unfold",
+  "Expandir desde el centro": "Expand from center",
+  "Deslizar de lado": "Slide sideways",
+  "Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.": "How much of the background shows through the Start menu, panels, menus, tray and notifications. With the Translucent and Fully transparent themes.",
+  "Desenfocar el fondo": "Blur the background",
+  "Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.": "Blurs what shows behind the glass, like Windows Acrylic. When off, it looks sharp."
 }

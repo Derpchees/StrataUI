@@ -1391,5 +1391,17 @@
   "La tarea de inicio la creó Strata UI como administrador y no se puede actualizar. Repararla pide permiso una vez.": "La tâche de démarrage a été créée par Strata UI en tant qu'administrateur et ne peut pas être mise à jour. La réparer demande l'autorisation une fois.",
   "Reparar": "Réparer",
   "No se pudo reparar. Vuelve a intentarlo y acepta el permiso de administrador.": "Impossible de réparer. Réessayez et acceptez l'autorisation d'administrateur.",
-  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Il a été déplacé ou supprimé. Désépinglez-le puis épinglez-le de nouveau."
+  "Se movió o se borró. Quítalo y vuelve a anclarlo.": "Il a été déplacé ou supprimé. Désépinglez-le puis épinglez-le de nouveau.",
+  "Cambiar de ventana": "Changer de fenêtre",
+  "Alt+Tab de Strata UI": "Alt+Tab de Strata UI",
+  "Cambia de ventana con vistas en vivo. Las flechas eligen, Supr o la rueda del mouse cierran una ventana y Esc cancela. Apagado, se usa el de Windows.": "Changez de fenêtre avec des aperçus en direct. Les flèches choisissent, Suppr ou la molette de la souris ferment une fenêtre et Échap annule. Désactivé, celui de Windows est utilisé.",
+  "Alt+Tab por monitor": "Alt+Tab par écran",
+  "Alt+Tab muestra solo las ventanas del monitor de la ventana activa. Con Ctrl+Alt+Tab se ven todas.": "Alt+Tab n'affiche que les fenêtres de l'écran de la fenêtre active. Ctrl+Alt+Tab les affiche toutes.",
+  "Resorte": "Ressort",
+  "Desplegar": "Déplier",
+  "Expandir desde el centro": "Agrandir depuis le centre",
+  "Deslizar de lado": "Glisser de côté",
+  "Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.": "Quantité d'arrière-plan visible à travers le menu Démarrer, les panneaux, les menus, la zone de notification et les notifications. Avec les thèmes Translucide et Entièrement transparent.",
+  "Desenfocar el fondo": "Flouter l'arrière-plan",
+  "Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.": "Floute ce qui apparaît derrière le verre, comme l'Acrylic de Windows. Désactivé, l'arrière-plan reste net."
 }

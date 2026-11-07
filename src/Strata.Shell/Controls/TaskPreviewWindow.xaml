@@ -8,7 +8,7 @@
         ShowInTaskbar="False" ShowActivated="False" Topmost="True" UseLayoutRounding="True"
         FontFamily="{StaticResource UiFont}">
     <!-- Sin AllowsTransparency: las miniaturas de DWM no se dibujan en ventanas en capas. -->
-    <Border x:Name="Card" Background="{DynamicResource StrataPopupBackgroundBrush}" Padding="6">
+    <Border x:Name="Card" Background="{DynamicResource StrataGlassPopupBrush}" Padding="6">
         <!-- Una entrada por ventana (varias si la barra agrupa las de una misma app); se arman por código -->
         <StackPanel x:Name="Entries" Orientation="Horizontal" />
     </Border>
