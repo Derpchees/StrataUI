@@ -1,12 +1,11 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Strata.Shell.Services.Themes;
 
 /// <summary>
 /// Lo que anima Windows y no Strata UI (abrir, cerrar y minimizar las ventanas de las apps, y sus
 /// menús) sigue a la animación elegida en el Hub: con "Sin animación" se apagan; con cualquier otra,
-/// se encienden. No se puede cambiar cómo las anima Windows (no hay deslizar ni rebote para una
-/// ventana ajena), solo si las anima.
+/// se encienden. Minimizar y maximizar quedan apagados: los anima <see cref="WindowMotion"/>.
 /// </summary>
 /// <remarks>
 /// El valor original se guarda en la configuración antes de tocarlo y se devuelve al salir de Strata
@@ -30,7 +29,8 @@ public static class WindowsAnimations
         {
             var current = Read();
             bool on = Wanted;
-            var target = new[] { on, on, on };
+            // Minimizar y maximizar los anima Strata UI con la animación elegida (WindowMotion).
+            var target = new[] { on, on, on && !WindowMotion.Active };
             if (current.SequenceEqual(target))
                 return;
             if (Settings.Current.WindowsAnimationBackup is null)

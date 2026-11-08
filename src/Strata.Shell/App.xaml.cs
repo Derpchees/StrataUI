@@ -308,6 +308,9 @@ public partial class App : Application
         Services.Notifications.NotificationService.Update();
         Services.Notifications.WindowsBanners.Update();
         Services.Themes.WindowsAnimations.Update();
+        Services.Themes.WindowMotion.Start();
+        Services.Files.ExplorerTakeover.Update();
+        Services.Files.DialogTakeover.Update();
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
         Services.Modules.OptionalModules.StartupMaintenance();
@@ -656,6 +659,8 @@ public partial class App : Application
         Services.Notifications.NotificationService.Update();
         if (!_exiting)
         {
+            Services.Files.ExplorerTakeover.Update();
+            Services.Files.DialogTakeover.Update();
             Services.Notifications.WindowsBanners.Update();
             Services.Themes.WindowsAnimations.Update();
         }
@@ -846,6 +851,9 @@ public partial class App : Application
         Step("tecla Windows", () => Services.StartMenu.WinKeyHook.Update(false, false));
         Step("notificaciones", Services.Notifications.NotificationService.Shutdown);
         Step("avisos de Windows", Services.Notifications.WindowsBanners.Restore);
+        Step("animación de ventanas", Services.Themes.WindowMotion.Stop);
+        Step("reemplazo del Explorador", Services.Files.ExplorerTakeover.Stop);
+        Step("cuadros de archivos", Services.Files.DialogTakeover.Stop);
         Step("animaciones de Windows", Services.Themes.WindowsAnimations.Restore);
         Step("avisos", Notifications.NotificationBannerWindow.CloseAll);
         Step("OSD", Notifications.Osd.Shutdown);

@@ -1,4 +1,4 @@
-<Page x:Class="Strata.Shell.Hub.Pages.TrayPage"
+﻿<Page x:Class="Strata.Shell.Hub.Pages.TrayPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
@@ -10,8 +10,6 @@
         <StackPanel Style="{StaticResource HubPageContent}">
             <hub:PageHeader Icon="ChevronUp24" Title="{l:T 'Bandeja del sistema'}"
                             Subtitle="{l:T 'Qué íconos de apps se ven siempre en la barra y cuáles van a los ocultos.'}" />
-            <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,10" TextWrapping="Wrap"
-                       Text="{l:T 'En qué monitores y en qué parte de la barra va la bandeja se elige en el modo edición (Barra de tareas › Editar diseño).'}" />
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Íconos de la bandeja'}" />
             <TextBlock Style="{StaticResource CardDescription}" Margin="2,-4,0,10" TextWrapping="Wrap"
                        Text="{l:T 'Elige qué íconos se muestran siempre en la barra. Los demás quedan en el menú de íconos ocultos (^). Solo aparecen las apps que están abiertas ahora. En la barra también puedes arrastrarlos para ordenarlos o moverlos entre la barra y los ocultos.'}" />

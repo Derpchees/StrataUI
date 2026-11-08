@@ -84,7 +84,7 @@ public static class DragGhost
                 Topmost = true,
                 SizeToContent = SizeToContent.WidthAndHeight,
                 // El estilo de ventanas de WPF-UI impone un tamaño mínimo pensado para ventanas normales.
-                Style = null,
+                Style = new Style(typeof(Window)),
                 MinWidth = 0,
                 MinHeight = 0,
                 Left = -32000,

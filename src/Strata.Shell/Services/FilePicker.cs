@@ -26,6 +26,27 @@ public static class FilePicker
 
     private static async Task<string[]> RunAsync(string kind, string title, string filter, string flags)
     {
+        // Con Archivos como cuadro de archivos se usa directo, sin proceso aparte ni cuadro de Windows.
+        if (Files.DialogTakeover.Active && Modules.OptionalModules.Files.Load() is { } files)
+        {
+            try
+            {
+                var filters = new List<Modules.FilePickFilter>();
+                var parts = filter.Split('|');
+                for (int i = 0; i + 1 < parts.Length; i += 2)
+                    filters.Add(new Modules.FilePickFilter(parts[i], parts[i + 1].Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)));
+                var owner = System.Windows.Application.Current?.Windows.OfType<System.Windows.Window>().FirstOrDefault(w => w.IsActive);
+                var request = new Modules.FilePickRequest(kind == "folder" ? Modules.FilePickMode.Folder : Modules.FilePickMode.Open,
+                    flags.Contains('m'), null, null, filters, 0, title,
+                    owner is null ? IntPtr.Zero : new System.Windows.Interop.WindowInteropHelper(owner).Handle);
+                var picked = await files.PickAsync(request);
+                return picked?.Paths.ToArray() ?? [];
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Falló Archivos como cuadro de archivos; se usa el de Windows", ex);
+            }
+        }
         var result = Path.Combine(Path.GetTempPath(), $"strataui-pick-{Guid.NewGuid():N}.txt");
         try
         {

@@ -96,6 +96,12 @@ public static class DragGhost
             WindowStyle = WindowStyle.None,
             AllowsTransparency = true,
             Background = Brushes.Transparent,
+            ResizeMode = ResizeMode.NoResize,
+            // Sin el estilo de ventanas de WPF-UI: impone un tamaño mínimo de ventana normal y la
+            // vista previa salía enorme.
+            Style = new Style(typeof(Window)),
+            MinWidth = 0,
+            MinHeight = 0,
             ShowInTaskbar = false,
             ShowActivated = false,
             Topmost = true,

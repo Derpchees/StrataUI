@@ -41,7 +41,8 @@ public static class TweakCatalog
     }
 
     private const string Desktop = @"Control Panel\Desktop";
-    private const string SystemProfile = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
+    private const string GraphicsDrivers = @"SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+    private const string SystemProfile =@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile";
 
     private const string Advanced = @"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
     private const string ContentDelivery = @"Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager";
@@ -289,9 +290,6 @@ public static class TweakCatalog
         new("power-throttling", Performance, Loc.T("Desactivar la limitación de energía"),
             Loc.T("Windows deja de frenar las apps en segundo plano para ahorrar energía. En portátiles gasta más batería."),
             [LM(@"SYSTEM\CurrentControlSet\Control\Power\PowerThrottling", "PowerThrottlingOff", null, 1)]),
-        new("hags", Performance, Loc.T("Programación de GPU acelerada por hardware"),
-            Loc.T("La tarjeta gráfica administra su propia memoria: menos latencia en juegos y video. Se aplica al reiniciar."),
-            [LM(@"SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 1, 2, missing: 1)]),
         new("games-priority", Performance, Loc.T("Más prioridad para juegos"),
             Loc.T("Los juegos reciben más tiempo de procesador y prioridad de disco que las tareas de fondo."),
             [LM(SystemProfile + @"\Tasks\Games", "Priority", 2, 6),
@@ -328,6 +326,18 @@ public static class TweakCatalog
         new("phone-link", Memory, Loc.T("Desactivar Vincular teléfono"),
             Loc.T("Phone Link deja de conectarse con el celular y de correr en segundo plano."),
             [PolicyLM(@"SOFTWARE\Policies\Microsoft\Windows\System", "EnableMmx", 0)]),
+
+        // ── Hardware: la tarjeta gráfica ───────────────────────────────────────
+        new("hags", Hardware, Loc.T("Programación de GPU acelerada por hardware"),
+            Loc.T("La tarjeta gráfica administra su propia memoria: menos latencia en juegos y video. Se aplica al reiniciar."),
+            [LM(GraphicsDrivers, "HwSchMode", 1, 2, missing: 1)],
+            Available: () => Services.HardwareInfo.GpuSchedulingSupported != false),
+        new("gpu-mpo", Hardware, Loc.T("Desactivar la superposición de planos (MPO)"),
+            Loc.T("Corrige parpadeos, pantallas negras y tirones en navegadores y juegos, sobre todo con varios monitores o frecuencias distintas. Se aplica al reiniciar."),
+            [LM(@"SOFTWARE\Microsoft\Windows\Dwm", "OverlayTestMode", null, 5)]),
+        new("gpu-tdr", Hardware, Loc.T("Más margen antes de reiniciar el controlador gráfico"),
+            Loc.T("Windows espera 8 s (en lugar de 2) a que la tarjeta responda antes de reiniciar su controlador. Evita el aviso \"El controlador de pantalla dejó de responder\" en renders y juegos pesados. Se aplica al reiniciar."),
+            [LM(GraphicsDrivers, "TdrDelay", null, 8)]),
 
         // ── Hardware: servicios de los fabricantes (solo si están instalados) ──
         // Se desactivan en el registro (como el Administrador de servicios): rigen desde el próximo inicio.

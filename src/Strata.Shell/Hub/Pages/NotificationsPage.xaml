@@ -1,4 +1,4 @@
-<Page x:Class="Strata.Shell.Hub.Pages.NotificationsPage"
+﻿<Page x:Class="Strata.Shell.Hub.Pages.NotificationsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
@@ -19,18 +19,6 @@
             <!-- ── En este monitor ───────────────────────────────────────────── -->
             <StackPanel x:Name="ScreenOptions">
                 <TextBlock Style="{StaticResource HubSectionTitle}" Margin="2,8,0,8" Text="{l:T 'Dónde salen los avisos'}" />
-
-                <!-- El monitor y la esquina se eligen arrastrando el aviso de ejemplo en el modo edición -->
-                <ui:CardControl Style="{StaticResource HubCard}">
-                    <ui:CardControl.Icon><ui:SymbolIcon Symbol="ArrowExpand24" /></ui:CardControl.Icon>
-                    <ui:CardControl.Header>
-                        <StackPanel>
-                            <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Monitor y esquina'}" />
-                            <TextBlock x:Name="CornerText" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </ui:CardControl.Header>
-                    <ui:Button Icon="{ui:SymbolIcon Edit24}" Content="{l:T 'Cambiar en el modo edición'}" Click="EditLayout_Click" />
-                </ui:CardControl>
 
                 <ui:CardControl Style="{StaticResource HubCard}">
                     <ui:CardControl.Icon><ui:SymbolIcon Symbol="Play24" /></ui:CardControl.Icon>

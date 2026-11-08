@@ -67,9 +67,9 @@
                         <ui:SymbolIcon Symbol="PaintBrush24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                <ui:NavigationViewItem Content="{l:T 'Widgets'}" TargetPageType="{x:Type pages:WidgetsPage}">
+                <ui:NavigationViewItem Content="{l:T 'Lecturas avanzadas'}" TargetPageType="{x:Type pages:SensorsPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Apps24" />
+                        <ui:SymbolIcon Symbol="Temperature24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>

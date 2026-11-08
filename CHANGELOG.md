@@ -6,6 +6,40 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.25.0] - 2026-11-07
+
+### Añadido
+- **Archivos reemplaza al Explorador de Windows**: las carpetas que abre cualquier app («Mostrar en la
+  carpeta», «Abrir ubicación del archivo», Win+E) se abren en Archivos con el archivo seleccionado, sin
+  que se asome la ventana de Windows. «Abrir en el Explorador de Windows» sigue abriendo el de Windows.
+- **Archivos reemplaza los cuadros Abrir, Guardar como y Elegir carpeta** de las demás apps, con tipos
+  de archivo y selección múltiple. Se activa en *General*.
+- **Extraer varios comprimidos a la vez**: con varios seleccionados, «Extraer en «*»» saca cada uno en
+  su propia carpeta (en Archivos y en el escritorio).
+- **Animaciones al minimizar, restaurar y abrir ventanas** con la animación elegida para los paneles.
+- **Lecturas avanzadas** tiene su propio apartado en el Hub, junto a Optimización.
+- **Más ajustes de gráficos** en Optimización › Hardware: programación de GPU acelerada por hardware
+  (solo si la tarjeta la admite), superposición de varios planos, tiempo de espera de la GPU, ajustes de
+  DirectX para juegos en ventana y un acceso para elegir la gráfica de cada app cuando hay más de una.
+
+### Cambiado
+- El Hub se reorganizó: se quitaron las páginas de Widgets y Multimedia y las menciones al modo de
+  edición (eso se maneja desde el modo de edición mismo), y el inicio ya no tiene accesos que no llevan a
+  ningún lado.
+- La Papelera de reciclaje va al final de la barra lateral de Archivos.
+- Módulos indica cuando uno viene incluido con Strata UI y no se puede quitar desde ahí.
+
+### Corregido
+- *Tema y colores* no abría (ícono inválido en la tarjeta de desenfoque).
+- La animación de abrir ventanas dejaba ver un instante el Explorador o el cuadro de archivos de Windows
+  que Archivos reemplaza, y al terminar le devolvía la opacidad.
+- La imagen al arrastrar archivos salía enorme.
+- En el Hub podían quedar dos apartados marcados a la vez.
+- Crear un punto de restauración fallaba si Windows ya había creado uno en las últimas 24 horas.
+- Limpieza podía medir o limpiar dos veces a la vez si se pulsaba rápido.
+- Las opciones de NVIDIA quedaban desactivadas si no se podían leer.
+- La barra de estado de Archivos contaba también los elementos ocultos por el filtro.
+
 ## [3.24.0] - 2026-11-06
 
 ### Añadido

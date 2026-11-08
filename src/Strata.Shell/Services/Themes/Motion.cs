@@ -386,7 +386,7 @@ public static class Motion
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool GetCursorPos(out NativePoint point);
 
-    private static TimeSpan Duration(bool closing)
+    internal static TimeSpan Duration(bool closing)
     {
         double ms = Settings.Current.AnimationSpeed switch
         {

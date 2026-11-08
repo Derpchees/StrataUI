@@ -31,6 +31,23 @@ public sealed class HardwarePage() : TweaksPage(TweakCatalog.Hardware, Loc.T("Ha
             machine.Children.Add(Line(SymbolRegular.Gauge24, gpu));
         yield return Panel(machine);
 
+        yield return Section(Loc.T("Gráficos de Windows"));
+        yield return DirectXCard(DirectXSettings.WindowedGames, Loc.T("Optimizaciones para juegos en ventana"),
+            Loc.T("Los juegos en ventana o en ventana sin bordes usan el modo de presentación moderno: menos latencia y permite la frecuencia variable. Se aplica al abrir el juego."));
+        yield return DirectXCard(DirectXSettings.VariableRefresh, Loc.T("Frecuencia variable en todos los juegos"),
+            Loc.T("Con un monitor de frecuencia variable (G-SYNC o FreeSync), también la usan los juegos que no la admiten. Se aplica al abrir el juego."));
+        if (HardwareInfo.GpuNames.Count > 1)
+        {
+            var header = new StackPanel();
+            header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Elegir la gráfica de cada app") });
+            header.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), TextWrapping = TextWrapping.Wrap,
+                                                Text = Loc.T("Tienes más de una tarjeta gráfica: elige cuál usa cada juego o app (ahorro de energía o alto rendimiento).") });
+            var open = new Wpf.Ui.Controls.Button { Content = Loc.T("Abrir") };
+            open.Click += (_, _) =>
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:display-advancedgraphics") { UseShellExecute = true })?.Dispose();
+            yield return new CardControl { Style = (Style)FindResource("HubCard"), Header = header, Content = open };
+        }
+
         if (NvidiaSettings.Available)
         {
             yield return Section(Loc.T("NVIDIA · Configuración global del controlador"));
@@ -52,11 +69,34 @@ public sealed class HardwarePage() : TweaksPage(TweakCatalog.Hardware, Loc.T("Ha
             Loaded += async (_, _) => await ReadNvidiaAsync();
         }
 
-        if (!NvidiaSettings.Available && !TweakCatalog.All.Any(t => t.Category == TweakCatalog.Hardware && t.IsAvailable))
-            yield return new TextBlock { Style = (Style)FindResource("CardDescription"), TextWrapping = TextWrapping.Wrap,
-                                         Text = Loc.T("No hay ajustes de fabricante para este equipo.") };
-        else if (TweakCatalog.All.Any(t => t.Category == TweakCatalog.Hardware && t.IsAvailable))
-            yield return Section(Loc.T("Servicios de los fabricantes"));
+        if (TweakCatalog.All.Any(t => t.Category == TweakCatalog.Hardware && t.IsAvailable))
+            yield return Section(Loc.T("Tarjeta gráfica y servicios de los fabricantes"));
+    }
+
+    private CardControl DirectXCard(string name, string title, string description)
+    {
+        var header = new StackPanel();
+        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = title });
+        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), Text = description, TextWrapping = TextWrapping.Wrap });
+        var toggle = new ToggleSwitch();
+        void Refresh() => toggle.IsChecked = DirectXSettings.Get(name);
+        Refresh();
+        Loaded += (_, _) => Refresh();
+        toggle.Click += (_, _) =>
+        {
+            try
+            {
+                DirectXSettings.Set(name, toggle.IsChecked == true);
+                Log.Info($"Gráficos de Windows: {name} → {toggle.IsChecked == true}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"No se pudo cambiar {name}", ex);
+                SetStatus(Loc.F("No se pudo aplicar \"{0}\". Revisa el registro de Strata UI para más detalles.", title));
+            }
+            Refresh();
+        };
+        return new CardControl { Style = (Style)FindResource("HubCard"), Header = header, Content = toggle };
     }
 
     private CardControl NvidiaCard(NvidiaSetting setting)
@@ -91,6 +131,10 @@ public sealed class HardwarePage() : TweaksPage(TweakCatalog.Hardware, Loc.T("Ha
         if (values is null)
         {
             SetStatus(Loc.T("No se pudo leer la configuración del controlador de NVIDIA."));
+            // Si ya se había leído antes, que se pueda seguir cambiando (no dejar el cuadro apagado).
+            if (_nvidiaValues.Count > 0)
+                foreach (var box in _nvidiaBoxes.Values)
+                    box.IsEnabled = true;
             return;
         }
         _nvidiaValues = values;

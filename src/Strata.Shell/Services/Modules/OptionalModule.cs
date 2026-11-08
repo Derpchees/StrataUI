@@ -343,4 +343,22 @@ public interface IFilesModule
 
     /// <summary>El visor con esas fotos, videos o canciones, abierto en la de <paramref name="index"/>.</summary>
     void OpenMedia(IReadOnlyList<string> items, int index);
+
+    /// <summary>
+    /// Archivos como cuadro Abrir, Guardar como o Elegir carpeta. Devuelve lo elegido, o null si se
+    /// canceló o se cerró la ventana.
+    /// </summary>
+    Task<FilePickResult?> PickAsync(FilePickRequest request);
 }
+
+public enum FilePickMode { Open, Save, Folder }
+
+/// <summary>Un tipo de archivo del cuadro (p. ej. «Imágenes» con *.png y *.jpg).</summary>
+public sealed record FilePickFilter(string Name, IReadOnlyList<string> Patterns);
+
+/// <summary>Lo que pide la app: modo, carpeta y nombre iniciales, tipos y la ventana dueña.</summary>
+public sealed record FilePickRequest(FilePickMode Mode, bool Multiple, string? Folder, string? FileName,
+    IReadOnlyList<FilePickFilter> Filters, int FilterIndex, string? Title, IntPtr Owner);
+
+/// <summary>Las rutas elegidas (completas) y el tipo que quedó elegido.</summary>
+public sealed record FilePickResult(IReadOnlyList<string> Paths, int FilterIndex);

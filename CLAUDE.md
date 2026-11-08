@@ -7,7 +7,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 
 ## Idioma
 
-- Responder al usuario **en español**.
+- Responder al usuario **siempre en español, todo el mensaje**: el resumen final, los avisos
+  entre herramientas y las preguntas. Nada en inglés ni mezclado (spanglish). Aunque su Windows y
+  las capturas estén en inglés, los nombres de la interfaz se dicen en español (Lecturas avanzadas,
+  Liberar RAM, Módulos opcionales…), que es como están escritos en el código.
 - El README es para GitHub y va **en inglés**; el CHANGELOG sigue en español.
 - Comentarios del código, registros (`Log`), CHANGELOG y mensajes de commit: en español.
 - **Textos de la interfaz**: se escriben en español y se marcan para traducir (estilo gettext, el

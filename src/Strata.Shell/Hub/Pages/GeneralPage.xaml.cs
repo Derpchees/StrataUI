@@ -18,6 +18,10 @@ public partial class GeneralPage : Page
         AutoStartRepairCard.Visibility = AutoStart.NeedsRepair ? Visibility.Visible : Visibility.Collapsed;
         HubAtStartupSwitch.IsChecked = Settings.Current.HubAtStartup;
         ReplaceExplorerSwitch.IsChecked = Settings.Current.FilesReplaceExplorer;
+        TakeOverSwitch.IsChecked = Settings.Current.FilesTakeOverExplorer;
+        TakeOverCard.IsEnabled = Settings.Current.FilesReplaceExplorer;
+        DialogsSwitch.IsChecked = Settings.Current.FilesReplaceDialogs;
+        DialogsCard.IsEnabled = Settings.Current.FilesReplaceExplorer;
         DesktopSwitch.IsChecked = Settings.Current.DesktopEnabled;
         VersionText.Text = $"Strata UI v{App.Version}";
         DataPathText.Text = DataFolder;
@@ -79,8 +83,18 @@ public partial class GeneralPage : Page
     private void HubAtStartup_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.HubAtStartup = HubAtStartupSwitch.IsChecked == true);
 
-    private void ReplaceExplorer_Click(object sender, RoutedEventArgs e) =>
+    private void ReplaceExplorer_Click(object sender, RoutedEventArgs e)
+    {
         Settings.Update(s => s.FilesReplaceExplorer = ReplaceExplorerSwitch.IsChecked == true);
+        TakeOverCard.IsEnabled = Settings.Current.FilesReplaceExplorer;
+        DialogsCard.IsEnabled = Settings.Current.FilesReplaceExplorer;
+    }
+
+    private void Dialogs_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.FilesReplaceDialogs = DialogsSwitch.IsChecked == true);
+
+    private void TakeOver_Click(object sender, RoutedEventArgs e) =>
+        Settings.Update(s => s.FilesTakeOverExplorer = TakeOverSwitch.IsChecked == true);
 
     private void Desktop_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.DesktopEnabled = DesktopSwitch.IsChecked == true);

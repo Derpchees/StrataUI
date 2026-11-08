@@ -95,6 +95,25 @@ public partial class FolderPane : UserControl
     /// <summary>Abrir una carpeta en una pestaña nueva (clic con la rueda, menú).</summary>
     public event Action<string>? OpenInNewTabRequested;
 
+    /// <summary>
+    /// Modo cuadro Abrir/Guardar: abrir archivos (doble clic o Entrar) los elige en lugar de abrirlos
+    /// con su programa. Las carpetas se siguen abriendo aquí.
+    /// </summary>
+    internal Action<IReadOnlyList<FileEntry>>? Choosing { get; set; }
+
+    /// <summary>Modo cuadro: solo se ven los archivos de ese tipo (las carpetas siempre).</summary>
+    internal Func<FileEntry, bool>? TypeFilter { get; set; }
+
+    /// <summary>Vuelve a aplicar los filtros (después de cambiar <see cref="TypeFilter"/>).</summary>
+    internal void RefreshFilter()
+    {
+        _view?.Refresh();
+        UpdateStatus(); // el contador cuenta lo que se ve
+    }
+
+    /// <summary>Un aviso en rojo en la barra de estado.</summary>
+    internal void Warn(string message) => ShowMessage(message);
+
     public FolderPane()
     {
         InitializeComponent();
@@ -660,8 +679,9 @@ public partial class FolderPane : UserControl
     }
 
     private bool Matches(object item) =>
-        SearchBox.Text is not { Length: > 0 } query
-        || (item is FileEntry entry && entry.Name.Contains(query.Trim(), StringComparison.CurrentCultureIgnoreCase));
+        (TypeFilter is null || item is not FileEntry typed || typed.IsFolder || TypeFilter(typed))
+        && (SearchBox.Text is not { Length: > 0 } query
+            || (item is FileEntry entry && entry.Name.Contains(query.Trim(), StringComparison.CurrentCultureIgnoreCase)));
 
     private void Watch(string? path)
     {
@@ -1054,6 +1074,12 @@ public partial class FolderPane : UserControl
                 return;
             }
         }
+        // Modo cuadro Abrir/Guardar: el archivo se elige, no se abre.
+        if (Choosing is { } choose)
+        {
+            choose(entries);
+            return;
+        }
         // Dentro de un comprimido: se saca a una carpeta temporal y se abre desde ahí.
         if (_archive is { } location)
         {
@@ -1145,6 +1171,31 @@ public partial class FolderPane : UserControl
         {
             ShowMessage(Loc.F("No se pudo extraer {0}", System.IO.Path.GetFileName(archive)));
             Log.Error($"Archivos: no se pudo extraer {archive}", ex);
+        }
+    }
+
+    /// <summary>"Extraer en «*»": cada comprimido en su carpeta, uno tras otro; al terminar quedan seleccionadas.</summary>
+    private async Task ExtractEachToOwnFolderAsync(IReadOnlyList<string> archives)
+    {
+        var folders = new List<string>();
+        foreach (string archive in archives)
+        {
+            try
+            {
+                var (transfer, folder) = Archives.ExtractToOwnFolder(archive, Handle);
+                if (await transfer.Finished.Task && Directory.Exists(folder))
+                    folders.Add(folder);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                ShowMessage(Loc.F("No se pudo extraer {0}", System.IO.Path.GetFileName(archive)));
+                Log.Error($"Archivos: no se pudo extraer {archive}", ex);
+            }
+        }
+        if (folders.Count > 0)
+        {
+            _selectAfterLoad = folders[0];
+            _ = LoadAsync(merge: true);
         }
     }
 
@@ -1609,6 +1660,12 @@ public partial class FolderPane : UserControl
                 menu.Items.Add(Item(Loc.F("Extraer en «{0}»", Archives.FolderNameFor(first.FullPath)), SymbolRegular.FolderZip24,
                                     () => _ = ExtractToOwnFolderAsync(first.FullPath)));
                 menu.Items.Add(Item(Loc.T("Extraer en…"), SymbolRegular.FolderArrowRight24, () => _ = ExtractToAsync(first.FullPath, [], "")));
+            }
+            else if (selected.Count > 1 && selected.All(s => !s.IsFolder && Archives.IsArchive(s.FullPath)))
+            {
+                // Varios comprimidos: cada uno en su carpeta con su nombre ("*" = el de cada uno).
+                var archives = selected.Select(s => s.FullPath).ToList();
+                menu.Items.Add(Item(Loc.F("Extraer en «{0}»", "*"), SymbolRegular.FolderZip24, () => _ = ExtractEachToOwnFolderAsync(archives)));
             }
             if (Archives.Available)
             {

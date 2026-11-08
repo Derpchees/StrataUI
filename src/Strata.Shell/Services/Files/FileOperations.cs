@@ -391,7 +391,7 @@ public static class FileOperations
 
     /// <summary>Muestra la carpeta (o el archivo seleccionado) en el Explorador de Windows.</summary>
     public static void ShowInExplorer(string path, bool select) =>
-        Start("explorer.exe", select ? $"/select,\"{path}\"" : $"\"{path}\"");
+        ExplorerTakeover.OpenInWindowsExplorer(select ? $"/select,\"{path}\"" : $"\"{path}\"");
 
     public static void OpenTerminal(string folder)
     {

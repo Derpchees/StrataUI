@@ -120,7 +120,10 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <!-- Barra lateral: Este equipo, carpetas, nube, unidades y red -->
+            <!-- Barra lateral: Este equipo, carpetas, nube, unidades y red; la Papelera fija hasta abajo -->
+            <DockPanel>
+            <ItemsControl x:Name="SideBottom" DockPanel.Dock="Bottom" Margin="12,6,8,10"
+                          ItemTemplate="{StaticResource SidePlaceTemplate}" />
             <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False" controls:SmoothScroll.Enabled="True"
                           Background="Transparent" AllowDrop="True" DragOver="Sidebar_DragOver" Drop="Sidebar_Drop">
                 <StackPanel Margin="12,4,8,16">
@@ -148,11 +151,13 @@
                     </Button>
                 </StackPanel>
             </ScrollViewer>
+            </DockPanel>
 
             <Grid Grid.Column="1" Margin="4,0,16,12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
@@ -289,6 +294,30 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
+                <!-- Modo cuadro Abrir / Guardar como / Elegir carpeta (lo pide otra app) -->
+                <Border x:Name="PickerBar" Grid.Row="3" Visibility="Collapsed" Margin="0,8,0,0" Padding="14,10,10,10"
+                        CornerRadius="{DynamicResource StrataLargeCornerRadius}"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="PickNameLabel" Text="{l:T 'Nombre:'}" FontSize="13" VerticalAlignment="Center" Margin="0,0,10,0"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <ui:TextBox x:Name="PickName" Grid.Column="1" MinWidth="160" KeyDown="PickName_KeyDown"
+                                    AutomationProperties.Name="{l:T 'Nombre del archivo'}" />
+                        <ComboBox x:Name="PickType" Grid.Column="2" Width="230" Margin="8,0,0,0" SelectionChanged="PickType_SelectionChanged"
+                                  AutomationProperties.Name="{l:T 'Tipo de archivo'}" />
+                        <ui:Button x:Name="PickOk" Grid.Column="3" Appearance="Primary" MinWidth="96" Margin="8,0,0,0" Click="PickOk_Click" />
+                        <ui:Button Grid.Column="4" MinWidth="96" Margin="8,0,0,0" Content="{l:T 'Cancelar'}" Click="PickCancel_Click" />
+                    </Grid>
+                </Border>
             </Grid>
         </Grid>
     </Grid>

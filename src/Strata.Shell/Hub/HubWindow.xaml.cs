@@ -41,6 +41,17 @@ public partial class HubWindow : FluentWindow
                         item.IsActive = ReferenceEquals(item, optimization);
                 }, System.Windows.Threading.DispatcherPriority.Loaded);
             }
+            else if (e.Page != null)
+            {
+                // La marca puesta a mano en Optimización WPF-UI no la conoce: se quita al ir a otra página.
+                var type = e.Page.GetType();
+                Dispatcher.BeginInvoke(() =>
+                {
+                    foreach (var item in _moduleItems)
+                        if (item.TargetPageType != type)
+                            item.IsActive = false;
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
+            }
             if (e.Page is FrameworkElement page)
             {
                 Motion.In(page, page, TaskbarPosition.Bottom, 0.6);
@@ -219,6 +230,18 @@ public partial class HubWindow : FluentWindow
             }
         }
         _showsOptimization = _moduleItems.Count > 0;
+        if (!_showsOptimization)
+        {
+            // Sin el módulo: la misma entrada, con la tarjeta para instalarlo.
+            var item = new NavigationViewItem
+            {
+                Content = Loc.T("Optimización"),
+                Icon = new SymbolIcon { Symbol = SymbolRegular.Flash24 },
+                TargetPageType = typeof(OptimizationSetupPage),
+            };
+            _moduleItems.Add(item);
+            Nav.MenuItems.Add(item);
+        }
     }
 
     private readonly List<NavigationViewItem> _moduleItems = new();
@@ -264,7 +287,7 @@ public partial class HubWindow : FluentWindow
              t.Name.Equals(page + "Page", StringComparison.OrdinalIgnoreCase)));
         // Una página de un módulo que no está instalado: la de módulos, para instalarlo.
         if (type is null && !OptionalModules.Optimization.IsInstalled)
-            type = typeof(ModulesPage);
+            type = typeof(OptimizationSetupPage);
         if (type is null)
             return;
         if (TabbedPage.Hosts.TryGetValue(type, out var host))

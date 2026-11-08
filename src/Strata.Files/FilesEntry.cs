@@ -9,4 +9,6 @@ public sealed class FilesEntry : IFilesModule
     public Window CreateWindow(string? path) => new FilesWindow(path);
 
     public void OpenMedia(IReadOnlyList<string> items, int index) => MediaViewerWindow.Open(items, index);
+
+    public Task<FilePickResult?> PickAsync(FilePickRequest request) => FilesWindow.PickAsync(request);
 }

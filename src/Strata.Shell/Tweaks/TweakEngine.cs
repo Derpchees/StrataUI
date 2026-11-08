@@ -243,22 +243,41 @@ public static class TweakEngine
 /// <summary>Punto de restauración del sistema (requiere administrador).</summary>
 internal static class SystemRestore
 {
+    private const string FrequencyKey = @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore";
+    private const string FrequencyName = "SystemRestorePointCreationFrequency";
+
     public static void Create(string description)
     {
-        var info = new RestorePointInfo
+        // Windows ignora en silencio un punto si hubo otro en las últimas 24 h; se quita el límite
+        // solo mientras se crea este y luego se deja como estaba.
+        using var key = Registry.LocalMachine.CreateSubKey(FrequencyKey, writable: true);
+        var previous = key?.GetValue(FrequencyName);
+        key?.SetValue(FrequencyName, 0, RegistryValueKind.DWord);
+        try
         {
-            EventType = 100,       // BEGIN_SYSTEM_CHANGE
-            RestorePointType = 12, // MODIFY_SETTINGS
-            Description = description,
-        };
-        if (!SRSetRestorePointW(ref info, out var status))
-            throw new InvalidOperationException($"SRSetRestorePoint falló (estado {status.Status})");
-        info.EventType = 101;      // END_SYSTEM_CHANGE
-        info.SequenceNumber = status.SequenceNumber;
-        SRSetRestorePointW(ref info, out _);
+            var info = new RestorePointInfo
+            {
+                EventType = 100,       // BEGIN_SYSTEM_CHANGE
+                RestorePointType = 12, // MODIFY_SETTINGS
+                Description = description,
+            };
+            if (!SRSetRestorePointW(ref info, out var status))
+                throw new InvalidOperationException($"SRSetRestorePoint falló (estado {status.Status})");
+            info.EventType = 101;      // END_SYSTEM_CHANGE
+            info.SequenceNumber = status.SequenceNumber;
+            SRSetRestorePointW(ref info, out _);
+        }
+        finally
+        {
+            if (previous is null)
+                key?.DeleteValue(FrequencyName, throwOnMissingValue: false);
+            else
+                key?.SetValue(FrequencyName, previous, RegistryValueKind.DWord);
+        }
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    // srrestoreptapi.h empaqueta estas estructuras a 1 byte: SequenceNumber va justo después de Status.
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)]
     private struct RestorePointInfo
     {
         public int EventType;
@@ -267,7 +286,7 @@ internal static class SystemRestore
         [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string Description;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
     private struct StateMgrStatus { public int Status; public long SequenceNumber; }
 
     [DllImport("srclient.dll", CharSet = CharSet.Unicode)]

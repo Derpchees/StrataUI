@@ -120,6 +120,9 @@ Name: "{autodesktop}\Strata UI"; Filename: "{app}\StrataUI.exe"; Tasks: desktopi
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "StrataUI"; ValueData: """{app}\StrataUI.exe"" --autostart"; Tasks: autostart
 ; El de cuando se llamaba WINX apunta a un ejecutable que ya no existe.
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: none; ValueName: "WINX"; Flags: deletevalue
+; Archivos como explorador de todo Windows (Services\Files\ExplorerTakeover.cs): Strata UI lo quita al salir; esto es por si acaso.
+Root: HKCU; Subkey: "Software\Classes\Directory\shell\StrataFiles"; Flags: uninsdeletekey dontcreatekey
+Root: HKCU; Subkey: "Software\Classes\Drive\shell\StrataFiles"; Flags: uninsdeletekey dontcreatekey
 
 [Run]
 ; Menú contextual moderno (installer\context-menu): Windows solo acepta el paquete si su certificado

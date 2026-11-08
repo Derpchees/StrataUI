@@ -23,18 +23,6 @@
                 </StackPanel>
             </Border>
         </DataTemplate>
-
-        <!-- Acceso a una sección: ícono y nombre -->
-        <DataTemplate x:Key="TileContent">
-            <StackPanel Orientation="Horizontal">
-                <Border Width="34" Height="34" CornerRadius="9" Margin="0,0,12,0"
-                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                    <ui:SymbolIcon Symbol="{Binding Icon}" FontSize="18" Foreground="{DynamicResource StrataAccentBrush}" />
-                </Border>
-                <TextBlock Text="{Binding Title}" FontSize="14" VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
-            </StackPanel>
-        </DataTemplate>
     </Page.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False">
@@ -126,22 +114,6 @@
                 <ui:Button Margin="0,0,8,8" Icon="{ui:SymbolIcon Power24}" Content="{l:T 'Salir de Strata UI'}" Click="Exit_Click" />
             </WrapPanel>
             <TextBlock x:Name="ActionStatus" Style="{StaticResource CardDescription}" Margin="2,0,0,0" Visibility="Collapsed" />
-
-            <!-- Accesos a cada sección -->
-            <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Personalizar'}" />
-            <ItemsControl x:Name="Tiles">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="3" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Style="{StaticResource HubTile}" Click="Tile_Click"
-                                Content="{Binding}" ContentTemplate="{StaticResource TileContent}" />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
         </StackPanel>
     </ScrollViewer>
 </Page>

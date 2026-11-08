@@ -849,6 +849,22 @@ public sealed class DesktopWindow : Window
         e.Handled = true;
     }
 
+    /// <summary>Cada comprimido en su carpeta, uno tras otro (para no saturar el disco).</summary>
+    private static async Task ExtractEachAsync(IReadOnlyList<string> archives, IntPtr owner)
+    {
+        foreach (string archive in archives)
+        {
+            try
+            {
+                await Archives.ExtractToOwnFolder(archive, owner).Transfer.Finished.Task;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException)
+            {
+                Log.Error($"Escritorio: no se pudo extraer {archive}", ex);
+            }
+        }
+    }
+
     /// <summary>Extrae junto al comprimido (la tarjeta o el aviso muestran el progreso y el resultado).</summary>
     private static async Task ExtractHereAsync(string archive, IntPtr owner)
     {
@@ -884,6 +900,13 @@ public sealed class DesktopWindow : Window
             menu.Items.Add(FileMenus.Item(Loc.T("Extraer aquí"), SymbolRegular.FolderZip24, () => _ = ExtractHereAsync(first.FullPath, owner)));
             menu.Items.Add(FileMenus.Item(Loc.F("Extraer en «{0}»", Archives.FolderNameFor(first.FullPath)), SymbolRegular.FolderZip24,
                                           () => Archives.ExtractToOwnFolder(first.FullPath, owner)));
+        }
+        else if (selection.Count > 1 && selection.All(s => !s.IsFolder && Archives.IsArchive(s.FullPath)))
+        {
+            // Varios comprimidos: cada uno en su carpeta con su nombre ("*" = el de cada uno).
+            var archives = selection.Select(s => s.FullPath).ToList();
+            menu.Items.Add(FileMenus.Item(Loc.F("Extraer en «{0}»", "*"), SymbolRegular.FolderZip24,
+                                          () => _ = ExtractEachAsync(archives, owner)));
         }
         if (Archives.Available)
         {

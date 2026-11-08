@@ -11,11 +11,10 @@ namespace Strata.Shell.Hub.Pages;
 
 /// <summary>
 /// Dashboard del Hub (--hub Home o Dashboard): versión y actualizaciones, uso de CPU, RAM y GPU en
-/// vivo, los interruptores y acciones más usados y accesos a cada sección.
+/// vivo, y los interruptores y acciones más usados.
 /// </summary>
 public partial class HomePage : Page
 {
-    public sealed record Tile(SymbolRegular Icon, string Title, string Page);
 
     /// <summary>Un medidor del equipo; cambia cada vez que <see cref="SystemMonitor"/> lee.</summary>
     public sealed class Stat(SymbolRegular icon, string name) : INotifyPropertyChanged
@@ -52,15 +51,6 @@ public partial class HomePage : Page
         };
         HeroSubtitle.Text = Loc.F("Strata UI {0}", App.Version);
         Stats.ItemsSource = new[] { _cpu, _ram, _gpu };
-        Tiles.ItemsSource = new[]
-        {
-            new Tile(SymbolRegular.PanelBottom20, Loc.T("Barra de tareas"), "Taskbar"),
-            new Tile(SymbolRegular.Grid24, Loc.T("Menú Inicio"), "Start"),
-            new Tile(SymbolRegular.Alert24, Loc.T("Notificaciones"), "Notifications"),
-            new Tile(SymbolRegular.PaintBrush24, Loc.T("Tema y colores"), "Appearance"),
-            new Tile(SymbolRegular.Apps24, Loc.T("Widgets"), "Widgets"),
-            new Tile(SymbolRegular.Flash24, Loc.T("Optimización"), "Optimization"),
-        };
         LoadSwitches();
 
         ApplyHeroBrush();
@@ -127,11 +117,6 @@ public partial class HomePage : Page
 
     private void Navigate(string page) => (Window.GetWindow(this) as HubWindow)?.NavigateTo(page);
 
-    private void Tile_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement { DataContext: Tile tile })
-            Navigate(tile.Page);
-    }
 
     private void UpdateChip_Click(object sender, RoutedEventArgs e) => Navigate("Updates");
 

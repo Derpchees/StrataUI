@@ -125,19 +125,38 @@ public sealed class CleanupPage : Page
 
     private async Task MeasureAsync()
     {
+        // Loaded se repite al volver a la página: una sola medición a la vez.
+        if (_measuring || _cleaning)
+            return;
+        _measuring = true;
+        _clean.IsEnabled = false;
         _total.Text = Loc.T("Midiendo…");
-        foreach (var category in JunkCleaner.Categories)
+        try
         {
-            var size = await Task.Run(() => JunkCleaner.Measure(category));
-            _sizes[category.Id] = size;
-            _rows[category.Id].Size.Text = Format(size.Bytes);
+            foreach (var category in JunkCleaner.Categories)
+            {
+                var size = await Task.Run(() => JunkCleaner.Measure(category));
+                _sizes[category.Id] = size;
+                _rows[category.Id].Size.Text = Format(size.Bytes);
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo medir la limpieza", ex);
+        }
+        finally
+        {
+            _measuring = false;
         }
         UpdateTotal();
     }
 
+    private bool _measuring;
+    private bool _cleaning;
+
     private void UpdateTotal()
     {
-        if (_sizes.Count < JunkCleaner.Categories.Count)
+        if (_sizes.Count < JunkCleaner.Categories.Count || _measuring || _cleaning)
             return;
         long bytes = Checked().Sum(c => _sizes[c.Id].Bytes);
         _total.Text = Loc.F("{0} para liberar", Format(bytes));
@@ -147,17 +166,29 @@ public sealed class CleanupPage : Page
     private async Task CleanAsync()
     {
         var categories = Checked();
-        if (categories.Count == 0)
+        if (categories.Count == 0 || _cleaning || _measuring)
             return;
+        _cleaning = true;
         _clean.IsEnabled = false;
         _busy.Visibility = Visibility.Visible;
         _result.Text = Loc.T("Limpiando…");
-        var (freed, cancelled) = await JunkCleaner.CleanAsync(categories);
-        _busy.Visibility = Visibility.Collapsed;
-        _result.Text = Loc.F("Se liberaron {0} ({1} archivos). Lo que estaba en uso se quedó.", Format(freed.Bytes), freed.Files)
-                       + (cancelled ? " " + Loc.T("Lo de Windows no se limpió porque no se dio el permiso.") : "");
+        try
+        {
+            var (freed, cancelled) = await JunkCleaner.CleanAsync(categories);
+            _result.Text = Loc.F("Se liberaron {0} ({1} archivos). Lo que estaba en uso se quedó.", Format(freed.Bytes), freed.Files)
+                           + (cancelled ? " " + Loc.T("Lo de Windows no se limpió porque no se dio el permiso.") : "");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Falló la limpieza", ex);
+            _result.Text = Loc.T("No se pudo terminar la limpieza. Revisa el registro de Strata UI para más detalles.");
+        }
+        finally
+        {
+            _cleaning = false;
+            _busy.Visibility = Visibility.Collapsed;
+        }
         await MeasureAsync();
-        _clean.IsEnabled = true;
     }
 
     internal static string Format(long bytes) => bytes switch

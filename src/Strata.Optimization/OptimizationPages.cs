@@ -1,4 +1,4 @@
-using Strata.Shell.Hub;
+﻿using Strata.Shell.Hub;
 using Strata.Shell.Hub.Pages;
 using Strata.Shell.Services.Localization;
 using Wpf.Ui.Controls;

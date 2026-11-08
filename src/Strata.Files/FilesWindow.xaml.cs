@@ -72,8 +72,11 @@ public partial class FilesWindow : FluentWindow
     private List<Place> _pinned = [], _drives = [], _cloud = [], _network = [];
     private DateTime _drivesRead;
 
-    public FilesWindow(string? path = null)
+    public FilesWindow(string? path = null) : this(path, null) { }
+
+    private FilesWindow(string? path, Services.Modules.FilePickRequest? pick)
     {
+        _pick = pick;
         InitializeComponent();
         FluentBackdrop.Follow(this);
         SourceInitialized += (_, _) =>
@@ -92,7 +95,8 @@ public partial class FilesWindow : FluentWindow
         _home = new Place(Loc.T("Este equipo"), null, SymbolRegular.Home24);
         _folders = Places.Folders();
         _recycleBin = new Place(Loc.T("Papelera de reciclaje"), Places.RecycleBin, SymbolRegular.Delete24);
-        SideFolders.ItemsSource = new[] { _home }.Concat(_folders).Append(_recycleBin).ToList();
+        SideFolders.ItemsSource = new[] { _home }.Concat(_folders).ToList();
+        SideBottom.ItemsSource = new[] { _recycleBin };
         UpdatePinned();
         TabStrip.ItemsSource = _tabs;
         TransfersList.ItemsSource = FileTransfers.Active;
@@ -130,6 +134,8 @@ public partial class FilesWindow : FluentWindow
             MemoryTrim.Schedule(TimeSpan.FromSeconds(3));
         };
         Loaded += (_, _) => Motion.In(Root, Root, TaskbarPosition.Bottom, 0.8);
+        if (_pick != null)
+            SetUpPicker();
         AddTab(path);
         _ = LoadPlacesAsync();
     }
@@ -161,6 +167,8 @@ public partial class FilesWindow : FluentWindow
                 _ = LoadPlacesAsync();
         };
         pane.OpenInNewTabRequested += AddTab;
+        if (_pick != null)
+            WirePicker(pane);
         pane.PinsChanged += () =>
         {
             foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
@@ -312,7 +320,7 @@ public partial class FilesWindow : FluentWindow
         if (_tab is null)
             return;
         string? path = Pane.CurrentPath;
-        foreach (var place in _folders.Append(_home).Concat(_pinned).Concat(_drives).Concat(_cloud).Concat(_network))
+        foreach (var place in _folders.Append(_home).Append(_recycleBin).Concat(_pinned).Concat(_drives).Concat(_cloud).Concat(_network))
             place.IsCurrent = FolderPane.SamePath(place.Path, path);
     }
 

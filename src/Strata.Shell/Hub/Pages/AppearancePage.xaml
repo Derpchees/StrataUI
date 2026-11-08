@@ -54,7 +54,7 @@
             </ui:CardControl>
 
             <ui:CardControl x:Name="BlurCard" Style="{StaticResource HubCard}">
-                <ui:CardControl.Icon><ui:SymbolIcon Symbol="DropletHalfFilled24" /></ui:CardControl.Icon>
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="Eye24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>
                     <StackPanel>
                         <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Desenfocar el fondo'}" />

@@ -46,7 +46,7 @@ public partial class BackupPage : Page
             : await Elevation.RunSelfAsync("--restore-point");
         StatusText.Text = code switch
         {
-            0 => Loc.T("Punto de restauración creado (Windows crea como máximo uno cada 24 horas)."),
+            0 => Loc.T("Punto de restauración creado."),
             Elevation.Cancelled => Loc.T("Cancelado."),
             _ => Loc.T("No se pudo crear. Comprueba que la Protección del sistema esté activada en la unidad C:."),
         };

@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Media;
@@ -185,15 +185,14 @@ public abstract class TabbedPage : Page
     }
 }
 
-/// <summary>Barra de tareas: la barra, la bandeja del sistema y multimedia.</summary>
+/// <summary>Barra de tareas: la barra y la bandeja del sistema.</summary>
 public sealed class TaskbarHubPage() : TabbedPage(SymbolRegular.PanelBottom20, Loc.T("Barra de tareas"),
-    Loc.T("El modo edición, las apps abiertas, la bandeja del sistema y lo que suena."), screenPicker: false, Tabs)
+    Loc.T("Las apps abiertas y la bandeja del sistema."), screenPicker: false, Tabs)
 {
     internal static readonly IReadOnlyList<Tab> Tabs =
     [
         new(Loc.T("Barra"), SymbolRegular.PanelBottom20, typeof(TaskbarPage)),
         new(Loc.T("Bandeja del sistema"), SymbolRegular.ChevronUp24, typeof(TrayPage)),
-        new(Loc.T("Multimedia"), SymbolRegular.MusicNote224, typeof(MediaPage)),
     ];
 }
 

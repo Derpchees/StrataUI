@@ -55,6 +55,28 @@
                 <ui:ToggleSwitch x:Name="ReplaceExplorerSwitch" Click="ReplaceExplorer_Click" />
             </ui:CardControl>
 
+            <ui:CardControl x:Name="TakeOverCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="FolderArrowRight24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Reemplazar el Explorador en todo Windows'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Las carpetas que abran otras apps, el escritorio o Windows (incluido Mostrar en la carpeta) también se abren en Archivos. Al cerrar Strata UI, Windows vuelve a usar su Explorador.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="TakeOverSwitch" Click="TakeOver_Click" />
+            </ui:CardControl>
+
+            <ui:CardControl x:Name="DialogsCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="DocumentFolder24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Cuadros Abrir y Guardar en Archivos'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Cuando una app pide abrir, guardar o elegir una carpeta, se usa Archivos en lugar del cuadro de Windows. Si una app no lo acepta, aparece el de Windows.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="DialogsSwitch" Click="Dialogs_Click" />
+            </ui:CardControl>
+
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>

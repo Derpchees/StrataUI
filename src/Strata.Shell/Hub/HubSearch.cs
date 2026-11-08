@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using Strata.Shell.EditMode;
 using Strata.Shell.Services;
@@ -64,8 +64,6 @@ internal static class HubSearch
         string bar = where.GetValueOrDefault("TaskbarPage", Loc.T("Barra de tareas"));
         foreach (var item in BarLayout.All)
             entries.Add(new(BarLayout.Name(item), bar, "TaskbarPage"));
-        foreach (var widget in WidgetCatalog.All())
-            entries.Add(new(widget.Name, Loc.T("Widgets"), "WidgetsPage"));
         // También en español: la interfaz puede estar en inglés y uno buscar "telemetría".
         entries = entries.Select(e => e with { Also = string.Join(" ", new[] { Loc.Original(e.Title), Loc.Original(e.Where) }.Where(t => t != null)) }).ToList();
         // Lo mismo dos veces (una pestaña que se llama como su entrada): queda uno.

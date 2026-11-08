@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Tweaks;

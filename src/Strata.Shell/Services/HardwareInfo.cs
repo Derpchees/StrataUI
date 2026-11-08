@@ -8,6 +8,13 @@ public static class HardwareInfo
 {
     private static readonly Lazy<string?> Cpu = new(ReadCpu);
     private static readonly Lazy<IReadOnlyList<string>> Gpus = new(ReadGpus);
+    private static readonly Lazy<bool?> HwSch = new(ReadHwSch);
+
+    /// <summary>
+    /// Alguna gráfica admite la programación de GPU acelerada por hardware (WDDM 2.7);
+    /// null si no se pudo saber.
+    /// </summary>
+    public static bool? GpuSchedulingSupported => HwSch.Value;
 
     /// <summary>"AMD Ryzen 7 7840HS w/ Radeon 780M Graphics"; null si no se pudo leer.</summary>
     public static string? CpuName => Cpu.Value;
@@ -68,6 +75,88 @@ public static class HardwareInfo
             .Distinct()
             .ToList();
     }
+
+    private static bool? ReadHwSch()
+    {
+        bool? supported = null;
+        try
+        {
+            var iid = typeof(IDXGIFactory1).GUID;
+            if (CreateDXGIFactory1(ref iid, out var factory) != 0)
+                return null;
+            try
+            {
+                for (uint i = 0; factory.EnumAdapters1(i, out var adapter) == 0; i++)
+                {
+                    try
+                    {
+                        if (adapter.GetDesc1(out var desc) != 0 || (desc.Flags & SoftwareAdapter) != 0)
+                            continue;
+                        var open = new OpenAdapterFromLuid { LuidLow = desc.LuidLow, LuidHigh = desc.LuidHigh };
+                        if (D3DKMTOpenAdapterFromLuid(ref open) != 0)
+                            continue;
+                        try
+                        {
+                            var buffer = Marshal.AllocHGlobal(sizeof(uint));
+                            try
+                            {
+                                Marshal.WriteInt32(buffer, 0);
+                                var query = new QueryAdapterInfo { Adapter = open.Adapter, Type = Wddm27Caps, Data = buffer, Size = sizeof(uint) };
+                                if (D3DKMTQueryAdapterInfo(ref query) != 0)
+                                    continue;
+                                // Primer bit: HwSchSupported.
+                                supported = (Marshal.ReadInt32(buffer) & 1) != 0 || supported == true;
+                            }
+                            finally
+                            {
+                                Marshal.FreeHGlobal(buffer);
+                            }
+                        }
+                        finally
+                        {
+                            var close = new CloseAdapter { Adapter = open.Adapter };
+                            D3DKMTCloseAdapter(ref close);
+                        }
+                    }
+                    finally
+                    {
+                        Marshal.ReleaseComObject(adapter);
+                    }
+                }
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(factory);
+            }
+        }
+        catch (Exception ex) when (ex is COMException or DllNotFoundException or EntryPointNotFoundException)
+        {
+            Log.Error("No se pudo saber si la gráfica admite la programación por hardware", ex);
+        }
+        return supported;
+    }
+
+    // ── D3DKMT ──────────────────────────────────────────────────────────────
+
+    private const int Wddm27Caps = 70; // KMTQAITYPE_WDDM_2_7_CAPS
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct OpenAdapterFromLuid { public uint LuidLow; public int LuidHigh; public uint Adapter; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct QueryAdapterInfo { public uint Adapter; public int Type; public IntPtr Data; public uint Size; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct CloseAdapter { public uint Adapter; }
+
+    [DllImport("gdi32.dll")]
+    private static extern int D3DKMTOpenAdapterFromLuid(ref OpenAdapterFromLuid info);
+
+    [DllImport("gdi32.dll")]
+    private static extern int D3DKMTQueryAdapterInfo(ref QueryAdapterInfo info);
+
+    [DllImport("gdi32.dll")]
+    private static extern int D3DKMTCloseAdapter(ref CloseAdapter info);
 
     // ── DXGI ────────────────────────────────────────────────────────────────
 

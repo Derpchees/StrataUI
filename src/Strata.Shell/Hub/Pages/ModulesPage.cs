@@ -107,12 +107,15 @@ public sealed class ModulesPage : Page
         bool installed = module.IsInstalled;
         row.Status.Text = busy ? Loc.T("Descargando…")
             : module.RemovePending ? Loc.T("Se quitará al reiniciar Strata UI.")
+            : installed && !module.CanRemove ? Loc.T("Incluido junto a Strata UI: no se puede quitar desde aquí.")
             : installed ? Loc.T("Instalado.")
             : Loc.T("No instalado.");
         row.Install.Visibility = installed && !busy ? Visibility.Collapsed : Visibility.Visible;
         row.Install.IsEnabled = !busy;
         row.Install.Content = busy ? Loc.T("Descargando…") : module.ErrorText is null ? Loc.T("Instalar") : Loc.T("Reintentar");
-        row.Remove.Visibility = module.CanRemove && !busy ? Visibility.Visible : Visibility.Collapsed;
+        // Instalado, el botón Quitar siempre se ve; desactivado si viene junto al .exe (no se descargó).
+        row.Remove.Visibility = installed && !busy && !module.RemovePending ? Visibility.Visible : Visibility.Collapsed;
+        row.Remove.IsEnabled = module.CanRemove;
         row.Progress.Visibility = busy ? Visibility.Visible : Visibility.Collapsed;
         row.Progress.Value = module.Progress;
         row.Error.Text = module.ErrorText ?? "";

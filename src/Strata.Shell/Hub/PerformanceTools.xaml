@@ -1,0 +1,59 @@
+﻿<UserControl x:Class="Strata.Shell.Hub.PerformanceTools"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:Strata.Shell.Services.Localization"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <!-- Lecturas avanzadas y Liberar RAM (Hub › Lecturas avanzadas) -->
+    <StackPanel>
+
+    <ui:CardExpander Style="{StaticResource HubExpander}" Icon="{ui:SymbolIcon DeveloperBoard24}" IsExpanded="True">
+        <ui:CardExpander.Header>
+            <StackPanel>
+                <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Lecturas avanzadas'}" />
+                <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                           Text="{l:T 'El uso de CPU, GPU y RAM se lee sin permisos especiales. Las temperaturas y los FPS necesitan las lecturas avanzadas: Windows pide permiso la primera vez y después de cada actualización de Strata UI.'}" />
+            </StackPanel>
+        </ui:CardExpander.Header>
+        <StackPanel>
+            <Grid Style="{StaticResource HubSubOption}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,12,0">
+                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Estado'}" />
+                    <TextBlock x:Name="SensorsState" Style="{StaticResource CardDescription}" TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button x:Name="SensorsButton" Click="Sensors_Click" />
+                    <ui:Button x:Name="SensorsRemoveButton" Margin="8,0,0,0" Content="{l:T 'Quitar el permiso'}"
+                               ToolTip="{l:T 'Borra la tarea con permiso de administrador (pide permiso para borrarla)'}" Click="SensorsRemove_Click" />
+                </StackPanel>
+            </Grid>
+            <Grid Style="{StaticResource HubSubOption}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Iniciarlas al abrir Strata UI'}" />
+                    <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Sin pedir permiso, una vez concedido'}" />
+                </StackPanel>
+                <ui:ToggleSwitch x:Name="SensorsStartupSwitch" HorizontalAlignment="Right" Click="Global_Changed" />
+            </Grid>
+            <ui:InfoBar x:Name="PawnIoBar" Margin="0,4,0,0" Severity="Informational" IsClosable="False" IsOpen="False"
+                        Title="{l:T 'Temperatura de la CPU'}"
+                        Message="{l:T 'Windows solo deja leerla con el controlador PawnIO (gratuito y firmado). Instálalo desde pawnio.eu y reinicia las lecturas avanzadas.'}" />
+            <ui:Button x:Name="PawnIoButton" Margin="0,6,0,0" HorizontalAlignment="Left" Appearance="Primary"
+                       Icon="{ui:SymbolIcon ArrowDownload24}" Content="{l:T 'Instalar PawnIO'}" Click="PawnIo_Click" />
+        </StackPanel>
+    </ui:CardExpander>
+
+    <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Broom24}">
+        <ui:CardControl.Header>
+            <StackPanel>
+                <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Liberar RAM'}" />
+                <TextBlock Style="{StaticResource CardDescription}" TextWrapping="Wrap"
+                           Text="{l:T 'Vacía la memoria que las apps no están usando y la caché en espera. Usa el mismo permiso que las lecturas avanzadas.'}" />
+            </StackPanel>
+        </ui:CardControl.Header>
+        <ui:Button x:Name="FreeRamButton" Icon="{ui:SymbolIcon Broom24}" Content="{l:T 'Liberar'}" Click="FreeRam_Click" />
+    </ui:CardControl>
+    </StackPanel>
+</UserControl>

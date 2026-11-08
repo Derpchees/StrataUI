@@ -292,6 +292,18 @@ public sealed class StrataSettings
     /// Explorador de Windows (fuera de Strata UI, Windows sigue usando el suyo).
     /// </summary>
     public bool FilesReplaceExplorer { get; set; } = true;
+
+    /// <summary>
+    /// Reemplazo nativo: las carpetas que abre cualquier app (o el propio Windows) también se abren
+    /// en Archivos. Requiere <see cref="FilesReplaceExplorer"/>.
+    /// </summary>
+    public bool FilesTakeOverExplorer { get; set; } = true;
+
+    /// <summary>
+    /// Los cuadros Abrir, Guardar como y Elegir carpeta de las apps se muestran en Archivos. Requiere
+    /// <see cref="FilesReplaceExplorer"/>.
+    /// </summary>
+    public bool FilesReplaceDialogs { get; set; } = true;
     /// <summary>Carpetas de red visitadas (\\servidor\recurso), para la barra lateral de Archivos.</summary>
     public List<string> FilesNetworkPlaces { get; set; } = [];
 

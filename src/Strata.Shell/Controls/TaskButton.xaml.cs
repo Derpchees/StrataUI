@@ -241,11 +241,38 @@ public partial class TaskButton : UserControl
         {
             window.GetButtonRect -= OnGetButtonRect;
             _rectWatched.Remove(window);
+            if (Owners.TryGetValue(window.Handle, out var owner) && owner.TryGetTarget(out var button) && button == this)
+                Owners.Remove(window.Handle);
         }
         foreach (var window in members.Except(_rectWatched).ToList())
         {
             window.GetButtonRect += OnGetButtonRect;
             _rectWatched.Add(window);
+            Owners[window.Handle] = new WeakReference<TaskButton>(this);
+        }
+    }
+
+    /// <summary>Botón de cada ventana (el de la barra de su monitor si hay varios).</summary>
+    private static readonly Dictionary<IntPtr, WeakReference<TaskButton>> Owners = new();
+
+    /// <summary>
+    /// Dónde está en pantalla (píxeles físicos) el botón de la ventana: hacia ahí se minimiza con la
+    /// animación de Strata UI (<see cref="Services.Themes.WindowMotion"/>).
+    /// </summary>
+    internal static System.Drawing.Rectangle? ScreenRectOf(IntPtr hwnd)
+    {
+        if (!Owners.TryGetValue(hwnd, out var owner) || !owner.TryGetTarget(out var button)
+            || !button.IsVisible || PresentationSource.FromVisual(button) is null)
+            return null;
+        try
+        {
+            var topLeft = button.PointToScreen(new Point(0, 0));
+            var bottomRight = button.PointToScreen(new Point(button.ActualWidth, button.ActualHeight));
+            return System.Drawing.Rectangle.FromLTRB((int)topLeft.X, (int)topLeft.Y, (int)bottomRight.X, (int)bottomRight.Y);
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
         }
     }
 
