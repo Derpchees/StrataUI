@@ -1416,6 +1416,7 @@
   "Carpeta:": "Dossier :",
   "Tipo de archivo": "Type de fichier",
   "Nombre del archivo": "Nom du fichier",
+  "{0} está en uso por otro programa. Ciérralo o elige otro archivo.": "{0} est utilisé par un autre programme. Fermez-le ou choisissez un autre fichier.",
   "Elige un archivo.": "Choisissez un fichier.",
   "Escribe un nombre para el archivo.": "Saisissez un nom pour le fichier.",
   "No existe {0}": "{0} n'existe pas",

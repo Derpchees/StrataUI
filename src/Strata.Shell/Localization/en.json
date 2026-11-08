@@ -1416,6 +1416,7 @@
   "Carpeta:": "Folder:",
   "Tipo de archivo": "File type",
   "Nombre del archivo": "File name",
+  "{0} está en uso por otro programa. Ciérralo o elige otro archivo.": "{0} is in use by another program. Close it or choose another file.",
   "Elige un archivo.": "Choose a file.",
   "Escribe un nombre para el archivo.": "Type a name for the file.",
   "No existe {0}": "{0} doesn't exist",

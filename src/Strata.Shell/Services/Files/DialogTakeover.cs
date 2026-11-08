@@ -177,7 +177,7 @@ internal static class DialogTakeover
 
     // ── Leer el cuadro, preguntar en Archivos y responder ─────────────────
 
-    private static void Inspect(IntPtr hwnd, Kind kind, bool wasLayered)
+    private static void Inspect(IntPtr hwnd, Kind kind, bool wasLayered, int attempt = 0)
     {
         FilePickRequest? request = null;
         try
@@ -227,7 +227,7 @@ internal static class DialogTakeover
                 Done(hwnd, show: true);
                 return;
             }
-            var answer = new Thread(() => Answer(hwnd, kind, request, result)) { IsBackground = true, Name = "Strata UI: respuesta del cuadro" };
+            var answer = new Thread(() => Answer(hwnd, kind, wasLayered, attempt, request, result)) { IsBackground = true, Name = "Strata UI: respuesta del cuadro" };
             answer.Start();
         });
     }
@@ -361,9 +361,9 @@ internal static class DialogTakeover
     }
 
     /// <summary>Escribe lo elegido en el cuadro oculto y lo acepta; o lo cancela. Si no se cierra, vuelve a verse.</summary>
-    private static void Answer(IntPtr hwnd, Kind kind, FilePickRequest request, FilePickResult? result)
+    private static void Answer(IntPtr hwnd, Kind kind, bool wasLayered, int attempt, FilePickRequest request, FilePickResult? result)
     {
-        bool ok = false;
+        bool ok = false, retry = false;
         try
         {
             if (!IsWindow(hwnd))
@@ -408,8 +408,11 @@ internal static class DialogTakeover
                 SendMessage(box, WmSetText, IntPtr.Zero, paths[0]);
             PostMessage(hwnd, WmCommand, IdOk, IntPtr.Zero);
             ok = WaitGone(hwnd, 2500);
+            // Lo rechazó (ya avisó por qué): se vuelve a elegir en Archivos; tras dos intentos, el de Windows.
+            retry = !ok && attempt < 2 && IsWindow(hwnd) && IsWindowEnabled(hwnd);
             if (!ok)
-                Log.Info("El cuadro de archivos no aceptó la ruta: se muestra el de Windows");
+                Log.Info(retry ? "El cuadro de archivos no aceptó la ruta: se vuelve a abrir Archivos"
+                               : "El cuadro de archivos no aceptó la ruta: se muestra el de Windows");
         }
         catch (Exception ex)
         {
@@ -417,7 +420,10 @@ internal static class DialogTakeover
         }
         finally
         {
-            Done(hwnd, show: !ok);
+            if (retry)
+                Inspect(hwnd, kind, wasLayered, attempt + 1);
+            else
+                Done(hwnd, show: !ok);
         }
     }
 

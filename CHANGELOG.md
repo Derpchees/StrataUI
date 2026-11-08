@@ -6,6 +6,11 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.25.1] - 2026-11-08
+
+### Corregido
+- **Cuadros Abrir de Archivos**: elegir un archivo que otro programa tiene en uso ya no muestra el error de Windows y luego su cuadro: Archivos avisa y deja elegir otro. Si el cuadro de Windows rechaza la ruta, se vuelve a Archivos (hasta dos veces) antes de mostrar el de Windows.
+
 ## [3.25.0] - 2026-11-07
 
 ### Añadido

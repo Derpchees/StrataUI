@@ -1416,6 +1416,7 @@
   "Carpeta:": "Ordner:",
   "Tipo de archivo": "Dateityp",
   "Nombre del archivo": "Dateiname",
+  "{0} está en uso por otro programa. Ciérralo o elige otro archivo.": "{0} wird von einem anderen Programm verwendet. Schließe es oder wähle eine andere Datei.",
   "Elige un archivo.": "Wähle eine Datei aus.",
   "Escribe un nombre para el archivo.": "Gib einen Dateinamen ein.",
   "No existe {0}": "{0} existiert nicht",

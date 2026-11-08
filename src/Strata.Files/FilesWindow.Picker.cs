@@ -260,8 +260,31 @@ public partial class FilesWindow
 
     private void Finish(IReadOnlyList<string> paths)
     {
+        // El cuadro de Windows rechaza un archivo que otro programa tiene bloqueado (con su propio mensaje).
+        if (_pick!.Mode == FilePickMode.Open && paths.FirstOrDefault(InUse) is { } busy)
+        {
+            Pane.Warn(Loc.F("{0} está en uso por otro programa. Ciérralo o elige otro archivo.", Path.GetFileName(busy)));
+            return;
+        }
         Log.Info($"Cuadro de archivos: {paths.Count} elegido(s)");
         _picked.TrySetResult(new FilePickResult(paths, Math.Max(0, PickType.SelectedIndex)));
         Close();
+    }
+
+    private static bool InUse(string path)
+    {
+        try
+        {
+            using var _ = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            return false;
+        }
+        catch (IOException ex) when ((ex.HResult & 0xFFFF) is 32 or 33) // ERROR_SHARING_VIOLATION / ERROR_LOCK_VIOLATION
+        {
+            return true;
+        }
+        catch (Exception)
+        {
+            return false; // sin permiso u otro problema: que lo decida la app
+        }
     }
 }

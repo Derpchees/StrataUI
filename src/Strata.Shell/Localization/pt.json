@@ -1416,6 +1416,7 @@
   "Carpeta:": "Pasta:",
   "Tipo de archivo": "Tipo de arquivo",
   "Nombre del archivo": "Nome do arquivo",
+  "{0} está en uso por otro programa. Ciérralo o elige otro archivo.": "{0} está em uso por outro programa. Feche-o ou escolha outro arquivo.",
   "Elige un archivo.": "Escolha um arquivo.",
   "Escribe un nombre para el archivo.": "Digite um nome para o arquivo.",
   "No existe {0}": "{0} não existe",
