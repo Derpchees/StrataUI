@@ -1015,7 +1015,7 @@
   "Megabits por segundo (Mb/s)": "Megabit pro Sekunde (Mb/s)",
   "Clic para liberar RAM": "Klicken, um RAM freizugeben",
   "Clic para abrir el Administrador de tareas": "Klicken, um den Task-Manager zu öffnen",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean.": "Leiste ohne Hintergrund: nur Symbole und Text, hell oder dunkel je nach dem, was dahinter liegt. Bereiche, Benachrichtigungen und Menüs sind aus durchscheinendem Glas, damit sie lesbar bleiben.",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido.": "Leiste ohne Hintergrund: nur Symbole und Text, hell oder dunkel je nach dem, was dahinter liegt. Bereiche, Benachrichtigungen und Menüs haben eine leichte Tönung und zeigen den Hintergrund scharf.",
   "Agrupar los servicios de Windows": "Windows-Dienste zusammenfassen",
   "Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar.": "Ab 3,5 GB RAM verteilt Windows seine Dienste auf Dutzende svchost-Prozesse; zusammengefasst brauchen sie deutlich weniger Speicher. Gilt nach einem Neustart.",
   "Desactivar SysMain (precarga de apps)": "SysMain deaktivieren (App-Vorabladen)",
@@ -1398,9 +1398,6 @@
   "Desplegar": "Aufklappen",
   "Expandir desde el centro": "Aus der Mitte vergrößern",
   "Deslizar de lado": "Seitlich gleiten",
-  "Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.": "Wie viel vom Hintergrund durch das Startmenü, die Bereiche, die Menüs, den Infobereich und die Benachrichtigungen scheint. Mit den Designs Durchscheinend und Vollständig transparent.",
-  "Desenfocar el fondo": "Hintergrund weichzeichnen",
-  "Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.": "Zeichnet weich, was hinter dem Glas zu sehen ist, wie Acrylic von Windows. Aus: scharf.",
   "Las apps abiertas, el cambio de ventana con Alt+Tab y las lecturas avanzadas.": "Geöffnete Apps, Fensterwechsel mit Alt+Tab und erweiterte Messwerte.",
   "Las apps abiertas y la bandeja del sistema.": "Geöffnete Apps und der Infobereich.",
   "Reemplazar el Explorador en todo Windows": "Explorer in ganz Windows ersetzen",
@@ -1438,5 +1435,12 @@
   "Con un monitor de frecuencia variable (G-SYNC o FreeSync), también la usan los juegos que no la admiten. Se aplica al abrir el juego.": "Mit einem Monitor mit variabler Bildfrequenz (G-SYNC oder FreeSync) nutzen sie auch Spiele, die sie nicht unterstützen. Gilt beim Starten des Spiels.",
   "Elegir la gráfica de cada app": "Grafikkarte pro App wählen",
   "Tienes más de una tarjeta gráfica: elige cuál usa cada juego o app (ahorro de energía o alto rendimiento).": "Sie haben mehr als eine Grafikkarte: Wählen Sie, welche jedes Spiel oder jede App nutzt (Energiesparen oder Höchstleistung).",
-  "Tarjeta gráfica y servicios de los fabricantes": "Grafikkarte und Herstellerdienste"
+  "Tarjeta gráfica y servicios de los fabricantes": "Grafikkarte und Herstellerdienste",
+  "Micrófono": "Mikrofon",
+  "Al silenciar o activar el micrófono": "Beim Stummschalten oder Einschalten des Mikrofons",
+  "Al encender o apagar la cámara con su tecla": "Wenn die Kamerataste die Kamera ein- oder ausschaltet",
+  "Micrófono silenciado": "Mikrofon stummgeschaltet",
+  "Micrófono activado": "Mikrofon an",
+  "Cámara encendida": "Kamera an",
+  "Cámara apagada": "Kamera aus"
 }

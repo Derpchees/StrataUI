@@ -24,10 +24,9 @@ public static class WindowEffects
         if (hwnd == IntPtr.Zero)
             return;
         bool enabled = clear || backdrop is Backdrop.Acrylic or Backdrop.Blur;
-        // Sin "Desenfocar el fondo" (Hub › Tema), los temas translúcidos dejan ver lo de detrás tal
-        // cual, solo con el tinte de WPF: el desenfoque de Windows es tan fuerte que lo convertía en
-        // un gris parejo y se veía opaco.
-        if (enabled && !Settings.Current.PanelBlur)
+        // Translúcido es vidrio esmerilado (lo de detrás desenfocado). Transparente total deja ver lo
+        // de detrás tal cual, nítido, solo con el tinte de WPF.
+        if (enabled && ThemeManager.Theme.ClearBar)
             clear = true;
 
         if (HwndSource.FromHwnd(hwnd) is { CompositionTarget: { } target })

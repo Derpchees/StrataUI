@@ -6,6 +6,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.26.0] - 2026-11-08
+
+### Añadido
+- **Avisos en pantalla del micrófono y la cámara**: al silenciar o activar el micrófono, o al encender o apagar la cámara con su tecla, Strata UI muestra su aviso. Se activan o desactivan por monitor en Hub › Avisos en pantalla.
+
+### Cambiado
+- **Temas Translúcido y Transparente total**: cada uno tiene ahora su aspecto fijo y se distinguen a simple vista. Translúcido es vidrio esmerilado: la barra, el menú Inicio, los paneles, los menús y los avisos desenfocan lo que tienen detrás. Transparente total deja la barra sin fondo y los paneles con un tinte ligero, con el fondo nítido.
+
+### Corregido
+- **Aviso de brillo en portátiles**: las teclas de brillo del teclado ahora muestran el aviso de Strata UI (antes Strata UI no se enteraba del cambio y solo salía el del fabricante). La rueda sobre el botón de brillo también lo muestra en la pantalla integrada.
+- **Avisos del fabricante**: en los Lenovo, el cuadro gris de la utilidad de teclas Fn ya no aparece mientras Strata UI tenga avisos en pantalla; solo se ve el de Strata UI.
+
+### Quitado
+- **Hub › Apariencia**: las opciones «Transparencia» y «Desenfocar el fondo». Lo que hacían ahora lo decide el tema.
+
 ## [3.25.1] - 2026-11-08
 
 ### Corregido

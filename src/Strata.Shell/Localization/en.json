@@ -1015,7 +1015,7 @@
   "Megabits por segundo (Mb/s)": "Megabits per second (Mb/s)",
   "Clic para liberar RAM": "Click to free RAM",
   "Clic para abrir el Administrador de tareas": "Click to open Task Manager",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean.": "Bar without a background: just icons and text, light or dark depending on what's behind them. Panels, notifications and menus are translucent glass so they stay readable.",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido.": "Bar without a background: just icons and text, light or dark depending on what's behind them. Panels, notifications and menus have a light tint and show the background sharp.",
   "Agrupar los servicios de Windows": "Group Windows services",
   "Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar.": "With more than 3.5 GB of RAM, Windows splits its services into dozens of svchost processes; grouped, they use much less memory. Applies after a restart.",
   "Desactivar SysMain (precarga de apps)": "Turn off SysMain (app preloading)",
@@ -1398,9 +1398,6 @@
   "Desplegar": "Unfold",
   "Expandir desde el centro": "Expand from center",
   "Deslizar de lado": "Slide sideways",
-  "Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.": "How much of the background shows through the Start menu, panels, menus, tray and notifications. With the Translucent and Fully transparent themes.",
-  "Desenfocar el fondo": "Blur the background",
-  "Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.": "Blurs what shows behind the glass, like Windows Acrylic. When off, it looks sharp.",
   "Las apps abiertas, el cambio de ventana con Alt+Tab y las lecturas avanzadas.": "Open apps, switching windows with Alt+Tab and advanced readings.",
   "Las apps abiertas y la bandeja del sistema.": "Open apps and the system tray.",
   "Reemplazar el Explorador en todo Windows": "Replace File Explorer across Windows",
@@ -1438,5 +1435,12 @@
   "Con un monitor de frecuencia variable (G-SYNC o FreeSync), también la usan los juegos que no la admiten. Se aplica al abrir el juego.": "With a variable refresh rate monitor (G-SYNC or FreeSync), games that don't support it use it too. Applies when the game starts.",
   "Elegir la gráfica de cada app": "Choose the graphics card for each app",
   "Tienes más de una tarjeta gráfica: elige cuál usa cada juego o app (ahorro de energía o alto rendimiento).": "You have more than one graphics card: choose which one each game or app uses (power saving or high performance).",
-  "Tarjeta gráfica y servicios de los fabricantes": "Graphics card and manufacturer services"
+  "Tarjeta gráfica y servicios de los fabricantes": "Graphics card and manufacturer services",
+  "Micrófono": "Microphone",
+  "Al silenciar o activar el micrófono": "When the microphone is muted or unmuted",
+  "Al encender o apagar la cámara con su tecla": "When the camera key turns the camera on or off",
+  "Micrófono silenciado": "Microphone muted",
+  "Micrófono activado": "Microphone on",
+  "Cámara encendida": "Camera on",
+  "Cámara apagada": "Camera off"
 }

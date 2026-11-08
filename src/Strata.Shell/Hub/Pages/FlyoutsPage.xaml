@@ -74,6 +74,26 @@
                 </ui:CardControl.Header>
                 <ui:ToggleSwitch x:Name="ScrollSwitch" Click="Options_Changed" />
             </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Mic24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Micrófono'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Al silenciar o activar el micrófono'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="MicSwitch" Click="Options_Changed" />
+            </ui:CardControl>
+
+            <ui:CardControl Style="{StaticResource HubCard}" Icon="{ui:SymbolIcon Camera24}">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Cámara'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Al encender o apagar la cámara con su tecla'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ui:ToggleSwitch x:Name="CameraSwitch" Click="Options_Changed" />
+            </ui:CardControl>
         </StackPanel>
     </ScrollViewer>
 </Page>

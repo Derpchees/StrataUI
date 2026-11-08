@@ -401,11 +401,6 @@ public sealed class StrataSettings
     /// <summary>Color propio de los paneles y el menú Inicio ("#AARRGGBB"); null = el del tema.</summary>
     public string? CustomPanelColor { get; set; }
 
-    /// <summary>Transparencia (0–100) de los paneles, menús y avisos con los temas Translúcido y Transparente total.</summary>
-    public int PanelTransparency { get; set; } = 55;
-
-    /// <summary>Desenfocar lo que hay detrás de la barra, los paneles, menús y avisos translúcidos (si no, se ve nítido).</summary>
-    public bool PanelBlur { get; set; }
     /// <summary>
     /// Acento de Windows antes de que Strata UI le pusiera el suyo ("Aplicar el tema a Windows"):
     /// [color de Inicio, color de acento] en ABGR; se devuelve al desactivarlo. Null: no lo cambió.
@@ -466,6 +461,8 @@ public sealed class StrataSettings
         OsdCapsLock = ShowOsd,
         OsdNumLock = ShowOsd,
         OsdScrollLock = ShowOsd,
+        OsdMicrophone = ShowOsd,
+        OsdCamera = ShowOsd,
         NotificationCorner = NotificationCorner,
     };
 }
@@ -509,12 +506,14 @@ public sealed class ScreenSettings
     public bool OsdCapsLock { get; set; } = true;
     public bool OsdNumLock { get; set; } = true;
     public bool OsdScrollLock { get; set; } = true;
+    public bool OsdMicrophone { get; set; } = true;
+    public bool OsdCamera { get; set; } = true;
 
     /// <summary>Algún aviso en pantalla activo (el gancho de teclado se queda con las teclas de volumen).</summary>
     /// <summary>Dónde salen los avisos en pantalla (modo edición); null: junto a la barra.</summary>
     public NotificationCorner? OsdCorner { get; set; }
 
-    public bool AnyOsd => OsdVolume || OsdMute || OsdBrightness || OsdCapsLock || OsdNumLock || OsdScrollLock;
+    public bool AnyOsd => OsdVolume || OsdMute || OsdBrightness || OsdCapsLock || OsdNumLock || OsdScrollLock || OsdMicrophone || OsdCamera;
 
     // Notificaciones
     public NotificationCorner NotificationCorner { get; set; } = NotificationCorner.BottomRight;

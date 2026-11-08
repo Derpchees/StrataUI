@@ -34,6 +34,8 @@ public partial class FlyoutsPage : Page
         CapsSwitch.IsChecked = s.OsdCapsLock;
         NumSwitch.IsChecked = s.OsdNumLock;
         ScrollSwitch.IsChecked = s.OsdScrollLock;
+        MicSwitch.IsChecked = s.OsdMicrophone;
+        CameraSwitch.IsChecked = s.OsdCamera;
     }
 
     private void Options_Changed(object sender, RoutedEventArgs e)
@@ -48,6 +50,8 @@ public partial class FlyoutsPage : Page
             s.OsdCapsLock = CapsSwitch.IsChecked == true;
             s.OsdNumLock = NumSwitch.IsChecked == true;
             s.OsdScrollLock = ScrollSwitch.IsChecked == true;
+            s.OsdMicrophone = MicSwitch.IsChecked == true;
+            s.OsdCamera = CameraSwitch.IsChecked == true;
         });
     }
 }

@@ -204,6 +204,8 @@ and everything goes back to normal.
   open the chat, song or email. Other apps come to the front if they're open, or start.
 - Its own notification sound (or one you import), with Windows' per-app sounds muted so you only
   hear one.
+- **On-screen indicators** for volume, mute, brightness (laptop keys too), Caps/Num/Scroll Lock,
+  microphone and camera, chosen per monitor. They replace the gray box of Lenovo's Fn key utility.
 
 <a id="flyouts-and-media"></a>
 

@@ -13,7 +13,7 @@ using Forms = System.Windows.Forms;
 namespace Strata.Shell.Notifications;
 
 /// <summary>Qué aviso en pantalla es (cada monitor elige cuáles muestra en Hub › Paneles).</summary>
-public enum OsdKind { Volume, Mute, Brightness, CapsLock, NumLock, ScrollLock }
+public enum OsdKind { Volume, Mute, Brightness, CapsLock, NumLock, ScrollLock, Microphone, Camera }
 
 /// <summary>
 /// Aviso en pantalla (OSD) al cambiar el volumen, silenciar, cambiar el brillo o pulsar Bloq Mayús,
@@ -127,6 +127,8 @@ public partial class OsdWindow : Window
         OsdKind.Brightness => s.OsdBrightness,
         OsdKind.CapsLock => s.OsdCapsLock,
         OsdKind.NumLock => s.OsdNumLock,
+        OsdKind.Microphone => s.OsdMicrophone,
+        OsdKind.Camera => s.OsdCamera,
         _ => s.OsdScrollLock,
     };
 
@@ -283,6 +285,11 @@ public static class Osd
         WatchBrightness();
         Services.StartMenu.WinKeyHook.LockKeyPressed += OnLockKey;
         Services.StartMenu.WinKeyHook.VolumeKeyPressed += OnVolumeKey;
+        App.Current.Audio.Input.Changed += OnMicrophoneChanged;
+        OnMicrophoneChanged();
+        CameraWatcher.Start(OnCameraChanged);
+        // El aviso del fabricante (Lenovo) no sale mientras Strata UI muestre los suyos.
+        OemOsd.Start(() => App.Current.Taskbars.Any(t => Settings.Current.For(t.Device).AnyOsd));
     }
 
     public static void Shutdown()
@@ -290,6 +297,9 @@ public static class Osd
         App.Current.Audio.Changed -= OnAudioChanged;
         Services.StartMenu.WinKeyHook.LockKeyPressed -= OnLockKey;
         Services.StartMenu.WinKeyHook.VolumeKeyPressed -= OnVolumeKey;
+        App.Current.Audio.Input.Changed -= OnMicrophoneChanged;
+        CameraWatcher.Stop();
+        OemOsd.Stop();
         OsdWindow.CloseAll();
     }
 
@@ -361,10 +371,48 @@ public static class Osd
             || !Enabled || Flyouts.FlyoutManager.IsOpen<Flyouts.BrightnessFlyout>())
             return;
         // Solo en el monitor cuyo brillo cambi\u00F3 (si tiene barra y el aviso activado).
-        OsdWindow.ShowLevel(OsdKind.Brightness, "\uE706", monitor.Percent, device: monitor.Device);
+        OsdWindow.ShowLevel(OsdKind.Brightness, "\uE706", monitor.Percent,
+                            device: monitor.IsInternal ? InternalScreen() : monitor.Device);
+    }
+
+    /// <summary>
+    /// La pantalla del portátil: la única sin brillo por DDC/CI. Si no se sabe cuál es (varias sin
+    /// DDC/CI), null: el aviso sale en todas las que lo tengan activado.
+    /// </summary>
+    private static string? InternalScreen()
+    {
+        var external = BrightnessService.Monitors.Where(m => !m.IsInternal).Select(m => m.Device).ToHashSet();
+        var rest = Forms.Screen.AllScreens.Where(s => !external.Contains(s.DeviceName)).ToList();
+        return rest.Count == 1 ? rest[0].DeviceName : null;
     }
 
     // ── Teclas de bloqueo ───────────────────────────────────────────────────
+
+    // ── Micrófono y cámara (sus teclas en los portátiles) ────────────────────
+
+    private static bool? _micMute;
+    private static string? _micDevice;
+
+    private static void OnMicrophoneChanged()
+    {
+        var input = App.Current.Audio.Input;
+        bool? mute = input.HasDevice ? input.Mute : null;
+        // Cambiar de micrófono predeterminado no es silenciarlo.
+        bool changed = mute != null && _micMute != null && mute != _micMute && input.DeviceId == _micDevice;
+        (_micMute, _micDevice) = (mute, input.DeviceId);
+        if (!changed || !Enabled)
+            return;
+        OsdWindow.ShowMessage(OsdKind.Microphone, mute == true ? "" : "", // MicOff, Microphone
+                              mute == true ? Loc.T("Micrófono silenciado") : Loc.T("Micrófono activado"));
+    }
+
+    private static void OnCameraChanged(bool on)
+    {
+        if (!Enabled)
+            return;
+        OsdWindow.ShowMessage(OsdKind.Camera, "", // Camera
+                              on ? Loc.T("Cámara encendida") : Loc.T("Cámara apagada"));
+    }
 
     private static void OnLockKey(int vk)
     {

@@ -58,8 +58,25 @@ public sealed class BrightnessMonitor : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Brillo que cambió fuera de Strata UI (las teclas del portátil): se muestra sin volver a
+    /// aplicarlo. Justo después de un cambio propio se ignora: WMI avisa con retraso de los valores
+    /// intermedios y el control saltaría hacia atrás.
+    /// </summary>
+    internal void Report(int percent)
+    {
+        percent = Math.Clamp(percent, 0, 100);
+        if (percent == _percent || Environment.TickCount64 - _lastRequest < 1500)
+            return;
+        _percent = percent;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Percent)));
+    }
+
+    private long _lastRequest;
+
     private void Request(int percent)
     {
+        _lastRequest = Environment.TickCount64;
         lock (_gate)
         {
             _pending = percent;
@@ -138,6 +155,8 @@ public static class BrightnessService
                 Monitors.Clear();
                 foreach (var monitor in found)
                     Monitors.Add(monitor);
+                if (found.Any(m => m.IsInternal))
+                    WatchInternal(dispatcher);
                 Changed?.Invoke();
             });
         });
@@ -150,7 +169,52 @@ public static class BrightnessService
         return Monitors.FirstOrDefault(m => m.Device == device) ?? Monitors.FirstOrDefault(m => m.IsInternal);
     }
 
-    public static void Shutdown() => ReleaseHandles();
+    public static void Shutdown()
+    {
+        if (_watcher is { } watcher)
+        {
+            _watcher = null;
+            try
+            {
+                watcher.Stop();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("No se pudo dejar de vigilar el brillo", ex);
+            }
+            watcher.Dispose();
+        }
+        ReleaseHandles();
+    }
+
+    private static ManagementEventWatcher? _watcher;
+
+    /// <summary>
+    /// Avisa cuando el brillo de la pantalla integrada cambia por fuera (teclas de brillo del
+    /// portátil, Windows): sin esto el aviso en pantalla de Strata UI no salía y solo se veía el del
+    /// fabricante.
+    /// </summary>
+    private static void WatchInternal(System.Windows.Threading.Dispatcher dispatcher)
+    {
+        if (_watcher != null)
+            return;
+        try
+        {
+            var watcher = new ManagementEventWatcher(new ManagementScope(@"root\WMI"),
+                new WqlEventQuery("SELECT * FROM WmiMonitorBrightnessEvent"));
+            watcher.EventArrived += (_, e) =>
+            {
+                int percent = Convert.ToInt32(e.NewEvent["Brightness"]);
+                dispatcher.BeginInvoke(() => Monitors.FirstOrDefault(m => m.IsInternal)?.Report(percent));
+            };
+            watcher.Start();
+            _watcher = watcher;
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo vigilar el brillo de la pantalla integrada", ex);
+        }
+    }
 
     private static void ReleaseHandles()
     {

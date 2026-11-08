@@ -95,14 +95,15 @@ public static class Palette
         else if (theme.Backdrop == Backdrop.Acrylic)
         {
             // Translúcido y Transparente total: el color base, semitransparente sobre el desenfoque
-            // limpio (sin la capa gris del Acrylic de Windows, que lo dejaba opaco). Cuánto se ve el
-            // fondo lo elige el usuario (Hub › Tema › Transparencia). En oscuro el gris neutro se
+            // limpio (sin la capa gris del Acrylic de Windows, que lo dejaba opaco). Translúcido es
+            // vidrio esmerilado (fondo desenfocado, ver WindowEffects); Transparente total deja el
+            // fondo nítido, con un tinte más ligero. En oscuro el gris neutro se
             // cambia por uno casi negro: con la misma transparencia oscurece más lo de detrás y el
             // texto se sigue leyendo sobre una ventana blanca.
             background = WithAlpha(background, light ? (byte)0xA6 : (byte)0x8C);
             if (!light && flyout == Hex("#2B2B2B"))
                 flyout = Hex("#18181B");
-            flyout = WithAlpha(flyout, GlassAlpha(Settings.Current.PanelTransparency));
+            flyout = WithAlpha(flyout, GlassAlpha(theme.ClearBar ? 65 : 55));
             hubTint = WithAlpha(flyout, theme.ClearBar ? (byte)0x0F : (byte)0x33);
         }
 

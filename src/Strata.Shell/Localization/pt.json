@@ -1015,7 +1015,7 @@
   "Megabits por segundo (Mb/s)": "Megabits por segundo (Mb/s)",
   "Clic para liberar RAM": "Clique para liberar RAM",
   "Clic para abrir el Administrador de tareas": "Clique para abrir o Gerenciador de Tarefas",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús son de vidrio translúcido para que se lean.": "Barra sem fundo: só ícones e texto, claros ou escuros conforme o que está atrás. Os painéis, avisos e menus são de vidro translúcido para serem legíveis.",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido.": "Barra sem fundo: só ícones e texto, claros ou escuros conforme o que está atrás. Os painéis, avisos e menus têm uma tonalidade leve e deixam ver o fundo nítido.",
   "Agrupar los servicios de Windows": "Agrupar os serviços do Windows",
   "Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar.": "Com mais de 3,5 GB de RAM, o Windows divide seus serviços em dezenas de processos svchost; agrupados, usam bem menos memória. Vale após reiniciar.",
   "Desactivar SysMain (precarga de apps)": "Desativar o SysMain (pré-carregamento de apps)",
@@ -1398,9 +1398,6 @@
   "Desplegar": "Desdobrar",
   "Expandir desde el centro": "Expandir do centro",
   "Deslizar de lado": "Deslizar de lado",
-  "Cuánto se ve el fondo a través del menú Inicio, los paneles, los menús, la bandeja y los avisos. Con los temas Translúcido y Transparente total.": "Quanto do fundo aparece através do menu Iniciar, dos painéis, dos menus, da bandeja e dos avisos. Com os temas Translúcido e Totalmente transparente.",
-  "Desenfocar el fondo": "Desfocar o fundo",
-  "Difumina lo que se ve detrás del vidrio, como el Acrylic de Windows. Apagado, se ve nítido.": "Desfoca o que aparece atrás do vidro, como o Acrylic do Windows. Desligado, fica nítido.",
   "Las apps abiertas, el cambio de ventana con Alt+Tab y las lecturas avanzadas.": "Apps abertos, troca de janelas com Alt+Tab e leituras avançadas.",
   "Las apps abiertas y la bandeja del sistema.": "Apps abertos e a bandeja do sistema.",
   "Reemplazar el Explorador en todo Windows": "Substituir o Explorador em todo o Windows",
@@ -1438,5 +1435,12 @@
   "Con un monitor de frecuencia variable (G-SYNC o FreeSync), también la usan los juegos que no la admiten. Se aplica al abrir el juego.": "Com um monitor de taxa variável (G-SYNC ou FreeSync), até os jogos que não a suportam passam a usá-la. Aplica-se ao abrir o jogo.",
   "Elegir la gráfica de cada app": "Escolher a placa de vídeo de cada app",
   "Tienes más de una tarjeta gráfica: elige cuál usa cada juego o app (ahorro de energía o alto rendimiento).": "Você tem mais de uma placa de vídeo: escolha qual cada jogo ou app usa (economia de energia ou alto desempenho).",
-  "Tarjeta gráfica y servicios de los fabricantes": "Placa de vídeo e serviços dos fabricantes"
+  "Tarjeta gráfica y servicios de los fabricantes": "Placa de vídeo e serviços dos fabricantes",
+  "Micrófono": "Microfone",
+  "Al silenciar o activar el micrófono": "Ao silenciar ou ativar o microfone",
+  "Al encender o apagar la cámara con su tecla": "Ao ligar ou desligar a câmera com sua tecla",
+  "Micrófono silenciado": "Microfone silenciado",
+  "Micrófono activado": "Microfone ativado",
+  "Cámara encendida": "Câmera ligada",
+  "Cámara apagada": "Câmera desligada"
 }

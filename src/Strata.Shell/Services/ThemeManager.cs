@@ -151,7 +151,7 @@ public static class ThemeManager
         _ => WindowBackdropType.None,
     };
 
-    private static (string, string?, int, bool, string?, string?, int, bool) _appliedKey;
+    private static (string, string?, int, bool, string?, string?) _appliedKey;
     private static HwndSource? _colorWatcher;
 
     public static void Initialize()
@@ -203,12 +203,12 @@ public static class ThemeManager
     }
 
     /// <summary>Lo que cambia los recursos generales: el tema y la barra del monitor principal y el acento.</summary>
-    private static (string, string?, int, bool, string?, string?, int, bool) AppliedKey()
+    private static (string, string?, int, bool, string?, string?) AppliedKey()
     {
         var s = Settings.Current;
         var main = s.For(MainDevice);
         return (ThemeFor(MainDevice).Key, s.AccentColor, main.TaskbarHeight, s.AccentFromWallpaper,
-                BarColorFor(MainDevice)?.ToString(), s.CustomPanelColor, s.PanelTransparency, s.PanelBlur);
+                BarColorFor(MainDevice)?.ToString(), s.CustomPanelColor);
     }
 
     /// <summary>Reaplica si cambió lo que se ve (claro/oscuro o el acento efectivo).</summary>
