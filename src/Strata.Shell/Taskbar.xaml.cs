@@ -111,6 +111,8 @@ public partial class Taskbar : AppBarWindow
         UpdateVolume();
         Services.Brightness.BrightnessService.Changed += ApplySettings;
         Media.Changed += UpdateMedia;
+        Services.Media.LyricsLine.Changed += UpdateMedia;
+        Services.Modules.OptionalModules.Changed += OnModuleChanged;
         TaskButton.DragStarted += OnTaskDragStarted;
         TaskOrder.Changed += OnTaskOrderChanged;
 
@@ -221,7 +223,7 @@ public partial class Taskbar : AppBarWindow
         MediaControls.Orientation = Orientation.Vertical;
         MediaControls.Margin = new Thickness(0, 0, 0, 4);
         MediaControls.HorizontalAlignment = HorizontalAlignment.Center;
-        foreach (var control in new FrameworkElement[] { MediaPrevious, MediaPlay, MediaNext })
+        foreach (var control in new FrameworkElement[] { MediaPrevious, MediaPlay, MediaNext, MediaLyrics })
             control.Height = 28;
         MediaButton.HorizontalAlignment = HorizontalAlignment.Center;
         MediaButton.Height = 36;
@@ -628,6 +630,8 @@ public partial class Taskbar : AppBarWindow
         App.Current.Audio.Changed -= UpdateVolume;
         Services.Brightness.BrightnessService.Changed -= ApplySettings;
         Media.Changed -= UpdateMedia;
+        Services.Media.LyricsLine.Changed -= UpdateMedia;
+        Services.Modules.OptionalModules.Changed -= OnModuleChanged;
         Services.Notifications.NotificationService.Changed -= UpdateNotificationBadge;
         ThemeManager.ThemeChanged -= OnThemeChanged;
         TrayIcon.DragStarted -= OnTrayDragStarted;
@@ -1036,26 +1040,49 @@ public partial class Taskbar : AppBarWindow
 
     private void UpdateMedia()
     {
-        var s = Settings.Current;
+        var s = S;
         bool show = Has(BarItem.Media) && Media.HasSession;
         MediaModule.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (!show)
             return;
+        // El módulo Letras (si está instalado) empieza a buscar la letra al cargarse.
+        var lyrics = Services.Modules.OptionalModules.Lyrics.IsInstalled ? Services.Modules.OptionalModules.Lyrics.Load() : null;
+        var style = s.MediaStyle;
+        if (IsVertical && style == MediaStyle.Text)
+            style = MediaStyle.Cover; // en vertical no cabe el texto: queda la carátula
+        bool cover = style is MediaStyle.Full or MediaStyle.Compact or MediaStyle.Cover;
+        bool text = !IsVertical && style is MediaStyle.Full or MediaStyle.Compact or MediaStyle.Text;
+        MediaButton.Visibility = style == MediaStyle.Controls ? Visibility.Collapsed : Visibility.Visible;
+        MediaCoverBox.Visibility = cover ? Visibility.Visible : Visibility.Collapsed;
+        MediaText.Visibility = text ? Visibility.Visible : Visibility.Collapsed;
+        MediaText.Margin = cover ? new Thickness(8, 0, 2, 0) : new Thickness(2, 0, 2, 0);
         MediaCover.ImageSource = Media.Cover;
         MediaAppBadge.Source = Media.AppIcon;
         MediaTitle.Text = Media.Title;
-        // Segunda línea: artista y álbum (lo que haya).
-        string details = string.Join(" · ", new[] { Media.Artist, Media.Album }.Where(t => t.Length > 0).Distinct());
+        // Segunda línea: la letra que se canta (con el módulo Letras) o el artista y el álbum.
+        string line = lyrics != null && s.ShowLyricsLine ? Services.Media.LyricsLine.Current : "";
+        string details = line.Length > 0 ? line
+            : string.Join(" · ", new[] { Media.Artist, Media.Album }.Where(t => t.Length > 0).Distinct());
         MediaArtist.Text = details;
-        MediaArtist.Visibility = details.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        MediaArtist.Visibility = details.Length > 0 && style != MediaStyle.Compact ? Visibility.Visible : Visibility.Collapsed;
         MediaButton.ToolTip = string.Join("\n", new[] { Media.Title, Media.Artist, Media.Album, Media.AppName }.Where(t => t.Length > 0));
         MediaButton.Opacity = Media.IsPlaying ? 1 : 0.6;
-        MediaControls.Visibility = S.ShowMediaControls ? Visibility.Visible : Visibility.Collapsed;
+        MediaControls.Visibility = s.ShowMediaControls || style == MediaStyle.Controls ? Visibility.Visible : Visibility.Collapsed;
         MediaPlayGlyph.Text = Media.IsPlaying ? "" : ""; // pausa / reproducir
         MediaPlay.ToolTip = Media.IsPlaying ? Loc.T("Pausar") : Loc.T("Reproducir");
         MediaPrevious.IsEnabled = Media.CanPrevious;
         MediaNext.IsEnabled = Media.CanNext;
+        MediaLyrics.Visibility = lyrics != null ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    private void OnModuleChanged(Services.Modules.OptionalModule module)
+    {
+        if (module == Services.Modules.OptionalModules.Lyrics)
+            Dispatcher.BeginInvoke(UpdateMedia);
+    }
+
+    private void MediaLyrics_Click(object sender, RoutedEventArgs e) =>
+        Services.Modules.OptionalModules.Lyrics.Load()?.Toggle(MediaLyrics);
 
     private void MediaPrevious_Click(object sender, RoutedEventArgs e) => Media.Previous();
 

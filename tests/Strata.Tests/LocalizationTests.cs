@@ -30,7 +30,7 @@ public sealed partial class LocalizationTests
 
     // Los módulos opcionales (Optimización, Archivos) usan las traducciones de la app.
     private static IEnumerable<string> SourceFiles(string pattern) =>
-        new[] { Source, Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Optimization"), Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Files") }
+        new[] { Source, Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Optimization"), Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Files"), Path.Combine(Path.GetDirectoryName(Source)!, "Strata.Lyrics") }
             .SelectMany(dir => Directory.EnumerateFiles(dir, pattern, SearchOption.AllDirectories))
                  .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}")
                           && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"));

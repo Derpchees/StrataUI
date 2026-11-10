@@ -32,6 +32,7 @@
     <InternalsVisibleTo Include="StrataUI.Optimization" />
     <InternalsVisibleTo Include="StrataUI.Files" />
     <InternalsVisibleTo Include="StrataUI.Sensors" />
+    <InternalsVisibleTo Include="StrataUI.Lyrics" />
   </ItemGroup>
 
   <ItemGroup>

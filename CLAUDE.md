@@ -196,6 +196,10 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
     (`Services/Files/`: íconos, miniaturas, `FileMenus`, operaciones, `FramePlayer`, `Previews`) sigue
     en la app, y el módulo no puede traer otras DLL (se descarga solo). Sin él, `App.OpenFiles` abre
     el Explorador y `FilesModule.ReplacesExplorer` es false (Win+E, Inicio, Win+X).
+  - **Letras** (`src/Strata.Lyrics` → `StrataUI.Lyrics.dll`): `LrcLib` (busca en lrclib.net, caché en
+    `%LOCALAPPDATA%\StrataUI\Lyrics`), `LyricsEngine` (sigue `MediaService`, marca la línea con
+    `Timeline()` y la publica en `Services/Media/LyricsLine`) y `LyricsFlyout`, detrás de
+    `ILyricsModule`. La barra muestra el botón de letra y, con `ShowLyricsLine`, la línea en lugar del artista.
   - **Lecturas avanzadas** (`src/Strata.Sensors` → `StrataUI.Sensors.zip`, con LibreHardwareMonitor y
     TraceEvent): los lectores de temperaturas y FPS (`ISensorReaders`). Solo los carga el proceso
     elevado, desde `%ProgramFiles%\StrataUI\Lecturas\Sensors` (`SensorsModule.LoadProtected`), que
@@ -274,7 +278,7 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
    en una sola lista con todo lo cambiado desde la última versión publicada, aunque haya versiones
    intermedias sin publicación: nada de "también incluye lo de la X.Y.Z".
    Adjuntar también los módulos opcionales que deja `build-installer.ps1` (del mismo commit):
-   `artifacts\StrataUI.Optimization.dll`, `StrataUI.Files.dll` y `StrataUI.Sensors.zip`. Sin ellos,
+   `artifacts\StrataUI.Optimization.dll`, `StrataUI.Files.dll`, `StrataUI.Lyrics.dll` y `StrataUI.Sensors.zip`. Sin ellos,
    "Instalar" en Módulos opcionales falla en esa versión.
 5. Commits intermedios durante el trabajo están bien; la versión se cierra al terminar la tanda,
    antes de pasar a otra cosa.

@@ -109,7 +109,7 @@
                     <Button x:Name="MediaButton" Style="{StaticResource TaskbarButton}" Padding="6,0"
                             Click="MediaButton_Click" MouseUp="MediaButton_MouseUp">
                         <StackPanel x:Name="MediaContent" Orientation="Horizontal">
-                            <Border Width="28" Height="28" CornerRadius="5" VerticalAlignment="Center"
+                            <Border x:Name="MediaCoverBox" Width="28" Height="28" CornerRadius="5" VerticalAlignment="Center"
                                     Background="{DynamicResource StrataSurfaceBrush}">
                                 <Grid>
                                     <TextBlock Style="{StaticResource IconText}" FontSize="13" Text="&#xEC4F;" />
@@ -143,6 +143,11 @@
                         <Button x:Name="MediaNext" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"
                                 ToolTip="{l:T 'Siguiente'}" Click="MediaNext_Click">
                             <TextBlock Style="{StaticResource IconText}" FontSize="12" Text="&#xE893;" />
+                        </Button>
+                        <!-- Con el módulo Letras: la letra de lo que suena (ver Services/Modules/LyricsModule) -->
+                        <Button x:Name="MediaLyrics" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"
+                                ToolTip="{l:T 'Letra'}" Click="MediaLyrics_Click" Visibility="Collapsed">
+                            <TextBlock Style="{StaticResource IconText}" FontSize="12" Text="&#xE8D2;" />
                         </Button>
                     </StackPanel>
                     </StackPanel>

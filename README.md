@@ -218,7 +218,11 @@ and everything goes back to normal.
   devices right from the flyout), **battery**.
 - **Brightness for every monitor** over DDC/CI, with Windows Night light.
 - **Media**: album art, title and artist on the bar for any app that reports media (Spotify,
-  browsers, Media Player...), with optional controls.
+  browsers, Media Player...), with optional controls. Five views per monitor: cover with title and
+  artist, cover and title, cover only, text only or controls only.
+- **Lyrics** (optional module): finds the lyrics of whatever is playing on its own (LRCLIB) and
+  shows them synced in a panel; click a line to jump there. The current line can replace the artist
+  on the bar.
 
 <a id="files"></a>
 
@@ -431,6 +435,7 @@ src/Strata.Shell/            The app (StrataUI.exe)
   Localization/              UI translations (en, pt, fr, de; Spanish lives in the code)
 src/Strata.Optimization/     Optional module with the Optimization pages
 src/Strata.Files/            Optional module with the Files windows
+src/Strata.Lyrics/           Optional module with the synced lyrics
 src/Strata.Sensors/          Optional module with the temperature and FPS readers
 src/Strata.ContextMenu/      "Pin to Start" in the Windows 11 right-click menu
 tests/Strata.Tests/          xUnit tests

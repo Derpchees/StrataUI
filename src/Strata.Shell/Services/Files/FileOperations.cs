@@ -124,20 +124,82 @@ public static class FileOperations
         if (result == 0 && !aborted)
             return true;
         var left = paths.Where(p => File.Exists(p) || Directory.Exists(p)).ToList();
-        if (aborted || left.Count == 0 || result is not (ErrorAccessDenied or DeAccessDeniedSource or ErrorPrivilegeNotHeld))
+        if (aborted || left.Count == 0)
             return false;
+        string name = Path.GetFileName(left[0].TrimEnd('\\'));
+        if (result is not (ErrorAccessDenied or DeAccessDeniedSource or ErrorPrivilegeNotHeld or ErrorSharingViolation))
+        {
+            await FailedAsync(left, name, result, owner);
+            return false;
+        }
+
+        // Windows da "acceso denegado" también cuando algo está en uso (una carpeta no se puede mover
+        // a la Papelera si un editor o una terminal tiene abierto algo de adentro). Si Strata UI sí
+        // puede abrirlo para borrarlo, el problema no es de permisos: pedir administrador no sirve.
+        var busy = left.Where(InUse).ToList();
+        if (busy.Count > 0)
+        {
+            bool folder = busy.Count == 1 && Directory.Exists(busy[0]);
+            string busyMessage = busy.Count == 1
+                ? Loc.F("«{0}» está abierto en otra aplicación (por ejemplo un editor, una terminal o un programa que usa algo de adentro). Ciérrala y elige Reintentar.", Path.GetFileName(busy[0].TrimEnd('\\')))
+                : Loc.F("{0} elementos están abiertos en otra aplicación (por ejemplo un editor, una terminal o un programa que usa algo de adentro). Ciérrala y elige Reintentar.", busy.Count);
+            Log.Info($"Archivos: no se pudo eliminar porque está en uso ({string.Join(", ", busy)})");
+            if (!await ConfirmAsync(folder ? Loc.T("Carpeta en uso") : Loc.T("En uso"), busyMessage, Loc.T("Reintentar"), owner))
+                return false;
+            return await DeleteAsync(left, recycle, owner);
+        }
+
+        if (result == ErrorSharingViolation)
+        {
+            await FailedAsync(left, name, result, owner);
+            return false;
+        }
         string message = left.Count == 1
-            ? Loc.F("Para eliminar «{0}» hace falta permiso de administrador.", Path.GetFileName(left[0].TrimEnd('\\')))
+            ? Loc.F("Para eliminar «{0}» hace falta permiso de administrador.", name)
             : Loc.F("Para eliminar {0} elementos hace falta permiso de administrador.", left.Count);
         if (!await ElevatedFiles.AskAsync(owner, message))
             return false;
         if (await ElevatedFiles.RunAsync(new ElevatedFiles.Job { Op = recycle ? "recycle" : "delete", Paths = left }) is { Length: > 0 } error)
         {
             Log.Info($"Archivos: no se pudo eliminar como administrador ({error})");
+            await FailedAsync(left, name, null, owner);
             return false;
         }
         return true;
     }
+
+    /// <summary>Que no falle en silencio: avisa qué no se pudo eliminar.</summary>
+    private static Task<int> FailedAsync(IReadOnlyList<string> left, string name, int? code, IntPtr owner)
+    {
+        string message = left.Count == 1
+            ? Loc.F("No se pudo eliminar «{0}».", name)
+            : Loc.F("No se pudieron eliminar {0} elementos.", left.Count);
+        if (code is int c)
+            message += " " + Loc.F("(código 0x{0:X})", c);
+        return Controls.StrataDialog.ShowAsync(OwnerWindow(owner), Loc.T("No se pudo eliminar"), message, Loc.T("Aceptar"));
+    }
+
+    /// <summary>
+    /// Si se puede abrir para borrar (o lo tiene abierto otro sin compartirlo): entonces lo que
+    /// impidió borrarlo es que está en uso, no los permisos.
+    /// </summary>
+    private static bool InUse(string path)
+    {
+        var handle = CreateFile(path, DeleteAccess, FileShareAll, IntPtr.Zero, OpenExisting, FileFlagBackupSemantics, IntPtr.Zero);
+        if (!handle.IsInvalid)
+        {
+            handle.Dispose();
+            return true;
+        }
+        return Marshal.GetLastWin32Error() == ErrorSharingViolation;
+    }
+
+    private const uint DeleteAccess = 0x10000, FileShareAll = 0x7, OpenExisting = 3, FileFlagBackupSemantics = 0x02000000;
+    private const int ErrorSharingViolation = 32;
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr security,
+        uint disposition, uint flags, IntPtr template);
 
     /// <summary>Borra para siempre (sin Papelera), después de preguntar.</summary>
     /// <param name="names">Lo que se muestra al preguntar (en la Papelera las rutas son "$R…").</param>

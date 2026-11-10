@@ -42,7 +42,7 @@ $cert = Get-PfxCertificate (Join-Path $publish 'StrataUI.cer')
 # Módulos opcionales: no van en el instalador. Se adjuntan a la publicación de GitHub (vX.Y.Z) y se
 # instalan desde Hub › Módulos opcionales (Services\Modules). Tienen que ser del mismo commit que la app.
 $modules = @()
-foreach ($project in 'Strata.Optimization', 'Strata.Files') {
+foreach ($project in 'Strata.Optimization', 'Strata.Files', 'Strata.Lyrics') {
     $moduleBuild = Join-Path $root 'artifacts\module-build'
     if (Test-Path $moduleBuild) { Remove-Item $moduleBuild -Recurse -Force }
     dotnet build (Join-Path $root "src\$project\$project.csproj") -c Release -o $moduleBuild -nologo -v q

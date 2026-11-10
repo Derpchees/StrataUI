@@ -596,8 +596,27 @@ internal sealed class BarPreview
                 yield return Toggle(Loc.T("Mostrar temperaturas"), _screen.ShowTemperatures, s => s.ShowTemperatures = !s.ShowTemperatures);
                 break;
             case BarItem.Media:
+            {
+                // Cómo se ve lo que suena: carátula y texto, más chico, solo la carátula, solo el texto o solo los botones.
+                var look = new MenuItem { Header = Loc.T("Vista") };
+                foreach (var (style, name) in new[]
+                         {
+                             (MediaStyle.Full, Loc.T("Carátula, título y artista")),
+                             (MediaStyle.Compact, Loc.T("Carátula y título")),
+                             (MediaStyle.Cover, Loc.T("Solo la carátula")),
+                             (MediaStyle.Text, Loc.T("Solo el texto")),
+                             (MediaStyle.Controls, Loc.T("Solo los controles")),
+                         })
+                {
+                    var choice = style;
+                    look.Items.Add(Toggle(name, _screen.MediaStyle == style, s => s.MediaStyle = choice));
+                }
+                yield return look;
                 yield return Toggle(Loc.T("Controles multimedia"), _screen.ShowMediaControls, s => s.ShowMediaControls = !s.ShowMediaControls);
+                if (Services.Modules.OptionalModules.Lyrics.IsInstalled)
+                    yield return Toggle(Loc.T("Letra en la barra"), _screen.ShowLyricsLine, s => s.ShowLyricsLine = !s.ShowLyricsLine);
                 break;
+            }
             case BarItem.Fps:
             {
                 // De qué monitor se cuentan los FPS (para todos los contadores).

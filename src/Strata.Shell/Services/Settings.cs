@@ -23,6 +23,12 @@ public enum SecondBarContent { None, Apps, Status, Full }
 /// <summary>Estilo de la barra de un monitor: el del tema, sin fondo o con un color propio.</summary>
 public enum BarStyle { Theme, Clear, Color }
 
+/// <summary>
+/// Cómo se ve lo que suena en la barra: carátula con título y artista, carátula con el título, solo
+/// la carátula, solo el texto o solo los botones.
+/// </summary>
+public enum MediaStyle { Full, Compact, Cover, Text, Controls }
+
 public enum StrataTheme
 {
     // Estilos: System es Mica y Transparent, Translúcido. Light y Dark son esquemas (solo claro u
@@ -498,6 +504,9 @@ public sealed class ScreenSettings
 
     // Multimedia
     public bool ShowMediaControls { get; set; } = true;
+    public MediaStyle MediaStyle { get; set; } = MediaStyle.Full;
+    /// <summary>Con el módulo Letras: la línea que se canta en lugar del artista.</summary>
+    public bool ShowLyricsLine { get; set; }
 
     // Avisos en pantalla (OSD) junto a la barra de este monitor
     public bool OsdVolume { get; set; } = true;

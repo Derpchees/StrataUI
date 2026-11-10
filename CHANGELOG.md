@@ -6,6 +6,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.27.0] - 2026-11-10
+
+### Añadido
+- **Módulo opcional Letras**: busca solo la letra de lo que suena en cualquier app (Spotify, el navegador, Reproductor multimedia…) y la muestra sincronizada en un panel desde el botón de letra de la barra; la línea que se canta queda resaltada y un clic en una línea salta a esa parte. Con «Letra en la barra» la línea actual se ve en lugar del artista. Se instala en Hub › Módulos opcionales.
+- **Vistas de multimedia en la barra**: clic derecho en multimedia en el modo edición › Vista: carátula, título y artista; carátula y título; solo la carátula; solo el texto; o solo los controles. Se elige por monitor.
+
+### Corregido
+- **Eliminar carpetas en uso en Archivos**: si otra app (un editor, una terminal…) tiene abierto algo dentro, Archivos lo dice y ofrece Reintentar, en vez de pedir permisos de administrador sin resultado y no hacer nada. Cualquier otro error al eliminar ahora también se avisa.
+- **Barra con las apps en el centro**: las apps quedan centradas en la barra aunque haya más elementos a un lado que al otro.
+
 ## [3.26.0] - 2026-11-08
 
 ### Añadido

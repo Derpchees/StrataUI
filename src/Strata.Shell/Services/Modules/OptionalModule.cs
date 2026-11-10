@@ -297,8 +297,9 @@ public static class OptionalModules
     public static readonly OptimizationModule Optimization = new();
     public static readonly FilesModule Files = new();
     public static readonly SensorsModule Sensors = new();
+    public static readonly LyricsModule Lyrics = new();
 
-    public static IReadOnlyList<OptionalModule> All { get; } = [Optimization, Files, Sensors];
+    public static IReadOnlyList<OptionalModule> All { get; } = [Optimization, Files, Sensors, Lyrics];
 
     /// <summary>Cambió el estado de alguno.</summary>
     public static event Action<OptionalModule>? Changed;
@@ -333,6 +334,19 @@ public sealed class FilesModule() : DownloadedModule<IFilesModule>("Files", "Str
 
     /// <summary>Win+E y las carpetas de Inicio, Win+X y el escritorio abren Archivos (instalado y elegido en el Hub).</summary>
     public bool ReplacesExplorer => Settings.Current.FilesReplaceExplorer && IsInstalled;
+}
+
+public sealed class LyricsModule() : DownloadedModule<ILyricsModule>("Lyrics", "StrataUI.Lyrics.dll", "Lyrics", SymbolRegular.TextQuote24)
+{
+    public override string Title => Loc.T("Letras");
+    public override string Description => Loc.T("Busca sola la letra de lo que suena en cualquier app y la muestra sincronizada en un panel y, si quieres, en la barra.");
+}
+
+/// <summary>Lo que exporta el módulo Letras para el resto de Strata UI.</summary>
+public interface ILyricsModule
+{
+    /// <summary>Abre o cierra el panel con la letra de lo que suena, junto a <paramref name="anchor"/>.</summary>
+    void Toggle(System.Windows.FrameworkElement anchor);
 }
 
 /// <summary>Lo que exporta el módulo Archivos para el resto de Strata UI.</summary>

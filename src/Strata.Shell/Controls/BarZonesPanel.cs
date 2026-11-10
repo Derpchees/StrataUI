@@ -89,7 +89,17 @@ public sealed class BarZonesPanel : Panel
         Place(start, 0, startLen);
         Place(end, total - endLen, endLen);
 
-        if (centerLen == 0)
+        if (centerLen == 0 && AppsZone == BarZone.Center && apps is { Visibility: not Visibility.Collapsed })
+        {
+            // Las ventanas (con lo del centro) al medio de la barra, no del espacio que dejan los
+            // lados: si el inicio y el final miden distinto, centrarlas en lo libre las corría. Solo
+            // si no caben al medio se recorren hacia el lado con más espacio.
+            double len = Math.Min(Along(apps.DesiredSize), to - from);
+            double at = Math.Clamp((total - len) / 2, from, Math.Max(from, to - len));
+            Place(apps, at, len);
+            Place(center, at, 0);
+        }
+        else if (centerLen == 0)
         {
             // Las ventanas en el espacio entre las zonas (su alineación decide dónde; si van al
             // centro, lo del centro va dentro de su área).
