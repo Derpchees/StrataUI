@@ -1,6 +1,5 @@
 ﻿using System.Globalization;
 using System.Text;
-using Strata.Shell.EditMode;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Tweaks;
@@ -79,7 +78,7 @@ internal static class HubSearch
         return entries
             .Select(entry => (entry, text: Fold(entry.Title), where: Fold(entry.Where + " " + entry.Also)))
             .Where(e => words.All(w => e.text.Contains(w) || e.where.Contains(w)))
-            .OrderBy(e => e.text.StartsWith(words[0]) ? 0 : e.text.Contains(" " + words[0]) ? 1 : e.text.Contains(words[0]) ? 2 : 3)
+            .OrderBy(e => e.text.StartsWith(words[0], StringComparison.Ordinal) ? 0 : e.text.Contains(" " + words[0]) ? 1 : e.text.Contains(words[0]) ? 2 : 3)
             .ThenBy(e => e.text.Length)
             .Take(max)
             .Select(e => e.entry)

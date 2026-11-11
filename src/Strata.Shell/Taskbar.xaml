@@ -151,8 +151,7 @@
                     <!-- Con el módulo Letras: la letra de lo que suena (ver Services/Modules/LyricsModule).
                          Con «Letra en la barra» se alarga a un ancho fijo y muestra la línea que se canta. -->
                     <Button x:Name="MediaLyrics" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"
-                            Margin="0,0,4,0" ToolTip="{l:T 'Letra'}" Click="MediaLyrics_Click" Visibility="Collapsed"
-                            HorizontalContentAlignment="Stretch">
+                            Margin="0,0,4,0" ToolTip="{l:T 'Letra'}" Click="MediaLyrics_Click" Visibility="Collapsed">
                         <!-- Píldora: ícono en el color de acento y la línea centrada, que entra subiendo al cambiar -->
                         <Border x:Name="MediaLyricsPill" CornerRadius="7" Height="28" VerticalAlignment="Center"
                                 Background="Transparent">

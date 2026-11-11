@@ -48,7 +48,7 @@ public partial class Taskbar
 
     private void EndTaskDrag()
     {
-        EndRowDrag(TaskList, TaskKey, IsTaskDragged);
+        EndRowDrag(TaskList, IsTaskDragged);
         _taskDrag = null;
         Mouse.OverrideCursor = null;
         if (IsMouseCaptured)
@@ -121,7 +121,7 @@ public partial class Taskbar
     }
 
     /// <summary>Al soltar: el botón vuelve a verse y llega desde donde estaba la imagen a su lugar.</summary>
-    private void EndRowDrag(ItemsControl list, Func<object, object> key, Func<object, bool> dragged)
+    private void EndRowDrag(ItemsControl list, Func<object, bool> dragged)
     {
         var at = DragGhost.Position;
         DragGhost.End();

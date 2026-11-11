@@ -6,7 +6,6 @@ using Strata.Shell.Controls;
 using Strata.Shell.Services;
 using Strata.Shell.Services.StartMenu;
 using Strata.Shell.Services.Localization;
-using Strata.Shell.Services.Modules;
 
 namespace Strata.Shell.Hub.Pages;
 

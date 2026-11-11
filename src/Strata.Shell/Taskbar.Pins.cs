@@ -124,7 +124,7 @@ public partial class Taskbar
 
     private void EndPinDrag()
     {
-        EndRowDrag(PinnedList, PinKey, IsPinDragged);
+        EndRowDrag(PinnedList, IsPinDragged);
         _pinDrag = null;
         System.Windows.Input.Mouse.OverrideCursor = null;
         if (IsMouseCaptured)

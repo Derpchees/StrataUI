@@ -138,9 +138,9 @@ public static class WebSites
     public static WebApp? FromDomain(string domain)
     {
         domain = domain.ToLowerInvariant();
-        if (domain.StartsWith("www."))
+        if (domain.StartsWith("www.", StringComparison.Ordinal))
             domain = domain[4..];
-        return Known.FirstOrDefault(app => domain == app.Domain || domain.EndsWith("." + app.Domain));
+        return Known.FirstOrDefault(app => domain == app.Domain || domain.EndsWith("." + app.Domain, StringComparison.Ordinal));
     }
 
     private static readonly Regex Host = T(@"^(?:https?://)?([a-z0-9-]+(\.[a-z0-9-]+)+)(:\d+)?/?$");

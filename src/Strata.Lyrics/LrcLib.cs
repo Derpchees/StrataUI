@@ -61,16 +61,11 @@ internal static partial class LrcLib
                 break;
         }
         // 2) Búsqueda libre («artista canción»): encuentra lo que está guardado con otro nombre de
-        //    artista o del tema, pero solo vale si el título y el artista coinciden de verdad.
-        if (found == null)
-        {
-            foreach (var (a, t) in candidates.Where(c => c.Artist.Length > 0))
-            {
-                found = Best(await SearchAsync($"q={Uri.EscapeDataString($"{a} {t}")}", cancel), t, a, duration, sameRecording: false);
-                if (found != null)
-                    break;
-            }
-        }
+        //    artista o del tema, pero solo vale si el título y el artista coinciden de verdad. Una sola
+        //    vez, con la forma más completa: la búsqueda libre ya tolera las variantes del nombre.
+        if (found == null && candidates.FirstOrDefault(c => c.Artist.Length > 0) is { Artist.Length: > 0 } free)
+            found = Best(await SearchAsync($"q={Uri.EscapeDataString($"{free.Artist} {free.Title}")}", cancel),
+                         free.Title, free.Artist, duration, sameRecording: false);
         // 3) Solo el título: muchas versiones se suben con otro artista (recopilaciones, covers con el
         //    nombre del autor…). Se acepta solo si dura lo mismo (±3 s): es la misma grabación.
         if (found == null && duration > TimeSpan.Zero)
@@ -144,7 +139,7 @@ internal static partial class LrcLib
     private static bool SameTitle(string found, string wanted)
     {
         string a = Normalize(VersionSuffix().Replace(found, "")), b = Normalize(wanted);
-        return a.Length > 0 && (a == b || (b.Length >= 4 && (a.StartsWith(b + " ") || b.StartsWith(a + " "))));
+        return a.Length > 0 && (a == b || (b.Length >= 4 && (a.StartsWith(b + " ", StringComparison.Ordinal) || b.StartsWith(a + " ", StringComparison.Ordinal))));
     }
 
     /// <summary>Algún artista en común (basta uno: «A, B» encuentra «A»).</summary>
@@ -164,7 +159,8 @@ internal static partial class LrcLib
                 Log.Info($"Letras: LRCLIB respondió {(int)found.StatusCode}");
             return [];
         }
-        using var list = JsonDocument.Parse(await found.Content.ReadAsStringAsync(cancel));
+        await using var body = await found.Content.ReadAsStreamAsync(cancel);
+        using var list = await JsonDocument.ParseAsync(body, cancellationToken: cancel);
         return list.RootElement.ValueKind == JsonValueKind.Array
             ? list.RootElement.EnumerateArray().Select(e => e.Clone()).ToArray()
             : [];
@@ -181,7 +177,8 @@ internal static partial class LrcLib
             using var response = await Http.Value.GetAsync(url, cancel);
             if (response.IsSuccessStatusCode)
             {
-                using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancel));
+                await using var body = await response.Content.ReadAsStreamAsync(cancel);
+                using var doc = await JsonDocument.ParseAsync(body, cancellationToken: cancel);
                 if (Parse(doc.RootElement) is { IsEmpty: false } exact)
                     return exact;
             }
@@ -247,7 +244,7 @@ internal static partial class LrcLib
             string text = raw[(stamps[^1].Index + stamps[^1].Length)..].Trim();
             foreach (Match m in stamps)
             {
-                double seconds = int.Parse(m.Groups[1].Value) * 60
+                double seconds = int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) * 60
                                  + double.Parse(m.Groups[2].Value.Replace(',', '.'), System.Globalization.CultureInfo.InvariantCulture);
                 lines.Add(new LyricLine(TimeSpan.FromSeconds(seconds), text));
             }

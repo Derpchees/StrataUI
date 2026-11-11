@@ -1,9 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using Strata.Shell.Services;
-using Strata.Shell.Services.Localization;
 using Strata.Shell.Services.Notifications;
-using Forms = System.Windows.Forms;
 
 namespace Strata.Shell.Hub.Pages;
 

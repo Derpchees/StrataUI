@@ -125,7 +125,7 @@ public partial class FilesWindow
             pane.RefreshFilter();
         // Guardar: la extensión del nombre sigue al tipo (nota.txt → nota.md), si el tipo tiene una sola.
         if (_pick?.Mode == FilePickMode.Save && (PickType.SelectedItem as ComboBoxItem)?.Tag is FilePickFilter filter
-            && filter.Patterns.FirstOrDefault() is { } first && first.StartsWith("*.") && first.IndexOfAny(['*', '?'], 2) < 0
+            && filter.Patterns.FirstOrDefault() is { } first && first.StartsWith("*.", StringComparison.Ordinal) && first.IndexOfAny(['*', '?'], 2) < 0
             && PickName.Text is { Length: > 0 } name && Path.HasExtension(name))
             PickName.Text = Path.ChangeExtension(name, first[2..]);
     }

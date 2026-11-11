@@ -114,12 +114,14 @@ internal static class LyricsEngine
 
     private static void UpdateTimer()
     {
-        bool run = Current is { Synced.Count: > 0 } && Media.HasSession;
+        // En pausa la línea no avanza: no hace falta mirar el avance cinco veces por segundo.
+        bool synced = Current is { Synced.Count: > 0 } && Media.HasSession;
+        bool run = synced && Media.IsPlaying;
         if (run && !Timer.IsEnabled)
             Timer.Start();
         else if (!run && Timer.IsEnabled)
             Timer.Stop();
-        if (run)
+        if (synced)
             Tick();
     }
 

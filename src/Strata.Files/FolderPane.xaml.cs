@@ -793,7 +793,7 @@ public partial class FolderPane : UserControl
 
     /// <summary>El host de una ruta de red ("10.50.0.200" de "\\10.50.0.200\Compartida"); null si es local.</summary>
     private static string? HostOf(string path) =>
-        path.StartsWith(@"\\") ? path[2..].Split('\\')[0] : null;
+        path.StartsWith(@"\\", StringComparison.Ordinal) ? path[2..].Split('\\')[0] : null;
 
     private void ShowConnecting(string path)
     {

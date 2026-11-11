@@ -264,7 +264,7 @@ public partial class AppearancePage : Page
     {
         bool loading = _loading;
         _loading = true;
-        foreach (var item in AnimationBox.Items.OfType<ComboBoxItem>().Where(i => ((string)i.Tag).StartsWith(Imported)).ToList())
+        foreach (var item in AnimationBox.Items.OfType<ComboBoxItem>().Where(i => ((string)i.Tag).StartsWith(Imported, StringComparison.Ordinal)).ToList())
             AnimationBox.Items.Remove(item);
         foreach (var module in ModuleStore.All<AnimationModule>(ModuleKind.Animation))
             AnimationBox.Items.Add(new ComboBoxItem { Content = module.Name, Tag = Imported + module.Id });
@@ -276,12 +276,6 @@ public partial class AppearancePage : Page
         _loading = loading;
     }
 
-    private void SelectAnimation(string tag)
-    {
-        if (AnimationBox.Items.OfType<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == tag) is { } item)
-            AnimationBox.SelectedItem = item; // Animation_Changed guarda y muestra la vista previa
-    }
-
     private void Animation_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (_loading || AnimationBox.SelectedItem is not ComboBoxItem { Tag: string style }
@@ -289,7 +283,7 @@ public partial class AppearancePage : Page
             return;
         Settings.Update(s =>
         {
-            if (style.StartsWith(Imported))
+            if (style.StartsWith(Imported, StringComparison.Ordinal))
                 s.AnimationModule = style[Imported.Length..];
             else
             {

@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Interop;
 using System.Windows.Media;
-using Strata.Shell.Services;
 using Strata.Shell.Services.Themes.Glass;
 
 namespace Strata.Shell.StartMenu;

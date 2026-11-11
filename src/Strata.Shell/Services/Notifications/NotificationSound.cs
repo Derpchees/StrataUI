@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Windows;
-using System.Windows.Media;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
@@ -213,17 +212,5 @@ public static class NotificationSound
         File.Move(temp, target, overwrite: true);
         Log.Info($"Sonido de notificación preparado: {name} (×{gain:0.0})");
         return target;
-    }
-
-    /// <summary>El archivo del sonido "Notificación" del esquema (null si el usuario lo quitó).</summary>
-    private static string? FileOfScheme()
-    {
-        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"AppEvents\Schemes\Apps\.Default\Notification.Default\.Current");
-        if (key?.GetValue("") is not string { Length: > 0 } value)
-            return null;
-        string path = Environment.ExpandEnvironmentVariables(value);
-        if (!Path.IsPathRooted(path))
-            path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Media", path);
-        return File.Exists(path) ? path : null;
     }
 }

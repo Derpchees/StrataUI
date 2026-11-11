@@ -3,7 +3,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -386,7 +385,6 @@ public sealed class ShellMenuSession : IDisposable
                 cbSize = (uint)Marshal.SizeOf<MenuItemInfo>(),
                 fMask = MiimFType | MiimState | MiimId | MiimSubMenu | MiimString | MiimBitmap,
             };
-            var text = new StringBuilder(256);
             info.dwTypeData = Marshal.AllocCoTaskMem(512 * 2);
             info.cch = 511;
             try

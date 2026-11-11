@@ -283,7 +283,7 @@ public static class Places
             foreach (var folder in Directory.EnumerateDirectories(shortcuts))
             {
                 string link = Path.Combine(folder, "target.lnk");
-                if (File.Exists(link) && StartMenu.ExtraApps.ShortcutTarget(link) is { Length: > 2 } target && target.StartsWith(@"\\"))
+                if (File.Exists(link) && StartMenu.ExtraApps.ShortcutTarget(link) is { Length: > 2 } target && target.StartsWith(@"\\", StringComparison.Ordinal))
                     yield return new Place(Path.GetFileName(folder), target, SymbolRegular.Globe24) { Detail = target };
             }
         }
@@ -293,7 +293,7 @@ public static class Places
             if (connectedLetters.Contains(letter.ToUpperInvariant()))
                 continue;
             using var drive = mapped!.OpenSubKey(letter);
-            if (drive?.GetValue("RemotePath") is string remote && remote.StartsWith(@"\\"))
+            if (drive?.GetValue("RemotePath") is string remote && remote.StartsWith(@"\\", StringComparison.Ordinal))
                 yield return new Place($"{NameOf(remote)} ({letter.ToUpperInvariant()}:)", remote, SymbolRegular.Server24)
                 {
                     Detail = Loc.T("Desconectada"),
@@ -331,11 +331,11 @@ public static class Places
 
     /// <summary>Ruta de red "\\servidor" (sin recurso): se listan sus carpetas compartidas.</summary>
     public static bool IsServer(string? path) =>
-        path is { Length: > 2 } && path.StartsWith(@"\\") && path.IndexOf('\\', 2) < 0;
+        path is { Length: > 2 } && path.StartsWith(@"\\", StringComparison.Ordinal) && path.IndexOf('\\', 2) < 0;
 
     /// <summary>La raíz "\\servidor\recurso" de una ruta de red (null si no es de red).</summary>
     public static string? ShareRoot(string path) =>
-        path.StartsWith(@"\\") && !IsServer(path) ? Path.GetPathRoot(path)?.TrimEnd('\\') : null;
+        path.StartsWith(@"\\", StringComparison.Ordinal) && !IsServer(path) ? Path.GetPathRoot(path)?.TrimEnd('\\') : null;
 
     /// <summary>Nombre para la ruta de navegación y el título: el de Windows en las unidades.</summary>
     public static string NameOf(string path)
@@ -343,7 +343,7 @@ public static class Places
         if (IsServer(path))
             return path[2..];
         if (Path.GetPathRoot(path) is { } root && string.Equals(root.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
-            return root.StartsWith(@"\\") ? Path.GetFileName(root.TrimEnd('\\')) : FileIcons.DisplayName(root);
+            return root.StartsWith(@"\\", StringComparison.Ordinal) ? Path.GetFileName(root.TrimEnd('\\')) : FileIcons.DisplayName(root);
         return Path.GetFileName(path.TrimEnd('\\')) is { Length: > 0 } name ? name : path;
     }
 

@@ -106,8 +106,7 @@ public partial class BatteryFlyout : FlyoutWindow
 
     private void UpdateMode()
     {
-        Guid current = Guid.Empty;
-        bool known = PowerGetEffectiveOverlayScheme(out current) == 0;
+        bool known = PowerGetEffectiveOverlayScheme(out Guid current) == 0;
         foreach (var button in new[] { EfficiencyMode, BalancedMode, PerformanceMode })
             button.IsChecked = known && Guid.Parse((string)button.Tag) == current;
         ModeGrid.IsEnabled = known;

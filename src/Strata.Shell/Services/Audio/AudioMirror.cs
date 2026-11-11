@@ -21,7 +21,6 @@ public static class AudioMirror
 
     private static WasapiCapture? _capture;
     private static WasapiOut? _output;
-    private static BufferedWaveProvider? _buffer;
     private static string? _sourceId, _targetId;
 
     /// <summary>Se encendió, se apagó o cambió de salida.</summary>
@@ -106,7 +105,7 @@ public static class AudioMirror
         output.Init(buffer);
         output.Play();
         capture.StartRecording();
-        (_capture, _output, _buffer, _sourceId, _targetId) = (capture, output, buffer, source.ID, target.ID);
+        (_capture, _output, _sourceId, _targetId) = (capture, output, source.ID, target.ID);
         Log.Info($"Sonar también en: {source.FriendlyName} → {target.FriendlyName} ({capture.WaveFormat})");
         Changed?.Invoke();
     }
@@ -126,7 +125,7 @@ public static class AudioMirror
         }
         _capture?.Dispose();
         _output?.Dispose();
-        (_capture, _output, _buffer, _sourceId, _targetId) = (null, null, null, null, null);
+        (_capture, _output, _sourceId, _targetId) = (null, null, null, null);
         Log.Info("Sonar también en: detenido");
         Changed?.Invoke();
     }

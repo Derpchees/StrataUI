@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -158,8 +159,8 @@ public static class Archives
                 if (line[0] == "K" && line.Length > 1)
                     format = line[1];
                 else if (line[0] == "I" && line.Length >= 7)
-                    items.Add(new ArchiveItem(int.Parse(line[1]), line[2], line[3] == "1", long.Parse(line[4]),
-                                              long.Parse(line[5]) is > 0 and var time ? DateTime.FromFileTimeUtc(time).ToLocalTime() : info.LastWriteTime,
+                    items.Add(new ArchiveItem(int.Parse(line[1], CultureInfo.InvariantCulture), line[2], line[3] == "1", long.Parse(line[4], CultureInfo.InvariantCulture),
+                                              long.Parse(line[5], CultureInfo.InvariantCulture) is > 0 and var time ? DateTime.FromFileTimeUtc(time).ToLocalTime() : info.LastWriteTime,
                                               line[6] == "1"));
             }, token);
             if (code == ArchiveHost.Ok)
@@ -228,8 +229,8 @@ public static class Archives
                 switch (line[0])
                 {
                     case "P" when line.Length >= 4:
-                        t.TotalBytes = long.Parse(line[2]);
-                        Interlocked.Exchange(ref t.DoneBytes, long.Parse(line[1]));
+                        t.TotalBytes = long.Parse(line[2], CultureInfo.InvariantCulture);
+                        Interlocked.Exchange(ref t.DoneBytes, long.Parse(line[1], CultureInfo.InvariantCulture));
                         t.CurrentName = line[3];
                         t.StateValue = TransferState.Running;
                         break;
@@ -426,13 +427,13 @@ public static class Archives
             var input = new List<string> { password };
             input.AddRange(sources);
             input.Add(".");
-            int code = await RunHostAsync(["create", target, format, level.ToString()], input, line =>
+            int code = await RunHostAsync(["create", target, format, level.ToString(CultureInfo.InvariantCulture)], input, line =>
             {
                 switch (line[0])
                 {
                     case "P" when line.Length >= 4:
-                        t.TotalBytes = long.Parse(line[2]);
-                        Interlocked.Exchange(ref t.DoneBytes, long.Parse(line[1]));
+                        t.TotalBytes = long.Parse(line[2], CultureInfo.InvariantCulture);
+                        Interlocked.Exchange(ref t.DoneBytes, long.Parse(line[1], CultureInfo.InvariantCulture));
                         t.CurrentName = line[3];
                         t.StateValue = TransferState.Running;
                         break;

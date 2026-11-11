@@ -5,7 +5,6 @@ using Strata.Shell.Services;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Services.Modules;
 using Strata.Shell.Services.Notifications;
-using Strata.Shell.Services.Themes;
 using Strata.Shell.Services.Widgets;
 using Wpf.Ui.Controls;
 using TextBlock = System.Windows.Controls.TextBlock;

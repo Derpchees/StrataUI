@@ -2,7 +2,7 @@ namespace Strata.Shell.Services.Media;
 
 /// <summary>
 /// La línea de la letra que se canta ahora. La pone el módulo Letras (si está instalado) y la barra
-/// la muestra en lugar del artista cuando se activa «Letra en la barra».
+/// la muestra en su botón, alargado, cuando se activa «Letra en la barra».
 /// </summary>
 public static class LyricsLine
 {

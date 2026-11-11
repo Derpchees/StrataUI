@@ -6,12 +6,25 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.28.1] - 2026-11-11
+
+### Cambiado
+- **Letras, más livianas**: con la música en pausa dejan de mirar el avance de la canción, y cada línea nueva solo actualiza el botón de letra en vez de redibujar todo el bloque de multimedia de cada barra.
+- **Búsqueda de letras**: cuando una canción no aparece hace menos peticiones a LRCLIB (la búsqueda libre se hace una sola vez) y lee las respuestas sin copiarlas enteras en memoria.
+
+### Corregido
+- **Números y textos independientes del idioma de Windows**: el progreso de 7-Zip, el proceso de administrador de Archivos y los tiempos de las letras se leen siempre igual, sea cual sea la configuración regional; las comparaciones de rutas, sitios web y nombres de archivo son exactas.
+
+### Eliminado
+- Código y traducciones que ya no se usaban (unas 50 frases viejas en cada idioma, métodos, campos y `using` sobrantes).
+
 ## [3.28.0] - 2026-11-11
 
 ### Cambiado
 - **Letra en la barra**: la línea que se canta ya no reemplaza al artista; ahora va dentro del botón de letra, que se alarga a un ancho fijo (no cambia de tamaño con cada línea) y se ve como una píldora con el ícono en el color de acento. Cada línea nueva entra con un fundido suave; si es larga, la letra se achica un poco o pasa a dos renglones para leerse entera, y en los silencios quedan unas notas tenues.
 - **Multimedia**: debajo del nombre de la canción va solo el artista (el álbum sigue en la información emergente), con el nombre y el artista más juntos y centrados.
 - **Búsqueda de letras**: encuentra muchas más canciones. Quita lo que Spotify agrega al título (« - Remastered 2011», « - En vivo»…), prueba solo con el primer artista cuando hay varios, hace una búsqueda libre por artista y canción, y acepta la misma grabación subida con otro artista. Si solo hay letra de otra versión de la canción, muestra el texto sin tiempos. Compara sin acentos ni mayúsculas y descarta resultados de otra canción. Las canciones que antes no se encontraron se vuelven a buscar.
+
 ## [3.27.0] - 2026-11-10
 
 ### Añadido

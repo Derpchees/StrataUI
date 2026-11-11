@@ -111,7 +111,7 @@ public partial class Taskbar : AppBarWindow
         UpdateVolume();
         Services.Brightness.BrightnessService.Changed += ApplySettings;
         Media.Changed += UpdateMedia;
-        Services.Media.LyricsLine.Changed += UpdateMedia;
+        Services.Media.LyricsLine.Changed += UpdateLyricsLine;
         Services.Modules.OptionalModules.Changed += OnModuleChanged;
         TaskButton.DragStarted += OnTaskDragStarted;
         TaskOrder.Changed += OnTaskOrderChanged;
@@ -632,7 +632,7 @@ public partial class Taskbar : AppBarWindow
         App.Current.Audio.Changed -= UpdateVolume;
         Services.Brightness.BrightnessService.Changed -= ApplySettings;
         Media.Changed -= UpdateMedia;
-        Services.Media.LyricsLine.Changed -= UpdateMedia;
+        Services.Media.LyricsLine.Changed -= UpdateLyricsLine;
         Services.Modules.OptionalModules.Changed -= OnModuleChanged;
         Services.Notifications.NotificationService.Changed -= UpdateNotificationBadge;
         ThemeManager.ThemeChanged -= OnThemeChanged;
@@ -1075,12 +1075,9 @@ public partial class Taskbar : AppBarWindow
         MediaNext.IsEnabled = Media.CanNext;
         // Botón de letra: con «Letra en la barra» (en horizontal) se alarga a un ancho fijo con la línea
         // que se canta; el ancho no cambia entre líneas ni en los silencios.
-        bool lyricsLine = lyrics != null && s.ShowLyricsLine && !IsVertical;
-        string line = lyricsLine ? Services.Media.LyricsLine.Current : "";
+        bool lyricsLine = _lyricsLine = lyrics != null && s.ShowLyricsLine && !IsVertical;
         MediaLyrics.Visibility = lyrics != null && (controls || lyricsLine) ? Visibility.Visible : Visibility.Collapsed;
         MediaLyrics.Width = lyricsLine ? LyricsButtonWidth : 28;
-        MediaLyrics.Padding = new Thickness(0);
-        MediaLyrics.HorizontalContentAlignment = lyricsLine ? HorizontalAlignment.Stretch : HorizontalAlignment.Center;
         MediaLyricsPill.Padding = lyricsLine ? new Thickness(10, 0, 10, 0) : new Thickness(0);
         // El estilo del botón centra su contenido: el ancho va en la píldora para que ocupe todo el botón.
         MediaLyricsPill.Width = lyricsLine ? LyricsButtonWidth : double.NaN;
@@ -1095,6 +1092,25 @@ public partial class Taskbar : AppBarWindow
             MediaLyricsGlyph.SetResourceReference(TextBlock.ForegroundProperty, "StrataForegroundBrush");
         }
         MediaLyricsText.Visibility = lyricsLine ? Visibility.Visible : Visibility.Collapsed;
+        UpdateLyricsLine();
+        // Sin hueco doble entre los controles y el botón de letra.
+        if (!IsVertical)
+            MediaControls.Margin = MediaLyrics.Visibility == Visibility.Visible ? new Thickness(0) : new Thickness(0, 0, 4, 0);
+    }
+
+    /// <summary>La barra muestra la línea que se canta en el botón de letra (horizontal, con el módulo).</summary>
+    private bool _lyricsLine;
+
+    /// <summary>
+    /// Cada línea nueva solo cambia la píldora: el resto del módulo multimedia (carátula, título,
+    /// controles) no se toca varias veces por minuto.
+    /// </summary>
+    private void UpdateLyricsLine()
+    {
+        if (MediaModule.Visibility != Visibility.Visible)
+            return;
+        bool lyricsLine = _lyricsLine;
+        string line = lyricsLine ? Services.Media.LyricsLine.Current : "";
         // En los silencios (entre líneas o sin letra sincronizada) quedan unas notas, más tenues.
         string shown = line.Length > 0 ? line : "♪ ♪ ♪";
         if (MediaLyricsText.Text != shown)
@@ -1105,9 +1121,6 @@ public partial class Taskbar : AppBarWindow
             ShowLyricsLine(line.Length > 0 ? 1 : 0.55, animate: lyricsLine && !first);
         }
         MediaLyrics.ToolTip = line.Length > 0 ? line : Loc.T("Letra");
-        // Sin hueco doble entre los controles y el botón de letra.
-        if (!IsVertical)
-            MediaControls.Margin = MediaLyrics.Visibility == Visibility.Visible ? new Thickness(0) : new Thickness(0, 0, 4, 0);
     }
 
     /// <summary>Ancho del botón de letra cuando muestra la línea («Letra en la barra»).</summary>

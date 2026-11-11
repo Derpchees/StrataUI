@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
@@ -136,10 +137,10 @@ public static class ElevatedFiles
         switch (parts[0])
         {
             case "P" when parts.Length >= 6:
-                transfer.TotalBytes = long.Parse(parts[1]);
-                Interlocked.Exchange(ref transfer.DoneBytes, long.Parse(parts[2]));
-                transfer.TotalFiles = int.Parse(parts[3]);
-                transfer.DoneFiles = int.Parse(parts[4]);
+                transfer.TotalBytes = long.Parse(parts[1], CultureInfo.InvariantCulture);
+                Interlocked.Exchange(ref transfer.DoneBytes, long.Parse(parts[2], CultureInfo.InvariantCulture));
+                transfer.TotalFiles = int.Parse(parts[3], CultureInfo.InvariantCulture);
+                transfer.DoneFiles = int.Parse(parts[4], CultureInfo.InvariantCulture);
                 transfer.CurrentName = parts[5];
                 transfer.StateValue = TransferState.Running;
                 break;
@@ -254,8 +255,8 @@ public static class ElevatedFiles
         var worker = new Thread(() => FileTransfers.Execute(transfer)) { IsBackground = true };
         worker.Start();
         while (!worker.Join(200))
-            send(["P", transfer.TotalBytes.ToString(), Interlocked.Read(ref transfer.DoneBytes).ToString(),
-                  transfer.TotalFiles.ToString(), transfer.DoneFiles.ToString(), transfer.CurrentName]);
+            send(["P", transfer.TotalBytes.ToString(CultureInfo.InvariantCulture), Interlocked.Read(ref transfer.DoneBytes).ToString(CultureInfo.InvariantCulture),
+                  transfer.TotalFiles.ToString(CultureInfo.InvariantCulture), transfer.DoneFiles.ToString(CultureInfo.InvariantCulture), transfer.CurrentName]);
         foreach (var (source, target) in transfer.Resolved)
             send(["T", source, target]);
         lock (transfer.Errors)

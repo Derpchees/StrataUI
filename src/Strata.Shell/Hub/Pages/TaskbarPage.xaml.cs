@@ -1,7 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using Strata.Shell.Services;
-using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Hub.Pages;
 

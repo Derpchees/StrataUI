@@ -754,8 +754,8 @@ public static class Sensors
                 {
                     string name = module.ModuleName.ToLowerInvariant();
                     string? found = name is "nvngx_dlssg.dll" or "sl.dlss_g.dll" ? "DLSS"
-                        : name.Contains("frameinterpolation") || name.StartsWith("amd_fidelityfx_") || name.Contains("ffx_fsr3") ? "FSR"
-                        : name.StartsWith("libxess_fg") ? "XeSS"
+                        : name.Contains("frameinterpolation") || name.StartsWith("amd_fidelityfx_", StringComparison.Ordinal) || name.Contains("ffx_fsr3") ? "FSR"
+                        : name.StartsWith("libxess_fg", StringComparison.Ordinal) ? "XeSS"
                         : null;
                     if (found is null)
                         continue;
