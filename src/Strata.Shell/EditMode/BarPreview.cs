@@ -368,6 +368,18 @@ internal sealed class BarPreview
                     title.Margin = new Thickness(8, 0, 2, 0);
                     title.VerticalAlignment = VerticalAlignment.Center;
                     row.Children.Add(title);
+                    // «Letra en la barra»: el botón de letra alargado, con su ancho fijo como en la barra.
+                    if (_screen.ShowLyricsLine && Services.Modules.OptionalModules.Lyrics.IsInstalled)
+                    {
+                        var lyric = new StackPanel { Orientation = Orientation.Horizontal, Width = 240, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+                        lyric.Children.Add(Glyph(0xE8D2, 12));
+                        var current = Services.Media.LyricsLine.Current;
+                        var line = Text(current.Length > 0 ? current : Loc.T("Letra"), 12);
+                        line.Margin = new Thickness(8, 0, 0, 0);
+                        line.VerticalAlignment = VerticalAlignment.Center;
+                        lyric.Children.Add(line);
+                        row.Children.Add(lyric);
+                    }
                 }
                 return new Border { Height = _vertical ? 40 : _thickness - 8, Child = row };
             }

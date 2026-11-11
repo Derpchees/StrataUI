@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -37,6 +37,12 @@ internal static partial class LrcLib
     private static string CacheFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrataUI", "Lyrics");
 
+    /// <summary>
+    /// Las canciones que no se encontraron antes de mejorar la búsqueda se vuelven a buscar en vez de
+    /// esperar la semana de la caché.
+    /// </summary>
+    private static readonly DateTime SearchImproved = new(2026, 11, 11, 21, 30, 0, DateTimeKind.Utc);
+
     public static async Task<LyricsResult?> FindAsync(string title, string artist, string album, TimeSpan duration, bool fresh, CancellationToken cancel)
     {
         var candidates = Candidates(title, artist).ToList();
@@ -47,11 +53,34 @@ internal static partial class LrcLib
             return cached.IsEmpty ? null : cached;
 
         LyricsResult? found = null;
+        // 1) Artista y canción, en cada forma posible (exacta con la duración y luego la búsqueda).
         foreach (var (a, t) in candidates)
         {
             found = await FetchAsync(t, a, album, duration, cancel);
             if (found != null)
                 break;
+        }
+        // 2) Búsqueda libre («artista canción»): encuentra lo que está guardado con otro nombre de
+        //    artista o del tema, pero solo vale si el título y el artista coinciden de verdad.
+        if (found == null)
+        {
+            foreach (var (a, t) in candidates.Where(c => c.Artist.Length > 0))
+            {
+                found = Best(await SearchAsync($"q={Uri.EscapeDataString($"{a} {t}")}", cancel), t, a, duration, sameRecording: false);
+                if (found != null)
+                    break;
+            }
+        }
+        // 3) Solo el título: muchas versiones se suben con otro artista (recopilaciones, covers con el
+        //    nombre del autor…). Se acepta solo si dura lo mismo (±3 s): es la misma grabación.
+        if (found == null && duration > TimeSpan.Zero)
+        {
+            string t = candidates[0].Title;
+            var list = await SearchAsync($"track_name={Uri.EscapeDataString(t)}", cancel);
+            found = Best(list, t, "", duration, sameRecording: true, tolerance: 3);
+            // Otra grabación de la misma canción (casi igual de larga): el texto sirve, los tiempos no.
+            if (found == null && Best(list, t, "", duration, sameRecording: true, tolerance: 10) is { Plain.Length: > 0 } cover)
+                found = cover with { Synced = [] };
         }
         WriteCache(cache, found);
         return found;
@@ -59,7 +88,9 @@ internal static partial class LrcLib
 
     /// <summary>
     /// Qué buscar. Los sitios de video suelen anunciar «Artista - Canción (Official Video)» como
-    /// título y el canal como artista: se prueba también así, sin lo que va entre paréntesis.
+    /// título y el canal como artista: se prueba también así, sin lo que va entre paréntesis. Spotify
+    /// agrega « - Remastered 2011», « - En vivo»…: se quita. Con varios artistas, se prueba también
+    /// solo con el primero.
     /// </summary>
     private static IEnumerable<(string Artist, string Title)> Candidates(string title, string artist)
     {
@@ -67,12 +98,24 @@ internal static partial class LrcLib
         string cleanArtist = TopicSuffix().Replace(artist, "").Trim();
         if (cleanTitle.Length == 0)
             yield break;
+        var seen = new HashSet<string>();
+        bool New(string a, string t) => a.Length + t.Length > 0 && t.Length > 0 && seen.Add(Normalize(a) + "\n" + Normalize(t));
+
         if (cleanArtist.Length > 0)
-            yield return (cleanArtist, cleanTitle);
+        {
+            string bare = VersionSuffix().Replace(cleanTitle, "").Trim();
+            string first = ArtistSeparator().Split(cleanArtist)[0].Trim();
+            if (New(cleanArtist, bare)) yield return (cleanArtist, bare);
+            if (New(first, bare)) yield return (first, bare);
+            if (New(cleanArtist, cleanTitle)) yield return (cleanArtist, cleanTitle);
+        }
         int dash = cleanTitle.IndexOf(" - ", StringComparison.Ordinal);
         if (dash > 0 && dash < cleanTitle.Length - 3)
-            yield return (cleanTitle[..dash].Trim(), cleanTitle[(dash + 3)..].Trim());
-        else if (cleanArtist.Length == 0)
+        {
+            string a = cleanTitle[..dash].Trim(), t = cleanTitle[(dash + 3)..].Trim();
+            if (New(a, t)) yield return (a, t);
+        }
+        else if (cleanArtist.Length == 0 && New("", cleanTitle))
             yield return ("", cleanTitle);
     }
 
@@ -81,6 +124,50 @@ internal static partial class LrcLib
         title = Decorations().Replace(title, " ");
         title = Featuring().Replace(title, " ");
         return Spaces().Replace(title, " ").Trim();
+    }
+
+    /// <summary>Para comparar nombres: sin acentos, mayúsculas, signos ni lo que va entre paréntesis.</summary>
+    internal static string Normalize(string text)
+    {
+        text = Clean(text).Normalize(NormalizationForm.FormD);
+        var sb = new StringBuilder(text.Length);
+        foreach (char ch in text)
+        {
+            var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch);
+            if (cat == System.Globalization.UnicodeCategory.NonSpacingMark)
+                continue;
+            sb.Append(char.IsLetterOrDigit(ch) ? char.ToLowerInvariant(ch) : ' ');
+        }
+        return Spaces().Replace(sb.ToString(), " ").Trim();
+    }
+
+    private static bool SameTitle(string found, string wanted)
+    {
+        string a = Normalize(VersionSuffix().Replace(found, "")), b = Normalize(wanted);
+        return a.Length > 0 && (a == b || (b.Length >= 4 && (a.StartsWith(b + " ") || b.StartsWith(a + " "))));
+    }
+
+    /// <summary>Algún artista en común (basta uno: «A, B» encuentra «A»).</summary>
+    private static bool SameArtist(string found, string wanted)
+    {
+        var a = ArtistSeparator().Split(found).Select(Normalize).Where(x => x.Length > 0).ToList();
+        var b = ArtistSeparator().Split(wanted).Select(Normalize).Where(x => x.Length > 0).ToList();
+        return a.Any(x => b.Any(y => x == y || x.Contains(y) || y.Contains(x)));
+    }
+
+    private static async Task<JsonElement[]> SearchAsync(string query, CancellationToken cancel)
+    {
+        using var found = await Http.Value.GetAsync($"https://lrclib.net/api/search?{query}", cancel);
+        if (!found.IsSuccessStatusCode)
+        {
+            if (found.StatusCode != HttpStatusCode.NotFound)
+                Log.Info($"Letras: LRCLIB respondió {(int)found.StatusCode}");
+            return [];
+        }
+        using var list = JsonDocument.Parse(await found.Content.ReadAsStringAsync(cancel));
+        return list.RootElement.ValueKind == JsonValueKind.Array
+            ? list.RootElement.EnumerateArray().Select(e => e.Clone()).ToArray()
+            : [];
     }
 
     private static async Task<LyricsResult?> FetchAsync(string title, string artist, string album, TimeSpan duration, CancellationToken cancel)
@@ -102,25 +189,35 @@ internal static partial class LrcLib
                 Log.Info($"Letras: LRCLIB respondió {(int)response.StatusCode}");
         }
 
-        string search = $"https://lrclib.net/api/search?track_name={Uri.EscapeDataString(title)}"
-                        + (artist.Length > 0 ? $"&artist_name={Uri.EscapeDataString(artist)}" : "");
-        using var found = await Http.Value.GetAsync(search, cancel);
-        if (!found.IsSuccessStatusCode)
-            return null;
-        using var list = JsonDocument.Parse(await found.Content.ReadAsStringAsync(cancel));
-        if (list.RootElement.ValueKind != JsonValueKind.Array)
-            return null;
-        // La que tenga letra sincronizada y una duración parecida; si no, cualquiera con letra.
+        var list = await SearchAsync($"track_name={Uri.EscapeDataString(title)}"
+                                     + (artist.Length > 0 ? $"&artist_name={Uri.EscapeDataString(artist)}" : ""), cancel);
+        return Best(list, title, artist, duration, sameRecording: false);
+    }
+
+    /// <summary>
+    /// De los resultados, el que sea esa canción (mismo título y, si se sabe, mismo artista), con letra
+    /// sincronizada y una duración parecida; si no, cualquiera con letra. Con <paramref name="sameRecording"/>
+    /// solo vale la misma duración (±3 s).
+    /// </summary>
+    private static LyricsResult? Best(IEnumerable<JsonElement> list, string title, string artist, TimeSpan duration, bool sameRecording, double tolerance = 3)
+    {
         LyricsResult? best = null;
         double bestScore = double.MaxValue;
-        foreach (var item in list.RootElement.EnumerateArray())
+        foreach (var item in list)
         {
             if (Parse(item) is not { IsEmpty: false } result)
                 continue;
+            string track = item.TryGetProperty("trackName", out var tn) && tn.ValueKind == JsonValueKind.String ? tn.GetString()! : "";
+            string by = item.TryGetProperty("artistName", out var an) && an.ValueKind == JsonValueKind.String ? an.GetString()! : "";
+            if (!SameTitle(track, title) || (artist.Length > 0 && !SameArtist(by, artist)))
+                continue;
             double length = item.TryGetProperty("duration", out var d) && d.ValueKind == JsonValueKind.Number ? d.GetDouble() : 0;
             bool known = duration > TimeSpan.Zero && length > 0;
-            double score = (result.Synced.Count > 0 ? 0 : 1000) + (known ? Math.Abs(length - duration.TotalSeconds) : 500);
-            if (known && Math.Abs(length - duration.TotalSeconds) > 15)
+            double off = known ? Math.Abs(length - duration.TotalSeconds) : 500;
+            if (sameRecording && (!known || off > tolerance))
+                continue;
+            double score = (result.Synced.Count > 0 ? 0 : 1000) + off;
+            if (known && off > 15)
                 score += 2000; // otra versión de la canción: solo si no hay nada mejor
             if (score < bestScore)
                 (best, bestScore) = (result, score);
@@ -171,7 +268,7 @@ internal static partial class LrcLib
             if (entry is null)
                 return null;
             var result = new LyricsResult(ParseLrc(entry.Synced), entry.Plain, entry.Instrumental);
-            if (result.IsEmpty && DateTime.UtcNow - entry.Saved > RetryMissingAfter)
+            if (result.IsEmpty && (DateTime.UtcNow - entry.Saved > RetryMissingAfter || entry.Saved < SearchImproved))
                 return null;
             return result;
         }
@@ -210,6 +307,12 @@ internal static partial class LrcLib
 
     [GeneratedRegex(@"\s*-\s*Topic$", RegexOptions.IgnoreCase)]
     private static partial Regex TopicSuffix();
+
+    [GeneratedRegex(@"\s+-\s+(?=[^-]*\b(?:remaster(?:ed|izad[oa])?|live|en vivo|ao vivo|en directo|version|versi[oó]n|edit|mix|remix|mono|stereo|ac[uú]stic[oa]|acoustic|from|bonus|demo|single|instrumental)\b)[^-]*$", RegexOptions.IgnoreCase)]
+    private static partial Regex VersionSuffix();
+
+    [GeneratedRegex(@"\s*(?:,|&|/|;|\s+x\s+|\s+feat\.?\s+|\s+ft\.?\s+|\s+and\s+)\s*", RegexOptions.IgnoreCase)]
+    private static partial Regex ArtistSeparator();
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Spaces();

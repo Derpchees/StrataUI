@@ -125,9 +125,12 @@
                                 </Grid>
                             </Border>
                             <StackPanel x:Name="MediaText" Margin="8,0,2,0" MaxWidth="170" VerticalAlignment="Center">
+                                <!-- Nombre arriba y artista abajo, juntos y centrados en la altura de la barra -->
                                 <TextBlock x:Name="MediaTitle" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                                           LineStackingStrategy="BlockLineHeight" LineHeight="15"
                                            Foreground="{DynamicResource StrataForegroundBrush}" />
-                                <TextBlock x:Name="MediaArtist" FontSize="11" Opacity="0.7" TextTrimming="CharacterEllipsis"
+                                <TextBlock x:Name="MediaArtist" FontSize="11" Opacity="0.65" TextTrimming="CharacterEllipsis"
+                                           LineStackingStrategy="BlockLineHeight" LineHeight="14"
                                            Foreground="{DynamicResource StrataForegroundBrush}" />
                             </StackPanel>
                         </StackPanel>
@@ -144,12 +147,33 @@
                                 ToolTip="{l:T 'Siguiente'}" Click="MediaNext_Click">
                             <TextBlock Style="{StaticResource IconText}" FontSize="12" Text="&#xE893;" />
                         </Button>
-                        <!-- Con el módulo Letras: la letra de lo que suena (ver Services/Modules/LyricsModule) -->
-                        <Button x:Name="MediaLyrics" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"
-                                ToolTip="{l:T 'Letra'}" Click="MediaLyrics_Click" Visibility="Collapsed">
-                            <TextBlock Style="{StaticResource IconText}" FontSize="12" Text="&#xE8D2;" />
-                        </Button>
                     </StackPanel>
+                    <!-- Con el módulo Letras: la letra de lo que suena (ver Services/Modules/LyricsModule).
+                         Con «Letra en la barra» se alarga a un ancho fijo y muestra la línea que se canta. -->
+                    <Button x:Name="MediaLyrics" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"
+                            Margin="0,0,4,0" ToolTip="{l:T 'Letra'}" Click="MediaLyrics_Click" Visibility="Collapsed"
+                            HorizontalContentAlignment="Stretch">
+                        <!-- Píldora: ícono en el color de acento y la línea centrada, que entra subiendo al cambiar -->
+                        <Border x:Name="MediaLyricsPill" CornerRadius="7" Height="28" VerticalAlignment="Center"
+                                Background="Transparent">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="MediaLyricsGlyph" Style="{StaticResource IconText}" FontSize="12" Text="&#xE8D2;"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock x:Name="MediaLyricsText" Grid.Column="1" Margin="6,0,4,0" FontSize="12" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" Visibility="Collapsed"
+                                           Foreground="{DynamicResource StrataForegroundBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <TranslateTransform x:Name="MediaLyricsShift" />
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+                    </Button>
                     </StackPanel>
                     <StackPanel x:Name="TrayArea" Orientation="Horizontal">
                         <ToggleButton x:Name="ChevronButton" Style="{StaticResource TaskbarButton}" Width="28"

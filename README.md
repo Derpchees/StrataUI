@@ -221,8 +221,8 @@ and everything goes back to normal.
   browsers, Media Player...), with optional controls. Five views per monitor: cover with title and
   artist, cover and title, cover only, text only or controls only.
 - **Lyrics** (optional module): finds the lyrics of whatever is playing on its own (LRCLIB) and
-  shows them synced in a panel; click a line to jump there. The current line can replace the artist
-  on the bar.
+  shows them synced in a panel; click a line to jump there. The current line can show on the bar,
+  inside the lyrics button (a fixed-width pill that never resizes).
 
 <a id="files"></a>
 

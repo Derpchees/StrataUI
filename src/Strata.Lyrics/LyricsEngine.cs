@@ -94,7 +94,7 @@ internal static class LyricsEngine
             State = result != null ? LyricsState.Found : LyricsState.NotFound;
             Log.Info(result != null
                 ? $"Letras: encontrada para «{title}» ({(result.Synced.Count > 0 ? "sincronizada" : result.Instrumental ? "instrumental" : "sin tiempos")})"
-                : $"Letras: no hay letra para «{title}»");
+                : $"Letras: no hay letra para «{title}» de «{artist}» ({duration:m\\:ss})");
         }
         catch (OperationCanceledException) when (cancel.IsCancellationRequested)
         {

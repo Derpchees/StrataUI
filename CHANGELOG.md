@@ -6,6 +6,12 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.28.0] - 2026-11-11
+
+### Cambiado
+- **Letra en la barra**: la línea que se canta ya no reemplaza al artista; ahora va dentro del botón de letra, que se alarga a un ancho fijo (no cambia de tamaño con cada línea) y se ve como una píldora con el ícono en el color de acento. Cada línea nueva entra con un fundido suave; si es larga, la letra se achica un poco o pasa a dos renglones para leerse entera, y en los silencios quedan unas notas tenues.
+- **Multimedia**: debajo del nombre de la canción va solo el artista (el álbum sigue en la información emergente), con el nombre y el artista más juntos y centrados.
+- **Búsqueda de letras**: encuentra muchas más canciones. Quita lo que Spotify agrega al título (« - Remastered 2011», « - En vivo»…), prueba solo con el primer artista cuando hay varios, hace una búsqueda libre por artista y canción, y acepta la misma grabación subida con otro artista. Si solo hay letra de otra versión de la canción, muestra el texto sin tiempos. Compara sin acentos ni mayúsculas y descarta resultados de otra canción. Las canciones que antes no se encontraron se vuelven a buscar.
 ## [3.27.0] - 2026-11-10
 
 ### Añadido

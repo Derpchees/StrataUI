@@ -225,6 +225,8 @@ public partial class Taskbar : AppBarWindow
         MediaControls.HorizontalAlignment = HorizontalAlignment.Center;
         foreach (var control in new FrameworkElement[] { MediaPrevious, MediaPlay, MediaNext, MediaLyrics })
             control.Height = 28;
+        MediaLyrics.HorizontalAlignment = HorizontalAlignment.Center;
+        MediaLyrics.Margin = new Thickness(0, 0, 0, 4);
         MediaButton.HorizontalAlignment = HorizontalAlignment.Center;
         MediaButton.Height = 36;
         // Los módulos de estado van juntos también en vertical: más anchos que altos y sin separación.
@@ -1059,20 +1061,113 @@ public partial class Taskbar : AppBarWindow
         MediaCover.ImageSource = Media.Cover;
         MediaAppBadge.Source = Media.AppIcon;
         MediaTitle.Text = Media.Title;
-        // Segunda línea: la letra que se canta (con el módulo Letras) o el artista y el álbum.
-        string line = lyrics != null && s.ShowLyricsLine ? Services.Media.LyricsLine.Current : "";
-        string details = line.Length > 0 ? line
-            : string.Join(" · ", new[] { Media.Artist, Media.Album }.Where(t => t.Length > 0).Distinct());
+        // Segunda línea: sólo el artista (el álbum queda en la información emergente; la letra, en su botón).
+        string details = Media.Artist;
         MediaArtist.Text = details;
         MediaArtist.Visibility = details.Length > 0 && style != MediaStyle.Compact ? Visibility.Visible : Visibility.Collapsed;
         MediaButton.ToolTip = string.Join("\n", new[] { Media.Title, Media.Artist, Media.Album, Media.AppName }.Where(t => t.Length > 0));
         MediaButton.Opacity = Media.IsPlaying ? 1 : 0.6;
-        MediaControls.Visibility = s.ShowMediaControls || style == MediaStyle.Controls ? Visibility.Visible : Visibility.Collapsed;
+        bool controls = s.ShowMediaControls || style == MediaStyle.Controls;
+        MediaControls.Visibility = controls ? Visibility.Visible : Visibility.Collapsed;
         MediaPlayGlyph.Text = Media.IsPlaying ? "" : ""; // pausa / reproducir
         MediaPlay.ToolTip = Media.IsPlaying ? Loc.T("Pausar") : Loc.T("Reproducir");
         MediaPrevious.IsEnabled = Media.CanPrevious;
         MediaNext.IsEnabled = Media.CanNext;
-        MediaLyrics.Visibility = lyrics != null ? Visibility.Visible : Visibility.Collapsed;
+        // Botón de letra: con «Letra en la barra» (en horizontal) se alarga a un ancho fijo con la línea
+        // que se canta; el ancho no cambia entre líneas ni en los silencios.
+        bool lyricsLine = lyrics != null && s.ShowLyricsLine && !IsVertical;
+        string line = lyricsLine ? Services.Media.LyricsLine.Current : "";
+        MediaLyrics.Visibility = lyrics != null && (controls || lyricsLine) ? Visibility.Visible : Visibility.Collapsed;
+        MediaLyrics.Width = lyricsLine ? LyricsButtonWidth : 28;
+        MediaLyrics.Padding = new Thickness(0);
+        MediaLyrics.HorizontalContentAlignment = lyricsLine ? HorizontalAlignment.Stretch : HorizontalAlignment.Center;
+        MediaLyricsPill.Padding = lyricsLine ? new Thickness(10, 0, 10, 0) : new Thickness(0);
+        // El estilo del botón centra su contenido: el ancho va en la píldora para que ocupe todo el botón.
+        MediaLyricsPill.Width = lyricsLine ? LyricsButtonWidth : double.NaN;
+        if (lyricsLine)
+        {
+            MediaLyricsPill.SetResourceReference(Border.BackgroundProperty, "StrataSurfaceBrush");
+            MediaLyricsGlyph.SetResourceReference(TextBlock.ForegroundProperty, "StrataAccentBrush");
+        }
+        else
+        {
+            MediaLyricsPill.Background = System.Windows.Media.Brushes.Transparent;
+            MediaLyricsGlyph.SetResourceReference(TextBlock.ForegroundProperty, "StrataForegroundBrush");
+        }
+        MediaLyricsText.Visibility = lyricsLine ? Visibility.Visible : Visibility.Collapsed;
+        // En los silencios (entre líneas o sin letra sincronizada) quedan unas notas, más tenues.
+        string shown = line.Length > 0 ? line : "♪ ♪ ♪";
+        if (MediaLyricsText.Text != shown)
+        {
+            bool first = MediaLyricsText.Text.Length == 0;
+            MediaLyricsText.Text = shown;
+            FitLyricsLine(shown);
+            ShowLyricsLine(line.Length > 0 ? 1 : 0.55, animate: lyricsLine && !first);
+        }
+        MediaLyrics.ToolTip = line.Length > 0 ? line : Loc.T("Letra");
+        // Sin hueco doble entre los controles y el botón de letra.
+        if (!IsVertical)
+            MediaControls.Margin = MediaLyrics.Visibility == Visibility.Visible ? new Thickness(0) : new Thickness(0, 0, 4, 0);
+    }
+
+    /// <summary>Ancho del botón de letra cuando muestra la línea («Letra en la barra»).</summary>
+    private const double LyricsButtonWidth = 240;
+
+    /// <summary>
+    /// Para que la línea se lea entera sin que el botón cambie de ancho: si no cabe, la letra se achica
+    /// un poco y, si aún no cabe, pasa a dos renglones dentro de la misma píldora.
+    /// </summary>
+    private void FitLyricsLine(string text)
+    {
+        // Lo que queda del botón tras el relleno de la píldora, el ícono y los márgenes del texto.
+        double room = LyricsButtonWidth - 20 - 14 - 10;
+        double dpi = System.Windows.Media.VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        var face = new System.Windows.Media.Typeface(MediaLyricsText.FontFamily, FontStyles.Normal,
+                                                      FontWeights.SemiBold, FontStretches.Normal);
+        double Width(double size) => new System.Windows.Media.FormattedText(
+            text, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, face, size,
+            System.Windows.Media.Brushes.White, dpi).WidthIncludingTrailingWhitespace;
+
+        foreach (double size in new[] { 12.0, 11.0, 10.5 })
+        {
+            if (Width(size) <= room)
+            {
+                MediaLyricsText.FontSize = size;
+                MediaLyricsText.TextWrapping = TextWrapping.NoWrap;
+                MediaLyricsText.ClearValue(TextBlock.LineHeightProperty);
+                MediaLyricsText.MaxHeight = double.PositiveInfinity;
+                return;
+            }
+        }
+        // Dos renglones apretados caben en los 28 px de la píldora; lo que sobre aún, termina en «…».
+        MediaLyricsText.FontSize = 10.5;
+        MediaLyricsText.TextWrapping = TextWrapping.Wrap;
+        MediaLyricsText.LineStackingStrategy = LineStackingStrategy.BlockLineHeight;
+        MediaLyricsText.LineHeight = 12.5;
+        MediaLyricsText.MaxHeight = 25;
+    }
+
+    /// <summary>
+    /// La línea nueva entra con un fundido y subiendo un poco (con la velocidad de las animaciones;
+    /// apagadas, cambia de una vez). <paramref name="opacity"/> es la final: los silencios quedan tenues.
+    /// </summary>
+    private void ShowLyricsLine(double opacity, bool animate)
+    {
+        if (!animate)
+        {
+            MediaLyricsText.BeginAnimation(OpacityProperty, null);
+            MediaLyricsText.Opacity = opacity;
+            MediaLyricsShift.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, null);
+            MediaLyricsShift.Y = 0;
+            return;
+        }
+        Services.Themes.Motion.Fade(MediaLyricsText, 0, opacity);
+        if (Services.Settings.Current.PanelAnimation != Services.PanelAnimation.None)
+            MediaLyricsShift.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty,
+                new System.Windows.Media.Animation.DoubleAnimation(7, 0, TimeSpan.FromMilliseconds(260))
+                {
+                    EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut },
+                });
     }
 
     private void OnModuleChanged(Services.Modules.OptionalModule module)
