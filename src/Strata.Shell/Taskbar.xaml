@@ -108,12 +108,17 @@
                     <StackPanel x:Name="MediaModule" Orientation="Horizontal" Visibility="Collapsed">
                     <Button x:Name="MediaButton" Style="{StaticResource TaskbarButton}" Padding="6,0"
                             Click="MediaButton_Click" MouseUp="MediaButton_MouseUp">
+                        <Grid>
                         <StackPanel x:Name="MediaContent" Orientation="Horizontal">
+                            <!-- Con «Anillo»: el avance rodea la carátula como un marco con sus mismas esquinas -->
+                            <Grid x:Name="MediaCoverHost" VerticalAlignment="Center">
                             <Border x:Name="MediaCoverBox" Width="28" Height="28" CornerRadius="5" VerticalAlignment="Center"
-                                    Background="{DynamicResource StrataSurfaceBrush}">
+                                    HorizontalAlignment="Center" Background="{DynamicResource StrataSurfaceBrush}">
                                 <Grid>
-                                    <TextBlock Style="{StaticResource IconText}" FontSize="13" Text="&#xEC4F;" />
-                                    <Border CornerRadius="5">
+                                    <!-- Sin carátula: la nota, centrada en el cuadro -->
+                                    <TextBlock Style="{StaticResource IconText}" FontSize="13" Text="&#xEC4F;"
+                                               HorizontalAlignment="Center" TextAlignment="Center" />
+                                    <Border x:Name="MediaCoverImage" CornerRadius="5">
                                         <Border.Background>
                                             <ImageBrush x:Name="MediaCover" Stretch="UniformToFill" />
                                         </Border.Background>
@@ -124,6 +129,13 @@
                                            RenderOptions.BitmapScalingMode="HighQuality" />
                                 </Grid>
                             </Border>
+                            <Grid x:Name="MediaRingBox" Width="34" Height="34" Margin="-3" Visibility="Collapsed" IsHitTestVisible="False">
+                                <Path x:Name="MediaRingTrack" StrokeThickness="2" Opacity="0.18"
+                                      Stroke="{DynamicResource StrataForegroundBrush}" />
+                                <Path x:Name="MediaRing" StrokeThickness="2" StrokeDashCap="Flat"
+                                      Stroke="{DynamicResource StrataAccentBrush}" />
+                            </Grid>
+                            </Grid>
                             <StackPanel x:Name="MediaText" Margin="8,0,2,0" MaxWidth="170" VerticalAlignment="Center">
                                 <!-- Nombre arriba y artista abajo, juntos y centrados en la altura de la barra -->
                                 <TextBlock x:Name="MediaTitle" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
@@ -134,6 +146,17 @@
                                            Foreground="{DynamicResource StrataForegroundBrush}" />
                             </StackPanel>
                         </StackPanel>
+                        <!-- Con «Línea»: el avance, fino, debajo de la carátula y el texto -->
+                        <Grid x:Name="MediaLine" Height="2" VerticalAlignment="Bottom" Margin="0,0,0,-6"
+                              Visibility="Collapsed" IsHitTestVisible="False">
+                            <Border CornerRadius="1" Background="{DynamicResource StrataForegroundBrush}" Opacity="0.18" />
+                            <Border CornerRadius="1" Background="{DynamicResource StrataAccentBrush}" RenderTransformOrigin="0,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="MediaLineFill" ScaleX="0" />
+                                </Border.RenderTransform>
+                            </Border>
+                        </Grid>
+                        </Grid>
                     </Button>
                     <StackPanel x:Name="MediaControls" Orientation="Horizontal" Margin="0,0,4,0">
                         <Button x:Name="MediaPrevious" Style="{StaticResource TaskbarButton}" Width="28" Padding="0"

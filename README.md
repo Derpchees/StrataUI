@@ -109,7 +109,7 @@ and everything goes back to normal.
     <td colspan="2" valign="top">
       <img src="docs/icons/files.svg" width="40" align="left" alt="" />
       <b><a href="#files">Files</a></b><br />
-      A clean file explorer in your theme: folders, drives, recents, thumbnails, preview pane, copy progress and built-in archives (zip, 7z, rar…) without extra apps.
+      A clean file explorer in your theme: folders, drives, recents, thumbnails, preview pane, copy progress, built-in archives (zip, 7z, rar…) and FTP servers without extra apps.
     </td>
   </tr>
 </table>
@@ -219,7 +219,9 @@ and everything goes back to normal.
 - **Brightness for every monitor** over DDC/CI, with Windows Night light.
 - **Media**: album art, title and artist on the bar for any app that reports media (Spotify,
   browsers, Media Player...), with optional controls. Five views per monitor: cover with title and
-  artist, cover and title, cover only, text only or controls only.
+  artist, cover and title, cover only, text only or controls only. Song progress can show as a frame
+  around the cover or a thin line under it.
+- Bars can stay **visible over full-screen** games and videos, per monitor.
 - **Lyrics** (optional module): finds the lyrics of whatever is playing on its own (LRCLIB) and
   shows them synced in a panel; click a line to jump there. The current line can show on the bar,
   inside the lyrics button (a fixed-width pill that never resizes).
@@ -258,6 +260,13 @@ and everything goes back to normal.
   7-Zip, Open with, Send to, Properties, New...), read in a separate process so a broken shell
   extension can't take Strata UI down. The Recycle Bin
   (restore, delete, empty) lives inside Files, and anything can be pinned to Start.
+- **FTP servers** (FTP and FTPS) in a "Servers" section of the sidebar, with a site manager like
+  FileZilla's: host, port, encryption (explicit TLS if available, required, implicit or plain),
+  normal, anonymous or ask-for-password logon, initial folder, passive/active mode, encoding and
+  timeout, plus "Test connection". Passwords live in Windows Credential Manager, and unknown
+  certificates are shown so you can trust them once. Browse, upload (drag, paste or "Upload
+  files…"), download, create folders, rename and delete; opened files are downloaded and, if you
+  change them, Files offers to upload the new version.
 - **Archives without extra apps** (7-Zip is built in): zip, 7z, rar, tar.gz and about 50 more formats
   open like folders. Browse them, open or copy files from them, and extract with progress ("Extract
   here" doesn't nest a folder inside another). Password-protected ones ask in a Strata UI dialog.

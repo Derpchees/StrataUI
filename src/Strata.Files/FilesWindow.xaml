@@ -149,6 +149,18 @@
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
                     </Button>
+                    <TextBlock Text="{l:T 'Servidores'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ItemsControl x:Name="SideServers" ItemTemplate="{StaticResource SidePlaceTemplate}" />
+                    <Button Style="{StaticResource SideItem}" Click="AddServer_Click"
+                            ToolTip="{l:T 'Guarda un servidor FTP o FTPS con su usuario y su cifrado, como en FileZilla.'}">
+                        <StackPanel Orientation="Horizontal" Margin="0,9">
+                            <ui:SymbolIcon Symbol="Add24" FontSize="17" Margin="0,0,12,0"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{l:T 'Agregar servidor FTP'}" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </ScrollViewer>
             </DockPanel>

@@ -72,6 +72,22 @@ public sealed class FileEntry : INotifyPropertyChanged
         TypeName = typeName;
     }
 
+    /// <summary>Algo de un servidor FTP ("ftp://Sitio/carpeta/archivo"): no se lee su ícono propio ni su miniatura.</summary>
+    public FileEntry(string name, string path, bool folder, long size, DateTime modified, string typeName, bool hidden)
+    {
+        Name = name;
+        FullPath = path;
+        IsFolder = folder;
+        Size = folder ? -1 : size;
+        Modified = modified;
+        Attributes = (folder ? FileAttributes.Directory : FileAttributes.Normal) | (hidden ? FileAttributes.Hidden : 0);
+        TypeName = typeName;
+        IsRemote = true;
+    }
+
+    /// <summary>Está en un servidor FTP.</summary>
+    public bool IsRemote { get; }
+
     // Atributos de los archivos de la nube (los mismos que mira el Explorador).
     private const FileAttributes Pinned = (FileAttributes)0x80000, RecallOnOpen = (FileAttributes)0x40000,
                                  RecallOnDataAccess = (FileAttributes)0x400000;

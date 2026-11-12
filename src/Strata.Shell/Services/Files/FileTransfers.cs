@@ -10,7 +10,7 @@ using Strata.Shell.Services.Localization;
 
 namespace Strata.Shell.Services.Files;
 
-public enum TransferKind { Copy, Move, Extract, Compress, Format }
+public enum TransferKind { Copy, Move, Extract, Compress, Format, Upload, Download, Delete }
 
 /// <summary>Qué hacer con un nombre que ya está en el destino (se decide antes de empezar).</summary>
 public enum TransferConflict
@@ -89,6 +89,9 @@ public sealed class FileTransfer : INotifyPropertyChanged
             TransferKind.Copy => Wpf.Ui.Controls.SymbolRegular.Copy24,
             TransferKind.Extract or TransferKind.Compress => Wpf.Ui.Controls.SymbolRegular.FolderZip24,
             TransferKind.Format => Wpf.Ui.Controls.SymbolRegular.HardDrive20,
+            TransferKind.Upload => Wpf.Ui.Controls.SymbolRegular.ArrowUpload24,
+            TransferKind.Download => Wpf.Ui.Controls.SymbolRegular.ArrowDownload24,
+            TransferKind.Delete => Wpf.Ui.Controls.SymbolRegular.Delete24,
             _ => Wpf.Ui.Controls.SymbolRegular.FolderArrowRight24,
         },
     };
@@ -106,12 +109,21 @@ public sealed class FileTransfer : INotifyPropertyChanged
         (TransferKind.Extract, TransferState.Done) => Loc.F("Se extrajo {0} en {1}", What, FolderName),
         (TransferKind.Compress, TransferState.Done) => Loc.F("Se creó {0}", FolderName),
         (TransferKind.Format, TransferState.Done) => Loc.F("Se formateó {0}", Folder),
+        (TransferKind.Upload, TransferState.Done) => Loc.F("Se subió {0} a {1}", What, FolderName),
+        (TransferKind.Download, TransferState.Done) => Loc.F("Se descargó {0} en {1}", What, FolderName),
+        (TransferKind.Delete, TransferState.Done) => Loc.F("Se eliminó {0}", What),
         (_, TransferState.Canceled) => Loc.T("Cancelado"),
         (TransferKind.Copy, TransferState.Failed) => Loc.F("No se pudo copiar todo a {0}", FolderName),
         (TransferKind.Move, TransferState.Failed) => Loc.F("No se pudo mover todo a {0}", FolderName),
         (TransferKind.Extract, TransferState.Failed) => Loc.F("No se pudo extraer todo en {0}", FolderName),
         (TransferKind.Compress, TransferState.Failed) => Loc.F("No se pudo crear {0}", FolderName),
         (TransferKind.Format, TransferState.Failed) => Loc.F("No se pudo formatear {0}", Folder),
+        (TransferKind.Upload, TransferState.Failed) => Loc.F("No se pudo subir todo a {0}", FolderName),
+        (TransferKind.Download, TransferState.Failed) => Loc.F("No se pudo descargar todo en {0}", FolderName),
+        (TransferKind.Delete, TransferState.Failed) => Loc.F("No se pudo eliminar todo de {0}", FolderName),
+        (TransferKind.Upload, _) => Loc.F("Subiendo {0} a {1}", What, FolderName),
+        (TransferKind.Download, _) => Loc.F("Descargando {0} en {1}", What, FolderName),
+        (TransferKind.Delete, _) => Loc.F("Eliminando {0}", What),
         (TransferKind.Copy, _) => Loc.F("Copiando {0} a {1}", What, FolderName),
         (TransferKind.Extract, _) => Loc.F("Extrayendo {0} en {1}", What, FolderName),
         (TransferKind.Compress, _) => Loc.F("Comprimiendo {0} en {1}", What, FolderName),
@@ -136,6 +148,8 @@ public sealed class FileTransfer : INotifyPropertyChanged
                 case TransferState.Done or TransferState.Canceled:
                     return "";
             }
+            if (Kind == TransferKind.Delete)
+                return Loc.F("{0} de {1}", DoneFiles, TotalFiles);
             long done = Interlocked.Read(ref DoneBytes);
             string text = Loc.F("{0} de {1}", FileEntry.FormatSize(done), FileEntry.FormatSize(TotalBytes));
             if (_speed > 1024)

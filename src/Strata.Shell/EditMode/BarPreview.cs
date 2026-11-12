@@ -624,6 +624,18 @@ internal sealed class BarPreview
                     look.Items.Add(Toggle(name, _screen.MediaStyle == style, s => s.MediaStyle = choice));
                 }
                 yield return look;
+                var progress = new MenuItem { Header = Loc.T("Avance de la canción") };
+                foreach (var (kind, name) in new[]
+                         {
+                             (MediaProgress.None, Loc.T("Sin avance")),
+                             (MediaProgress.Ring, Loc.T("Anillo alrededor de la carátula")),
+                             (MediaProgress.Line, Loc.T("Línea debajo")),
+                         })
+                {
+                    var choice = kind;
+                    progress.Items.Add(Toggle(name, _screen.MediaProgress == kind, s => s.MediaProgress = choice));
+                }
+                yield return progress;
                 yield return Toggle(Loc.T("Controles multimedia"), _screen.ShowMediaControls, s => s.ShowMediaControls = !s.ShowMediaControls);
                 if (Services.Modules.OptionalModules.Lyrics.IsInstalled)
                     yield return Toggle(Loc.T("Letra en la barra"), _screen.ShowLyricsLine, s => s.ShowLyricsLine = !s.ShowLyricsLine);
@@ -702,6 +714,8 @@ internal sealed class BarPreview
         custom.IsChecked = _screen.BarStyle == BarStyle.Color;
         style.Items.Add(custom);
         menu.Items.Add(style);
+        menu.Items.Add(Toggle(Loc.T("Visible en pantalla completa"), _screen.ShowOverFullscreen,
+                              s => s.ShowOverFullscreen = !s.ShowOverFullscreen));
         // Atajos para Inicio y las apps abiertas (también se arrastran a cualquier zona, como lo demás).
         var alignment = new MenuItem { Header = Loc.T("Inicio y apps abiertas") };
         var startZone = BarLayout.ZoneOf(_bar, BarItem.Start);

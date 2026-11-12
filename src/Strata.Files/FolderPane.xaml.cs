@@ -13,6 +13,8 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Files;
+using StrataDialog = Strata.Shell.Controls.StrataDialog;
+using Strata.Shell.Services.Files.Remote;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Services.StartMenu;
 using Strata.Shell.Services.Themes;
@@ -180,6 +182,9 @@ public partial class FolderPane : UserControl
 
     /// <summary>Una carpeta de verdad, donde se puede crear, pegar, cortar y cambiar nombres.</summary>
     public bool CanModify => _path != null && !InRecycleBin && !InArchive;
+
+    /// <summary>Se ve una carpeta de un servidor FTP ("ftp://Sitio/carpeta").</summary>
+    public bool InRemote => RemoteFiles.IsRemote(_path);
 
     /// <summary>El comprimido que se ve y la carpeta de adentro (null en una carpeta normal).</summary>
     private (string Archive, string Inner)? _archive;
@@ -381,6 +386,11 @@ public partial class FolderPane : UserControl
         }
         // Al subir queda marcada la carpeta de la que se venía, como en el Explorador.
         _selectAfterLoad = _path;
+        if (InRemote)
+        {
+            Navigate(RemoteFiles.Parent(_path));
+            return;
+        }
         // De "\\servidor\recurso" se sube a "\\servidor" (sus carpetas compartidas).
         if (Places.ShareRoot(_path) is { } share && SamePath(share, _path))
         {
@@ -511,7 +521,8 @@ public partial class FolderPane : UserControl
         List<FileEntry> fresh;
         try
         {
-            var read = _archive is { } location ? ReadArchiveAsync(location, cts.Token)
+            var read = RemoteFiles.IsRemote(path) ? ReadRemoteAsync(path, hidden, cts.Token)
+                : _archive is { } location ? ReadArchiveAsync(location, cts.Token)
                 : Task.Run(() => path == Places.RecycleBin ? RecycleBin.Read().Select(i => new FileEntry(i)).ToList()
                                  : Places.IsServer(path) ? ReadServer(path)
                                  : Read(path, hidden, inCloud), cts.Token);
@@ -519,7 +530,7 @@ public partial class FolderPane : UserControl
             if (await Task.WhenAny(read, Task.Delay(400, cts.Token)) != read && !merge && !cts.IsCancellationRequested)
                 ShowConnecting(path);
             // Un comprimido grande (o su contraseña) puede tardar: ahí no hay límite.
-            if (await Task.WhenAny(read, Task.Delay(_archive is null ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan, cts.Token)) != read)
+            if (await Task.WhenAny(read, Task.Delay(_archive is null && !RemoteFiles.IsRemote(path) ? TimeSpan.FromSeconds(10) : Timeout.InfiniteTimeSpan, cts.Token)) != read)
             {
                 if (!cts.IsCancellationRequested)
                     ShowNoResponse(path);
@@ -535,6 +546,18 @@ public partial class FolderPane : UserControl
         {
             if (!cts.IsCancellationRequested)
                 ShowError(ex.Message);
+            return;
+        }
+        catch (RemotePasswordException ex)
+        {
+            if (!cts.IsCancellationRequested)
+                await AskRemotePasswordAsync(ex, cts);
+            return;
+        }
+        catch (RemoteCertificateException ex)
+        {
+            if (!cts.IsCancellationRequested)
+                await AskRemoteCertificateAsync(ex, cts);
             return;
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
@@ -585,7 +608,7 @@ public partial class FolderPane : UserControl
         }
         UpdateStatus();
         FileIcons.Load(toLoad, ShowsThumbnails && Thumbnails(path), Dispatcher, cts.Token);
-        if (_archive is null && path != Places.RecycleBin && !Places.IsServer(path) && !IsNetwork(path))
+        if (_archive is null && path != Places.RecycleBin && !Places.IsServer(path) && !RemoteFiles.IsRemote(path) && !IsNetwork(path))
             _ = LoadFolderSizesAsync(cts.Token);
         RememberNetwork(path);
     }
@@ -601,6 +624,32 @@ public partial class FolderPane : UserControl
         return await Task.Run(() => listing.Children(location.Inner)
             .Select(c => new FileEntry(c, location.Archive, date, FileIcons.TypeName(c.IsFolder ? "" : System.IO.Path.GetExtension(c.Name), c.IsFolder)))
             .ToList(), token);
+    }
+
+    /// <summary>Lo que hay en una carpeta de un servidor FTP (los ocultos son los que empiezan con punto).</summary>
+    private static async Task<List<FileEntry>> ReadRemoteAsync(string path, bool hidden, CancellationToken token)
+    {
+        var at = RemoteFiles.Locate(path) ?? throw new IOException(Loc.T("Ese servidor ya no está en el administrador de sitios."));
+        var entries = await RemoteFiles.ListAsync(at, token);
+        return hidden ? entries : entries.Where(e => !e.IsHidden).ToList();
+    }
+
+    /// <summary>El servidor pide contraseña (o rechazó la guardada): se pide y se vuelve a intentar.</summary>
+    private async Task AskRemotePasswordAsync(RemotePasswordException ex, CancellationTokenSource cts)
+    {
+        ShowError(ex.Message);
+        RetryButton.Visibility = Visibility.Visible;
+        if (await RemoteSiteDialog.AskPasswordAsync(Window.GetWindow(this), ex.Site, ex.Rejected) && cts == _loading)
+            _ = LoadAsync(merge: false);
+    }
+
+    /// <summary>Certificado que no es de confianza: se muestra como en FileZilla y el usuario decide.</summary>
+    private async Task AskRemoteCertificateAsync(RemoteCertificateException ex, CancellationTokenSource cts)
+    {
+        ShowError(ex.Message);
+        RetryButton.Visibility = Visibility.Visible;
+        if (await RemoteSiteDialog.AskCertificateAsync(Window.GetWindow(this), ex.Site, ex.Certificate) && cts == _loading)
+            _ = LoadAsync(merge: false);
     }
 
     /// <summary>Las carpetas compartidas de un servidor de la red.</summary>
@@ -621,7 +670,7 @@ public partial class FolderPane : UserControl
     /// archivos solo en línea ya se saltan uno por uno (<see cref="FileIcons.IsPicture"/>).
     /// </summary>
     private bool Thumbnails(string path) =>
-        _archive is null && (CloudPlace(path) is not { } cloud || System.IO.Path.GetPathRoot(cloud.Path!)?.TrimEnd('\\') != cloud.Path!.TrimEnd('\\'));
+        _archive is null && !RemoteFiles.IsRemote(path) && (CloudPlace(path) is not { } cloud || System.IO.Path.GetPathRoot(cloud.Path!)?.TrimEnd('\\') != cloud.Path!.TrimEnd('\\'));
 
     /// <summary>Una carpeta de red que se pudo abrir queda en la barra lateral (su "\\servidor\recurso").</summary>
     private void RememberNetwork(string path)
@@ -690,7 +739,7 @@ public partial class FolderPane : UserControl
         _watcher?.Dispose();
         _watcher = null;
         _watchedPath = path;
-        if (path is null || Places.IsServer(path) || path == Places.RecycleBin || _archive != null)
+        if (path is null || Places.IsServer(path) || path == Places.RecycleBin || _archive != null || RemoteFiles.IsRemote(path))
             return;
         try
         {
@@ -749,6 +798,10 @@ public partial class FolderPane : UserControl
             {
                 parts.Add(_path);
             }
+            else if (InRemote)
+            {
+                crumbs.AddRange(RemoteFiles.Crumbs(_path).Select(c => new Crumb(c.Name, c.Path, false, true)));
+            }
             else
             {
                 for (var dir = new DirectoryInfo(_path); dir != null; dir = dir.Parent)
@@ -792,7 +845,7 @@ public partial class FolderPane : UserControl
     }
 
     /// <summary>El host de una ruta de red ("10.50.0.200" de "\\10.50.0.200\Compartida"); null si es local.</summary>
-    private static string? HostOf(string path) =>
+    private static string? HostOf(string path) => RemoteFiles.Locate(path) is { } at ? at.Site.Host :
         path.StartsWith(@"\\", StringComparison.Ordinal) ? path[2..].Split('\\')[0] : null;
 
     private void ShowConnecting(string path)
@@ -882,6 +935,12 @@ public partial class FolderPane : UserControl
             EmptyText.Text = _deepSearching ? Loc.T("Buscando también en las subcarpetas…")
                 : CanDeepSearch && query.Trim().Length >= 2 ? Loc.F("Nada en esta carpeta ni en sus subcarpetas coincide con «{0}».", query.Trim())
                 : Loc.F("Nada en esta carpeta coincide con «{0}».", query.Trim());
+        }
+        else if (InRemote)
+        {
+            EmptyIcon.Symbol = SymbolRegular.Server24;
+            EmptyTitle.Text = Loc.T("Esta carpeta está vacía");
+            EmptyText.Text = Loc.T("Arrastra archivos aquí para subirlos al servidor.");
         }
         else if (InArchive)
         {
@@ -1080,6 +1139,12 @@ public partial class FolderPane : UserControl
             choose(entries);
             return;
         }
+        // En un servidor: se baja a una carpeta temporal y se abre; si se guarda, se ofrece subirlo.
+        if (InRemote)
+        {
+            _ = OpenRemoteAsync(entries);
+            return;
+        }
         // Dentro de un comprimido: se saca a una carpeta temporal y se abre desde ahí.
         if (_archive is { } location)
         {
@@ -1105,6 +1170,133 @@ public partial class FolderPane : UserControl
             if (!FileOperations.Open(entry.FullPath))
                 ShowMessage(Loc.F("No se pudo abrir {0}", entry.Name));
         }
+    }
+
+    /// <summary>Los archivos de un servidor abiertos desde aquí, para ofrecer subirlos si se guardan.</summary>
+    private static readonly Dictionary<string, FileSystemWatcher> RemoteEdits = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Abre archivos de un servidor: se bajan a la carpeta temporal y se abren desde ahí.</summary>
+    private async Task OpenRemoteAsync(IReadOnlyList<FileEntry> entries)
+    {
+        var files = entries.Where(e => !e.IsFolder).ToList();
+        if (files.Count == 0 || await RemoteFiles.DownloadToTempAsync(files) is not { } paths)
+            return; // la tarjeta muestra lo que pasó
+        if (paths is [var single] && MediaKinds.Of(single) != MediaKind.None)
+        {
+            ShowViewer([single], 0);
+            return;
+        }
+        for (int i = 0; i < paths.Count; i++)
+        {
+            if (!FileOperations.Open(paths[i]))
+            {
+                ShowMessage(Loc.F("No se pudo abrir {0}", files[i].Name));
+                continue;
+            }
+            WatchRemoteEdit(paths[i], files[i].FullPath);
+        }
+    }
+
+    /// <summary>
+    /// Vigila la copia local de un archivo del servidor: cuando el programa la guarda, pregunta si se
+    /// sube (como "editar" en FileZilla).
+    /// </summary>
+    private void WatchRemoteEdit(string local, string remote)
+    {
+        if (RemoteEdits.ContainsKey(local))
+            return;
+        var watcher = new FileSystemWatcher(System.IO.Path.GetDirectoryName(local)!, System.IO.Path.GetFileName(local))
+        {
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
+        };
+        RemoteEdits[local] = watcher;
+        var owner = Window.GetWindow(this);
+        bool asking = false;
+        var settle = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
+        settle.Tick += async (_, _) =>
+        {
+            settle.Stop();
+            if (asking || !File.Exists(local))
+                return;
+            asking = true;
+            int answer = await StrataDialog.ShowAsync(owner, Loc.F("¿Subir {0}?", System.IO.Path.GetFileName(local)),
+                Loc.F("El archivo cambió. ¿Subir la nueva versión a {0}? Se reemplaza la que hay en el servidor.", RemoteFiles.Parent(remote) ?? remote),
+                Loc.T("Subir"), Loc.T("Dejar de vigilar"), Loc.T("Ahora no"));
+            asking = false;
+            if (answer == 0)
+            {
+                if (await RemoteFiles.UploadOverAsync(local, remote) && RemoteFiles.SamePath(RemoteFiles.Parent(remote), _path))
+                    _ = LoadAsync(merge: true);
+            }
+            else if (answer == 1)
+            {
+                watcher.Dispose();
+                RemoteEdits.Remove(local);
+            }
+        };
+        void Changed(object? sender, FileSystemEventArgs e) => Dispatcher.BeginInvoke(() =>
+        {
+            settle.Stop();
+            settle.Start();
+        });
+        watcher.Changed += Changed;
+        watcher.Renamed += (sender, e) => Changed(sender, e); // los programas que guardan sobre una copia temporal
+        watcher.Created += Changed;
+        watcher.EnableRaisingEvents = true;
+    }
+
+    /// <summary>Baja lo elegido del servidor a una carpeta del equipo.</summary>
+    private async Task DownloadToAsync(IReadOnlyList<FileEntry> entries)
+    {
+        if (entries.Count == 0 || await FilePicker.PickFoldersAsync(Loc.T("Descargar en")) is not [var folder])
+            return;
+        RemoteFiles.Download(entries, folder, TransferConflict.KeepBoth);
+    }
+
+    /// <summary>Sube archivos (o carpetas) del equipo a la carpeta del servidor.</summary>
+    private async Task UploadAsync(IReadOnlyList<string> sources, string folder)
+    {
+        if (sources.Count == 0)
+            return;
+        var transfer = RemoteFiles.Upload(sources, folder, TransferConflict.KeepBoth);
+        await transfer.Finished.Task;
+        if (RemoteFiles.SamePath(folder, _path))
+        {
+            _reload.Stop();
+            _ = LoadAsync(merge: true);
+        }
+    }
+
+    private async Task PickAndUploadAsync()
+    {
+        if (_path is not { } folder || await FilePicker.PickFilesAsync(Loc.T("Subir archivos"), null, true) is not { Length: > 0 } files)
+            return;
+        await UploadAsync(files, folder);
+    }
+
+    /// <summary>Copia del servidor al portapapeles: se baja antes a la carpeta temporal.</summary>
+    private async Task CopyFromRemoteAsync(IReadOnlyList<FileEntry> entries)
+    {
+        if (await RemoteFiles.DownloadToTempAsync(entries) is not { Count: > 0 } paths)
+            return;
+        FileOperations.SetClipboard(paths, false);
+        ShowMessageInfo(paths.Count == 1 ? Loc.T("1 elemento copiado") : Loc.F("{0} elementos copiados", paths.Count));
+        StateChanged?.Invoke();
+    }
+
+    /// <summary>En un servidor no hay papelera: se pregunta y se borra para siempre.</summary>
+    private async Task DeleteRemoteAsync(IReadOnlyList<FileEntry> entries)
+    {
+        if (_path is not { } folder || entries.Count == 0)
+            return;
+        string what = entries is [var one] ? Loc.F("«{0}»", one.Name) : Loc.F("{0} elementos", entries.Count);
+        if (!await StrataDialog.ConfirmAsync(Window.GetWindow(this), Loc.F("¿Eliminar {0}?", what),
+                Loc.T("Se borra del servidor para siempre: ahí no hay papelera. Las carpetas se borran con todo lo que tienen."),
+                Loc.T("Eliminar")))
+            return;
+        await RemoteFiles.Delete(entries, folder).Finished.Task;
+        _reload.Stop();
+        _ = LoadAsync(merge: true);
     }
 
     /// <summary>Abre archivos de un comprimido: se extraen a la carpeta temporal (un comprimido adentro se explora).</summary>
@@ -1242,7 +1434,7 @@ public partial class FolderPane : UserControl
     {
         if (entry.IsFolder)
             return entry.FullPath;
-        if (!entry.InArchive && entry.Extension.Equals(".lnk", StringComparison.OrdinalIgnoreCase)
+        if (!entry.InArchive && !entry.IsRemote && entry.Extension.Equals(".lnk", StringComparison.OrdinalIgnoreCase)
             && ExtraApps.ShortcutTarget(entry.FullPath) is { Length: > 0 } target && Directory.Exists(target))
             return target;
         return null;
@@ -1252,6 +1444,11 @@ public partial class FolderPane : UserControl
     {
         if (_path is null || !CanModify)
             return;
+        if (InRemote)
+        {
+            await NewRemoteFolderAsync(_path);
+            return;
+        }
         try
         {
             // En una carpeta protegida, pregunta y la crea con permiso de administrador.
@@ -1270,6 +1467,28 @@ public partial class FolderPane : UserControl
         }
     }
 
+    private async Task NewRemoteFolderAsync(string folder)
+    {
+        try
+        {
+            string name = Loc.T("Nueva carpeta");
+            var taken = _entries.Select(e => e.Name).ToHashSet(StringComparer.Ordinal);
+            for (int i = 2; taken.Contains(name); i++)
+                name = $"{Loc.T("Nueva carpeta")} ({i})";
+            string created = RemoteFiles.Combine(folder, name);
+            await RemoteFiles.CreateFolderAsync(created);
+            _selectAfterLoad = created;
+            _renameAfterLoad = true;
+            _reload.Stop();
+            _ = LoadAsync(merge: true);
+        }
+        catch (IOException ex)
+        {
+            ShowMessage(ex.Message);
+            Log.Error("Archivos: no se pudo crear la carpeta en el servidor", ex);
+        }
+    }
+
     public void CopySelection(bool cut)
     {
         var selected = SelectedEntries;
@@ -1279,6 +1498,14 @@ public partial class FolderPane : UserControl
         {
             if (!cut)
                 _ = CopyFromArchiveAsync(selected);
+            return;
+        }
+        if (InRemote)
+        {
+            if (cut)
+                ShowMessage(Loc.T("En un servidor no se puede cortar: copia y después elimina."));
+            else
+                _ = CopyFromRemoteAsync(selected);
             return;
         }
         FileOperations.SetClipboard(selected.Select(e => e.FullPath).ToList(), cut);
@@ -1296,6 +1523,12 @@ public partial class FolderPane : UserControl
         string? target = into ?? _path;
         if (target is null || FileOperations.ReadClipboard() is not { } clip)
             return;
+        if (RemoteFiles.IsRemote(target))
+        {
+            // Al servidor siempre se copia (lo cortado queda en el equipo).
+            await UploadAsync(clip.Paths, target);
+            return;
+        }
         var placed = new List<(string From, string To)>();
         if (clip.Cut)
         {
@@ -1330,6 +1563,11 @@ public partial class FolderPane : UserControl
         if (InRecycleBin)
         {
             await DeleteForeverAsync(selected);
+            return;
+        }
+        if (InRemote)
+        {
+            await DeleteRemoteAsync(selected);
             return;
         }
         // Después queda marcado el siguiente, para seguir con el teclado.
@@ -1373,6 +1611,11 @@ public partial class FolderPane : UserControl
     /// <summary>Borra para siempre, sin pasar por la Papelera (después de preguntar).</summary>
     private async Task DeleteSelectionForeverAsync(IReadOnlyList<FileEntry> entries)
     {
+        if (InRemote)
+        {
+            await DeleteRemoteAsync(entries);
+            return;
+        }
         await FileOperations.DeleteForeverAsync(entries.Select(e => e.FullPath).ToList(), Handle);
         _reload.Stop();
         _ = LoadAsync(merge: true);
@@ -1438,6 +1681,20 @@ public partial class FolderPane : UserControl
         if (name.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0)
         {
             ShowMessage(Loc.T("El nombre no puede llevar \\ / : * ? \" < > |"));
+            return;
+        }
+        if (entry.IsRemote)
+        {
+            try
+            {
+                _selectAfterLoad = await RemoteFiles.RenameAsync(entry.FullPath, name);
+                _reload.Stop();
+                _ = LoadAsync(merge: true);
+            }
+            catch (IOException ex)
+            {
+                ShowMessage(ex.Message);
+            }
             return;
         }
         if (await FileOperations.RenameAsync(entry.FullPath, name, entry.IsFolder, Handle) is { } error)
@@ -1590,6 +1847,23 @@ public partial class FolderPane : UserControl
         return menu;
     }
 
+    private async Task EditRemoteSiteAsync(RemoteSite site)
+    {
+        if (await RemoteSiteDialog.EditAsync(Window.GetWindow(this), site) is { } saved)
+            Navigate(RemoteFiles.StartOf(saved));
+    }
+
+    private static void CopyText(string text)
+    {
+        try
+        {
+            Clipboard.SetText(text);
+        }
+        catch (COMException)
+        {
+        }
+    }
+
     private void List_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
         var list = (ListBox)sender;
@@ -1614,6 +1888,35 @@ public partial class FolderPane : UserControl
             }
             menu.Items.Add(Item(Loc.T("Vaciar la Papelera"), SymbolRegular.DeleteDismiss24, EmptyRecycleBin, enabled: _entries.Count > 0));
             menu.Items.Add(Item(Loc.T("Actualizar"), SymbolRegular.ArrowClockwise24, () => _ = LoadAsync(merge: true)));
+            return;
+        }
+        if (InRemote && RemoteFiles.Locate(folder) is { } remote)
+        {
+            if (onItem && selected.Count > 0)
+            {
+                var first = selected[0];
+                bool files = selected.Any(s => !s.IsFolder);
+                menu.Items.Add(Item(Loc.T("Abrir"), SymbolRegular.Open24, () => Open(selected), bold: true));
+                if (selected.Count == 1 && first.IsFolder)
+                    menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(first.FullPath)));
+                menu.Items.Add(Item(Loc.T("Descargar en…"), SymbolRegular.ArrowDownload24, () => _ = DownloadToAsync(selected)));
+                menu.Items.Add(Item(Loc.T("Copiar"), SymbolRegular.Copy24, () => _ = CopyFromRemoteAsync(selected), enabled: files || selected.Count > 0));
+                menu.Items.Add(Item(Loc.T("Copiar ruta"), SymbolRegular.Link24, () => CopyText(string.Join(Environment.NewLine, selected.Select(s => s.FullPath)))));
+                menu.Items.Add(new Separator());
+                menu.Items.Add(Item(Loc.T("Cambiar nombre"), SymbolRegular.Rename24, () => StartRename(first), enabled: selected.Count == 1));
+                menu.Items.Add(Item(Loc.T("Eliminar"), SymbolRegular.Delete24, () => _ = DeleteRemoteAsync(selected)));
+            }
+            else
+            {
+                menu.Items.Add(Item(Loc.T("Subir archivos…"), SymbolRegular.ArrowUpload24, () => _ = PickAndUploadAsync()));
+                menu.Items.Add(Item(Loc.T("Nueva carpeta"), SymbolRegular.FolderAdd24, NewFolder));
+                menu.Items.Add(Item(Loc.T("Pegar"), SymbolRegular.ClipboardPaste24, () => _ = PasteAsync(), enabled: FileOperations.ClipboardHasFiles()));
+                menu.Items.Add(new Separator());
+                menu.Items.Add(SortMenu());
+                menu.Items.Add(Item(Loc.T("Copiar ruta"), SymbolRegular.Link24, () => CopyText(folder)));
+                menu.Items.Add(Item(Loc.T("Actualizar"), SymbolRegular.ArrowClockwise24, () => _ = LoadAsync(merge: true)));
+                menu.Items.Add(Item(Loc.F("Editar {0}", remote.Site.Name), SymbolRegular.Settings24, () => _ = EditRemoteSiteAsync(remote.Site)));
+            }
             return;
         }
         if (_archive is { } location)
@@ -1817,7 +2120,7 @@ public partial class FolderPane : UserControl
         _dragStart = null;
         _clickedSelected = null;
         var selected = SelectedEntries;
-        if (selected.Count == 0 || selected.Any(s => s.IsRenaming) || InArchive)
+        if (selected.Count == 0 || selected.Any(s => s.IsRenaming) || InArchive || InRemote)
             return;
         var data = new DataObject(DataFormats.FileDrop, selected.Select(s => s.FullPath).ToArray());
         try
@@ -1994,6 +2297,8 @@ public partial class FolderPane : UserControl
             e.Effects = InArchive ? DragDropEffects.None
                 : InRecycleBin
                 ? (e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Move & e.AllowedEffects : DragDropEffects.None)
+                : target is not null && RemoteFiles.IsRemote(target)
+                ? (e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy & e.AllowedEffects : DragDropEffects.None)
                 : target is not null && e.Data.GetData(DataFormats.FileDrop) is string[] files
                 ? DropEffect(e, target, files) & e.AllowedEffects
                 : DragDropEffects.None;
@@ -2050,6 +2355,12 @@ public partial class FolderPane : UserControl
             }
             if (DropTarget(e) is not { } target || e.Data.GetData(DataFormats.FileDrop) is not string[] files)
                 return;
+            if (RemoteFiles.IsRemote(target))
+            {
+                e.Handled = true;
+                await UploadAsync(files, target);
+                return;
+            }
             var effect = DropEffect(e, target, files) & e.AllowedEffects;
             e.Handled = true;
             var placed = new List<(string From, string To)>();
@@ -2299,7 +2610,7 @@ public partial class FolderPane : UserControl
         try
         {
             // Dentro de un comprimido no hay nada en el disco que leer: el ícono y los datos.
-            if (entry.InArchive)
+            if (entry.InArchive || entry.IsRemote)
                 return;
             if (entry.IsFolder)
             {
@@ -2394,7 +2705,7 @@ public partial class FolderPane : UserControl
     private bool _deepSearching;
     private const int DeepSearchLimit = 1000;
 
-    private bool CanDeepSearch => _path != null && !InRecycleBin && !InArchive && !Places.IsServer(_path);
+    private bool CanDeepSearch => _path != null && !InRecycleBin && !InArchive && !InRemote && !Places.IsServer(_path);
 
     /// <summary>Cambió el texto: se descarta lo encontrado antes y, si hay algo que buscar, se espera una pausa.</summary>
     private void ScheduleDeepSearch()

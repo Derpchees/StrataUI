@@ -306,6 +306,8 @@ public static class Places
     {
         if (string.IsNullOrWhiteSpace(path))
             return null;
+        if (Remote.RemoteFiles.IsRemote(path.Trim().Trim('"')))
+            return Remote.RemoteFiles.Normalize(path);
         path = Environment.ExpandEnvironmentVariables(path.Trim().Trim('"')).TrimEnd('\\');
         if (IsServer(path))
             return path;
@@ -331,7 +333,7 @@ public static class Places
 
     /// <summary>Ruta de red "\\servidor" (sin recurso): se listan sus carpetas compartidas.</summary>
     public static bool IsServer(string? path) =>
-        path is { Length: > 2 } && path.StartsWith(@"\\", StringComparison.Ordinal) && path.IndexOf('\\', 2) < 0;
+        path is { Length: > 2 } && !Remote.RemoteFiles.IsRemote(path) && path.StartsWith(@"\\", StringComparison.Ordinal) && path.IndexOf('\\', 2) < 0;
 
     /// <summary>La raíz "\\servidor\recurso" de una ruta de red (null si no es de red).</summary>
     public static string? ShareRoot(string path) =>
@@ -340,6 +342,8 @@ public static class Places
     /// <summary>Nombre para la ruta de navegación y el título: el de Windows en las unidades.</summary>
     public static string NameOf(string path)
     {
+        if (Remote.RemoteFiles.IsRemote(path))
+            return Remote.RemoteFiles.NameOf(path);
         if (IsServer(path))
             return path[2..];
         if (Path.GetPathRoot(path) is { } root && string.Equals(root.TrimEnd('\\'), path.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))

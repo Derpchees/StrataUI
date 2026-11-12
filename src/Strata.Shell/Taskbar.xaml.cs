@@ -378,6 +378,7 @@ public partial class Taskbar : AppBarWindow
         UpdateStatus();
         UpdateNotificationBadge();
         UpdateMedia();
+        ApplyFullscreenOption();
     }
 
     /// <summary>
@@ -632,6 +633,8 @@ public partial class Taskbar : AppBarWindow
         App.Current.Audio.Changed -= UpdateVolume;
         Services.Brightness.BrightnessService.Changed -= ApplySettings;
         Media.Changed -= UpdateMedia;
+        _progressTimer?.Stop();
+        _progressTimer = null;
         Services.Media.LyricsLine.Changed -= UpdateLyricsLine;
         Services.Modules.OptionalModules.Changed -= OnModuleChanged;
         Services.Notifications.NotificationService.Changed -= UpdateNotificationBadge;
@@ -1058,6 +1061,19 @@ public partial class Taskbar : AppBarWindow
         MediaCoverBox.Visibility = cover ? Visibility.Visible : Visibility.Collapsed;
         MediaText.Visibility = text ? Visibility.Visible : Visibility.Collapsed;
         MediaText.Margin = cover ? new Thickness(8, 0, 2, 0) : new Thickness(2, 0, 2, 0);
+        // Avance: el anillo necesita la carátula; sin ella (solo texto) queda la línea.
+        var progress = s.MediaProgress;
+        if (progress == MediaProgress.Ring && !cover)
+            progress = MediaProgress.Line;
+        if (style == MediaStyle.Controls)
+            progress = MediaProgress.None;
+        _mediaProgress = progress;
+        bool ring = progress == MediaProgress.Ring;
+        if (ring && MediaRing.Data is null)
+            MediaRing.Data = MediaRingTrack.Data = RingFrame;
+        MediaRingBox.Visibility = ring ? Visibility.Visible : Visibility.Collapsed;
+        MediaLine.Visibility = progress == MediaProgress.Line ? Visibility.Visible : Visibility.Collapsed;
+        UpdateMediaProgress();
         MediaCover.ImageSource = Media.Cover;
         MediaAppBadge.Source = Media.AppIcon;
         MediaTitle.Text = Media.Title;
@@ -1100,6 +1116,119 @@ public partial class Taskbar : AppBarWindow
 
     /// <summary>La barra muestra la línea que se canta en el botón de letra (horizontal, con el módulo).</summary>
     private bool _lyricsLine;
+
+    // ── Avance de la canción (anillo o línea) ──────────────────────────────
+
+    private MediaProgress _mediaProgress;
+    private DispatcherTimer? _progressTimer;
+
+    /// <summary>
+    /// Pinta cuánto va de la canción; mientras suena, se repite cada segundo (el temporizador solo
+    /// existe con el avance a la vista y algo sonando).
+    /// </summary>
+    private void UpdateMediaProgress()
+    {
+        bool visible = _mediaProgress != MediaProgress.None && MediaModule.Visibility == Visibility.Visible;
+        double fraction = 0;
+        bool known = false;
+        if (visible)
+        {
+            var (position, duration) = Media.Timeline();
+            known = duration > TimeSpan.Zero;
+            if (known)
+                fraction = Math.Clamp(position.TotalSeconds / duration.TotalSeconds, 0, 1);
+        }
+        // Las transmisiones en vivo no tienen duración: sin avance que mostrar.
+        double shown = known ? 1 : 0;
+        MediaRingBox.Opacity = MediaLine.Opacity = shown;
+        if (_mediaProgress == MediaProgress.Ring)
+        {
+            // El trazo es el marco entero; el guion lo recorta hasta donde va la canción
+            // (el largo del guion se mide en grosores del trazo).
+            double length = fraction * RingFramePerimeter / MediaRing.StrokeThickness;
+            MediaRing.StrokeDashArray = [length, RingFramePerimeter];
+            MediaRing.Visibility = fraction > 0.001 ? Visibility.Visible : Visibility.Hidden;
+        }
+        else if (_mediaProgress == MediaProgress.Line)
+            MediaLineFill.ScaleX = fraction;
+
+        bool tick = visible && known && Media.IsPlaying;
+        if (tick && _progressTimer is null)
+        {
+            _progressTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromSeconds(1) };
+            _progressTimer.Tick += (_, _) => UpdateMediaProgress();
+            _progressTimer.Start();
+        }
+        else if (!tick && _progressTimer is { } timer)
+        {
+            timer.Stop();
+            _progressTimer = null;
+        }
+    }
+
+    // Marco de 32 px (el cuadro de 34 menos medio trazo por lado) a 2 px de la carátula de 28,
+    // con las esquinas de la carátula agrandadas en esa distancia para que vaya paralelo.
+    private const double RingSize = 32, RingInset = 1, RingRadius = 8;
+    private static readonly double RingFramePerimeter = 4 * (RingSize - 2 * RingRadius) + 2 * Math.PI * RingRadius;
+
+    /// <summary>Marco redondeado que empieza arriba al centro y va en el sentido del reloj.</summary>
+    private static readonly System.Windows.Media.Geometry RingFrame = CreateRingFrame();
+
+    private static System.Windows.Media.Geometry CreateRingFrame()
+    {
+        double l = RingInset, t = RingInset, r = RingInset + RingSize, b = RingInset + RingSize, k = RingRadius;
+        var corner = new Size(k, k);
+        var figure = new System.Windows.Media.PathFigure
+        {
+            StartPoint = new Point((l + r) / 2, t), IsClosed = false, IsFilled = false,
+        };
+        void Line(double x, double y) => figure.Segments.Add(new System.Windows.Media.LineSegment(new Point(x, y), true));
+        void Arc(double x, double y) => figure.Segments.Add(new System.Windows.Media.ArcSegment(
+            new Point(x, y), corner, 0, false, System.Windows.Media.SweepDirection.Clockwise, true));
+        Line(r - k, t); Arc(r, t + k);
+        Line(r, b - k); Arc(r - k, b);
+        Line(l + k, b); Arc(l, b - k);
+        Line(l, t + k); Arc(l + k, t);
+        Line((l + r) / 2, t);
+        var geometry = new System.Windows.Media.PathGeometry([figure]);
+        geometry.Freeze();
+        return geometry;
+    }
+
+    // ── Pantalla completa ───────────────────────────────────────────────────
+
+    /// <summary>La app en pantalla completa de este monitor (aunque la barra siga encima).</summary>
+    private FullScreenApp? _fullScreenApp;
+    private bool _overFullscreen;
+
+    /// <summary>Con «Visible en pantalla completa», la barra no se esconde detrás del juego o el video.</summary>
+    protected override void OnFullScreenEnter(FullScreenApp app)
+    {
+        _fullScreenApp = app;
+        if (!S.ShowOverFullscreen)
+            base.OnFullScreenEnter(app);
+    }
+
+    protected override void OnFullScreenLeave()
+    {
+        _fullScreenApp = null;
+        base.OnFullScreenLeave();
+    }
+
+    /// <summary>Si la opción cambia con algo en pantalla completa, la barra sube o baja en el momento.</summary>
+    private void ApplyFullscreenOption()
+    {
+        bool over = S.ShowOverFullscreen;
+        if (over == _overFullscreen)
+            return;
+        _overFullscreen = over;
+        if (_fullScreenApp is not { } app)
+            return;
+        if (over)
+            base.OnFullScreenLeave();
+        else
+            base.OnFullScreenEnter(app);
+    }
 
     /// <summary>
     /// Cada línea nueva solo cambia la píldora: el resto del módulo multimedia (carátula, título,

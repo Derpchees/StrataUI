@@ -28,6 +28,8 @@ public enum BarStyle { Theme, Clear, Color }
 /// la carátula, solo el texto o solo los botones.
 /// </summary>
 public enum MediaStyle { Full, Compact, Cover, Text, Controls }
+/// <summary>Avance de la canción en la barra: nada, un anillo alrededor de la carátula o una línea debajo.</summary>
+public enum MediaProgress { None, Ring, Line }
 
 public enum StrataTheme
 {
@@ -312,6 +314,8 @@ public sealed class StrataSettings
     public bool FilesReplaceDialogs { get; set; } = true;
     /// <summary>Carpetas de red visitadas (\\servidor\recurso), para la barra lateral de Archivos.</summary>
     public List<string> FilesNetworkPlaces { get; set; } = [];
+    /// <summary>Servidores FTP guardados (sin contraseñas: esas van al Administrador de credenciales).</summary>
+    public List<Files.Remote.RemoteSite> FilesRemoteSites { get; set; } = [];
 
     // Escritorio de Strata UI (íconos, menú contextual y dueño de los widgets)
     /// <summary>Strata UI dibuja el escritorio (íconos y menú contextual); apagado, queda el de Windows.</summary>
@@ -507,6 +511,10 @@ public sealed class ScreenSettings
     public MediaStyle MediaStyle { get; set; } = MediaStyle.Full;
     /// <summary>Con el módulo Letras: la línea que se canta en lugar del artista.</summary>
     public bool ShowLyricsLine { get; set; }
+    public MediaProgress MediaProgress { get; set; } = MediaProgress.None;
+
+    /// <summary>Las barras de este monitor siguen encima de los juegos y videos en pantalla completa.</summary>
+    public bool ShowOverFullscreen { get; set; }
 
     // Avisos en pantalla (OSD) junto a la barra de este monitor
     public bool OsdVolume { get; set; } = true;

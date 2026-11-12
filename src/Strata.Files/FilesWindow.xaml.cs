@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using Strata.Shell.Services;
 using Strata.Shell.Services.Files;
+using Strata.Shell.Services.Files.Remote;
 using Strata.Shell.Services.Localization;
 using Strata.Shell.Services.Themes;
 using Wpf.Ui.Controls;
@@ -69,7 +70,7 @@ public partial class FilesWindow : FluentWindow
     private readonly Place _home;
     private readonly List<Place> _folders;
     private readonly Place _recycleBin;
-    private List<Place> _pinned = [], _drives = [], _cloud = [], _network = [];
+    private List<Place> _pinned = [], _drives = [], _cloud = [], _network = [], _servers = [];
     private DateTime _drivesRead;
 
     public FilesWindow(string? path = null) : this(path, null) { }
@@ -298,7 +299,7 @@ public partial class FilesWindow : FluentWindow
         NewFolderButton.Visibility = pane.InArchive ? Visibility.Collapsed : Visibility.Visible;
         ExtractAllButton.Visibility = pane.InArchive ? Visibility.Visible : Visibility.Collapsed;
         PasteButton.IsEnabled = canModify && FileOperations.ClipboardHasFiles();
-        CutButton.IsEnabled = canModify && selected > 0;
+        CutButton.IsEnabled = canModify && !pane.InRemote && selected > 0;
         CopyButton.IsEnabled = (canModify || pane.InArchive) && selected > 0;
         DeleteButton.IsEnabled = selected > 0 && !pane.InArchive;
         RenameButton.IsEnabled = canModify && selected == 1;
@@ -322,6 +323,10 @@ public partial class FilesWindow : FluentWindow
         string? path = Pane.CurrentPath;
         foreach (var place in _folders.Append(_home).Append(_recycleBin).Concat(_pinned).Concat(_drives).Concat(_cloud).Concat(_network))
             place.IsCurrent = FolderPane.SamePath(place.Path, path);
+        // Un servidor queda marcado mientras se ve cualquier carpeta suya.
+        var remote = RemoteFiles.Locate(path);
+        foreach (var place in _servers)
+            place.IsCurrent = remote is { } at && RemoteFiles.Locate(place.Path)?.Site.Id == at.Site.Id;
     }
 
     private void ApplyViewToggles()
@@ -353,6 +358,7 @@ public partial class FilesWindow : FluentWindow
         SideDrives.ItemsSource = _drives;
         SideCloud.ItemsSource = _cloud;
         SideNetwork.ItemsSource = _network;
+        RefreshServers();
         SideCloudTitle.Visibility = _cloud.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         var places = CurrentPlaces();
         foreach (var pane in _tabs.SelectMany(t => t.Panes))
@@ -640,6 +646,31 @@ public partial class FilesWindow : FluentWindow
         }
     }
 
+    /// <summary>Los sitios FTP del administrador de sitios, en la barra lateral.</summary>
+    private void RefreshServers()
+    {
+        _servers = RemoteFiles.Sites
+            .Select(site => new Place(site.Name, RemoteFiles.StartOf(site), SymbolRegular.Server24) { Detail = site.Host })
+            .ToList();
+        SideServers.ItemsSource = _servers;
+        UpdateCurrentPlace();
+    }
+
+    /// <summary>Después de agregar, editar o quitar un sitio: todas las ventanas de Archivos.</summary>
+    private static void RefreshAllServers()
+    {
+        foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
+            window.RefreshServers();
+    }
+
+    private async void AddServer_Click(object sender, RoutedEventArgs e)
+    {
+        if (await RemoteSiteDialog.EditAsync(this, null) is not { } site)
+            return;
+        RefreshAllServers();
+        Pane.Navigate(RemoteFiles.StartOf(site));
+    }
+
     /// <summary>Clic derecho en un lugar: abrirlo en una pestaña nueva o, si es una carpeta de red recordada, quitarla.</summary>
     private void Place_ContextMenuOpening(object sender, ContextMenuEventArgs e)
     {
@@ -663,6 +694,26 @@ public partial class FilesWindow : FluentWindow
             return;
         }
         menu.Items.Add(FolderPane.Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => AddTab(place.Path)));
+        if (RemoteFiles.Locate(place.Path) is { } remote)
+        {
+            var site = remote.Site;
+            menu.Items.Add(FolderPane.Item(Loc.T("Editar sitio…"), SymbolRegular.Settings24, async () =>
+            {
+                if (await RemoteSiteDialog.EditAsync(this, site) is not { } saved)
+                    return;
+                RefreshAllServers();
+                // Las pestañas que estaban en ese servidor pasan a la carpeta inicial (pudo cambiar el nombre).
+                foreach (var pane in AllPanes.Where(p => RemoteFiles.Locate(p.CurrentPath) is null && RemoteFiles.IsRemote(p.CurrentPath)))
+                    pane.Navigate(RemoteFiles.StartOf(saved));
+            }));
+            menu.Items.Add(FolderPane.Item(Loc.T("Ir a la raíz del servidor"), SymbolRegular.ArrowUp24, () => Pane.Navigate(RemoteFiles.RootOf(site))));
+            menu.Items.Add(FolderPane.Item(Loc.T("Quitar servidor"), SymbolRegular.Dismiss24, async () =>
+            {
+                if (await RemoteSiteDialog.RemoveAsync(this, site))
+                    RefreshAllServers();
+            }));
+            return;
+        }
         // Formatear: nunca la unidad de Windows (ni la de Strata UI o la de los datos del usuario).
         if (place.IsDrive && place.Path is { } drive && DriveFormat.CanFormat(drive))
             menu.Items.Add(FolderPane.Item(Loc.T("Formatear…"), SymbolRegular.HardDrive20, () => _ = FormatAsync(drive)));

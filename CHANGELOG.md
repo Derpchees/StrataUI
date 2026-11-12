@@ -4,14 +4,37 @@ Todos los cambios relevantes de Strata UI (llamado WINX hasta la 1.3) se documen
 El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
+> Las versiones se renumeraron en la 1.40.0 para seguir la regla de siempre (funciones nuevas suben
+> el número del medio y correcciones, el último): los saltos a 2.0.0 y 3.0.0 no traían cambios
+> incompatibles. La 2.0.0 pasó a ser la 1.4.0 y la 3.28.2, la 1.39.2.
+
 ## [Sin publicar]
 
-## [3.28.2] - 2026-11-11
+## [1.40.0] - 2026-11-12
+
+### Añadido
+- **Servidores FTP en el explorador**: sección «Servidores» en el panel y administrador de sitios
+  como el de FileZilla (host, puerto, cifrado TLS explícito si está disponible, obligatorio,
+  implícito o sin cifrar; acceso normal, anónimo o pedir la contraseña; carpeta inicial, modo
+  pasivo o activo, codificación y tiempo de espera) con «Probar conexión». Las contraseñas se
+  guardan en el Administrador de credenciales de Windows y los certificados no válidos se muestran
+  para confiar en ellos una vez. Se navega, sube (arrastrando, pegando o con «Subir archivos…»),
+  descarga, crea carpetas, renombra y elimina; al abrir un archivo remoto se descarga y, si se
+  modifica, ofrece volver a subirlo.
+- **Avance de la canción en la barra**: en las opciones del elemento multimedia, un marco
+  alrededor de la carátula o una línea debajo.
+- **Visible en pantalla completa**: opción en el menú de las barras de cada monitor para que sigan
+  encima de juegos y videos.
+
+### Corregido
+- La nota que aparece cuando no hay carátula quedaba corrida dentro de su cuadro.
+
+## [1.39.2] - 2026-11-11
 
 ### Cambiado
 - **Temperaturas y FPS sin pedir permiso tras actualizar**: el permiso de administrador que se da una vez (o que deja listo el instalador) sigue sirviendo con versiones nuevas de Strata UI mientras el proceso de lecturas hable el mismo protocolo; antes cada actualización volvía a pedir UAC.
 
-## [3.28.1] - 2026-11-11
+## [1.39.1] - 2026-11-11
 
 ### Cambiado
 - **Letras, más livianas**: con la música en pausa dejan de mirar el avance de la canción, y cada línea nueva solo actualiza el botón de letra en vez de redibujar todo el bloque de multimedia de cada barra.
@@ -23,14 +46,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ### Eliminado
 - Código y traducciones que ya no se usaban (unas 50 frases viejas en cada idioma, métodos, campos y `using` sobrantes).
 
-## [3.28.0] - 2026-11-11
+## [1.39.0] - 2026-11-11
 
 ### Cambiado
 - **Letra en la barra**: la línea que se canta ya no reemplaza al artista; ahora va dentro del botón de letra, que se alarga a un ancho fijo (no cambia de tamaño con cada línea) y se ve como una píldora con el ícono en el color de acento. Cada línea nueva entra con un fundido suave; si es larga, la letra se achica un poco o pasa a dos renglones para leerse entera, y en los silencios quedan unas notas tenues.
 - **Multimedia**: debajo del nombre de la canción va solo el artista (el álbum sigue en la información emergente), con el nombre y el artista más juntos y centrados.
 - **Búsqueda de letras**: encuentra muchas más canciones. Quita lo que Spotify agrega al título (« - Remastered 2011», « - En vivo»…), prueba solo con el primer artista cuando hay varios, hace una búsqueda libre por artista y canción, y acepta la misma grabación subida con otro artista. Si solo hay letra de otra versión de la canción, muestra el texto sin tiempos. Compara sin acentos ni mayúsculas y descarta resultados de otra canción. Las canciones que antes no se encontraron se vuelven a buscar.
 
-## [3.27.0] - 2026-11-10
+## [1.38.0] - 2026-11-10
 
 ### Añadido
 - **Módulo opcional Letras**: busca solo la letra de lo que suena en cualquier app (Spotify, el navegador, Reproductor multimedia…) y la muestra sincronizada en un panel desde el botón de letra de la barra; la línea que se canta queda resaltada y un clic en una línea salta a esa parte. Con «Letra en la barra» la línea actual se ve en lugar del artista. Se instala en Hub › Módulos opcionales.
@@ -40,7 +63,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - **Eliminar carpetas en uso en Archivos**: si otra app (un editor, una terminal…) tiene abierto algo dentro, Archivos lo dice y ofrece Reintentar, en vez de pedir permisos de administrador sin resultado y no hacer nada. Cualquier otro error al eliminar ahora también se avisa.
 - **Barra con las apps en el centro**: las apps quedan centradas en la barra aunque haya más elementos a un lado que al otro.
 
-## [3.26.0] - 2026-11-08
+## [1.37.0] - 2026-11-08
 
 ### Añadido
 - **Avisos en pantalla del micrófono y la cámara**: al silenciar o activar el micrófono, o al encender o apagar la cámara con su tecla, Strata UI muestra su aviso. Se activan o desactivan por monitor en Hub › Avisos en pantalla.
@@ -55,12 +78,12 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ### Quitado
 - **Hub › Apariencia**: las opciones «Transparencia» y «Desenfocar el fondo». Lo que hacían ahora lo decide el tema.
 
-## [3.25.1] - 2026-11-08
+## [1.36.1] - 2026-11-08
 
 ### Corregido
 - **Cuadros Abrir de Archivos**: elegir un archivo que otro programa tiene en uso ya no muestra el error de Windows y luego su cuadro: Archivos avisa y deja elegir otro. Si el cuadro de Windows rechaza la ruta, se vuelve a Archivos (hasta dos veces) antes de mostrar el de Windows.
 
-## [3.25.0] - 2026-11-07
+## [1.36.0] - 2026-11-07
 
 ### Añadido
 - **Archivos reemplaza al Explorador de Windows**: las carpetas que abre cualquier app («Mostrar en la
@@ -94,7 +117,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Las opciones de NVIDIA quedaban desactivadas si no se podían leer.
 - La barra de estado de Archivos contaba también los elementos ocultos por el filtro.
 
-## [3.24.0] - 2026-11-06
+## [1.35.0] - 2026-11-06
 
 ### Añadido
 - **Alt+Tab de Strata UI**: un selector de ventanas propio con vistas previas en vivo, que se abre con
@@ -113,7 +136,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   veían grises u opacos (Windows pintaba el color de la barra de título detrás). Ahora se ve el
   vidrio de verdad, con el desenfoque opcional.
 
-## [3.23.1] - 2026-11-06
+## [1.34.1] - 2026-11-06
 
 ### Corregido
 - **Clic en las notificaciones**: ahora abre la app o la app web de donde vienen, en el chat, correo o
@@ -127,7 +150,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Los avisos en pantalla se quitan al borrarlos desde el centro de notificaciones o al activar
   «No molestar», y ya no se quedan fijos si el mouse había pasado por encima antes.
 
-## [3.23.0] - 2026-11-05
+## [1.34.0] - 2026-11-05
 
 ### Añadido
 - Modo edición: un aviso en pantalla (volumen, brillo, teclas de bloqueo) de ejemplo en cada
@@ -149,7 +172,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - El aviso de volumen parpadeaba en la esquina del monitor con cada paso de volumen.
 - Al quitar un dispositivo de audio, la barra ya no llena el registro de errores al leer su volumen.
 
-## [3.22.1] - 2026-11-02
+## [1.33.1] - 2026-11-02
 
 ### Corregido
 - Inicio automático: si la tarea de inicio la creó Strata UI como administrador, ya no se intenta
@@ -165,7 +188,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Configuración: un elemento de barra desconocido (de otra versión) se ignora en lugar de descartar
   toda la configuración y empezar de cero.
 
-## [3.22.0] - 2026-11-02
+## [1.33.0] - 2026-11-02
 
 ### Añadido
 - Archivos: las pestañas se reordenan arrastrándolas y, si se sacan de la barra, se abren en su
@@ -178,7 +201,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - «Abrir ubicación del archivo» del menú de Windows abría el Explorador de Windows en vez de Archivos
   de Strata UI cuando este lo reemplaza.
 
-## [3.21.0] - 2026-11-02
+## [1.32.0] - 2026-11-02
 
 ### Añadido
 - Clic derecho en un navegador de la barra: «Nueva ventana privada» (o de incógnito / InPrivate,
@@ -187,11 +210,11 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ### Corregido
 - Los menús del clic derecho (barra, menú Inicio, botón Inicio y el resto) se abrían invisibles
-  desde la 3.19.0: el deslizamiento de la entrada cortaba el fundido y el menú se quedaba transparente.
+  desde la 1.30.0: el deslizamiento de la entrada cortaba el fundido y el menú se quedaba transparente.
 - Clic en una app con varias ventanas: ahora sí pasa a la siguiente. Al hacer clic la barra ya tiene
   el foco, así que no se sabía cuál estaba al frente y siempre se traía la misma.
 
-## [3.20.0] - 2026-11-02
+## [1.31.0] - 2026-11-02
 
 ### Cambiado
 - Clic en el botón de una app con varias ventanas: ahora va directo a una en vez de abrir la vista
@@ -201,7 +224,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Las listas desplegables, las notificaciones que se despliegan en el panel y el visor de archivos
   usan la animación y la velocidad elegidas en Hub › Tema (y no se animan si están apagadas).
 
-## [3.19.1] - 2026-11-02
+## [1.30.1] - 2026-11-02
 
 ### Corregido
 - Con la barra transparente, la barra ya no desaparece un instante de grabaciones y capturas cada 5 s
@@ -214,7 +237,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   se vuelven a medir en cada cuadro de su entrada.
 - Los últimos programas y páginas que se abrían sin liberar el proceso ya lo liberan.
 
-## [3.19.0] - 2026-11-02
+## [1.30.0] - 2026-11-02
 
 ### Agregado
 - En el clic derecho de un comprimido, «Extraer en «nombre»» lo descomprime en una carpeta nueva con el
@@ -231,14 +254,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   formato de fecha en cada tic.
 - Los programas y páginas que se abren desde Strata ya no dejan identificadores de proceso sin liberar.
 
-## [3.18.2] - 2026-10-31
+## [1.29.2] - 2026-10-31
 
 ### Corregido
 - Al cerrarse la bandeja de íconos ocultos (y los menús del clic derecho), su imagen aparecía un instante
   lejos de donde estaba: la ventana de la animación tomaba un tamaño mínimo de 460×320.
 - Los diálogos de Windows (abrir archivo) quedaban algo corridos del centro de la pantalla por el mismo motivo.
 
-## [3.18.1] - 2026-10-31
+## [1.29.1] - 2026-10-31
 
 ### Cambiado
 - El menú del clic derecho se abre en la mitad del tiempo: el proceso que lee las opciones de Windows
@@ -248,7 +271,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Dos clics derechos seguidos podían abrir el menú viejo encima del nuevo.
 - En el fondo de una carpeta y en el escritorio, «Abrir terminal» aparecía dos veces.
 
-## [3.18.0] - 2026-10-31
+## [1.29.0] - 2026-10-31
 
 ### Añadido
 - **Notificaciones arriba o abajo al centro**, además de las cuatro esquinas (en Notificaciones y en el
@@ -267,21 +290,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Los menús y las descripciones emergentes se animaban dos veces (la animación de Windows y la propia),
   y lo que entraba deslizándose se veía cortado en el borde.
 - Al reordenar en la barra, el botón arrastrado volvía a verse entero en su lugar viejo.
-## [3.17.2] - 2026-10-31
+## [1.28.2] - 2026-10-31
 
 ### Corregido
 - Tras actualizar, el explorador de archivos y la optimización no abrían si un Strata UI anterior
   trabado seguía teniendo cargados sus módulos: el módulo nuevo no podía ponerse en su lugar. Ahora
   el anterior se aparta y se borra en un inicio posterior.
 
-## [3.17.1] - 2026-10-31
+## [1.28.1] - 2026-10-31
 
 ### Corregido
 - La actualización se deshacía entera si un Strata UI anterior se quedaba trabado al cerrarse (Windows
   no deja terminarlo hasta reiniciar) y seguía usando sus archivos: ahora el instalador los aparta,
   pone los nuevos y los viejos se borran al reiniciar.
 
-## [3.17.0] - 2026-10-30
+## [1.28.0] - 2026-10-30
 
 ### Añadido
 - **Cinco vistas en Archivos**: Íconos grandes, Íconos medianos, Lista, Detalles y Mosaicos, desde el
@@ -299,7 +322,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Ctrl+C, Ctrl+X y Ctrl+V no funcionaban si el foco estaba en el buscador o en la vista previa.
 - Algunos avisos de Archivos se mostraban con el color equivocado (error o información).
 
-## [3.16.0] - 2026-10-29
+## [1.27.0] - 2026-10-29
 
 ### Añadido
 - **Optimización tiene su propia entrada en el Hub**, aparte de Módulos opcionales, con una página
@@ -314,7 +337,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ### Corregido
 - Las pruebas automáticas ya no escriben en el registro de Strata UI del usuario.
 
-## [3.15.1] - 2026-10-29
+## [1.26.1] - 2026-10-29
 
 ### Corregido
 - El buscador del Hub también encuentra en español con la interfaz en otro idioma ("telemetria"
@@ -324,7 +347,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Las optimizaciones decían que se deshacen en "Optimización › Respaldo", que ya no existe: ahora
   "Módulos opcionales › Respaldo".
 
-## [3.15.0] - 2026-10-29
+## [1.26.0] - 2026-10-29
 
 ### Añadido
 - **Buscador en el Hub** (arriba de la navegación, Ctrl+F): encuentra páginas, pestañas,
@@ -353,7 +376,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Los controles multimedia ya no dejan un error en el registro si la app que sonaba se acaba de cerrar.
 - Si otro hilo cambiaba la configuración mientras se guardaba, el error podía cerrar Strata UI.
 
-## [3.14.2] - 2026-10-29
+## [1.25.2] - 2026-10-29
 
 ### Cambiado
 - **El menú Inicio se abre más rápido.** Antes se creaba una ventana nueva en cada apertura y su
@@ -367,7 +390,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - El nombre de la sección de anclados ("Anclado") salía en el idioma en que se creó: ahora sigue al
   idioma de la interfaz (un nombre elegido por el usuario se respeta).
 
-## [3.14.1] - 2026-10-29
+## [1.25.1] - 2026-10-29
 
 ### Corregido
 - **La configuración ya no se pierde si se va la luz al guardar.** `settings.json` se escribe hasta
@@ -388,7 +411,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Archivos: el permiso de administrador ya no mueve las carpetas del sistema ni la raíz de una unidad
   (borrarlas ya estaba prohibido; moverlas era lo mismo).
 
-## [3.14.0] - 2026-10-25
+## [1.25.0] - 2026-10-25
 
 ### Añadido
 - **Archivos: comprimidos sin otro programa.** Un .zip, .7z, .rar, .tar.gz y unos 50 formatos más
@@ -415,7 +438,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   podía usar. Ahora sigue abierto mientras el menú está visible y se cierra al terminar.
 - Un error del reloj de la barra al cerrar Strata UI (quedaba en el registro).
 
-## [3.13.0] - 2026-10-25
+## [1.24.0] - 2026-10-25
 
 ### Añadido
 - **Archivos: progreso de copiar y mover dentro de la ventana**, sin la de Windows: velocidad, tiempo
@@ -445,7 +468,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Un elemento que ya no existe al copiar o mover ya no cancela todo lo demás.
 - El mosaico Bluetooth del panel de sonido conserva su "Conectando…" si la lista se rehace.
 
-## [3.12.1] - 2026-10-25
+## [1.23.1] - 2026-10-25
 
 ### Corregido
 - **Archivos: Mayús+Supr** borraba a la Papelera; ahora borra para siempre, como el Explorador
@@ -456,7 +479,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   preguntaba igual por cada archivo; ahora, tras el primero, se usa directo la primera página.
 - Un emoji partido en el texto de un ícono de la bandeja ya no rompe la escritura del registro.
 
-## [3.12.0] - 2026-10-25
+## [1.23.0] - 2026-10-25
 
 ### Añadido
 - **Batería de los dispositivos Bluetooth** en el panel ("Conectado · 80 % de batería"), la misma que
@@ -476,7 +499,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - El registro ya no se llena con la pila completa cuando no hay internet al buscar actualizaciones,
   ni repite "Hora del sistema cambiada" varias veces por un mismo ajuste.
 
-## [3.11.0] - 2026-10-25
+## [1.22.0] - 2026-10-25
 
 ### Añadido
 - **Emparejar desde el panel de Bluetooth**: con la radio encendida, el panel busca los dispositivos
@@ -492,7 +515,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - **Bluetooth decía "Emparejado" aunque el dispositivo estuviera conectado**: el estado se lee de la
   misma propiedad que usa Windows y se actualiza en vivo mientras el panel está abierto.
 
-## [3.10.2] - 2026-10-23
+## [1.21.2] - 2026-10-23
 
 ### Corregido
 - **Las lecturas avanzadas parecían rotas tras actualizar**: el permiso de administrador se renueva
@@ -500,14 +523,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   temperaturas ni FPS con la tarjeta del Hub diciendo solo "Detenidas". Ahora explica que hay que
   pulsar Iniciar y aceptar el aviso de Windows.
 
-## [3.10.1] - 2026-10-23
+## [1.21.1] - 2026-10-23
 
 ### Corregido
 - **No se veían las páginas de Optimización**: quedaban en una entrada dentro de Módulos opcionales
   que el menú del Hub no despliega. Ahora van directamente en Módulos opcionales, debajo de
   "Instalar y quitar".
 
-## [3.10.0] - 2026-10-23
+## [1.21.0] - 2026-10-23
 
 ### Añadido
 - **Nombre propio para las carpetas ancladas** en la barra lateral de Archivos (clic derecho ›
@@ -528,7 +551,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   (los relojes de las dos salidas no van igual) y, cuando se vaciaba el búfer, saltaba. Ahora el
   camino es más corto y se corrige de a poco, sin saltos.
 
-## [3.9.1] - 2026-10-22
+## [1.20.1] - 2026-10-22
 
 ### Añadido
 - **Seleccionar con un recuadro** en Archivos: arrastrar desde el espacio libre (o entre las
@@ -541,7 +564,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 ### Corregido
 - **La raíz de una unidad** (por ejemplo, `C:\`) abría la carpeta de Strata UI en lugar de la raíz.
 
-## [3.9.0] - 2026-10-22
+## [1.20.0] - 2026-10-22
 
 ### Añadido
 - **Escritorio de Strata UI**: los íconos del escritorio con el estilo de Archivos (carátulas,
@@ -604,7 +627,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   otras): la app recibía el clic pero seguía oculta. Ahora, si no se muestra, Strata UI hace clic en
   su ícono de la bandeja (o muestra su ventana) y queda al frente.
 
-## [3.8.0] - 2026-10-22
+## [1.19.0] - 2026-10-22
 
 ### Añadido
 - **Archivos**, un explorador de archivos propio con el tema de Strata UI: portada con tus carpetas,
@@ -628,14 +651,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   frente en vez de abrir otra; y si Windows no la sabe abrir por su identidad, se busca en el menú
   Inicio por su nombre.
 
-## [3.7.2] - 2026-10-22
+## [1.18.2] - 2026-10-22
 
 ### Corregido
 - **Clic en las notificaciones de Thunderbird** (y otras apps de escritorio con su propio activador,
   como Firefox): no pasaba nada. Ahora el clic llega a la app como desde Windows y abre el correo o
   la conversación del aviso.
 
-## [3.7.1] - 2026-10-18
+## [1.18.1] - 2026-10-18
 
 ### Corregido
 - **Juegos repetidos en el menú Inicio**: un juego de Steam con signos en el nombre ("Black Myth: Wukong",
@@ -643,7 +666,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   se llama distinto. Ahora los nombres se comparan sin puntuación ni acentos y queda una sola entrada,
   con el ícono del juego.
 
-## [3.7.0] - 2026-10-18
+## [1.18.0] - 2026-10-18
 
 ### Añadido
 - **Desinstalar la Game Bar de Xbox** (Optimización › Apps preinstaladas): quita la Game Bar y la
@@ -668,7 +691,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - Inicio ya no ofrece "Desinstalar" en las partes de Windows que no se pueden quitar ("Introducción"
   daba un error).
 
-## [3.6.1] - 2026-10-18
+## [1.17.1] - 2026-10-18
 
 ### Corregido
 - **Menú Inicio**: los anclados se pueden volver a mover. El arrastre "a la barra de tareas" del menú
@@ -678,7 +701,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   de hora del sistema; antes se quedaba con la zona que había al abrir Strata UI. También se vuelve a
   alinear al salir de la suspensión.
 
-## [3.6.0] - 2026-10-17
+## [1.17.0] - 2026-10-17
 
 ### Añadido
 - **Optimización › Memoria RAM**: agrupar los servicios de Windows (menos procesos svchost), desactivar
@@ -697,7 +720,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   identificador propio no se apagaban (su ajuste de Windows está en otro nivel del registro), y una
   app nueva o que Windows reactivaba tardaba en apagarse. Ahora se apagan todos y al momento.
 
-## [3.5.0] - 2026-10-17
+## [1.16.0] - 2026-10-17
 
 ### Añadido
 - **Velocidad de internet en Mb/s o MB/s** (clic derecho en el medidor › Unidad) y **Probar velocidad**
@@ -727,20 +750,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   no ponen accesos directos): ahora vigila la lista de programas instalados y vuelve a leer el catálogo
   al abrirse.
 
-## [3.4.0] - 2026-10-17
+## [1.15.0] - 2026-10-17
 
 ### Añadido
 - **Prueba de velocidad desde el widget** (clic derecho › Probar velocidad): el widget muestra lo que va
   midiendo y, al terminar, el resultado. El medidor de la barra dice en su tooltip que el clic abre la prueba.
 
-## [3.3.0] - 2026-10-17
+## [1.14.0] - 2026-10-17
 
 ### Añadido
 - **Prueba de velocidad**: clic en el medidor de velocidad de internet de la barra abre un panel con
   lo que pasa ahora y una prueba completa (bajada, subida, ping y variación) con los servidores de
   Cloudflare. Sigue aunque se cierre el panel y avisa al terminar; el último resultado se guarda.
 
-## [3.2.0] - 2026-10-17
+## [1.13.0] - 2026-10-17
 
 ### Añadido
 - **Velocidad de internet** en la barra (bajada y subida en vivo) y como widget del escritorio. Cuenta
@@ -754,7 +777,7 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
   navegador. Ahora abre su app web si está instalada; si no, va a la pestaña que la envió, como en
   Windows.
 
-## [3.1.0] - 2026-10-17
+## [1.12.0] - 2026-10-17
 
 ### Añadido
 - **Inicio y las apps abiertas se colocan como cualquier elemento**: a la izquierda, al centro o a
@@ -781,10 +804,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 - El Hub se abría solo al iniciar Windows: el inicio automático lanzaba Strata UI dos veces (la tarea
   y la clave Run del instalador) y la segunda le pedía el Hub a la primera.
 
-## [3.0.0] - 2026-10-16
+## [1.11.0] - 2026-10-16
 
 Todo lo que se ve en pantalla se arma en el **modo edición**; el Hub queda para lo general. Incluye
-la 2.6.0, que no llegó a publicarse.
+la 1.10.0, que no llegó a publicarse.
 
 ### Añadido
 - **Opciones de las barras en el modo edición** (clic derecho en una barra): tamaño, estilo (el del
@@ -808,7 +831,7 @@ la 2.6.0, que no llegó a publicarse.
   Multimedia, solo sus controles; Notificaciones, dónde salen los avisos con un acceso al modo
   edición; Widgets, el acceso al modo edición. El monitor principal se elige en el modo edición.
 
-## [2.6.0] - 2026-10-16
+## [1.10.0] - 2026-10-16
 
 ### Añadido
 - **Modo edición**: el diseño de cada monitor se arma sobre la pantalla misma. Una capa tapa
@@ -836,7 +859,7 @@ la 2.6.0, que no llegó a publicarse.
 ### Corregido
 - Una barra cerrada (al recrearse) seguía atendiendo los cambios de los íconos ocultos de la bandeja.
 
-## [2.5.0] - 2026-10-16
+## [1.9.0] - 2026-10-16
 
 ### Añadido
 - **Exportar e importar la configuración** (Hub › General): un .zip con tus ajustes y los módulos
@@ -925,7 +948,7 @@ la 2.6.0, que no llegó a publicarse.
   Los errores quedan en `logs/installer-integration.log`; también se limita la actualización
   de la tarea de inicio automático, sin preguntas de contraseña de `schtasks`.
 
-## [2.4.2] - 2026-10-16
+## [1.8.2] - 2026-10-16
 
 ### Cambiado
 - **Sonido de notificación propio**: un solo tono corto y redondo (Do5, como de vibráfono), en vez
@@ -937,13 +960,13 @@ la 2.6.0, que no llegó a publicarse.
   de un ruido inaudible que la despierta, y se reproduce con MediaPlayer (PlaySound devolvía éxito
   sin que se oyera nada).
 
-## [2.4.1] - 2026-10-16
+## [1.8.1] - 2026-10-16
 
 ### Añadido
 - **Sonido en las notificaciones**: cada aviso emergente suena con el sonido de notificación de
   Windows (el del esquema de sonidos, con su volumen). Se apaga en Hub › Notificaciones.
 
-## [2.4.0] - 2026-10-16
+## [1.8.0] - 2026-10-16
 
 ### Añadido
 - **Widgets de CPU, GPU y FPS**: medidores grandes para el escritorio, un arco de 270° del color de
@@ -964,14 +987,14 @@ la 2.6.0, que no llegó a publicarse.
   125 %): su alto máximo se calculaba con la escala del monitor donde se creaba la ventana y no con
   la del monitor donde se abre.
 
-## [2.3.2] - 2026-10-16
+## [1.7.2] - 2026-10-16
 
 ### Corregido
 - Luz nocturna en un equipo donde nunca se usó: además del estado se crean sus ajustes (intensidad y
   horario, con los de fábrica), que Windows necesita para aplicarla; y si el valor guardado tiene un
   formato desconocido (otra versión de Windows), se reemplaza por uno válido en vez de no hacer nada.
 
-## [2.3.1] - 2026-10-16
+## [1.7.1] - 2026-10-16
 
 ### Corregido
 - **El panel de brillo no aparecía en PCs de escritorio** (monitores sin DDC/CI o mientras se
@@ -980,7 +1003,7 @@ la 2.6.0, que no llegó a publicarse.
 - La luz nocturna no se podía usar en un equipo donde nunca se había activado (Windows todavía no
   había creado su valor): ahora se crea al encenderla desde el panel.
 
-## [2.3.0] - 2026-10-16
+## [1.7.0] - 2026-10-16
 
 ### Añadido
 - **Luz nocturna en el panel de brillo**: un interruptor para la luz nocturna de Windows (colores
@@ -1027,7 +1050,7 @@ la 2.6.0, que no llegó a publicarse.
 - Con los estilos Acercar y Rebote (y las animaciones importadas), los paneles y el menú Inicio
   casi no se animaban: el crecimiento y el fundido terminaban mientras se dibujaba el primer cuadro.
 
-## [2.2.0] - 2026-10-16
+## [1.6.0] - 2026-10-16
 
 ### Cambiado
 - **Paneles y menú Inicio se animan enteros**: la ventana completa (con su fondo) sale de detrás de
@@ -1041,7 +1064,7 @@ la 2.6.0, que no llegó a publicarse.
 - Los avisos llegan desde el borde de la pantalla con un recorrido largo, sin el parpadeo del primer
   cuadro (se dibujaban enteros un instante antes de empezar a aparecer).
 
-## [2.1.0] - 2026-10-15
+## [1.5.0] - 2026-10-15
 
 ### Cambiado
 - **Optimización es un módulo aparte** (`StrataUI.Optimization.dll`): ya no viene en el instalador.
@@ -1060,7 +1083,7 @@ la 2.6.0, que no llegó a publicarse.
 - Lecturas avanzadas: si Strata UI cambia de carpeta, la tarea programada se renueva (antes seguía
   apuntando al ejecutable viejo).
 
-## [2.0.0] - 2026-10-15
+## [1.4.0] - 2026-10-15
 
 ### Añadido
 - **"Anclar a Inicio de Strata UI" en el menú contextual moderno de Windows 11** (no solo en
