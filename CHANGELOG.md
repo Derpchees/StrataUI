@@ -6,6 +6,11 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [3.28.2] - 2026-11-11
+
+### Cambiado
+- **Temperaturas y FPS sin pedir permiso tras actualizar**: el permiso de administrador que se da una vez (o que deja listo el instalador) sigue sirviendo con versiones nuevas de Strata UI mientras el proceso de lecturas hable el mismo protocolo; antes cada actualización volvía a pedir UAC.
+
 ## [3.28.1] - 2026-11-11
 
 ### Cambiado

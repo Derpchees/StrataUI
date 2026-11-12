@@ -223,7 +223,7 @@ public static class Sensors
         Changed?.Invoke();
         try
         {
-            bool ready = await Task.Run(SensorsTask.IsReady) || await SensorsTask.InstallAsync();
+            bool ready = await Task.Run(SensorsTask.IsUsable) || await SensorsTask.InstallAsync();
             if (!ready)
                 return Fail("Lecturas avanzadas: no se aceptó el permiso");
             string name = SensorsTask.PipeName(SensorsTask.UserSid);
@@ -270,7 +270,7 @@ public static class Sensors
         if (Running || Starting || _quietTried || !Modules.OptionalModules.Sensors.IsInstalled)
             return;
         _quietTried = true;
-        if (await Task.Run(SensorsTask.IsReady))
+        if (await Task.Run(SensorsTask.IsUsable))
             await StartAsync(automatic: true);
     }
 
@@ -372,7 +372,7 @@ public static class Sensors
     {
         if (!SensorsTask.InstalledProtected || !Tweaks.ElevatedBroker.IsAllowed(args))
             return null;
-        if (!Running && (!await Task.Run(SensorsTask.IsReady) || !await StartAsync()))
+        if (!Running && (!await Task.Run(SensorsTask.IsUsable) || !await StartAsync()))
             return null;
         if (_writer is null)
             return null;

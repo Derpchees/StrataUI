@@ -95,7 +95,7 @@ public partial class PerformanceTools : UserControl
 
     private async Task ShowPermissionNeededAsync()
     {
-        if (await Task.Run(SensorsTask.IsReady) || Sensors.Running || Sensors.Starting || !OptionalModules.Sensors.IsInstalled)
+        if (await Task.Run(SensorsTask.IsUsable) || Sensors.Running || Sensors.Starting || !OptionalModules.Sensors.IsInstalled)
             return;
         SensorsState.Text = Loc.T("Necesitan permiso de administrador otra vez (Strata UI o el módulo se actualizó): pulsa Iniciar y acepta el aviso de Windows. Hasta entonces, los medidores no muestran temperaturas ni FPS.");
     }

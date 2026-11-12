@@ -13,7 +13,7 @@ namespace Strata.Shell.Services;
 /// preguntar. La tarea no ejecuta el Strata UI instalado en la carpeta del usuario (cualquier programa
 /// sin permisos podría reemplazarlo y obtener administrador): usa una copia en
 /// %ProgramFiles%\StrataUI\Lecturas, donde solo escriben administradores. Al actualizar Strata UI la copia
-/// queda vieja y se renueva pidiendo permiso otra vez.
+/// vieja se sigue usando mientras hable el mismo <see cref="Protocol"/>; el instalador elevado la renueva.
 /// </summary>
 public static class SensorsTask
 {
@@ -90,6 +90,52 @@ public static class SensorsTask
         }
     }
 
+    /// <summary>
+    /// Versión de lo que hablan Strata UI y el proceso de lecturas por la tubería. Mientras no cambie,
+    /// una copia protegida de otra versión sirve igual y no hace falta pedir UAC tras actualizar o
+    /// compilar. Subirla solo si el proceso elevado viejo ya no entendería al Strata UI nuevo.
+    /// </summary>
+    internal const int Protocol = 1;
+
+    private const string ProtocolFile = "sensors-protocol.txt";
+
+    /// <summary>
+    /// La tarea sirve aunque sea de otra versión: ejecuta un Strata UI de una carpeta que solo cambian
+    /// administradores, que habla el mismo protocolo y (si se usa el módulo) tiene su módulo protegido.
+    /// Solo se renueva con UAC si falta algo de eso; el instalador elevado la deja al día igual.
+    /// </summary>
+    public static bool IsUsable()
+    {
+        try
+        {
+            if (IsReady())
+                return true;
+            if (TaskCommand(UserSid) is not { } command || !File.Exists(command)
+                || !IsUnder(command, Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)))
+                return false;
+            // Sin el archivo: copias de antes de que existiera, que hablan el protocolo 1.
+            string file = Path.Combine(Path.GetDirectoryName(command)!, ProtocolFile);
+            int protocol = File.Exists(file) && int.TryParse(File.ReadAllText(file).Trim(), out int p) ? p : 1;
+            if (protocol != Protocol)
+                return false;
+            if (Modules.OptionalModules.Sensors.SourceFolder != null
+                && !File.Exists(Path.Combine(Modules.SensorsModule.ProtectedFolder, Modules.SensorsModule.DllName)))
+                return false;
+            if (!_loggedOther)
+            {
+                _loggedOther = true;
+                Log.Info($"Lecturas avanzadas: se usa la copia protegida de la versión {FileVersionInfo.GetVersionInfo(command).ProductVersion} (sin pedir permiso)");
+            }
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+    }
+
+    private static bool _loggedOther;
+
     /// <summary>Mismo tamaño y fecha (la copia conserva la fecha del original).</summary>
     private static bool SameFile(string a, string b)
     {
@@ -144,6 +190,7 @@ public static class SensorsTask
                 CopyApp(AppContext.BaseDirectory, CopyFolder);
             if (!hadModule || !Modules.SensorsModule.DownloadToProtected())
                 CopyModule(args.Length == 3 ? args[2] : null);
+            File.WriteAllText(Path.Combine(Path.GetDirectoryName(ProtectedExe)!, ProtocolFile), Protocol.ToString());
             string xml = TaskXml(sid, ProtectedExe);
             string file = Path.Combine(Path.GetTempPath(), $"strataui-task-{Guid.NewGuid():N}.xml");
             File.WriteAllText(file, xml, Encoding.Unicode);
