@@ -1509,5 +1509,8 @@
   "Sin avance": "Kein Fortschritt",
   "Anillo alrededor de la carátula": "Ring um das Cover",
   "Línea debajo": "Linie darunter",
-  "Visible en pantalla completa": "Im Vollbild sichtbar"
+  "Visible en pantalla completa": "Im Vollbild sichtbar",
+  "Ejecutar con PowerShell": "Mit PowerShell ausführen",
+  "Editar": "Bearbeiten",
+  "No se pudo ejecutar {0}": "{0} konnte nicht ausgeführt werden"
 }

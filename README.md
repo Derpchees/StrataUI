@@ -259,7 +259,8 @@ and everything goes back to normal.
   any other app. The right-click menu also includes everything Windows and your apps add (NanaZip,
   7-Zip, Open with, Send to, Properties, New...), read in a separate process so a broken shell
   extension can't take Strata UI down. The Recycle Bin
-  (restore, delete, empty) lives inside Files, and anything can be pinned to Start.
+  (restore, delete, empty) lives inside Files, and anything can be pinned to Start. `.bat` and
+  `.ps1` scripts can be run (also as administrator) or edited straight from the right-click menu.
 - **FTP servers** (FTP and FTPS) in a "Servers" section of the sidebar, with a site manager like
   FileZilla's: host, port, encryption (explicit TLS if available, required, implicit or plain),
   normal, anonymous or ask-for-password logon, initial folder, passive/active mode, encoding and

@@ -1509,5 +1509,8 @@
   "Sin avance": "Sem progresso",
   "Anillo alrededor de la carátula": "Anel ao redor da capa",
   "Línea debajo": "Linha embaixo",
-  "Visible en pantalla completa": "Visível em tela cheia"
+  "Visible en pantalla completa": "Visível em tela cheia",
+  "Ejecutar con PowerShell": "Executar com o PowerShell",
+  "Editar": "Editar",
+  "No se pudo ejecutar {0}": "Não foi possível executar {0}"
 }

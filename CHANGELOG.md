@@ -10,6 +10,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.41.0] - 2026-11-13
+
+### Añadido
+- **Ejecutar scripts desde el explorador y el escritorio**: al seleccionar archivos `.bat`/`.cmd`
+  o `.ps1`, el menú contextual trae «Ejecutar» (o «Ejecutar con PowerShell»), «Ejecutar como
+  administrador» y «Editar». La consola queda abierta al terminar y arranca en la carpeta del
+  script; en PowerShell la política de ejecución se omite solo para esa sesión (salvo con
+  `AllSigned`).
+
+### Corregido
+- **El explorador ya no se queda con la lista vieja** al copiar o extraer cientos de archivos de
+  golpe: el vigilante de la carpeta tiene un búfer más grande y, si aun así pierde avisos, vuelve
+  a leer la carpeta. Si la carpeta abierta se borra o se desconecta su unidad, sube a la carpeta
+  más cercana que siga existiendo.
+
 ## [1.40.0] - 2026-11-12
 
 ### Añadido

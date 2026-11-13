@@ -748,6 +748,8 @@ public partial class FolderPane : UserControl
                 IncludeSubdirectories = false,
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Size
                                | NotifyFilters.LastWrite | NotifyFilters.Attributes,
+                // Con 8 KB (lo de fábrica) copiar o extraer cientos de archivos desborda el búfer.
+                InternalBufferSize = 64 * 1024,
             };
             FileSystemEventHandler changed = (_, _) => Dispatcher.BeginInvoke(() =>
             {
@@ -758,6 +760,8 @@ public partial class FolderPane : UserControl
             watcher.Deleted += changed;
             watcher.Changed += changed;
             watcher.Renamed += (s, e) => changed(s, e);
+            // Búfer desbordado, carpeta borrada o unidad desconectada: el vigilante deja de avisar.
+            watcher.Error += (_, _) => Dispatcher.BeginInvoke(() => WatcherFailed(watcher, path));
             watcher.EnableRaisingEvents = true;
             _watcher = watcher;
         }
@@ -765,6 +769,29 @@ public partial class FolderPane : UserControl
         {
             // Sin aviso de cambios (algunas unidades de red): F5 sigue sirviendo.
         }
+    }
+
+    /// <summary>
+    /// Se perdieron avisos: si la carpeta sigue ahí se vuelve a vigilar y se recarga; si ya no
+    /// existe, se sube a la carpeta más cercana que quede (o a Este equipo si se fue la unidad).
+    /// </summary>
+    private void WatcherFailed(FileSystemWatcher watcher, string path)
+    {
+        if (!ReferenceEquals(watcher, _watcher))
+            return;
+        watcher.Dispose();
+        _watcher = null;
+        if (Directory.Exists(path))
+        {
+            Watch(path);
+            _reload.Stop();
+            _reload.Start();
+            return;
+        }
+        string? parent = Path.GetDirectoryName(path.TrimEnd('\\'));
+        while (parent != null && !Directory.Exists(parent))
+            parent = Path.GetDirectoryName(parent);
+        Navigate(parent);
     }
 
     // ── Lo que se ve ────────────────────────────────────────────────────────
@@ -1943,6 +1970,7 @@ public partial class FolderPane : UserControl
         {
             var first = selected[0];
             menu.Items.Add(Item(Loc.T("Abrir"), SymbolRegular.Open24, () => Open(selected), bold: true));
+            Scripts.AddMenuItems(menu, selected.Select(s => s.FullPath).ToList());
             if (selected.Count == 1 && FolderOf(first) is { } subfolder)
             {
                 menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(subfolder)));

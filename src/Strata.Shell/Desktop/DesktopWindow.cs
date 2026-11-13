@@ -882,6 +882,7 @@ public sealed class DesktopWindow : Window
     {
         var first = selection[0];
         menu.Items.Add(FileMenus.Item(Loc.T("Abrir"), SymbolRegular.Open24, () => selection.ForEach(Launch), bold: true));
+        Scripts.AddMenuItems(menu, selection.Select(s => s.FullPath).ToList());
         bool strataFiles = OptionalModules.Files.IsInstalled;
         menu.Items.Add(FileMenus.Item(first.IsFolder
                                           ? strataFiles ? Loc.T("Abrir en Archivos") : Loc.T("Abrir en el Explorador")

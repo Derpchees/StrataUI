@@ -1509,5 +1509,8 @@
   "Sin avance": "Sans progression",
   "Anillo alrededor de la carátula": "Anneau autour de la pochette",
   "Línea debajo": "Ligne en dessous",
-  "Visible en pantalla completa": "Visible en plein écran"
+  "Visible en pantalla completa": "Visible en plein écran",
+  "Ejecutar con PowerShell": "Exécuter avec PowerShell",
+  "Editar": "Modifier",
+  "No se pudo ejecutar {0}": "Impossible d'exécuter {0}"
 }
