@@ -1512,5 +1512,6 @@
   "Visible en pantalla completa": "Visível em tela cheia",
   "Ejecutar con PowerShell": "Executar com o PowerShell",
   "Editar": "Editar",
-  "No se pudo ejecutar {0}": "Não foi possível executar {0}"
+  "No se pudo ejecutar {0}": "Não foi possível executar {0}",
+  "Mostrar u ocultar las subcarpetas": "Mostrar ou ocultar as subpastas"
 }

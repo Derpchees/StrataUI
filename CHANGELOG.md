@@ -10,6 +10,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.42.0] - 2026-11-13
+
+### Agregado
+- Archivos: las carpetas de la barra lateral se despliegan con su flecha para ver y abrir sus
+  subcarpetas sin salir de donde estás (lo desplegado se conserva al volver a leer las unidades).
+- Archivos: las secciones de la barra lateral (Ancladas, Nube, Unidades, Red y Servidores) se pliegan
+  con un clic en su título y se recuerda cuáles quedaron plegadas.
+- Archivos: el ancho de la barra lateral se cambia arrastrando su borde y se recuerda; con doble clic
+  en el borde vuelve al de fábrica.
+- Archivos: cada unidad muestra debajo de su barra el espacio libre ("120 GB libres de 476 GB").
+
+### Cambiado
+- Archivos: dentro de una subcarpeta queda resaltado en la barra lateral el lugar más cercano que la
+  contiene (en Documentos\Facturas se marca Documentos) en lugar de no marcar ninguno.
+
 ## [1.41.0] - 2026-11-13
 
 ### Añadido

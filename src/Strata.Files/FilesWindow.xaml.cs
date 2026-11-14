@@ -94,11 +94,12 @@ public partial class FilesWindow : FluentWindow
             });
         };
         _home = new Place(Loc.T("Este equipo"), null, SymbolRegular.Home24);
-        _folders = Places.Folders();
+        _folders = Expandable(Places.Folders(), []);
         _recycleBin = new Place(Loc.T("Papelera de reciclaje"), Places.RecycleBin, SymbolRegular.Delete24);
         SideFolders.ItemsSource = new[] { _home }.Concat(_folders).ToList();
         SideBottom.ItemsSource = new[] { _recycleBin };
         UpdatePinned();
+        SideColumn.Width = new GridLength(Math.Clamp(Settings.Current.FilesSidebarWidth, SideColumn.MinWidth, SideColumn.MaxWidth));
         TabStrip.ItemsSource = _tabs;
         TransfersList.ItemsSource = FileTransfers.Active;
         FileTransfers.Viewers++;
@@ -310,9 +311,10 @@ public partial class FilesWindow : FluentWindow
     /// <summary>Las carpetas ancladas, debajo de las del usuario.</summary>
     private void UpdatePinned()
     {
-        _pinned = Places.Pinned();
+        _pinned = Expandable(Places.Pinned(), _pinned);
         SidePinned.ItemsSource = _pinned;
         SidePinnedTitle.Visibility = _pinned.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ApplySections();
         UpdateCurrentPlace();
     }
 
@@ -321,8 +323,13 @@ public partial class FilesWindow : FluentWindow
         if (_tab is null)
             return;
         string? path = Pane.CurrentPath;
-        foreach (var place in _folders.Append(_home).Append(_recycleBin).Concat(_pinned).Concat(_drives).Concat(_cloud).Concat(_network))
-            place.IsCurrent = FolderPane.SamePath(place.Path, path);
+        var all = _folders.Append(_home).Append(_recycleBin).Concat(_pinned).Concat(_drives).Concat(_cloud).Concat(_network)
+                          .SelectMany(p => p.Visible()).ToList();
+        foreach (var place in all)
+            place.IsCurrent = false;
+        // En una subcarpeta queda marcado el lugar más cercano que la contiene (Documentos\Facturas → Documentos).
+        if (CurrentPlaceFor(all, path) is { } current)
+            current.IsCurrent = true;
         // Un servidor queda marcado mientras se ve cualquier carpeta suya.
         var remote = RemoteFiles.Locate(path);
         foreach (var place in _servers)
@@ -354,12 +361,13 @@ public partial class FilesWindow : FluentWindow
             Log.Error("Archivos: no se pudieron leer las unidades", ex);
             return;
         }
-        (_drives, _cloud, _network) = (storage.Drives, storage.Cloud, storage.Network);
+        (_drives, _cloud, _network) = (Expandable(storage.Drives, _drives), Expandable(storage.Cloud, _cloud), Expandable(storage.Network, _network));
         SideDrives.ItemsSource = _drives;
         SideCloud.ItemsSource = _cloud;
         SideNetwork.ItemsSource = _network;
         RefreshServers();
         SideCloudTitle.Visibility = _cloud.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ApplySections();
         var places = CurrentPlaces();
         foreach (var pane in _tabs.SelectMany(t => t.Panes))
             pane.SetPlaces(places);
@@ -386,7 +394,10 @@ public partial class FilesWindow : FluentWindow
     {
         Settings.Update(s => s.FilesShowHidden = show);
         foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
+        {
             window.HiddenToggle.IsChecked = show;
+            _ = window.ReloadTreesAsync();
+        }
         foreach (var pane in AllPanes)
             pane.Reload();
     }
@@ -644,6 +655,145 @@ public partial class FilesWindow : FluentWindow
             AddTab(place.Path);
             e.Handled = true;
         }
+    }
+
+    // ── Árbol, secciones y ancho de la barra lateral ────────────────────────
+
+    /// <summary>Las carpetas que se pueden desplegar (no Este equipo, la Papelera ni los servidores).</summary>
+    private static bool CanTree(string? path) =>
+        path is not null && !path.StartsWith("shell:", StringComparison.OrdinalIgnoreCase)
+        && !Places.IsServer(path) && !RemoteFiles.IsRemote(path);
+
+    /// <summary>Marca qué lugares se despliegan y conserva lo que ya estaba desplegado en <paramref name="old"/>.</summary>
+    private static List<Place> Expandable(List<Place> places, List<Place> old)
+    {
+        foreach (var place in places)
+        {
+            if (!CanTree(place.Path))
+                continue;
+            place.CanExpand = true;
+            if (old.FirstOrDefault(o => o.Path is not null && FolderPane.SamePath(o.Path, place.Path)) is { } before)
+                place.KeepTreeOf(before);
+        }
+        return places;
+    }
+
+    /// <summary>El lugar más cercano que contiene <paramref name="path"/> (la misma carpeta, si está).</summary>
+    private static Place? CurrentPlaceFor(IEnumerable<Place> places, string? path)
+    {
+        Place? best = null;
+        int length = -1;
+        foreach (var place in places)
+        {
+            if (FolderPane.SamePath(place.Path, path))
+                return place;
+            if (path is null || !CanTree(place.Path))
+                continue;
+            var root = place.Path!.TrimEnd('\\', '/');
+            if (root.Length > length && path.StartsWith(root + "\\", StringComparison.OrdinalIgnoreCase))
+                (best, length) = (place, root.Length);
+        }
+        return best;
+    }
+
+    private async void PlaceExpand_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (((FrameworkElement)sender).DataContext is not Place { Path: { } path } place)
+            return;
+        if (place.IsExpanded)
+        {
+            place.IsExpanded = false;
+            UpdateCurrentPlace();
+            return;
+        }
+        await LoadChildrenAsync(place, path);
+        place.IsExpanded = place.CanExpand;
+        UpdateCurrentPlace();
+    }
+
+    /// <summary>Lee las subcarpetas (fuera de la interfaz: una unidad de red puede tardar); sin ninguna, ya no se despliega.</summary>
+    private static async Task LoadChildrenAsync(Place place, string path)
+    {
+        bool hidden = Settings.Current.FilesShowHidden;
+        List<string> folders;
+        try
+        {
+            folders = await Task.Run(() => Place.Subfolders(path, hidden));
+        }
+        catch (Exception ex)
+        {
+            Log.Info($"Archivos: no se pudieron leer las subcarpetas de {path}: {ex.Message}");
+            folders = [];
+        }
+        var old = place.Children.ToList();
+        place.Children.Clear();
+        foreach (var folder in folders)
+        {
+            var child = new Place(System.IO.Path.GetFileName(folder), folder, SymbolRegular.Folder24) { CanExpand = true };
+            if (old.FirstOrDefault(o => FolderPane.SamePath(o.Path, folder)) is { } before)
+                child.KeepTreeOf(before);
+            place.Children.Add(child);
+        }
+        place.CanExpand = folders.Count > 0;
+    }
+
+    /// <summary>Vuelve a leer lo desplegado (se mostraron u ocultaron los ocultos).</summary>
+    private async Task ReloadTreesAsync()
+    {
+        var expanded = _folders.Concat(_pinned).Concat(_drives).Concat(_cloud).Concat(_network)
+                               .SelectMany(p => p.Visible()).Where(p => p.IsExpanded && p.Path is not null).ToList();
+        foreach (var place in expanded)
+        {
+            await LoadChildrenAsync(place, place.Path!);
+            if (!place.CanExpand)
+                place.IsExpanded = false;
+        }
+        UpdateCurrentPlace();
+    }
+
+    /// <summary>Cada sección plegable de la barra lateral: su título y lo que pliega.</summary>
+    private IEnumerable<(System.Windows.Controls.Primitives.ToggleButton Title, FrameworkElement Body)> Sections() =>
+    [
+        (SidePinnedTitle, SidePinned),
+        (SideCloudTitle, SideCloud),
+        (SideDrivesTitle, SideDrives),
+        (SideNetworkTitle, SideNetworkBody),
+        (SideServersTitle, SideServersBody),
+    ];
+
+    private void ApplySections()
+    {
+        var collapsed = Settings.Current.FilesCollapsedSections;
+        foreach (var (title, body) in Sections())
+        {
+            bool open = !collapsed.Contains((string)title.Tag);
+            title.IsChecked = open;
+            body.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    private void SideSection_Click(object sender, RoutedEventArgs e)
+    {
+        var key = (string)((FrameworkElement)sender).Tag;
+        Settings.Update(s => s.FilesCollapsedSections = s.FilesCollapsedSections.Contains(key)
+            ? s.FilesCollapsedSections.Where(k => k != key).ToList()
+            : [.. s.FilesCollapsedSections, key]);
+        foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
+            window.ApplySections();
+    }
+
+    private void SideSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        double width = Math.Round(SideColumn.ActualWidth);
+        Settings.Update(s => s.FilesSidebarWidth = width);
+    }
+
+    private void SideSplitter_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        SideColumn.Width = new GridLength(236);
+        Settings.Update(s => s.FilesSidebarWidth = 236);
+        e.Handled = true;
     }
 
     /// <summary>Los sitios FTP del administrador de sitios, en la barra lateral.</summary>

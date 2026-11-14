@@ -1512,5 +1512,6 @@
   "Visible en pantalla completa": "Im Vollbild sichtbar",
   "Ejecutar con PowerShell": "Mit PowerShell ausführen",
   "Editar": "Bearbeiten",
-  "No se pudo ejecutar {0}": "{0} konnte nicht ausgeführt werden"
+  "No se pudo ejecutar {0}": "{0} konnte nicht ausgeführt werden",
+  "Mostrar u ocultar las subcarpetas": "Unterordner ein- oder ausblenden"
 }

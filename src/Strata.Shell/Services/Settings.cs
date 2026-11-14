@@ -293,6 +293,10 @@ public sealed class StrataSettings
     public List<string> FilesPinnedFolders { get; set; } = [];
     /// <summary>Nombres propios de carpetas ancladas (clave: <see cref="Files.Places.PinnedKey"/>): solo en la barra lateral.</summary>
     public Dictionary<string, string> FilesPinnedNames { get; set; } = [];
+    /// <summary>Ancho de la barra lateral de Archivos (se arrastra su borde; doble clic vuelve al de fábrica).</summary>
+    public double FilesSidebarWidth { get; set; } = 236;
+    /// <summary>Secciones plegadas de la barra lateral de Archivos ("pinned", "cloud", "drives", "network", "servers").</summary>
+    public List<string> FilesCollapsedSections { get; set; } = [];
     /// <summary>El explorador muestra las extensiones (".pdf") en los nombres.</summary>
     public bool FilesShowExtensions { get; set; } = true;
     /// <summary>

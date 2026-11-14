@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -84,6 +85,73 @@ public sealed class Place : INotifyPropertyChanged
             _isCurrent = value;
             Changed();
         }
+    }
+
+    // ── Árbol de la barra lateral ───────────────────────────────────────────
+
+    private bool _canExpand;
+    /// <summary>Se puede desplegar para ver sus subcarpetas (deja de poderse si no tiene ninguna).</summary>
+    public bool CanExpand
+    {
+        get => _canExpand;
+        set
+        {
+            if (_canExpand == value)
+                return;
+            _canExpand = value;
+            Changed();
+        }
+    }
+
+    private bool _isExpanded;
+    /// <summary>Sus subcarpetas (<see cref="Children"/>) se ven debajo, con sangría.</summary>
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded == value)
+                return;
+            _isExpanded = value;
+            Changed();
+        }
+    }
+
+    /// <summary>Subcarpetas, leídas al desplegarla.</summary>
+    public ObservableCollection<Place> Children { get; private set; } = [];
+
+    /// <summary>Lo desplegado de otro lugar con la misma ruta (al volver a leer las unidades no se pliega nada).</summary>
+    public void KeepTreeOf(Place old)
+    {
+        Children = old.Children;
+        IsExpanded = old.IsExpanded;
+        Changed(nameof(Children));
+    }
+
+    /// <summary>Él y, si está desplegado, sus subcarpetas a la vista (todo el árbol que se ve).</summary>
+    public IEnumerable<Place> Visible()
+    {
+        yield return this;
+        if (!IsExpanded)
+            yield break;
+        foreach (var child in Children.ToList())
+        {
+            foreach (var place in child.Visible())
+                yield return place;
+        }
+    }
+
+    /// <summary>Las subcarpetas de una carpeta, por nombre; sin ocultas ni del sistema salvo que se pida.</summary>
+    public static List<string> Subfolders(string path, bool showHidden)
+    {
+        var options = new EnumerationOptions
+        {
+            IgnoreInaccessible = true,
+            AttributesToSkip = showHidden ? 0 : FileAttributes.Hidden | FileAttributes.System,
+        };
+        return Directory.EnumerateDirectories(path, "*", options)
+                        .Order(StringComparer.CurrentCultureIgnoreCase)
+                        .ToList();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

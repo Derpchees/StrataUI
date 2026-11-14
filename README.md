@@ -261,6 +261,10 @@ and everything goes back to normal.
   extension can't take Strata UI down. The Recycle Bin
   (restore, delete, empty) lives inside Files, and anything can be pinned to Start. `.bat` and
   `.ps1` scripts can be run (also as administrator) or edited straight from the right-click menu.
+- **Sidebar** you can shape: folders unfold in place to show their subfolders, every section
+  (Pinned, Cloud, Drives, Network, Servers) folds with a click on its title, the width is dragged from
+  its edge (double-click to reset), each drive shows its free space, and the place that contains the
+  folder you're in stays highlighted.
 - **FTP servers** (FTP and FTPS) in a "Servers" section of the sidebar, with a site manager like
   FileZilla's: host, port, encryption (explicit TLS if available, required, implicit or plain),
   normal, anonymous or ask-for-password logon, initial folder, passive/active mode, encoding and

@@ -19,6 +19,7 @@
 
             <!-- Lugar de la barra lateral: carpeta con su símbolo o unidad con el espacio usado -->
             <DataTemplate x:Key="SidePlaceTemplate">
+                <StackPanel>
                 <Button Style="{StaticResource SideItem}" Click="Place_Click" ToolTip="{Binding Path}"
                         PreviewMouseDown="Place_PreviewMouseDown" ContextMenuOpening="Place_ContextMenuOpening"
                         PreviewMouseLeftButtonDown="Place_PreviewMouseLeftButtonDown" PreviewMouseMove="Place_PreviewMouseMove"
@@ -30,9 +31,17 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="17" Margin="0,0,12,0"
                                        Foreground="{DynamicResource StrataAccentBrush}" />
+                        <!-- Desplegar sus subcarpetas aquí mismo -->
+                        <Button x:Name="Expander" Grid.Column="2" Style="{StaticResource ToolButton}" Width="22" Height="22" Margin="4,0,-6,0"
+                                Click="PlaceExpand_Click" ToolTip="{l:T 'Mostrar u ocultar las subcarpetas'}"
+                                Visibility="{Binding CanExpand, Converter={StaticResource BoolToVis}}">
+                            <ui:SymbolIcon x:Name="ExpanderIcon" Symbol="ChevronRight16" FontSize="11"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </Button>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,7">
                             <Grid>
                                 <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis"
@@ -44,10 +53,55 @@
                             </Grid>
                             <ProgressBar Value="{Binding UsedPercent, Mode=OneWay}" Maximum="100" Height="3" MinHeight="3" Margin="0,5,0,1"
                                          Visibility="{Binding IsDrive, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Text="{Binding Detail}" FontSize="11" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Visibility="{Binding IsDrive, Converter={StaticResource BoolToVis}}" />
                         </StackPanel>
                     </Grid>
                 </Button>
+                <ItemsControl ItemsSource="{Binding Children}" ItemTemplate="{DynamicResource SidePlaceTemplate}" Margin="14,0,0,0"
+                              Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}" />
+                </StackPanel>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                        <Setter TargetName="ExpanderIcon" Property="Symbol" Value="ChevronDown16" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
             </DataTemplate>
+
+            <!-- Título de una sección de la barra lateral: con un clic se pliega o se despliega -->
+            <Style x:Key="SideSection" TargetType="ToggleButton">
+                <Setter Property="Margin" Value="0,14,0,2" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="IsChecked" Value="True" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="12,5,8,5">
+                                <DockPanel>
+                                    <ui:SymbolIcon x:Name="Chevron" DockPanel.Dock="Right" Symbol="ChevronDown16" FontSize="10"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" Opacity="0" />
+                                    <ContentPresenter TextElement.FontSize="12" TextElement.FontWeight="SemiBold"
+                                                      TextElement.Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                </DockPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="Chevron" Property="Opacity" Value="1" />
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Chevron" Property="Opacity" Value="1" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="False">
+                                    <Setter TargetName="Chevron" Property="Symbol" Value="ChevronRight16" />
+                                    <Setter TargetName="Chevron" Property="Opacity" Value="1" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
 
             <!-- Pestaña: la elegida resalta sobre la barra de título, como en un navegador -->
             <DataTemplate x:Key="TabTemplate">
@@ -116,29 +170,30 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="236" />
+                <ColumnDefinition x:Name="SideColumn" Width="236" MinWidth="160" MaxWidth="480" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- Barra lateral: Este equipo, carpetas, nube, unidades y red; la Papelera fija hasta abajo -->
-            <DockPanel>
+            <DockPanel Margin="0,0,4,0">
             <ItemsControl x:Name="SideBottom" DockPanel.Dock="Bottom" Margin="12,6,8,10"
                           ItemTemplate="{StaticResource SidePlaceTemplate}" />
             <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="False" controls:SmoothScroll.Enabled="True"
                           Background="Transparent" AllowDrop="True" DragOver="Sidebar_DragOver" Drop="Sidebar_Drop">
                 <StackPanel Margin="12,4,8,16">
                     <ItemsControl x:Name="SideFolders" ItemTemplate="{StaticResource SidePlaceTemplate}" />
-                    <TextBlock x:Name="SidePinnedTitle" Text="{l:T 'Ancladas'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                    <ToggleButton x:Name="SidePinnedTitle" Style="{StaticResource SideSection}" Tag="pinned" Visibility="Collapsed"
+                                  Content="{l:T 'Ancladas'}" Click="SideSection_Click" />
                     <ItemsControl x:Name="SidePinned" ItemTemplate="{StaticResource SidePlaceTemplate}" />
-                    <TextBlock x:Name="SideCloudTitle" Text="{l:T 'Nube'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" Visibility="Collapsed" />
+                    <ToggleButton x:Name="SideCloudTitle" Style="{StaticResource SideSection}" Tag="cloud" Visibility="Collapsed"
+                                  Content="{l:T 'Nube'}" Click="SideSection_Click" />
                     <ItemsControl x:Name="SideCloud" ItemTemplate="{StaticResource SidePlaceTemplate}" />
-                    <TextBlock Text="{l:T 'Unidades'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ToggleButton x:Name="SideDrivesTitle" Style="{StaticResource SideSection}" Tag="drives"
+                                  Content="{l:T 'Unidades'}" Click="SideSection_Click" />
                     <ItemsControl x:Name="SideDrives" ItemTemplate="{StaticResource SidePlaceTemplate}" />
-                    <TextBlock Text="{l:T 'Red'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    <ToggleButton x:Name="SideNetworkTitle" Style="{StaticResource SideSection}" Tag="network"
+                                  Content="{l:T 'Red'}" Click="SideSection_Click" />
+                    <StackPanel x:Name="SideNetworkBody">
                     <ItemsControl x:Name="SideNetwork" ItemTemplate="{StaticResource SidePlaceTemplate}" />
                     <Button Style="{StaticResource SideItem}" Click="ConnectDrive_Click"
                             ToolTip="{l:T 'Asigna una letra a una carpeta compartida de la red. También puedes escribir \\\\servidor en la ruta.'}">
@@ -149,8 +204,10 @@
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
                     </Button>
-                    <TextBlock Text="{l:T 'Servidores'}" FontSize="12" FontWeight="SemiBold" Margin="12,18,0,6"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                    <ToggleButton x:Name="SideServersTitle" Style="{StaticResource SideSection}" Tag="servers"
+                                  Content="{l:T 'Servidores'}" Click="SideSection_Click" />
+                    <StackPanel x:Name="SideServersBody">
                     <ItemsControl x:Name="SideServers" ItemTemplate="{StaticResource SidePlaceTemplate}" />
                     <Button Style="{StaticResource SideItem}" Click="AddServer_Click"
                             ToolTip="{l:T 'Guarda un servidor FTP o FTPS con su usuario y su cifrado, como en FileZilla.'}">
@@ -161,9 +218,15 @@
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
                     </Button>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
             </DockPanel>
+
+            <!-- Borde de la barra lateral: se arrastra para cambiar su ancho; doble clic, el de fábrica -->
+            <GridSplitter Width="6" HorizontalAlignment="Right" VerticalAlignment="Stretch" Background="Transparent"
+                          ResizeBehavior="CurrentAndNext" ResizeDirection="Columns" Focusable="False"
+                          DragCompleted="SideSplitter_DragCompleted" MouseDoubleClick="SideSplitter_MouseDoubleClick" />
 
             <Grid Grid.Column="1" Margin="4,0,16,12">
                 <Grid.RowDefinitions>

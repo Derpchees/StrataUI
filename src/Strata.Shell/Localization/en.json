@@ -1512,5 +1512,6 @@
   "Visible en pantalla completa": "Visible in full screen",
   "Ejecutar con PowerShell": "Run with PowerShell",
   "Editar": "Edit",
-  "No se pudo ejecutar {0}": "Could not run {0}"
+  "No se pudo ejecutar {0}": "Could not run {0}",
+  "Mostrar u ocultar las subcarpetas": "Show or hide subfolders"
 }
