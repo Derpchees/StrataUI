@@ -2528,6 +2528,24 @@ public partial class FolderPane : UserControl
             menu.Items.Add(Item(Loc.T("Formatear…"), SymbolRegular.HardDrive20, () => _ = window.FormatAsync(drive)));
     }
 
+    /// <summary>Clic derecho en una carpeta de la portada: abrirla en otra pestaña y, si es del usuario, mostrarla u ocultarla en la barra lateral.</summary>
+    private void Folder_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+    {
+        if (sender is not Button { DataContext: Place { Path: { } path }, ContextMenu: { } menu })
+        {
+            e.Handled = true;
+            return;
+        }
+        menu.Items.Clear();
+        menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(path)));
+        if (!FilesWindow.IsUserFolder(path))
+            return;
+        bool shown = FilesWindow.InSidebar(path);
+        menu.Items.Add(shown
+            ? Item(Loc.T("Quitar de la barra lateral"), SymbolRegular.EyeOff24, () => FilesWindow.SetInSidebar(path, false))
+            : Item(Loc.T("Mostrar en la barra lateral"), SymbolRegular.Eye24, () => FilesWindow.SetInSidebar(path, true)));
+    }
+
     private void Recent_Click(object sender, RoutedEventArgs e)
     {
         if (((FrameworkElement)sender).DataContext is not RecentItem recent)

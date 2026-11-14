@@ -297,6 +297,8 @@ public sealed class StrataSettings
     public double FilesSidebarWidth { get; set; } = 236;
     /// <summary>Secciones plegadas de la barra lateral de Archivos ("pinned", "cloud", "drives", "network", "servers").</summary>
     public List<string> FilesCollapsedSections { get; set; } = [];
+    /// <summary>Carpetas del usuario (Escritorio, Música…) que no se ven en la barra lateral de Archivos (sí en Este equipo).</summary>
+    public List<string> FilesHiddenFolders { get; set; } = [];
     /// <summary>El explorador muestra las extensiones (".pdf") en los nombres.</summary>
     public bool FilesShowExtensions { get; set; } = true;
     /// <summary>

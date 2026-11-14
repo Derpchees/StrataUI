@@ -10,6 +10,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.43.0] - 2026-11-13
+
+### Agregado
+- Archivos: las carpetas del usuario (Escritorio, Música, Videos…) se quitan de la barra lateral con clic
+  derecho → Quitar de la barra lateral, y vuelven con clic derecho en la carpeta dentro de Este equipo
+  o en Este equipo de la barra lateral.
+
 ## [1.42.0] - 2026-11-13
 
 ### Agregado

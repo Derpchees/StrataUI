@@ -264,7 +264,8 @@ and everything goes back to normal.
 - **Sidebar** you can shape: folders unfold in place to show their subfolders, every section
   (Pinned, Cloud, Drives, Network, Servers) folds with a click on its title, the width is dragged from
   its edge (double-click to reset), each drive shows its free space, and the place that contains the
-  folder you're in stays highlighted.
+  folder you're in stays highlighted. Default folders you don't use (Desktop, Music…) can be removed from
+  it and brought back from This PC.
 - **FTP servers** (FTP and FTPS) in a "Servers" section of the sidebar, with a site manager like
   FileZilla's: host, port, encryption (explicit TLS if available, required, implicit or plain),
   normal, anonymous or ask-for-password logon, initial folder, passive/active mode, encoding and

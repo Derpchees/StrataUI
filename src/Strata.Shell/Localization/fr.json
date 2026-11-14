@@ -1513,5 +1513,8 @@
   "Ejecutar con PowerShell": "Exécuter avec PowerShell",
   "Editar": "Modifier",
   "No se pudo ejecutar {0}": "Impossible d'exécuter {0}",
-  "Mostrar u ocultar las subcarpetas": "Afficher ou masquer les sous-dossiers"
+  "Mostrar u ocultar las subcarpetas": "Afficher ou masquer les sous-dossiers",
+  "Mostrar {0} en la barra lateral": "Afficher {0} dans la barre latérale",
+  "Quitar de la barra lateral": "Retirer de la barre latérale",
+  "Mostrar en la barra lateral": "Afficher dans la barre latérale"
 }

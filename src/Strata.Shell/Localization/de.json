@@ -1513,5 +1513,8 @@
   "Ejecutar con PowerShell": "Mit PowerShell ausführen",
   "Editar": "Bearbeiten",
   "No se pudo ejecutar {0}": "{0} konnte nicht ausgeführt werden",
-  "Mostrar u ocultar las subcarpetas": "Unterordner ein- oder ausblenden"
+  "Mostrar u ocultar las subcarpetas": "Unterordner ein- oder ausblenden",
+  "Mostrar {0} en la barra lateral": "{0} in der Seitenleiste anzeigen",
+  "Quitar de la barra lateral": "Aus der Seitenleiste entfernen",
+  "Mostrar en la barra lateral": "In der Seitenleiste anzeigen"
 }

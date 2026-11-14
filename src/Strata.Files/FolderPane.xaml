@@ -218,7 +218,11 @@
 
             <!-- Mosaico de la portada: carpeta del usuario, de la nube o de la red -->
             <DataTemplate x:Key="HomeFolderTemplate">
-                <Button Style="{StaticResource HubTile}" Width="196" Click="Place_Click" ToolTip="{Binding Path}">
+                <Button Style="{StaticResource HubTile}" Width="196" Click="Place_Click" ToolTip="{Binding Path}"
+                        ContextMenuOpening="Folder_ContextMenuOpening">
+                    <Button.ContextMenu>
+                        <ContextMenu />
+                    </Button.ContextMenu>
                     <StackPanel Orientation="Horizontal">
                         <Border Width="38" Height="38" CornerRadius="10" Margin="0,0,12,0"
                                 Background="{DynamicResource SubtleFillColorSecondaryBrush}">

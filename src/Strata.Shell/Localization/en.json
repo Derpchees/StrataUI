@@ -1513,5 +1513,8 @@
   "Ejecutar con PowerShell": "Run with PowerShell",
   "Editar": "Edit",
   "No se pudo ejecutar {0}": "Could not run {0}",
-  "Mostrar u ocultar las subcarpetas": "Show or hide subfolders"
+  "Mostrar u ocultar las subcarpetas": "Show or hide subfolders",
+  "Mostrar {0} en la barra lateral": "Show {0} in the sidebar",
+  "Quitar de la barra lateral": "Remove from the sidebar",
+  "Mostrar en la barra lateral": "Show in the sidebar"
 }

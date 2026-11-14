@@ -68,7 +68,9 @@ public partial class FilesWindow : FluentWindow
     private readonly ObservableCollection<FilesTab> _tabs = [];
     private FilesTab? _tab;
     private readonly Place _home;
-    private readonly List<Place> _folders;
+    /// <summary>Todas las carpetas del usuario (Este equipo) y las que se ven en la barra lateral.</summary>
+    private readonly List<Place> _allFolders;
+    private List<Place> _folders = [];
     private readonly Place _recycleBin;
     private List<Place> _pinned = [], _drives = [], _cloud = [], _network = [], _servers = [];
     private DateTime _drivesRead;
@@ -94,9 +96,9 @@ public partial class FilesWindow : FluentWindow
             });
         };
         _home = new Place(Loc.T("Este equipo"), null, SymbolRegular.Home24);
-        _folders = Expandable(Places.Folders(), []);
+        _allFolders = Places.Folders();
         _recycleBin = new Place(Loc.T("Papelera de reciclaje"), Places.RecycleBin, SymbolRegular.Delete24);
-        SideFolders.ItemsSource = new[] { _home }.Concat(_folders).ToList();
+        UpdateFolders();
         SideBottom.ItemsSource = new[] { _recycleBin };
         UpdatePinned();
         SideColumn.Width = new GridLength(Math.Clamp(Settings.Current.FilesSidebarWidth, SideColumn.MinWidth, SideColumn.MaxWidth));
@@ -344,7 +346,33 @@ public partial class FilesWindow : FluentWindow
         ViewButton.ToolTip = Loc.F("Vista: {0}", text);
     }
 
-    private PlacesData CurrentPlaces() => new(_home, _folders, _drives, _cloud, _network);
+    private PlacesData CurrentPlaces() => new(_home, _allFolders, _drives, _cloud, _network);
+
+    // ── Carpetas del usuario en la barra lateral ────────────────────────────
+
+    /// <summary>Es una de las carpetas del usuario (Escritorio, Descargas, Documentos…).</summary>
+    internal static bool IsUserFolder(string? path) =>
+        path is not null && Places.Folders().Any(f => FolderPane.SamePath(f.Path, path));
+
+    internal static bool InSidebar(string path) =>
+        !Settings.Current.FilesHiddenFolders.Any(p => FolderPane.SamePath(p, path));
+
+    /// <summary>Muestra u oculta una carpeta del usuario en la barra lateral de todas las ventanas.</summary>
+    internal static void SetInSidebar(string path, bool show)
+    {
+        Settings.Update(s => s.FilesHiddenFolders = show
+            ? s.FilesHiddenFolders.Where(p => !FolderPane.SamePath(p, path)).ToList()
+            : [.. s.FilesHiddenFolders.Where(p => !FolderPane.SamePath(p, path)), path]);
+        foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
+            window.UpdateFolders();
+    }
+
+    private void UpdateFolders()
+    {
+        _folders = Expandable(_allFolders.Where(f => InSidebar(f.Path!)).ToList(), _folders);
+        SideFolders.ItemsSource = new[] { _home }.Concat(_folders).ToList();
+        UpdateCurrentPlace();
+    }
 
     /// <summary>Unidades, nube y red (fuera de la interfaz) para la barra lateral y la portada de cada panel.</summary>
     private async Task LoadPlacesAsync()
@@ -844,6 +872,16 @@ public partial class FilesWindow : FluentWindow
             return;
         }
         menu.Items.Add(FolderPane.Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => AddTab(place.Path)));
+        if (place == _home)
+        {
+            // Las carpetas del usuario que se quitaron de la barra lateral vuelven desde aquí (o desde Este equipo).
+            foreach (var hidden in _allFolders.Where(f => !InSidebar(f.Path!)))
+                menu.Items.Add(FolderPane.Item(Loc.F("Mostrar {0} en la barra lateral", hidden.Name), SymbolRegular.Eye24,
+                    () => SetInSidebar(hidden.Path!, true)));
+            return;
+        }
+        if (_allFolders.Contains(place))
+            menu.Items.Add(FolderPane.Item(Loc.T("Quitar de la barra lateral"), SymbolRegular.EyeOff24, () => SetInSidebar(place.Path!, false)));
         if (RemoteFiles.Locate(place.Path) is { } remote)
         {
             var site = remote.Site;

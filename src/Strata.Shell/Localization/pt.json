@@ -1513,5 +1513,8 @@
   "Ejecutar con PowerShell": "Executar com o PowerShell",
   "Editar": "Editar",
   "No se pudo ejecutar {0}": "Não foi possível executar {0}",
-  "Mostrar u ocultar las subcarpetas": "Mostrar ou ocultar as subpastas"
+  "Mostrar u ocultar las subcarpetas": "Mostrar ou ocultar as subpastas",
+  "Mostrar {0} en la barra lateral": "Mostrar {0} na barra lateral",
+  "Quitar de la barra lateral": "Remover da barra lateral",
+  "Mostrar en la barra lateral": "Mostrar na barra lateral"
 }
