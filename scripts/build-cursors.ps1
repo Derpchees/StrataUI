@@ -31,6 +31,8 @@ function Union([System.Windows.Media.Geometry[]]$parts) {
     foreach ($p in $parts | Select-Object -Skip 1) { $g = [System.Windows.Media.Geometry]::Combine($g, $p, 'Union', $null) }
     $g.GetOutlinedPathGeometry()  # un solo contorno, sin costuras entre las piezas
 }
+# Esquinas redondeadas: la forma con su borde ensanchado (crece r/2 hacia afuera).
+function Soft($geo, $r) { Union @($geo, (Stroke $geo $r)) }
 function Cut($a, $b) { [System.Windows.Media.Geometry]::Combine($a, $b, 'Exclude', $null) }
 function Turn($geo, $angle, $cx = 16, $cy = 16, $dx = 0, $dy = 0) {
     $t = New-Object System.Windows.Media.TransformGroup
@@ -64,8 +66,8 @@ function Glyph([string]$text, $cx, $cy, $em) {
 # Cada capa: geometría, relleno (Fill/Line/$null) y si lleva contorno.
 function L($geo, $fill = 'Fill', [bool]$outline = $true) { @{ G = $geo; F = $fill; O = $outline } }
 
-$arrow = P 'M 5,3 L 5,24.5 L 10.2,19.6 L 13.6,27.4 L 17.2,25.8 L 13.9,18.2 L 21,18 Z'
-$ns = P 'M 16,2.5 L 22,9 L 18,9 L 18,23 L 22,23 L 16,29.5 L 10,23 L 14,23 L 14,9 L 10,9 Z'
+$arrow = Soft (P 'M 6,4.5 L 6,23.5 L 11.2,18.8 L 19.5,18.8 Z') 2.4  # sin cola: una punta limpia
+$ns = Soft (P 'M 16,2.5 L 22,9 L 18,9 L 18,23 L 22,23 L 16,29.5 L 10,23 L 14,23 L 14,9 L 10,9 Z') 1.6
 $nsMove = P 'M 16,2 L 20.5,7 L 17.6,7 L 17.6,25 L 20.5,25 L 16,30 L 11.5,25 L 14.4,25 L 14.4,7 L 11.5,7 Z'  # puntas chicas: con las grandes la cruz parece un rombo
 
 function Spinner($cx, $cy, $r, $width, $frame) {
@@ -107,7 +109,7 @@ $Cursors = [ordered]@{
 function Png($layers, $px, $colors) {
     $fill = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($colors.Fill))
     $line = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($colors.Line))
-    $outline = New-Object System.Windows.Media.Pen($line, 1.25); $outline.LineJoin = 'Round'
+    $outline = New-Object System.Windows.Media.Pen($line, 1.5); $outline.LineJoin = 'Round'
     $dv = New-Object System.Windows.Media.DrawingVisual
     $shadow = New-Object System.Windows.Media.Effects.DropShadowEffect
     $shadow.Color = [System.Windows.Media.Colors]::Black; $shadow.Opacity = 0.28; $shadow.Direction = 270

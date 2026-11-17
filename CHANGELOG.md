@@ -10,6 +10,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Punteros Strata blanco y negro rediseñados: flecha sin cola, esquinas redondeadas y contorno más definido.
+
 ## [1.49.0] - 2026-11-17
 
 ### Añadido
