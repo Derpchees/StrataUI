@@ -246,7 +246,7 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
 ```powershell
 .\scripts\run.ps1                          # cierra Strata UI, compila y lo vuelve a abrir
 dotnet test tests\Strata.Tests -c Release    # pruebas (xUnit)
-.\scripts\build-installer.ps1              # artifacts\StrataUI-Setup-X.Y.Z.exe (Inno Setup 6, ya instalado)
+.\scripts\build-installer.ps1              # artifacts\StrataUI-Setup-X.Y.Z.exe (Inno Setup 7, ya instalado)
 ```
 
 - Argumentos útiles: `StrataUI.exe --hub Taskbar` abre el Hub en una página, `--exit` cierra la

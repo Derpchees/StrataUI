@@ -17,11 +17,12 @@ $version = $props.Project.PropertyGroup.Version
 if (-not $version) { throw 'No se encontró la versión en Directory.Build.props.' }
 
 $iscc = @(
+    "$env:LOCALAPPDATA\Programs\Inno Setup 7\ISCC.exe",
     "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe",
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
     "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-if (-not $iscc) { throw 'Falta Inno Setup 6: winget install JRSoftware.InnoSetup' }
+if (-not $iscc) { throw 'Falta Inno Setup (6 o 7): winget install JRSoftware.InnoSetup' }
 
 $publish = Join-Path $root 'artifacts\publish'
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
