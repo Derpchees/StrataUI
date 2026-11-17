@@ -10,6 +10,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.45.0] - 2026-11-16
+
+### Añadido
+
+- Búsqueda del menú Inicio: escribir un comando o el nombre de un ejecutable (`cmd`, `regedit`,
+  `msconfig`, `devmgmt.msc`…) muestra la herramienta de Windows que lo abre o, si no hay, el
+  ejecutable que encuentra Ejecutar (System32, el PATH y App Paths), marcado como "Comando".
+
 ## [1.44.0] - 2026-11-16
 
 ### Añadido

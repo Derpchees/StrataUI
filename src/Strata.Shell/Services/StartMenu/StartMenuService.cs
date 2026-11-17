@@ -68,10 +68,13 @@ public sealed class StartApp : INotifyPropertyChanged
     internal ExtraApp? ExtraData => _extra;
 
     /// <summary>Qué es, para la búsqueda: aplicación, herramienta de Windows, archivo o carpeta.</summary>
-    public string Kind => IsFile ? (Directory.Exists(Id) ? Loc.T("Carpeta") : Loc.T("Archivo"))
+    /// <summary>Ejecutable encontrado por lo escrito (como en Ejecutar), no por su nombre.</summary>
+    public bool IsCommand { get; internal set; }
+
+    public string Kind => IsCommand ? Loc.T("Comando") : IsFile ? (Directory.Exists(Id) ? Loc.T("Carpeta") : Loc.T("Archivo"))
         : IsWindowsTool ? Loc.T("Herramienta de Windows") : Loc.T("Aplicación");
 
-    private bool IsWindowsTool => _extra?.Tool == true || IsSystemTool || _extra is null && StartMenuService.IsToolName(Name);
+    internal bool IsWindowsTool => _extra?.Tool == true || IsSystemTool || _extra is null && StartMenuService.IsToolName(Name);
 
     private bool _selected;
 
@@ -631,6 +634,7 @@ public static class StartMenuService
         var tools = _toolsFound.Select(ExtraStartApp).OfType<StartApp>().ToList();
         _toolNames = tools.Select(t => ExtraApps.NameKey(t.Name)).ToHashSet();
         _tools = tools.Where(t => names.Add(ExtraApps.NameKey(t.Name))).ToList();
+        _toolTargets = null;
         var items = catalog.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         if (onlyIfChanged && items.Count == Apps.Count
             && items.Zip(Apps).All(pair => pair.First.Id == pair.Second.Id && pair.First.Name == pair.Second.Name))
@@ -697,14 +701,73 @@ public static class StartMenuService
         query = query.Trim();
         if (query.Length == 0)
             return [];
-        return Apps.Concat(_tools)
+        var scored = Apps.Concat(_tools)
             .Select(a => (App: a, Score: Score(a.Name, query)))
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)
             .ThenBy(x => x.App.Name, StringComparer.CurrentCultureIgnoreCase)
-            .Select(x => x.App)
             .Take(30)
             .ToList();
+        var found = scored.Select(x => x.App).ToList();
+        if (CommandResult(query) is { } command)
+        {
+            found.Remove(command);
+            // La herramienta que abre el comando va primero; el ejecutable suelto, después de las apps con ese nombre.
+            found.Insert(command.IsCommand ? scored.Count(x => x.Score == 3 && x.App != command) : 0, command);
+        }
+        return found;
+    }
+
+    private static Dictionary<string, StartApp>? _toolTargets;
+
+    /// <summary>
+    /// Lo escrito como comando ("cmd", "regedit", "devmgmt.msc"): la herramienta de Windows que abre ese
+    /// ejecutable o, si no hay, el ejecutable del PATH o de App Paths. Solo una palabra sin ruta.
+    /// </summary>
+    private static StartApp? CommandResult(string query)
+    {
+        if (query.Length < 2 || query.IndexOfAny([' ', '"', '\\', '/', ':', '*', '?']) >= 0 || ResolveCommand(query) is not { } path)
+            return null;
+        _toolTargets ??= Apps.Where(a => a.IsWindowsTool).Concat(_tools).Select(t => (Tool: t, Target: AppActions.TargetPath(t)))
+            .Where(x => x.Target != null)
+            .GroupBy(x => x.Target!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Tool, StringComparer.OrdinalIgnoreCase);
+        if (_toolTargets.TryGetValue(path, out var tool))
+            return tool;
+        var file = FileResult(path);
+        if (file != null)
+            file.IsCommand = true;
+        return file;
+    }
+
+    /// <summary>Ruta completa de un comando como lo encuentra Ejecutar: System32, el PATH y App Paths.</summary>
+    internal static string? ResolveCommand(string name)
+    {
+        string[] extensions = Path.HasExtension(name) ? [""] : [".exe", ".msc", ".cpl", ".bat", ".cmd"];
+        var folders = (Environment.GetEnvironmentVariable("PATH") ?? "")
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Prepend(Environment.SystemDirectory);
+        foreach (var folder in folders)
+            foreach (var extension in extensions)
+            {
+                try
+                {
+                    var path = Path.Combine(Environment.ExpandEnvironmentVariables(folder.Trim('"')), name + extension);
+                    if (Path.IsPathFullyQualified(path) && File.Exists(path))
+                        return Path.GetFullPath(path);
+                }
+                catch (Exception) { } // carpeta inválida en el PATH
+            }
+        var key = Path.HasExtension(name) ? name : name + ".exe";
+        foreach (var root in new[] { Microsoft.Win32.Registry.CurrentUser, Microsoft.Win32.Registry.LocalMachine })
+        {
+            using var appPath = root.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\App Paths\" + key);
+            if (appPath?.GetValue(null) is string value
+                && Environment.ExpandEnvironmentVariables(value.Trim().Trim('"')) is var target
+                && Path.IsPathFullyQualified(target) && File.Exists(target))
+                return target;
+        }
+        return null;
     }
 
     // Prioriza: empieza con la búsqueda > alguna palabra empieza con ella > la contiene.

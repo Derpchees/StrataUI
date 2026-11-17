@@ -17,4 +17,11 @@ public sealed class FileSearchTests
     [InlineData(@"C:\Users\a\Documents\binario.txt", false)]
     [InlineData(@"C:\Users\a\Downloads\informe.pdf", false)]
     public void SkipsBuildOutput(string path, bool skipped) => Assert.Equal(skipped, FileSearch.IsBuildOutput(path));
+
+    [Theory]
+    [InlineData("cmd", "cmd.exe")]
+    [InlineData("devmgmt.msc", "devmgmt.msc")]
+    [InlineData("noexisteeste123", null)]
+    public void ResolvesCommands(string command, string? file) =>
+        Assert.Equal(file, System.IO.Path.GetFileName(StartMenuService.ResolveCommand(command))?.ToLowerInvariant());
 }
