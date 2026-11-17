@@ -10,6 +10,19 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.47.0] - 2026-11-17
+
+### Añadido
+
+- Los temas importados pueden traer punteros del mouse: el campo `cursors` nombra un esquema
+  instalado en Windows (como «Windows Black») y se aplica mientras el tema está elegido; los
+  punteros de antes vuelven al cambiar de tema, al salir o con `--restore-taskbar`.
+
+### Corregido
+
+- Las apps web de Chromium (como YouTube instalada desde Brave) ya no salen con un cubo gris en el
+  menú Inicio cuando Windows se queda con su ícono provisional: se lee el ícono de su acceso directo.
+
 ## [1.46.0] - 2026-11-16
 
 ### Añadido

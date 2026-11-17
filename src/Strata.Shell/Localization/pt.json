@@ -791,6 +791,7 @@
   "Importar módulo": "Importar módulo",
   "Importar…": "Importar…",
   "Material de fondo no válido.": "Material de fundo inválido.",
+  "Esquema de punteros no válido.": "Esquema de ponteiros inválido.",
   "Módulos de Strata UI (*.json)": "Módulos do Strata UI (*.json)",
   "No es un archivo JSON válido para este tipo de módulo.": "Não é um arquivo JSON válido para este tipo de módulo.",
   "No se pudo importar:": "Não foi possível importar:",

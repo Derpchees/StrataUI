@@ -79,6 +79,8 @@ public sealed class ThemeModule : ModuleBase
     public double Radius { get; set; } = 8;
     public double PanelRadius { get; set; } = 12;
     public ThemeColors? Colors { get; set; }
+    /// <summary>Esquema de punteros instalado en Windows (su nombre, como en Panel de control › Mouse).</summary>
+    public string? Cursors { get; set; }
 
     internal override string? Validate()
     {
@@ -86,6 +88,10 @@ public sealed class ThemeModule : ModuleBase
             return error;
         if (!Enum.IsDefined(Backdrop))
             return Loc.T("Material de fondo no válido.");
+        // Solo un nombre de esquema: nada de rutas ni archivos.
+        Cursors = string.IsNullOrWhiteSpace(Cursors) ? null : Cursors.Trim();
+        if (Cursors is { } cursors && (cursors.Length > 60 || cursors.IndexOfAny(['\\', '/', ',', ':']) >= 0))
+            return Loc.T("Esquema de punteros no válido.");
         if (Colors is { } c)
         {
             foreach (var value in new[] { c.Bar, c.Panel, c.Surface, c.Text, c.SubText, c.Border })

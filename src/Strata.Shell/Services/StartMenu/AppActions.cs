@@ -77,6 +77,26 @@ public static class AppActions
         return Shortcuts().TryGetValue(app.Name, out var path) && File.Exists(path) ? path : null;
     }
 
+    /// <summary>Archivo del ícono que fija el acceso directo de Inicio de la app (null si no fija uno o no existe).</summary>
+    internal static string? ShortcutIconFile(StartApp app)
+    {
+        if (ShortcutPath(app) is not { } lnk)
+            return null;
+        try
+        {
+            dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!)!;
+            string location = shell.CreateShortcut(lnk).IconLocation; // "ruta,índice"
+            int comma = location.LastIndexOf(',');
+            var file = Environment.ExpandEnvironmentVariables(comma > 0 ? location[..comma] : location);
+            return file.Length > 0 && File.Exists(file) ? file : null;
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo leer el ícono de {lnk}", ex);
+            return null;
+        }
+    }
+
     private static Dictionary<string, string>? _shortcuts;
     private static DateTime _shortcutsAt;
 

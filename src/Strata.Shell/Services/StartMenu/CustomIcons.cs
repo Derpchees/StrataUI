@@ -113,6 +113,20 @@ public static class CustomIcons
         }
     }
 
+    /// <summary>El ícono de un archivo leído directo, sin la caché de íconos de Windows (null si falla).</summary>
+    internal static ImageSource? FromFile(string source)
+    {
+        try
+        {
+            return Extract(source);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo leer el ícono de {source}", ex);
+            return null;
+        }
+    }
+
     /// <summary>Imagen de hasta 256 px: el ícono de un .ico/.exe/.dll o la imagen escalada.</summary>
     private static BitmapSource? Extract(string source)
     {

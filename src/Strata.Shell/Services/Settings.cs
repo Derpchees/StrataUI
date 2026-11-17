@@ -427,6 +427,8 @@ public sealed class StrataSettings
     /// [ventanas, menús, minimizar y maximizar]. Null: no las cambió.
     /// </summary>
     public bool[]? WindowsAnimationBackup { get; set; }
+    /// <summary>Punteros de Windows (HKCU, Control Panel › Cursors) antes del esquema de un tema (ver Themes.WindowsCursors). Null: no los cambió.</summary>
+    public Dictionary<string, string?>? WindowsCursorBackup { get; set; }
     /// <summary>Llevar el tema a Windows: modo claro/oscuro y fondo de las ventanas del Explorador.</summary>
     public bool ApplyThemeToWindows { get; set; }
     /// <summary>De versiones anteriores: ahora es el tema Transparente total (ver Settings.Migrate).</summary>

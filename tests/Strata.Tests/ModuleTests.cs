@@ -57,6 +57,8 @@ public sealed class ModuleTests
     [InlineData("""{ "type": "theme", "name": "X", "colors": { "bar": "red" } }""")]            // color con nombre
     [InlineData("""{ "type": "theme", "name": "X", "colors": { "bar": "#000", "panel": "#000000" } }""")]
     [InlineData("""{ "type": "theme", "name": "X", "backdrop": "plasma" }""")]
+    [InlineData("""{ "type": "theme", "name": "X", "cursors": "C:/cursors/evil.ani" }""")]        // ruta, no esquema
+    [InlineData("""{ "type": "theme", "name": "X", "cursors": "a,b" }""")]                      // lista de archivos
     [InlineData("""{ "type": "theme" "name": "X" }""")]                                         // JSON roto
     public void Invalid_themes_are_rejected(string json)
     {

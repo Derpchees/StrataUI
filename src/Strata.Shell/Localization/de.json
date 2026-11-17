@@ -791,6 +791,7 @@
   "Importar módulo": "Modul importieren",
   "Importar…": "Importieren…",
   "Material de fondo no válido.": "Ungültiges Hintergrundmaterial.",
+  "Esquema de punteros no válido.": "Ungültiges Zeigerschema.",
   "Módulos de Strata UI (*.json)": "Strata-UI-Module (*.json)",
   "No es un archivo JSON válido para este tipo de módulo.": "Keine gültige JSON-Datei für diesen Modultyp.",
   "No se pudo importar:": "Konnte nicht importiert werden:",

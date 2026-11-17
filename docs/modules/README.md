@@ -39,6 +39,7 @@ Ready-made examples live in [`examples/`](examples/).
   "floating": false,          // capsule taskbar detached from the screen edges
   "radius": 8,                // taskbar and button corners (0–24)
   "panelRadius": 12,          // flyout and Start menu corners (0–32)
+  "cursors": "Windows Black", // optional: a mouse pointer scheme installed in Windows
   "colors": {                 // optional: without it the theme uses the usual light/dark colors
     "bar": "#002B36",         // taskbar
     "panel": "#073642",       // flyouts, Start menu, Hub
@@ -54,6 +55,11 @@ Ready-made examples live in [`examples/`](examples/).
 With `colors` all six of `bar`, `panel`, `surface`, `text`, `subText` and `border` are required.
 If `light` is missing, it's deduced from the panel color. Your own colors from Hub › Colors still
 go on top.
+
+`cursors` is the name of a pointer scheme installed in Windows (Control Panel › Mouse ›
+Pointers, e.g. `Windows Black`), never a file. It changes the pointers of all
+of Windows while the theme is selected; your own pointers come back when you pick another theme or
+close Strata UI. If the scheme isn't installed, the pointers are left alone.
 
 ## Animation
 

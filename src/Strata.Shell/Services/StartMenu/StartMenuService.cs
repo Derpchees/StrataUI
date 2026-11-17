@@ -43,7 +43,26 @@ public sealed class StartApp : INotifyPropertyChanged
     // Las herramientas de Windows no traen nombre: el del Shell ya viene traducido (desktop.ini).
     public string Name => _extra is { Name.Length: > 0 } extra ? extra.Name : _item.DisplayName ?? Id;
     /// <summary>El ícono elegido con "Cambiar ícono" o, si no hay, el de Windows.</summary>
-    public ImageSource? Icon => CustomIcons.Get(Id) ?? _item.LargeIcon;
+    public ImageSource? Icon => CustomIcons.Get(Id) ?? WebAppIcon ?? _item.LargeIcon;
+
+    // Las apps web de Chromium reescriben su .ico después de instalarse y la caché de íconos de
+    // Windows se queda con el provisional (un cubo gris): se lee directo del archivo.
+    private ImageSource? WebAppIcon
+    {
+        get
+        {
+            if (!_webIconRead)
+            {
+                _webIconRead = true;
+                if (!IsFile && _extra is null && Id.Contains("_crx_", StringComparison.OrdinalIgnoreCase)
+                    && AppActions.ShortcutIconFile(this) is { } file)
+                    _webIcon = CustomIcons.FromFile(file);
+            }
+            return _webIcon;
+        }
+    }
+    private ImageSource? _webIcon;
+    private bool _webIconRead;
     public string Group => GroupOf(Name);
 
     /// <summary>Archivo, acceso directo o carpeta anclado (no está en el catálogo de apps).</summary>

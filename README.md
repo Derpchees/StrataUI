@@ -355,7 +355,8 @@ can be undone. Its pages are grouped in tabs:
 ### <img src="docs/icons/modules.svg" width="28" align="center" alt="" /> Modules and languages
 
 - Import **themes, animations, desktop widgets and Start menu looks** (small declarative JSON files
-  that can't run code) and notification sounds from one place in the Hub. See the
+  that can't run code; a theme can also switch to one of your installed mouse pointer schemes) and
+  notification sounds from one place in the Hub. See the
   [module format](docs/modules/README.md).
 - Export and import all your Strata UI settings as a `.zip`.
 - **English, Spanish, Portuguese, French and German**, following Windows or chosen in the Hub. Drop

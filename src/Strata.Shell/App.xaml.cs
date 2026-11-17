@@ -66,6 +66,7 @@ public partial class App : Application
             NativeTaskbar.Restore();
             Services.Notifications.WindowsBanners.Restore();
             Services.Themes.WindowsAnimations.Restore();
+            Services.Themes.WindowsCursors.Restore();
             Services.Desktop.DesktopManager.RestoreWindowsIcons();
             Shutdown();
             return;
@@ -308,6 +309,7 @@ public partial class App : Application
         Services.Notifications.NotificationService.Update();
         Services.Notifications.WindowsBanners.Update();
         Services.Themes.WindowsAnimations.Update();
+        Services.Themes.WindowsCursors.Update();
         Services.Themes.WindowMotion.Start();
         Services.Files.ExplorerTakeover.Update();
         Services.Files.DialogTakeover.Update();
@@ -663,6 +665,7 @@ public partial class App : Application
             Services.Files.DialogTakeover.Update();
             Services.Notifications.WindowsBanners.Update();
             Services.Themes.WindowsAnimations.Update();
+            Services.Themes.WindowsCursors.Update();
         }
         Services.Updates.UpdateService.UpdateSchedule();
         if (_exiting)
@@ -855,6 +858,7 @@ public partial class App : Application
         Step("reemplazo del Explorador", Services.Files.ExplorerTakeover.Stop);
         Step("cuadros de archivos", Services.Files.DialogTakeover.Stop);
         Step("animaciones de Windows", Services.Themes.WindowsAnimations.Restore);
+        Step("punteros", Services.Themes.WindowsCursors.Restore);
         Step("avisos", Notifications.NotificationBannerWindow.CloseAll);
         Step("OSD", Notifications.Osd.Shutdown);
         Step("vistas previas", Controls.TaskPreviewWindow.CloseAll);
@@ -927,6 +931,7 @@ public partial class App : Application
         NativeTaskbar.Restore();
         Services.Notifications.WindowsBanners.Restore();
         Services.Themes.WindowsAnimations.Restore();
+        Services.Themes.WindowsCursors.Restore();
         Services.Desktop.DesktopManager.RestoreWindowsIcons();
     }
 }
