@@ -64,6 +64,8 @@
   <ItemGroup>
     <None Include="$(Pkg7z_Libs)\bin\x64\7z.dll" Link="7z.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
     <None Include="$(Pkg7z_Libs)\bin\License.txt" Link="7z-License.txt" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <!-- Punteros "Strata White" y "Strata Black" (Services/Themes/WindowsCursors; los dibuja scripts\build-cursors.ps1) -->
+    <None Include="Assets\Cursors\**\*" Link="Cursors\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

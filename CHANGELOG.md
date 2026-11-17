@@ -10,6 +10,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.48.0] - 2026-11-17
+
+### Añadido
+
+- Punteros propios de Strata UI, limpios y modernos, en blanco y en negro: un tema importado los usa
+  con `"cursors": "Strata White"` o `"cursors": "Strata Black"` (con la espera animada).
+
 ## [1.47.0] - 2026-11-17
 
 ### Añadido

@@ -57,7 +57,8 @@ If `light` is missing, it's deduced from the panel color. Your own colors from H
 go on top.
 
 `cursors` is the name of a pointer scheme installed in Windows (Control Panel › Mouse ›
-Pointers, e.g. `Windows Black`), never a file. It changes the pointers of all
+Pointers, e.g. `Windows Black`), never a file. Strata UI brings its own clean, modern pair:
+`Strata White` and `Strata Black`. It changes the pointers of all
 of Windows while the theme is selected; your own pointers come back when you pick another theme or
 close Strata UI. If the scheme isn't installed, the pointers are left alone.
 

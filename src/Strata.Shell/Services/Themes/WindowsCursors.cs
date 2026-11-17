@@ -1,3 +1,4 @@
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using Strata.Shell.Services.Modules;
@@ -6,7 +7,8 @@ namespace Strata.Shell.Services.Themes;
 
 /// <summary>
 /// Punteros del mouse del tema importado: el módulo nombra un esquema instalado en Windows
-/// (Panel de control › Mouse, p. ej. "Windows Black") y se aplica a todo Windows.
+/// (Panel de control › Mouse, p. ej. "Windows Black") o uno propio ("Strata White", "Strata Black")
+/// y se aplica a todo Windows.
 /// </summary>
 /// <remarks>
 /// Los punteros de antes se guardan en la configuración antes de tocarlos y se devuelven al quitar
@@ -22,6 +24,11 @@ public static class WindowsCursors
     private static readonly string[] Roles =
         ["Arrow", "Help", "AppStarting", "Wait", "Crosshair", "IBeam", "NWPen", "No", "SizeNS", "SizeWE",
          "SizeNWSE", "SizeNESW", "SizeAll", "UpArrow", "Hand", "Pin", "Person"];
+
+    // Archivos de los esquemas propios ("Strata White", "Strata Black"; Assets\Cursors, de scripts\build-cursors.ps1), en el orden de Roles.
+    private static readonly string[] OwnFiles =
+        ["arrow.cur", "help.cur", "working.ani", "busy.ani", "cross.cur", "text.cur", "pen.cur", "unavailable.cur", "vert.cur",
+         "horz.cur", "dgn1.cur", "dgn2.cur", "move.cur", "alternate.cur", "link.cur", "pin.cur", "person.cur"];
 
     private const uint SetCursors = 0x0057, UpdateIniFile = 0x01, SendChange = 0x02;
 
@@ -93,6 +100,11 @@ public static class WindowsCursors
     /// <summary>Archivos del esquema (del usuario o de Windows), en el orden de <see cref="Roles"/>; null si no existe.</summary>
     private static string[]? SchemeFiles(string name)
     {
+        if (name is "Strata White" or "Strata Black")
+        {
+            var dir = Path.Combine(AppContext.BaseDirectory, "Cursors", name[7..]);
+            return Directory.Exists(dir) ? OwnFiles.Select(f => Path.Combine(dir, f)).ToArray() : null;
+        }
         using var user = Registry.CurrentUser.OpenSubKey(SchemesKey);
         using var system = Registry.LocalMachine.OpenSubKey(SystemSchemesKey);
         var list = (user?.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames)
