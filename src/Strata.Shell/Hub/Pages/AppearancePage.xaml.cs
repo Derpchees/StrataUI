@@ -23,6 +23,7 @@ public partial class AppearancePage : Page
         var s = Settings.Current;
         WindowsThemeSwitch.IsChecked = s.ApplyThemeToWindows;
         BuildAnimationChoices();
+        BuildCursorChoices();
         Select(SpeedBox, s.AnimationSpeed.ToString());
         _loading = false;
         BuildThemeGallery();
@@ -294,6 +295,23 @@ public partial class AppearancePage : Page
         });
         // Vista previa: un aviso de prueba con la animación elegida.
         Services.Notifications.NotificationService.ShowTest();
+    }
+
+    /// <summary>Los de Windows, los propios y los esquemas instalados.</summary>
+    private void BuildCursorChoices()
+    {
+        CursorBox.Items.Add(new ComboBoxItem { Content = Loc.T("Los de Windows"), Tag = "" });
+        CursorBox.Items.Add(new ComboBoxItem { Content = Loc.T("Strata blanco"), Tag = "Strata White" });
+        CursorBox.Items.Add(new ComboBoxItem { Content = Loc.T("Strata negro"), Tag = "Strata Black" });
+        foreach (var name in WindowsCursors.Installed())
+            CursorBox.Items.Add(new ComboBoxItem { Content = name, Tag = name });
+        Select(CursorBox, Settings.Current.CursorScheme ?? "");
+    }
+
+    private void Cursor_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_loading && CursorBox.SelectedItem is ComboBoxItem { Tag: string name })
+            Settings.Update(s => s.CursorScheme = name.Length == 0 ? null : name);
     }
 
     private void WindowsTheme_Click(object sender, RoutedEventArgs e) =>

@@ -1520,5 +1520,10 @@
   "Mostrar en la barra lateral": "Show in the sidebar",
   "Herramienta de Windows": "Windows tool",
   "Archivo": "File",
-  "Comando": "Command"
+  "Comando": "Command",
+  "Punteros del mouse": "Mouse pointers",
+  "Se aplican a todo Windows; los de antes vuelven al elegir Los de Windows o al salir de Strata UI.": "Applied to all of Windows; your previous ones come back when you choose Windows default or exit Strata UI.",
+  "Los de Windows": "Windows default",
+  "Strata blanco": "Strata white",
+  "Strata negro": "Strata black"
 }

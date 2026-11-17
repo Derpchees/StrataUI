@@ -10,6 +10,12 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.49.0] - 2026-11-17
+
+### Añadido
+
+- Hub › Tema: selector **Punteros del mouse** (Los de Windows, Strata blanco, Strata negro o cualquier esquema instalado), sin necesidad de importar un tema. Tiene prioridad sobre los punteros de un tema importado; al elegir Los de Windows o salir de Strata UI vuelven los de antes.
+
 ## [1.48.0] - 2026-11-17
 
 ### Añadido

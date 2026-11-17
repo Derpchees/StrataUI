@@ -408,6 +408,8 @@ public sealed class StrataSettings
     public StrataTheme? ColorScheme { get; set; }
     /// <summary>Tema importado (ID del módulo); tiene prioridad sobre <see cref="Theme"/>.</summary>
     public string? ThemeModule { get; set; }
+    /// <summary>Esquema de punteros elegido en el Hub ("Strata White" o uno instalado en Windows); null = los del tema importado o los de Windows.</summary>
+    public string? CursorScheme { get; set; }
     /// <summary>Color "#RRGGBB"; null = usar el acento de Windows.</summary>
     public string? AccentColor { get; set; }
     /// <summary>Acento sacado del fondo de pantalla (tiene prioridad sobre <see cref="AccentColor"/>).</summary>

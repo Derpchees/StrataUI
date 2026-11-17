@@ -328,6 +328,8 @@ stay visible with Show desktop.
   panel colors with opacity.
 - **Six animation styles** and three speeds for flyouts, the Start menu, notifications, menus, the
   tray, previews and taskbar buttons. Windows' own window animations follow your choice.
+- **Mouse pointers**: clean white or black Strata sets, or any scheme installed in Windows; your previous
+  pointers come back when you pick Windows default or exit.
 
 <a id="optimization"></a>
 

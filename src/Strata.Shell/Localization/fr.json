@@ -1520,5 +1520,10 @@
   "Mostrar en la barra lateral": "Afficher dans la barre latérale",
   "Herramienta de Windows": "Outil Windows",
   "Archivo": "Fichier",
-  "Comando": "Commande"
+  "Comando": "Commande",
+  "Punteros del mouse": "Pointeurs de la souris",
+  "Se aplican a todo Windows; los de antes vuelven al elegir Los de Windows o al salir de Strata UI.": "Appliqués à tout Windows ; les précédents reviennent en choisissant Ceux de Windows ou en quittant Strata UI.",
+  "Los de Windows": "Ceux de Windows",
+  "Strata blanco": "Strata blanc",
+  "Strata negro": "Strata noir"
 }

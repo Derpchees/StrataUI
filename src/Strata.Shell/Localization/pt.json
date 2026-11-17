@@ -1520,5 +1520,10 @@
   "Mostrar en la barra lateral": "Mostrar na barra lateral",
   "Herramienta de Windows": "Ferramenta do Windows",
   "Archivo": "Arquivo",
-  "Comando": "Comando"
+  "Comando": "Comando",
+  "Punteros del mouse": "Ponteiros do mouse",
+  "Se aplican a todo Windows; los de antes vuelven al elegir Los de Windows o al salir de Strata UI.": "Aplicados a todo o Windows; os anteriores voltam ao escolher Padrão do Windows ou ao sair do Strata UI.",
+  "Los de Windows": "Padrão do Windows",
+  "Strata blanco": "Strata branco",
+  "Strata negro": "Strata preto"
 }

@@ -35,7 +35,8 @@ public static class WindowsCursors
     /// <summary>Pone los punteros del tema elegido (al abrir y cuando cambia).</summary>
     public static void Update()
     {
-        var wanted = ModuleStore.Get<ThemeModule>(ModuleKind.Theme, Settings.Current.ThemeModule)?.Cursors;
+        var wanted = Settings.Current.CursorScheme
+            ?? ModuleStore.Get<ThemeModule>(ModuleKind.Theme, Settings.Current.ThemeModule)?.Cursors;
         if (wanted is null)
         {
             Restore();
@@ -95,6 +96,15 @@ public static class WindowsCursors
         }
         Settings.Current.WindowsCursorBackup = null;
         Settings.Save();
+    }
+
+    /// <summary>Esquemas instalados en Windows (del usuario y del sistema), para elegir en el Hub.</summary>
+    public static IEnumerable<string> Installed()
+    {
+        using var user = Registry.CurrentUser.OpenSubKey(SchemesKey);
+        using var system = Registry.LocalMachine.OpenSubKey(SystemSchemesKey);
+        return (user?.GetValueNames() ?? []).Concat(system?.GetValueNames() ?? [])
+            .Where(n => n.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).Order().ToList();
     }
 
     /// <summary>Archivos del esquema (del usuario o de Windows), en el orden de <see cref="Roles"/>; null si no existe.</summary>

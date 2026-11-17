@@ -36,6 +36,17 @@
                 <ui:ToggleSwitch x:Name="WindowsThemeSwitch" Click="WindowsTheme_Click" />
             </ui:CardControl>
 
+            <ui:CardControl Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="CursorHover24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Punteros del mouse'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Se aplican a todo Windows; los de antes vuelven al elegir Los de Windows o al salir de Strata UI.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <ComboBox x:Name="CursorBox" MinWidth="180" SelectionChanged="Cursor_Changed" />
+            </ui:CardControl>
+
             <TextBlock Style="{StaticResource HubSectionTitle}" Text="{l:T 'Animaciones'}" />
 
             <ui:CardControl Style="{StaticResource HubCard}">

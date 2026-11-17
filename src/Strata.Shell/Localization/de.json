@@ -1520,5 +1520,10 @@
   "Mostrar en la barra lateral": "In der Seitenleiste anzeigen",
   "Herramienta de Windows": "Windows-Tool",
   "Archivo": "Datei",
-  "Comando": "Befehl"
+  "Comando": "Befehl",
+  "Punteros del mouse": "Mauszeiger",
+  "Se aplican a todo Windows; los de antes vuelven al elegir Los de Windows o al salir de Strata UI.": "Gelten für ganz Windows; die vorherigen kehren zurück, wenn du Windows-Standard wählst oder Strata UI beendest.",
+  "Los de Windows": "Windows-Standard",
+  "Strata blanco": "Strata weiß",
+  "Strata negro": "Strata schwarz"
 }
