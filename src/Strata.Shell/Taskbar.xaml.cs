@@ -1207,12 +1207,14 @@ public partial class Taskbar : AppBarWindow
         _fullScreenApp = app;
         if (!S.ShowOverFullscreen)
             base.OnFullScreenEnter(app);
+        UpdateFullscreenScrim();
     }
 
     protected override void OnFullScreenLeave()
     {
         _fullScreenApp = null;
         base.OnFullScreenLeave();
+        UpdateFullscreenScrim();
     }
 
     /// <summary>Si la opción cambia con algo en pantalla completa, la barra sube o baja en el momento.</summary>
@@ -1222,6 +1224,7 @@ public partial class Taskbar : AppBarWindow
         if (over == _overFullscreen)
             return;
         _overFullscreen = over;
+        UpdateFullscreenScrim();
         if (_fullScreenApp is not { } app)
             return;
         if (over)

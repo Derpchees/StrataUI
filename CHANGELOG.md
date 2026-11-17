@@ -10,6 +10,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.46.0] - 2026-11-16
+
+### Añadido
+
+- Con «Visible en pantalla completa» y la barra transparente, la barra toma un fondo oscuro suave
+  mientras está encima de un juego o video en pantalla completa, para que se lea; al salir vuelve a
+  ser transparente.
+
 ## [1.45.0] - 2026-11-16
 
 ### Añadido

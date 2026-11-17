@@ -34,6 +34,23 @@ public partial class Taskbar
     private static readonly Brush DarkText = Frozen(Color.FromRgb(0x1A, 0x1A, 0x1A));
     private static readonly Brush LightText = Frozen(Colors.White);
 
+    /// <summary>
+    /// Fondo oscuro suave de la barra transparente mientras sigue encima de un juego o video en
+    /// pantalla completa: ahí lo de atrás cambia todo el tiempo y el texto no se leería.
+    /// </summary>
+    private static readonly Brush FullscreenScrim = Frozen(Color.FromArgb(0x99, 0x14, 0x14, 0x14));
+
+    private bool FullscreenScrimOn => _transparent && _fullScreenApp != null && S.ShowOverFullscreen;
+
+    /// <summary>Pone o quita el fondo suave al entrar o salir de pantalla completa (o al cambiar la opción).</summary>
+    private void UpdateFullscreenScrim()
+    {
+        if (!_transparent)
+            return;
+        BarBorder.Background = FullscreenScrimOn ? FullscreenScrim : Brushes.Transparent;
+        ScheduleContrast();
+    }
+
     private static Brush Frozen(Color color)
     {
         var brush = new SolidColorBrush(color);
@@ -61,7 +78,7 @@ public partial class Taskbar
         }
 
         // Transparent (no null) para que la barra siga recibiendo los clics en los huecos.
-        BarBorder.Background = Brushes.Transparent;
+        BarBorder.Background = FullscreenScrimOn ? FullscreenScrim : Brushes.Transparent;
         BarBorder.BorderBrush = Brushes.Transparent;
         GlassHighlight.Visibility = Visibility.Collapsed;
         BarBorder.Margin = FloatingMargin();
@@ -311,6 +328,8 @@ public partial class Taskbar
             var brush = ReferenceEquals(current, DarkText) ? (luminance > 0.5 ? DarkText : LightText)
                 : ReferenceEquals(current, LightText) ? (luminance > 0.6 ? DarkText : LightText)
                 : luminance > 0.55 ? DarkText : LightText;
+            if (FullscreenScrimOn)
+                brush = LightText;
             if (!ReferenceEquals(zone.Resources["StrataForegroundBrush"], brush))
                 zone.Resources["StrataForegroundBrush"] = brush;
         }
