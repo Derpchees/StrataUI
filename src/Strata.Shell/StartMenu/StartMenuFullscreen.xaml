@@ -16,7 +16,7 @@
 
             <ui:TextBox x:Name="SearchBox" Width="560" HorizontalAlignment="Center" FontSize="16"
                         PlaceholderText="{l:T 'Escribe para buscar apps'}"
-                        Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+                        Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="Search_KeyDown">
                 <ui:TextBox.Icon>
                     <ui:SymbolIcon Symbol="Search24" />
                 </ui:TextBox.Icon>

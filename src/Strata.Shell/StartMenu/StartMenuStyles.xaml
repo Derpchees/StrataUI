@@ -96,6 +96,96 @@
         </Button>
     </DataTemplate>
 
+    <!-- Resultado de la búsqueda: ícono, nombre y qué es; el elegido (Enter, flechas) queda resaltado -->
+    <DataTemplate x:Key="SearchRow">
+        <Button Padding="10,6" Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}"
+                ContextMenu="{StaticResource AppContextMenu}">
+            <Button.Style>
+                <Style TargetType="Button" BasedOn="{StaticResource FlyoutRow}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Image Source="{Binding Icon}" Width="{DynamicResource StartRowIconSize}" Height="{DynamicResource StartRowIconSize}" Margin="0,0,12,0"
+                       RenderOptions.BitmapScalingMode="HighQuality" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Style="{StaticResource FlyoutHint}" FontSize="11" Text="{Binding Kind}" />
+                </StackPanel>
+            </Grid>
+        </Button>
+    </DataTemplate>
+
+    <!-- Panel de detalles del resultado elegido (como en Windows): qué es y sus acciones -->
+    <DataTemplate x:Key="SearchDetails">
+        <StackPanel Margin="8,0,0,0">
+            <Image Source="{Binding Icon}" Width="56" Height="56" Margin="0,16,0,10" HorizontalAlignment="Center"
+                   RenderOptions.BitmapScalingMode="HighQuality" />
+            <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"
+                       HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" />
+            <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Kind}" HorizontalAlignment="Center" Margin="0,2,0,0" />
+            <TextBlock Style="{StaticResource FlyoutHint}" Text="{Binding Id}" FontSize="11" HorizontalAlignment="Center"
+                       TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Visibility="{Binding IsFile, Converter={StaticResource BoolToVis}}" />
+            <Separator Margin="0,12,0,6" />
+            <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.Launch}" CommandParameter="{Binding}">
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Abrir'}" />
+            </Button>
+            <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenPrivateWindow}" CommandParameter="{Binding}"
+                    Visibility="{Binding CanOpenPrivateWindow, Converter={StaticResource BoolToVis}}">
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{Binding PrivateWindowLabel}" />
+            </Button>
+            <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.RunAsAdmin}" CommandParameter="{Binding}"
+                    Visibility="{Binding CanRunAsAdmin, Converter={StaticResource BoolToVis}}">
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Ejecutar como administrador'}" />
+            </Button>
+            <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.OpenLocation}" CommandParameter="{Binding}"
+                    Visibility="{Binding CanOpenLocation, Converter={StaticResource BoolToVis}}">
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Abrir ubicación del archivo'}" />
+            </Button>
+            <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.TogglePin}" CommandParameter="{Binding}">
+                <TextBlock>
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource FlyoutText}">
+                            <Setter Property="Text" Value="{l:T 'Anclar a Inicio'}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                                    <Setter Property="Text" Value="{l:T 'Desanclar de Inicio'}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Button>
+            <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.ToggleTaskbarPin}" CommandParameter="{Binding}">
+                <TextBlock>
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource FlyoutText}">
+                            <Setter Property="Text" Value="{l:T 'Anclar a la barra de tareas'}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPinnedToTaskbar}" Value="True">
+                                    <Setter Property="Text" Value="{l:T 'Desanclar de la barra de tareas'}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Button>
+            <Button Style="{StaticResource FlyoutRow}" Command="{x:Static start:StartCommands.Uninstall}" CommandParameter="{Binding}"
+                    Visibility="{Binding CanUninstall, Converter={StaticResource BoolToVis}}">
+                <TextBlock Style="{StaticResource FlyoutText}" Text="{l:T 'Desinstalar'}" />
+            </Button>
+        </StackPanel>
+    </DataTemplate>
+
     <!-- Archivo reciente -->
     <DataTemplate x:Key="RecentRow">
         <Button Style="{StaticResource FlyoutRow}" Padding="10,6"

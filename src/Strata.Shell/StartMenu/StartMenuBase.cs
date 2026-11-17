@@ -96,6 +96,31 @@ public abstract class StartMenuBase : FlyoutWindow
             Model.Submit();
             e.Handled = true;
         }
+        else if (e.Key is Key.Down or Key.Up && Model.IsSearching)
+        {
+            Model.MoveSelection(e.Key == Key.Down ? 1 : -1);
+            ShowSelected(this);
+            e.Handled = true;
+        }
+    }
+
+    // Desplaza la lista hasta el resultado elegido con las flechas.
+    private bool ShowSelected(DependencyObject parent)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            // La fila de la lista (no el panel de detalles, que muestra el mismo resultado).
+            if (child is ContentPresenter { IsVisible: true } row && Model.Selected != null && row.Content == Model.Selected
+                && ItemsControl.ItemsControlFromItemContainer(row) != null)
+            {
+                row.BringIntoView();
+                return true;
+            }
+            if (child is UIElement { IsVisible: true } && ShowSelected(child))
+                return true;
+        }
+        return false;
     }
 
     protected void OnShowAllApps(object sender, RoutedEventArgs e) => Model.ShowAllApps = true;

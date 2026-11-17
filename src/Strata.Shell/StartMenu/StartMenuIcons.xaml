@@ -14,7 +14,7 @@
         </Grid.RowDefinitions>
 
         <ui:TextBox x:Name="SearchBox" PlaceholderText="{l:T 'Buscar'}"
-                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="Search_KeyDown">
             <ui:TextBox.Icon>
                 <ui:SymbolIcon Symbol="Search24" />
             </ui:TextBox.Icon>

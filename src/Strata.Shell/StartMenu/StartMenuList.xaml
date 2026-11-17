@@ -26,7 +26,7 @@
                         <StaticResource ResourceKey="LetterGroups" />
                     </ItemsControl.GroupStyle>
                 </ItemsControl>
-                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}"
+                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource SearchRow}"
                               Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}" />
                 <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
                            Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
@@ -38,7 +38,7 @@
         <ScrollViewer Grid.Column="1" Margin="12,0,0,0" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- Al buscar con la lista de apps oculta, los resultados aparecen aquí -->
-                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}"
+                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource SearchRow}"
                               Visibility="{Binding SearchInSidePanel, Converter={StaticResource BoolToVis}}" />
                 <StackPanel Visibility="{Binding ShowPinned, Converter={StaticResource BoolToVis}}">
                     <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,4,0,6" Text="{l:T 'Anclado'}" />
@@ -69,7 +69,7 @@
 
         <ui:TextBox x:Name="SearchBox" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0"
                     PlaceholderText="{l:T 'Buscar apps'}" Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
-                    KeyDown="Search_KeyDown">
+                    PreviewKeyDown="Search_KeyDown">
             <ui:TextBox.Icon>
                 <ui:SymbolIcon Symbol="Search24" />
             </ui:TextBox.Icon>

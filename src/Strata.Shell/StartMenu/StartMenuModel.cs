@@ -65,6 +65,7 @@ public sealed class StartMenuModel : INotifyPropertyChanged
         {
             _query = value;
             Results = StartMenuService.Search(value);
+            SearchFiles(value);
             Notify();
             Notify(nameof(IsSearching));
             Notify(nameof(NoResults));
@@ -81,7 +82,57 @@ public sealed class StartMenuModel : INotifyPropertyChanged
     public IReadOnlyList<StartApp> Results
     {
         get => _results;
-        private set { _results = value; Notify(); }
+        private set
+        {
+            _results = value;
+            Notify();
+            // Al sumar los archivos sigue elegido el mismo; si no, el primero (como en Windows).
+            Selected = _selected is { } kept && value.Contains(kept) ? kept : value.FirstOrDefault();
+        }
+    }
+
+    private StartApp? _selected;
+
+    /// <summary>El resultado que abre Enter y que muestra el panel de detalles (se mueve con las flechas).</summary>
+    public StartApp? Selected
+    {
+        get => _selected;
+        private set
+        {
+            if (_selected == value)
+                return;
+            if (_selected != null)
+                _selected.IsSelected = false;
+            _selected = value;
+            if (value != null)
+                value.IsSelected = true;
+            Notify();
+        }
+    }
+
+    public void MoveSelection(int delta)
+    {
+        if (_results.Count > 0)
+            Selected = _results[Math.Clamp(_results.ToList().IndexOf(_selected!) + delta, 0, _results.Count - 1)];
+    }
+
+    private int _fileSearch;
+
+    /// <summary>Suma los archivos y carpetas del índice de Windows a los resultados, sin frenar la escritura.</summary>
+    private async void SearchFiles(string query)
+    {
+        var id = ++_fileSearch;
+        query = query.Trim();
+        if (query.Length < 2)
+            return;
+        await Task.Delay(200);
+        if (id != _fileSearch)
+            return;
+        var paths = await Task.Run(() => FileSearch.Find(query, 8));
+        if (id != _fileSearch || paths.Count == 0)
+            return;
+        Results = [.. _results, .. paths.Select(StartMenuService.FileResult).OfType<StartApp>()];
+        Notify(nameof(NoResults));
     }
 
     public bool NoResults => IsSearching && _results.Count == 0;
@@ -102,11 +153,11 @@ public sealed class StartMenuModel : INotifyPropertyChanged
         Notify(nameof(AllAppsVisible));
     }
 
-    /// <summary>Enter en el buscador: abre el primer resultado o ejecuta el texto como comando.</summary>
+    /// <summary>Enter en el buscador: abre el resultado elegido o ejecuta el texto como comando.</summary>
     public void Submit()
     {
-        if (_results.Count > 0)
-            StartCommands.Launch.Execute(_results[0]);
+        if (_selected != null)
+            StartCommands.Launch.Execute(_selected);
         else if (IsSearching && StartMenuService.RunCommand(_query))
             FlyoutManager.CloseAll();
     }

@@ -40,7 +40,8 @@ public sealed class StartApp : INotifyPropertyChanged
 
     /// <summary>Identificador estable: AppUserModelID, ruta del acceso directo o del archivo anclado.</summary>
     public string Id => _extra?.Id ?? _path ?? _item.FileName ?? _item.Path;
-    public string Name => _extra?.Name ?? _item.DisplayName ?? Id;
+    // Las herramientas de Windows no traen nombre: el del Shell ya viene traducido (desktop.ini).
+    public string Name => _extra is { Name.Length: > 0 } extra ? extra.Name : _item.DisplayName ?? Id;
     /// <summary>El ícono elegido con "Cambiar ícono" o, si no hay, el de Windows.</summary>
     public ImageSource? Icon => CustomIcons.Get(Id) ?? _item.LargeIcon;
     public string Group => GroupOf(Name);
@@ -53,7 +54,7 @@ public sealed class StartApp : INotifyPropertyChanged
     // Para el menú contextual (se consultan al abrirlo).
     public bool CanOpenLocation => AppActions.CanOpenLocation(this);
     public bool CanRunAsAdmin => AppActions.CanRunAsAdmin(this);
-    public bool CanUninstall => !IsFile && _extra is null && AppActions.CanUninstall(this);
+    public bool CanUninstall => !IsFile && _extra is null && !IsWindowsTool && AppActions.CanUninstall(this);
     /// <summary>"Nueva ventana de incógnito/privada/InPrivate" si es un navegador (null si no).</summary>
     public string? PrivateWindowLabel => AppActions.PrivateWindow(this)?.Label;
     public bool CanOpenPrivateWindow => PrivateWindowLabel != null;
@@ -65,6 +66,27 @@ public sealed class StartApp : INotifyPropertyChanged
     /// <summary>No viene de shell:AppsFolder (ver <see cref="ExtraApps"/>).</summary>
     public bool IsExtra => _extra != null;
     internal ExtraApp? ExtraData => _extra;
+
+    /// <summary>Qué es, para la búsqueda: aplicación, herramienta de Windows, archivo o carpeta.</summary>
+    public string Kind => IsFile ? (Directory.Exists(Id) ? Loc.T("Carpeta") : Loc.T("Archivo"))
+        : IsWindowsTool ? Loc.T("Herramienta de Windows") : Loc.T("Aplicación");
+
+    private bool IsWindowsTool => _extra?.Tool == true || IsSystemTool || _extra is null && StartMenuService.IsToolName(Name);
+
+    private bool _selected;
+
+    /// <summary>Resultado elegido en la búsqueda: el que abre Enter y muestra el panel de detalles.</summary>
+    public bool IsSelected
+    {
+        get => _selected;
+        internal set
+        {
+            if (_selected == value)
+                return;
+            _selected = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+        }
+    }
     public bool HasCustomIcon => CustomIcons.Has(Id);
 
     internal void NotifyPinned() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPinned)));
@@ -91,6 +113,12 @@ public sealed class StartApp : INotifyPropertyChanged
             Notifications.NotificationService.ShowLocal(Loc.F("No se encontró {0}", Name),
                 Loc.T("Se movió o se borró. Quítalo y vuelve a anclarlo."));
             StartMenuService.Refresh();
+            return;
+        }
+        if (_extra is null && IsFile && Directory.Exists(Id))
+        {
+            // Una carpeta va a Archivos o al Explorador, según la opción.
+            StartMenuService.OpenPath(Id);
             return;
         }
         try
@@ -527,6 +555,13 @@ public static class StartMenuService
     // ── Apps de fuera del catálogo de Windows (ver ExtraApps) ───────────────
 
     private static List<ExtraApp> _extraFound = new();
+    private static List<ExtraApp> _toolsFound = new();
+    // Herramientas de Windows que no están en el catálogo: solo salen al buscar.
+    private static List<StartApp> _tools = new();
+    private static HashSet<string> _toolNames = new();
+
+    /// <summary>Si hay una herramienta de Windows con ese nombre (el catálogo trae algunas con un ID propio, como el Administrador de tareas).</summary>
+    internal static bool IsToolName(string name) => _toolNames.Contains(ExtraApps.NameKey(name));
     private static readonly Dictionary<string, StartApp> _extraApps = new(StringComparer.OrdinalIgnoreCase);
     private static bool _scanning;
 
@@ -539,7 +574,7 @@ public static class StartMenuService
         try
         {
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            _extraFound = await Task.Run(ExtraApps.Scan);
+            (_extraFound, _toolsFound) = await Task.Run(() => (ExtraApps.Scan(), SystemTools.Shortcuts()));
             Log.Info($"Apps de fuera del catálogo ({watch.ElapsedMilliseconds} ms): " + string.Join(" | ", _extraFound.Select(a => a.Name)));
             // Con una lectura nueva del catálogo en camino, ella arma la lista (ya con estos juegos).
             if (_pendingFolder is null)
@@ -593,6 +628,9 @@ public static class StartMenuService
         foreach (var extra in _extraFound)
             if (names.Add(ExtraApps.NameKey(extra.Name)) && ExtraStartApp(extra) is { } app)
                 catalog.Add(app);
+        var tools = _toolsFound.Select(ExtraStartApp).OfType<StartApp>().ToList();
+        _toolNames = tools.Select(t => ExtraApps.NameKey(t.Name)).ToHashSet();
+        _tools = tools.Where(t => names.Add(ExtraApps.NameKey(t.Name))).ToList();
         var items = catalog.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
         if (onlyIfChanged && items.Count == Apps.Count
             && items.Zip(Apps).All(pair => pair.First.Id == pair.Second.Id && pair.First.Name == pair.Second.Name))
@@ -659,7 +697,7 @@ public static class StartMenuService
         query = query.Trim();
         if (query.Length == 0)
             return [];
-        return Apps
+        return Apps.Concat(_tools)
             .Select(a => (App: a, Score: Score(a.Name, query)))
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)
@@ -677,6 +715,20 @@ public static class StartMenuService
         if (name.Split(' ', '-', '.').Any(w => w.StartsWith(query, StringComparison.CurrentCultureIgnoreCase)))
             return 2;
         return name.Contains(query, StringComparison.CurrentCultureIgnoreCase) ? 1 : 0;
+    }
+
+    /// <summary>Un archivo o carpeta encontrado al buscar (ver <see cref="FileSearch"/>).</summary>
+    public static StartApp? FileResult(string path)
+    {
+        try
+        {
+            return new StartApp(new ShellItem(path), path);
+        }
+        catch (Exception ex)
+        {
+            Log.Error($"No se pudo leer {path}", ex);
+            return null;
+        }
     }
 
     public static IReadOnlyList<RecentItem> GetRecent(int count)

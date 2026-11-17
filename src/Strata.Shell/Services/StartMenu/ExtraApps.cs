@@ -9,7 +9,8 @@ namespace Strata.Shell.Services.StartMenu;
 /// Una app que no está en shell:AppsFolder: <paramref name="Id"/> es lo que se abre (steam://…, un
 /// .exe o el acceso directo) y <paramref name="IconSource"/> el archivo del que sale el ícono.
 /// </summary>
-public sealed record ExtraApp(string Id, string Name, string IconSource, string Launch, string? WorkingDirectory);
+/// <param name="Tool">Herramienta de Windows (ver <see cref="SystemTools.Shortcuts"/>): solo sale al buscar.</param>
+public sealed record ExtraApp(string Id, string Name, string IconSource, string Launch, string? WorkingDirectory, bool Tool = false);
 
 /// <summary>
 /// Lo instalado que Windows no pone en "Todas las apps" porque no dejó acceso directo en el menú

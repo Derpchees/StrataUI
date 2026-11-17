@@ -54,6 +54,11 @@ public static class AppActions
         if (IsPackaged(app))
             return null;
         // Juego de Steam, Epic o GOG: su ejecutable principal (el del ícono).
+        // Acceso directo (del escritorio o una herramienta de Windows): su destino.
+        if (app.ExtraData is { } shortcut && shortcut.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            return ReadString(shortcut.Id, LinkTargetParsingPath) is { } target && Path.IsPathFullyQualified(target) && File.Exists(target)
+                ? target
+                : null;
         if (app.ExtraData is { } extra)
             return extra.IconSource.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && File.Exists(extra.IconSource)
                 ? extra.IconSource
@@ -67,7 +72,7 @@ public static class AppActions
     /// <summary>Acceso directo del menú Inicio con el mismo nombre que la app (como "Abrir ubicación" de Windows).</summary>
     public static string? ShortcutPath(StartApp app)
     {
-        if (app.IsFile)
+        if (app.IsFile || app.ExtraData is not null)
             return app.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase) && File.Exists(app.Id) ? app.Id : null;
         return Shortcuts().TryGetValue(app.Name, out var path) && File.Exists(path) ? path : null;
     }

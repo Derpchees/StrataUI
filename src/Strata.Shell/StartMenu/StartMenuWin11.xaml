@@ -14,7 +14,7 @@
         </Grid.RowDefinitions>
 
         <ui:TextBox x:Name="SearchBox" PlaceholderText="{l:T 'Escribe para buscar apps'}"
-                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="Search_KeyDown">
             <ui:TextBox.Icon>
                 <ui:SymbolIcon Symbol="Search24" />
             </ui:TextBox.Icon>
@@ -70,10 +70,17 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="240" />
+                </Grid.ColumnDefinitions>
                 <TextBlock Style="{StaticResource StartSectionTitle}" Margin="8,0,0,6" Text="{l:T 'Resultados'}" />
+                <ScrollViewer Grid.Row="1" Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                    <ContentControl Content="{Binding Selected}" ContentTemplate="{StaticResource SearchDetails}" Focusable="False" />
+                </ScrollViewer>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}" />
+                        <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource SearchRow}" />
                         <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
                                    Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
                                    Text="{l:T 'No hay apps con ese nombre. Pulsa Enter para ejecutarlo como comando.'}" />

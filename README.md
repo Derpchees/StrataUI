@@ -184,6 +184,9 @@ and everything goes back to normal.
   for any app.
 - Finds Store apps, installed programs and **Steam, Epic and GOG games**. Drag any app onto the
   taskbar to pin it.
+- **Search** finds apps, Windows tools (Task Manager, Registry Editor, Command Prompt…) and your files.
+  Move with the arrow keys; the Windows 11 and Profile styles show the selected result with its
+  actions (open, run as administrator, open file location, pin).
 - Uninstall from the right-click menu: Store apps go away directly, and parts of Windows that can't
   be removed don't offer it.
 - Update and shut down, or update and restart, when updates are pending. Opens on the monitor your

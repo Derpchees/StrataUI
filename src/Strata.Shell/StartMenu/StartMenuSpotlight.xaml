@@ -9,7 +9,7 @@
          resultados aparecen debajo al escribir. -->
     <StackPanel Margin="14,14,14,12">
         <ui:TextBox x:Name="SearchBox" FontSize="18" PlaceholderText="{l:T 'Buscar apps o escribir un comando'}"
-                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="Search_KeyDown">
             <ui:TextBox.Icon>
                 <ui:SymbolIcon Symbol="Search24" FontSize="20" />
             </ui:TextBox.Icon>
@@ -45,7 +45,7 @@
         <ScrollViewer MaxHeight="420" Margin="0,8,0,0" VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
             <StackPanel>
-                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}" />
+                <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource SearchRow}" />
                 <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
                            Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
                            Text="{l:T 'Sin resultados. Pulsa Enter para ejecutarlo como comando.'}" />

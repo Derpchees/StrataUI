@@ -10,6 +10,19 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.44.0] - 2026-11-16
+
+### Añadido
+
+- Búsqueda del menú Inicio: encuentra las herramientas de Windows (Administrador de tareas, Editor
+  del Registro, Símbolo del sistema, Servicios…) y los archivos y carpetas del usuario (con el índice
+  de Windows o, si está apagado, recorriendo Escritorio, Documentos, Descargas, Imágenes, Música y
+  Videos).
+- Las flechas mueven la selección entre los resultados y Enter abre el elegido; cada resultado dice
+  qué es (aplicación, herramienta de Windows, archivo o carpeta).
+- En los estilos Windows 11 y Perfil, un panel muestra el resultado elegido con sus acciones: abrir,
+  ejecutar como administrador, abrir la ubicación, anclar a Inicio o a la barra y desinstalar.
+
 ## [1.43.0] - 2026-11-13
 
 ### Agregado

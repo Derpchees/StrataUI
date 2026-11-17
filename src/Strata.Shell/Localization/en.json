@@ -1516,5 +1516,7 @@
   "Mostrar u ocultar las subcarpetas": "Show or hide subfolders",
   "Mostrar {0} en la barra lateral": "Show {0} in the sidebar",
   "Quitar de la barra lateral": "Remove from the sidebar",
-  "Mostrar en la barra lateral": "Show in the sidebar"
+  "Mostrar en la barra lateral": "Show in the sidebar",
+  "Herramienta de Windows": "Windows tool",
+  "Archivo": "File"
 }

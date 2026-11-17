@@ -24,7 +24,7 @@
         </StackPanel>
 
         <ui:TextBox x:Name="SearchBox" Grid.Row="1" Margin="0,16,0,0" PlaceholderText="{l:T 'Escribe para buscar apps'}"
-                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" KeyDown="Search_KeyDown">
+                    Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="Search_KeyDown">
             <ui:TextBox.Icon>
                 <ui:SymbolIcon Symbol="Search24" />
             </ui:TextBox.Icon>
@@ -70,14 +70,23 @@
                 </ScrollViewer>
             </Grid>
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
-                <StackPanel>
-                    <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource AppRow}" />
-                    <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
-                               Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
-                               Text="{l:T 'No hay apps con ese nombre. Pulsa Enter para ejecutarlo como comando.'}" />
-                </StackPanel>
-            </ScrollViewer>
+            <Grid Visibility="{Binding IsSearching, Converter={StaticResource BoolToVis}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="240" />
+                </Grid.ColumnDefinitions>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource SearchRow}" />
+                        <TextBlock Style="{StaticResource FlyoutHint}" Margin="10,4"
+                                   Visibility="{Binding NoResults, Converter={StaticResource BoolToVis}}"
+                                   Text="{l:T 'No hay apps con ese nombre. Pulsa Enter para ejecutarlo como comando.'}" />
+                    </StackPanel>
+                </ScrollViewer>
+                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                    <ContentControl Content="{Binding Selected}" ContentTemplate="{StaticResource SearchDetails}" Focusable="False" />
+                </ScrollViewer>
+            </Grid>
         </Grid>
 
         <Separator Grid.Row="3" Margin="0,10,0,8" Opacity="0.35" />

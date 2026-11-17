@@ -33,4 +33,30 @@ public static class SystemTools
             file = id[(windows.Length + 1)..];
         return file != null && !Everyday.Contains(System.IO.Path.GetFileName(file));
     }
+
+    /// <summary>
+    /// Los accesos directos de "Herramientas de Windows" (Administrative Tools y System Tools del menú
+    /// Inicio: Administrador de tareas, Editor del Registro, Símbolo del sistema…), para la búsqueda.
+    /// El nombre lo pone el Shell (traducido).
+    /// </summary>
+    public static List<ExtraApp> Shortcuts()
+    {
+        var found = new List<ExtraApp>();
+        foreach (var programs in new[] { Environment.SpecialFolder.CommonPrograms, Environment.SpecialFolder.Programs })
+            foreach (var folder in new[] { "Administrative Tools", "System Tools" })
+            {
+                var dir = System.IO.Path.Combine(Environment.GetFolderPath(programs), folder);
+                try
+                {
+                    if (System.IO.Directory.Exists(dir))
+                        foreach (var link in System.IO.Directory.EnumerateFiles(dir, "*.lnk"))
+                            found.Add(new ExtraApp(link, "", link, link, null, Tool: true));
+                }
+                catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+                {
+                    Log.Error($"No se pudo leer {dir}", ex);
+                }
+            }
+        return found;
+    }
 }
