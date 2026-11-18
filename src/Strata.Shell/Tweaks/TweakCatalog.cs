@@ -66,6 +66,14 @@ public static class TweakCatalog
     private static RegSetting PolicyCU(string path, string name, object on) => CU(path, name, null, on);
     private static RegSetting PolicyLM(string path, string name, object on) => LM(path, name, null, on);
 
+    // ExtensionSettings: directiva de diccionario, como texto JSON (REG_SZ) en el registro.
+    private static RegSetting Json(string path, string json) =>
+        LM(path, "ExtensionSettings", null, json, kind: RegistryValueKind.String);
+
+    // uBlock Origin Lite de la Chrome Web Store (Edge también la instala con esa update_url).
+    private const string UBlockLite =
+        """{"ddkjiahejlhfcafbddmgiahcphecmpfh":{"installation_mode":"force_installed","update_url":"https://clients2.google.com/service/update2/crx"}}""";
+
     public static IReadOnlyList<Tweak> All { get; } =
     [
         // ── Privacidad ─────────────────────────────────────────────────────────
@@ -377,6 +385,13 @@ public static class TweakCatalog
             [PolicyLM(@"SOFTWARE\Policies\Mozilla\Firefox", "DisableTelemetry", 1),
              PolicyLM(@"SOFTWARE\Policies\Mozilla\Firefox", "DisablePocket", 1)],
             Available: () => AppInstalled("firefox.exe")),
+        // Chrome y Edge instalan uBlock Origin Lite de la Chrome Web Store; Brave ya trae su bloqueador.
+        new("browser-adblock", Browsers, Loc.T("Bloquear anuncios en los navegadores (uBlock Origin)"),
+            Loc.T("Instala por directiva uBlock Origin Lite en Chrome y Edge y uBlock Origin en Firefox: quita también los anuncios de YouTube y Twitch. El navegador muestra \"Administrado por tu organización\" mientras está activo."),
+            [Json(@"SOFTWARE\Policies\Google\Chrome", UBlockLite),
+             Json(@"SOFTWARE\Policies\Microsoft\Edge", UBlockLite),
+             Json(@"SOFTWARE\Policies\Mozilla\Firefox",
+                 """{"uBlock0@raymondhill.net":{"installation_mode":"force_installed","install_url":"https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"}}""")]),
 
         // ── Más privacidad ─────────────────────────────────────────────────────
         new("feedback-requests", Privacy, Loc.T("No pedir opiniones"),

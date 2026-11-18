@@ -343,7 +343,7 @@ can be undone. Its pages are grouped in tabs:
 |---|---|
 | **Performance** | General responsiveness, memory (fewer svchost processes, SysMain and other background services), games (Game Mode, Game DVR, fullscreen optimizations) and hardware vendor services. |
 | **Cleanup and apps** | Temp files, crash dumps and update caches (never the Recycle Bin); preinstalled apps, with dedicated cards for **Microsoft Edge** and the **Xbox Game Bar**; browser extras for Edge, Chrome, Firefox and Brave. |
-| **Privacy** | System-wide ad blocking (hosts file, for apps and browsers), telemetry, ads, feedback requests, error reporting, AI features and Windows Update (including keeping your own drivers). |
+| **Privacy** | System-wide ad blocking (hosts file, for apps and browsers) plus uBlock Origin in Chrome, Edge and Firefox, telemetry, ads, feedback requests, error reporting, AI features and Windows Update (including keeping your own drivers). |
 | **Customize Windows** | System behavior, appearance, File Explorer and multitasking. |
 | **Backup** | Every original value, to undo any change. |
 

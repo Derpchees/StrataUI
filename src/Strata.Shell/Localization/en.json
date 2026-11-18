@@ -1527,5 +1527,7 @@
   "Strata blanco": "Strata white",
   "Strata negro": "Strata black",
   "Bloquear anuncios en todo el equipo": "Block ads on the whole PC",
+  "Bloquear anuncios en los navegadores (uBlock Origin)": "Block ads in browsers (uBlock Origin)",
+  "Instala por directiva uBlock Origin Lite en Chrome y Edge y uBlock Origin en Firefox: quita también los anuncios de YouTube y Twitch. El navegador muestra \"Administrado por tu organización\" mientras está activo.": "Installs uBlock Origin Lite in Chrome and Edge and uBlock Origin in Firefox through policy: also removes YouTube and Twitch ads. The browser shows \"Managed by your organization\" while it is on.",
   "Bloquea los servidores de publicidad en el archivo hosts: sirve para apps (Blitz, CurseForge, Modrinth…) y para todos los navegadores. Los anuncios de Windows se quitan con los ajustes de abajo.": "Blocks ad servers in the hosts file: works for apps (Blitz, CurseForge, Modrinth…) and every browser. Windows ads are removed with the settings below."
 }

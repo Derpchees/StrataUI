@@ -10,6 +10,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.51.0] - 2026-11-17
+
+### Añadido
+
+- Optimización › Navegadores: "Bloquear anuncios en los navegadores (uBlock Origin)". Instala por
+  directiva uBlock Origin Lite en Chrome y Edge y uBlock Origin en Firefox (quita también los anuncios
+  de YouTube y Twitch); apagarlo quita la directiva.
+
 ## [1.50.0] - 2026-11-17
 
 ### Añadido
