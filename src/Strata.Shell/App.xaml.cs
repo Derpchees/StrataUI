@@ -78,6 +78,11 @@ public partial class App : Application
             Shutdown(Tweaks.TweakEngine.RunElevatedCommand(e.Args));
             return;
         }
+        if (e.Args.Length > 0 && e.Args[0] == Tweaks.HostsAdBlock.Arg)
+        {
+            Shutdown(Tweaks.HostsAdBlock.RunElevated(e.Args));
+            return;
+        }
         if (e.Args.Length == 1 && e.Args[0] == Tweaks.EdgeRemover.Arg)
         {
             Shutdown(Tweaks.EdgeRemover.RunElevated());

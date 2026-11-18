@@ -46,6 +46,7 @@ public static class ElevatedBroker
                                && SamePath(args[3], TweakEngine.Backup.FilePath),
             "--restore-tweaks" => args.Length == 2 && SamePath(args[1], TweakEngine.Backup.FilePath),
             "--restore-point" => args.Length == 1,
+            HostsAdBlock.Arg => args.Length == 2 && args[1] is "on" or "off",
             // Estos validan sus argumentos en el proceso elevado (solo sus propiedades, categorías o ajustes).
             Services.Audio.AudioDeviceOptions.ElevatedArg => args.Length == 6,
             Services.Cleanup.JunkCleaner.ElevatedArg => args.Length == 3,

@@ -10,6 +10,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.50.0] - 2026-11-17
+
+### Añadido
+
+- Optimización › Privacidad: "Bloquear anuncios en todo el equipo". Manda a 0.0.0.0 los servidores
+  de publicidad en el archivo hosts (entre marcas propias; apagarlo solo quita ese bloque), así que
+  sirve para apps como Blitz, CurseForge o Modrinth y para todos los navegadores. Pide administrador.
+
 ## [1.49.1] - 2026-11-17
 
 ### Cambiado

@@ -174,7 +174,28 @@ public abstract class TweaksPage : Page
 }
 
 public sealed class PrivacyPage() : TweaksPage(TweakCatalog.Privacy, Loc.T("Privacidad"),
-    Loc.T("Telemetría, anuncios, sugerencias y rastreo."), SymbolRegular.ShieldLock24);
+    Loc.T("Telemetría, anuncios, sugerencias y rastreo."), SymbolRegular.ShieldLock24)
+{
+    protected override IEnumerable<UIElement> ExtraContent()
+    {
+        var header = new StackPanel();
+        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Bloquear anuncios en todo el equipo") });
+        header.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), TextWrapping = TextWrapping.Wrap,
+            Text = Loc.T("Bloquea los servidores de publicidad en el archivo hosts: sirve para apps (Blitz, CurseForge, Modrinth…) y para todos los navegadores. Los anuncios de Windows se quitan con los ajustes de abajo.") });
+        var toggle = new ToggleSwitch();
+        void Refresh() => toggle.IsChecked = HostsAdBlock.IsOn;
+        Refresh();
+        Loaded += (_, _) => Refresh();
+        toggle.Click += async (_, _) =>
+        {
+            toggle.IsEnabled = false;
+            await HostsAdBlock.SetAsync(toggle.IsChecked == true);
+            Refresh();
+            toggle.IsEnabled = true;
+        };
+        yield return new CardControl { Style = (Style)FindResource("HubCard"), Header = header, Content = toggle };
+    }
+}
 
 public sealed class AIPage() : TweaksPage(TweakCatalog.AI, Loc.T("Inteligencia artificial"),
     Loc.T("Copilot, Recall y las funciones de IA integradas en las apps de Windows."), SymbolRegular.BrainCircuit24);

@@ -1525,5 +1525,7 @@
   "Se aplican a todo Windows; los de antes vuelven al elegir Los de Windows o al salir de Strata UI.": "Appliqués à tout Windows ; les précédents reviennent en choisissant Ceux de Windows ou en quittant Strata UI.",
   "Los de Windows": "Ceux de Windows",
   "Strata blanco": "Strata blanc",
-  "Strata negro": "Strata noir"
+  "Strata negro": "Strata noir",
+  "Bloquear anuncios en todo el equipo": "Bloquer les publicités sur tout l'ordinateur",
+  "Bloquea los servidores de publicidad en el archivo hosts: sirve para apps (Blitz, CurseForge, Modrinth…) y para todos los navegadores. Los anuncios de Windows se quitan con los ajustes de abajo.": "Bloque les serveurs publicitaires dans le fichier hosts : fonctionne pour les apps (Blitz, CurseForge, Modrinth…) et tous les navigateurs. Les publicités de Windows se retirent avec les réglages ci-dessous."
 }
