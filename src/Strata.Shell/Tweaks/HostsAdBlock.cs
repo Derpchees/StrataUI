@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -142,13 +143,71 @@ public static class HostsAdBlock
         var path = HostsPath;
         var text = File.Exists(path) ? File.ReadAllText(path) : "";
         var updated = Apply(text, on);
-        if (updated == text)
-            return;
-        if (File.Exists(path))
-            File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);
-        File.WriteAllText(path, updated, new UTF8Encoding(false));
+        if (updated != text)
+        {
+            if (File.Exists(path))
+                File.SetAttributes(path, File.GetAttributes(path) & ~FileAttributes.ReadOnly);
+            File.WriteAllText(path, updated, new UTF8Encoding(false));
+        }
+        RunDnsScript(on);
         DnsFlushResolverCache();
     }
+
+    // Sin redirigir la salida: esperar por tuberías dejó colgado al proceso elevado (y con él el .exe).
+    private static void RunDnsScript(bool on)
+    {
+        var info = new ProcessStartInfo("powershell.exe") { UseShellExecute = false, CreateNoWindow = true };
+        foreach (var arg in new[] { "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-EncodedCommand",
+                     Convert.ToBase64String(Encoding.Unicode.GetBytes(DnsScript(on))) })
+            info.ArgumentList.Add(arg);
+        using var process = Process.Start(info)!;
+        if (!process.WaitForExit(TimeSpan.FromMinutes(1)))
+        {
+            process.Kill(true);
+            throw new TimeoutException("El cambio de DNS tardó más de un minuto");
+        }
+    }
+
+    private static string DnsBackupPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "StrataUI", "dns-backup.json");
+
+    /// <summary>
+    /// DNS de AdGuard (bloquea cada dominio de anuncios con todos sus subdominios, cosa que el hosts no
+    /// puede) en los adaptadores físicos, con DoH. Guarda el DNS de antes (vacío = DHCP) y al apagar lo
+    /// devuelve tal cual, por familia (IPv4/IPv6).
+    /// </summary>
+    internal static string DnsScript(bool on) => $$"""
+        $ErrorActionPreference = 'Continue'
+        $f = '{{DnsBackupPath.Replace("'", "''")}}'
+        function Set-Family($fam, $idx, $list) {
+            $l = @("$list" -split '[,\s]+' | Where-Object { $_ })
+            if (-not $l) { netsh interface $fam set dnsservers name=$idx source=dhcp | Out-Null; return }
+            netsh interface $fam set dnsservers name=$idx source=static address=$($l[0]) register=primary validate=no | Out-Null
+            for ($i = 1; $i -lt $l.Count; $i++) { netsh interface $fam add dnsservers name=$idx address=$($l[$i]) index=$($i + 1) validate=no | Out-Null }
+        }
+        function Key($fam, $a) { "HKLM:\SYSTEM\CurrentControlSet\Services\$fam\Parameters\Interfaces\$($a.InterfaceGuid)" }
+        $adapters = @(Get-NetAdapter -Physical)
+        if ({{(on ? "$true" : "$false")}}) {
+            if (-not (Test-Path $f)) {
+                New-Item -ItemType Directory -Force (Split-Path $f) | Out-Null
+                $b = foreach ($a in $adapters) { [pscustomobject]@{ Guid = "$($a.InterfaceGuid)"; V4 = (Get-ItemProperty (Key 'Tcpip' $a) -EA 0).NameServer; V6 = (Get-ItemProperty (Key 'Tcpip6' $a) -EA 0).NameServer } }
+                ConvertTo-Json @($b) | Set-Content -Encoding UTF8 $f
+            }
+            foreach ($s in '94.140.14.14', '94.140.15.15', '2a10:50c0::ad1:ff', '2a10:50c0::ad2:ff') {
+                if (-not (Get-DnsClientDohServerAddress -ServerAddress $s -EA 0)) { Add-DnsClientDohServerAddress -ServerAddress $s -DohTemplate 'https://dns.adguard-dns.com/dns-query' -AllowFallbackToUdp $true -AutoUpgrade $true | Out-Null }
+            }
+            foreach ($a in $adapters) { Set-Family ipv4 $a.ifIndex '94.140.14.14,94.140.15.15'; Set-Family ipv6 $a.ifIndex '2a10:50c0::ad1:ff,2a10:50c0::ad2:ff' }
+        } elseif (Test-Path $f) {
+            # En PowerShell 5, @(... | ConvertFrom-Json) da la lista entera como un solo elemento.
+            $entries = Get-Content $f -Raw | ConvertFrom-Json
+            foreach ($e in $entries) {
+                $a = $adapters | Where-Object { "$($_.InterfaceGuid)" -eq $e.Guid }
+                if ($a) { Set-Family ipv4 $a.ifIndex $e.V4; Set-Family ipv6 $a.ifIndex $e.V6 }
+            }
+            Remove-Item $f
+        }
+        Clear-DnsClientCache
+        """;
 
     /// <summary>El texto del hosts sin el bloque de Strata UI y, si <paramref name="on"/>, con él al final.</summary>
     internal static string Apply(string text, bool on)

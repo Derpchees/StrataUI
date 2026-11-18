@@ -10,6 +10,19 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.52.0] - 2026-11-17
+
+### Cambiado
+
+- "Bloquear anuncios en todo el equipo" usa además el DNS de AdGuard (cifrado): bloquea cada dominio
+  de publicidad con todos sus subdominios, que el archivo hosts no alcanza (Blitz y otras apps usan
+  cientos). Al apagarlo vuelve el DNS que tenías (o el automático).
+
+### Corregido
+
+- El ícono de una app de escritorio que se dañó y se reinstaló volvía en blanco en Inicio y en los
+  anclados de la barra: ahora se lee del archivo de la app y se vuelve a leer si cambia.
+
 ## [1.51.0] - 2026-11-17
 
 ### Añadido

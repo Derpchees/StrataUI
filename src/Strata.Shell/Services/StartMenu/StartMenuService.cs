@@ -43,26 +43,45 @@ public sealed class StartApp : INotifyPropertyChanged
     // Las herramientas de Windows no traen nombre: el del Shell ya viene traducido (desktop.ini).
     public string Name => _extra is { Name.Length: > 0 } extra ? extra.Name : _item.DisplayName ?? Id;
     /// <summary>El ícono elegido con "Cambiar ícono" o, si no hay, el de Windows.</summary>
-    public ImageSource? Icon => CustomIcons.Get(Id) ?? WebAppIcon ?? _item.LargeIcon;
+    public ImageSource? Icon => CustomIcons.Get(Id) ?? FileIcon ?? _item.LargeIcon;
 
-    // Las apps web de Chromium reescriben su .ico después de instalarse y la caché de íconos de
-    // Windows se queda con el provisional (un cubo gris): se lee directo del archivo.
-    private ImageSource? WebAppIcon
+    // La caché de íconos de Windows se queda con el ícono que vio cuando el archivo faltaba o era
+    // provisional (una app dañada y reinstalada, el cubo gris de las apps web de Chromium): las apps
+    // de escritorio lo leen directo del archivo, en segundo plano, y se guarda por fecha del archivo
+    // (al reinstalar cambia y se vuelve a leer).
+    private ImageSource? FileIcon
     {
         get
         {
-            if (!_webIconRead)
+            if (!_fileIconRead && !IsFile && _extra is null && !AppActions.IsPackaged(this))
             {
-                _webIconRead = true;
-                if (!IsFile && _extra is null && Id.Contains("_crx_", StringComparison.OrdinalIgnoreCase)
-                    && AppActions.ShortcutIconFile(this) is { } file)
-                    _webIcon = CustomIcons.FromFile(file);
+                _fileIconRead = true;
+                Task.Run(() =>
+                {
+                    if (AppActions.ShortcutIconFile(this) is not { } file)
+                        return;
+                    var key = file + "|" + File.GetLastWriteTimeUtc(file).Ticks;
+                    ImageSource? icon;
+                    lock (FileIcons)
+                        FileIcons.TryGetValue(key, out icon);
+                    icon ??= CustomIcons.FromFile(file);
+                    if (icon is null)
+                        return;
+                    lock (FileIcons)
+                        FileIcons[key] = icon;
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                    {
+                        _fileIcon = icon;
+                        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Icon)));
+                    });
+                });
             }
-            return _webIcon;
+            return _fileIcon;
         }
     }
-    private ImageSource? _webIcon;
-    private bool _webIconRead;
+    private static readonly Dictionary<string, ImageSource> FileIcons = new(StringComparer.OrdinalIgnoreCase);
+    private ImageSource? _fileIcon;
+    private bool _fileIconRead;
     public string Group => GroupOf(Name);
 
     /// <summary>Archivo, acceso directo o carpeta anclado (no está en el catálogo de apps).</summary>

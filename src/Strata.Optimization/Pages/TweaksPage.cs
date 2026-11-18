@@ -181,7 +181,7 @@ public sealed class PrivacyPage() : TweaksPage(TweakCatalog.Privacy, Loc.T("Priv
         var header = new StackPanel();
         header.Children.Add(new TextBlock { Style = (Style)FindResource("CardTitle"), Text = Loc.T("Bloquear anuncios en todo el equipo") });
         header.Children.Add(new TextBlock { Style = (Style)FindResource("CardDescription"), TextWrapping = TextWrapping.Wrap,
-            Text = Loc.T("Bloquea los servidores de publicidad en el archivo hosts: sirve para apps (Blitz, CurseForge, Modrinth…) y para todos los navegadores. Los anuncios de Windows se quitan con los ajustes de abajo.") });
+            Text = Loc.T("Usa el DNS de AdGuard (cifrado) y bloquea los servidores de publicidad en el archivo hosts: sirve para apps (Blitz, CurseForge, Modrinth…) y para todos los navegadores. Al apagarlo vuelve tu DNS de antes. Los anuncios de Windows se quitan con los ajustes de abajo.") });
         var toggle = new ToggleSwitch();
         void Refresh() => toggle.IsChecked = HostsAdBlock.IsOn;
         Refresh();

@@ -77,7 +77,10 @@ public static class AppActions
         return Shortcuts().TryGetValue(app.Name, out var path) && File.Exists(path) ? path : null;
     }
 
-    /// <summary>Archivo del ícono que fija el acceso directo de Inicio de la app (null si no fija uno o no existe).</summary>
+    /// <summary>
+    /// Archivo del ícono del acceso directo de Inicio de la app: el que fija o, si no fija uno, su .exe
+    /// (null si no hay, no existe o es otro ícono del archivo que el primero).
+    /// </summary>
     internal static string? ShortcutIconFile(StartApp app)
     {
         if (ShortcutPath(app) is not { } lnk)
@@ -85,9 +88,15 @@ public static class AppActions
         try
         {
             dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("WScript.Shell")!)!;
-            string location = shell.CreateShortcut(lnk).IconLocation; // "ruta,índice"
+            dynamic link = shell.CreateShortcut(lnk);
+            string location = link.IconLocation; // "ruta,índice"
             int comma = location.LastIndexOf(',');
-            var file = Environment.ExpandEnvironmentVariables(comma > 0 ? location[..comma] : location);
+            if (comma >= 0 && location[(comma + 1)..].Trim() is not ("0" or ""))
+                return null; // shortcut: solo se extrae el primer ícono del archivo; otro índice queda en la caché de Windows
+            var file = Environment.ExpandEnvironmentVariables(comma >= 0 ? location[..comma] : location);
+            string target = link.TargetPath;
+            if (file.Length == 0 && target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                file = target;
             return file.Length > 0 && File.Exists(file) ? file : null;
         }
         catch (Exception ex)
@@ -101,7 +110,16 @@ public static class AppActions
     private static DateTime _shortcutsAt;
 
     /// <summary>Accesos directos de Inicio por nombre; se vuelven a leer si tienen más de un minuto.</summary>
+    private static readonly object ShortcutsLock = new();
+
+    // Se lee también desde hilos de fondo (íconos de StartApp).
     private static Dictionary<string, string> Shortcuts()
+    {
+        lock (ShortcutsLock)
+            return ReadShortcuts();
+    }
+
+    private static Dictionary<string, string> ReadShortcuts()
     {
         if (_shortcuts != null && DateTime.UtcNow - _shortcutsAt < TimeSpan.FromMinutes(1))
             return _shortcuts;
