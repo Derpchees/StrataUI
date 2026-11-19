@@ -115,8 +115,16 @@ public static class NotificationService
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
 
     private static UserNotificationListener? _listener;
+    /// <summary>Con la base vigilada, el temporizador solo es un respaldo por si se pierde algún aviso.</summary>
+    private static readonly TimeSpan FallbackInterval = TimeSpan.FromSeconds(30);
+
     private static DispatcherTimer? _timer;
+    private static FileSystemWatcher? _watcher;
+    private static bool _watching;
+    private static bool _debouncePending;
     private static bool _polling;
+    /// <summary>Llegó un aviso mientras se consultaba: al terminar se vuelve a mirar.</summary>
+    private static bool _pollAgain;
     private static bool _loaded;
     private static int _waitedForCatalog;
     /// <summary>
@@ -151,7 +159,7 @@ public static class NotificationService
     {
         if (!Settings.Current.NotificationsEnabled)
         {
-            _timer?.Stop();
+            Shutdown();
             _generation++;
             Items.Clear();
             Dismissed.Clear();
@@ -191,11 +199,76 @@ public static class NotificationService
 
         _timer ??= new DispatcherTimer(PollInterval, DispatcherPriority.Background, async (_, _) => await PollAsync(),
                                        System.Windows.Application.Current.Dispatcher);
+        _timer.Interval = PollInterval;
         _timer.Start();
+        WatchDatabase();
         await PollAsync();
     }
 
-    public static void Shutdown() => _timer?.Stop();
+    public static void Shutdown()
+    {
+        _timer?.Stop();
+        if (_watcher != null)
+            _watcher.EnableRaisingEvents = false;
+    }
+
+    /// <summary>
+    /// Windows escribe en su base de notificaciones cada vez que llega o se quita una: con eso basta
+    /// para consultar justo entonces, y el temporizador queda como respaldo lento (en reposo la
+    /// carpeta no cambia, así que no se despierta ni a Strata UI ni al servicio de notificaciones).
+    /// </summary>
+    private static void WatchDatabase()
+    {
+        try
+        {
+            if (_watcher == null)
+            {
+                string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                                             "Microsoft", "Windows", "Notifications");
+                if (!Directory.Exists(folder))
+                    return;
+                _watcher = new FileSystemWatcher(folder, "wpndatabase.db*")
+                {
+                    NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
+                };
+                _watcher.Changed += (_, _) => System.Windows.Application.Current?.Dispatcher.BeginInvoke(
+                    DispatcherPriority.Background, OnDatabaseChanged);
+                _watcher.Error += (_, e) =>
+                {
+                    Log.Info($"Notificaciones: se dejó de vigilar la base ({e.GetException().Message})");
+                    System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
+                    {
+                        _watching = false;
+                        if (_timer != null)
+                            _timer.Interval = PollInterval;
+                    });
+                };
+            }
+            _watcher.EnableRaisingEvents = true;
+            _watching = true;
+        }
+        catch (Exception ex)
+        {
+            _watching = false;
+            Log.Info($"Notificaciones: no se puede vigilar la base, se consulta cada {PollInterval.TotalSeconds:0} s ({ex.Message})");
+        }
+    }
+
+    private static void OnDatabaseChanged()
+    {
+        // Una escritura de Windows dispara varios avisos seguidos: se juntan en una consulta.
+        if (_debouncePending || !Running)
+            return;
+        _debouncePending = true;
+        _ = DebouncedPollAsync();
+    }
+
+    private static async Task DebouncedPollAsync()
+    {
+        await Task.Delay(150);
+        _debouncePending = false;
+        await PollAsync();
+    }
 
     /// <summary>Llegaron íconos de sitios: se ponen en sus notificaciones.</summary>
     private static void OnSiteIconsChanged()
@@ -209,8 +282,13 @@ public static class NotificationService
 
     private static async Task PollAsync()
     {
-        if (_polling || _listener is null)
+        if (_listener is null)
             return;
+        if (_polling)
+        {
+            _pollAgain = true;
+            return;
+        }
         // La primera lectura espera al catálogo de Inicio (de ahí salen los íconos), como mucho ~10 s.
         if (!_loaded && StartMenu.StartMenuService.Apps.Count == 0 && _waitedForCatalog++ < 5)
             return;
@@ -266,7 +344,12 @@ public static class NotificationService
                     Arrived?.Invoke(item);
             }
             if (generation == _generation)
+            {
                 _loaded = true;
+                // Ya cargada la primera lectura (que espera al catálogo), basta el respaldo lento.
+                if (_watching && _watcher?.EnableRaisingEvents == true && _timer != null && _timer.Interval != FallbackInterval)
+                    _timer.Interval = FallbackInterval;
+            }
             if (changed)
                 Changed?.Invoke();
             // Alguna aún no estaba en la base: se vuelve a mirar enseguida, no en el siguiente ciclo.
@@ -280,6 +363,11 @@ public static class NotificationService
         finally
         {
             _polling = false;
+        }
+        if (_pollAgain)
+        {
+            _pollAgain = false;
+            await PollAsync();
         }
     }
 

@@ -34,7 +34,7 @@ public sealed class FileEntry : INotifyPropertyChanged
         Size = item.IsFolder ? -1 : item.Size;
         Modified = item.Deleted;
         Attributes = item.IsFolder ? FileAttributes.Directory : FileAttributes.Normal;
-        TypeName = item.OriginalFolder;
+        TypeName = item.Orphan ? Loc.T("Borrado sin terminar") : item.OriginalFolder;
         Recycled = item;
     }
 

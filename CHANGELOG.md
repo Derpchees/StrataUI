@@ -10,6 +10,22 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.53.0] - 2026-11-19
+
+### Cambiado
+
+- Las notificaciones de Windows ya no se consultan cada 2 segundos: Strata UI se entera cuando cambia
+  la base de notificaciones de Windows (y revisa cada 30 segundos por si acaso). Menos uso del
+  procesador con la PC en reposo.
+
+### Corregido
+
+- Eliminar definitivamente desde la Papelera una carpeta con miles de archivos (por ejemplo un
+  proyecto con node_modules) cerraba Strata UI y la dejaba a medias. Ahora se borra archivo por
+  archivo en segundo plano; lo que está en uso se salta y se avisa.
+- Lo que quedó en la Papelera de un borrado que no terminó ya se ve (como "Borrado sin terminar")
+  y se puede eliminar; antes ocupaba espacio sin aparecer.
+
 ## [1.52.0] - 2026-11-17
 
 ### Cambiado

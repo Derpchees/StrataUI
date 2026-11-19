@@ -8,6 +8,9 @@ namespace Strata.Shell.Services.Files;
 public sealed record RecycledItem(string OriginalPath, DateTime Deleted, long Size, bool IsFolder, string DataPath, string InfoPath)
 {
     public string Name => Path.GetFileName(OriginalPath);
+
+    /// <summary>Un $R… que se quedó sin su $I (un borrado que no terminó): no se sabe de dónde salió, solo se puede eliminar.</summary>
+    public bool Orphan => InfoPath.Length == 0;
     public string OriginalFolder => Path.GetDirectoryName(OriginalPath) ?? OriginalPath;
 }
 
@@ -34,12 +37,23 @@ public static class RecycleBin
                 string folder = Path.Combine(drive.RootDirectory.FullName, "$Recycle.Bin", sid);
                 if (!Directory.Exists(folder))
                     continue;
+                var known = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var info in Directory.EnumerateFiles(folder, "$I*"))
                 {
                     string data = Path.Combine(folder, "$R" + Path.GetFileName(info)[2..]);
+                    known.Add(data);
                     bool isFolder = Directory.Exists(data);
                     if ((isFolder || File.Exists(data)) && Parse(File.ReadAllBytes(info)) is { } parsed)
                         items.Add(new RecycledItem(parsed.Path, parsed.Deleted, parsed.Size, isFolder, data, info));
+                }
+                // Los $R… sin ficha: se muestran con su nombre interno para poder eliminarlos (si no, ocupan sin verse).
+                foreach (var data in Directory.EnumerateFileSystemEntries(folder, "$R*"))
+                {
+                    if (known.Contains(data))
+                        continue;
+                    bool isFolder = Directory.Exists(data);
+                    var date = isFolder ? Directory.GetLastWriteTime(data) : File.GetLastWriteTime(data);
+                    items.Add(new RecycledItem(data, date, isFolder ? -1 : new FileInfo(data).Length, isFolder, data, ""));
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -84,6 +98,8 @@ public static class RecycleBin
     /// <summary>Lo devuelve a su carpeta (la crea si ya no existe); si ahí hay uno con ese nombre, "nombre (2)".</summary>
     public static string Restore(RecycledItem item)
     {
+        if (item.Orphan)
+            throw new IOException("No se sabe de dónde salió: solo se puede eliminar");
         Directory.CreateDirectory(item.OriginalFolder);
         string target = item.OriginalPath;
         string name = Path.GetFileNameWithoutExtension(item.OriginalPath), extension = item.IsFolder ? "" : Path.GetExtension(item.OriginalPath);
@@ -99,10 +115,78 @@ public static class RecycleBin
         return target;
     }
 
-    /// <summary>Quita su ficha ($I) después de borrar su contenido ($R) para siempre.</summary>
-    public static void Forget(RecycledItem item)
+    /// <summary>
+    /// Lo borra para siempre: su contenido ($R) archivo por archivo (sin el Shell de Windows, que con
+    /// carpetas de miles de archivos fallaba a medias) y después su ficha ($I). Lo que no se pudo
+    /// borrar (en uso, sin permiso) se salta y se devuelve; la ficha queda si quedó algo.
+    /// </summary>
+    public static List<string> DeleteForever(RecycledItem item)
     {
-        if (!File.Exists(item.DataPath) && !Directory.Exists(item.DataPath) && File.Exists(item.InfoPath))
-            File.Delete(item.InfoPath);
+        var failed = new List<string>();
+        if (item.IsFolder)
+            DeleteTree(item.DataPath, failed);
+        else
+            DeleteFile(item.DataPath, failed);
+        if (failed.Count == 0 && !item.Orphan)
+            DeleteFile(item.InfoPath, failed);
+        return failed;
     }
+
+    private static void DeleteTree(string folder, List<string> failed)
+    {
+        try
+        {
+            // Un enlace (junction, symlink) se quita sin entrar: lo de adentro no es de la Papelera.
+            if ((File.GetAttributes(folder) & FileAttributes.ReparsePoint) == 0)
+            {
+                foreach (var entry in new DirectoryInfo(folder).EnumerateFileSystemInfos())
+                {
+                    if (entry is DirectoryInfo)
+                        DeleteTree(entry.FullName, failed);
+                    else
+                        DeleteFile(entry.FullName, failed);
+                }
+            }
+            new DirectoryInfo(folder) { Attributes = FileAttributes.Directory }.Delete();
+        }
+        catch (DirectoryNotFoundException)
+        {
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            failed.Add(folder);
+        }
+    }
+
+    private static void DeleteFile(string path, List<string> failed)
+    {
+        try
+        {
+            var file = new FileInfo(path);
+            if (!file.Exists)
+                return;
+            if ((file.Attributes & FileAttributes.ReadOnly) != 0)
+                file.Attributes &= ~FileAttributes.ReadOnly;
+            file.Delete();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            failed.Add(path);
+        }
+    }
+
+    /// <summary>Avisa al Shell que cambió la Papelera (su ícono lleno/vacío en el escritorio).</summary>
+    public static void NotifyChanged()
+    {
+        try
+        {
+            SHUpdateRecycleBinIcon();
+        }
+        catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException)
+        {
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("shell32.dll")]
+    private static extern void SHUpdateRecycleBinIcon();
 }

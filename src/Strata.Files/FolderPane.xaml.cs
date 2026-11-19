@@ -1654,19 +1654,36 @@ public partial class FolderPane : UserControl
         var items = entries.Select(e => e.Recycled).OfType<RecycledItem>().ToList();
         if (items.Count == 0)
             return;
-        if (!await FileOperations.DeleteForeverAsync(items.Select(i => i.DataPath).ToList(), Handle, items.Select(i => i.Name).ToList()))
+        if (!await FileOperations.ConfirmDeleteForeverAsync(items[0].Name, items.Count, Handle))
             return;
-        foreach (var item in items)
+        _reload.Stop();
+        ShowMessageInfo(Loc.T("Eliminando…"));
+        var failed = await Task.Run(() =>
         {
-            try
+            var left = new List<(RecycledItem Item, List<string> Paths)>();
+            foreach (var item in items)
             {
-                RecycleBin.Forget(item);
+                try
+                {
+                    if (RecycleBin.DeleteForever(item) is { Count: > 0 } paths)
+                        left.Add((item, paths));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Archivos: falló al eliminar {item.OriginalPath} de la Papelera", ex);
+                    left.Add((item, [item.DataPath]));
+                }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                Log.Error($"Archivos: no se pudo quitar la ficha de {item.OriginalPath} de la Papelera", ex);
-            }
-        }
+            RecycleBin.NotifyChanged();
+            return left;
+        });
+        foreach (var (item, paths) in failed)
+            Log.Info($"Archivos: de {item.OriginalPath} ({item.DataPath}) no se pudieron eliminar {paths.Count}: {string.Join(" | ", paths.Take(5))}");
+        if (failed.Count == 0)
+            ShowMessageInfo(items.Count == 1 ? Loc.T("1 elemento eliminado") : Loc.F("{0} elementos eliminados", items.Count));
+        else
+            ShowMessage(failed.Count == 1 ? Loc.F("No se pudo eliminar todo {0}: algo está en uso", failed[0].Item.Name)
+                                          : Loc.F("No se pudieron eliminar {0} elementos: algo está en uso", failed.Count));
         _ = LoadAsync(merge: true);
     }
 

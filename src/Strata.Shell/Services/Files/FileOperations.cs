@@ -205,14 +205,19 @@ public static class FileOperations
     /// <param name="names">Lo que se muestra al preguntar (en la Papelera las rutas son "$R…").</param>
     public static async Task<bool> DeleteForeverAsync(IReadOnlyList<string> paths, IntPtr owner, IReadOnlyList<string>? names = null)
     {
-        if (paths.Count == 0)
-            return false;
-        string message = paths.Count == 1
-            ? Loc.F("«{0}» se borrará para siempre. No se puede deshacer.", names?.FirstOrDefault() ?? Path.GetFileName(paths[0].TrimEnd('\\')))
-            : Loc.F("{0} elementos se borrarán para siempre. No se puede deshacer.", paths.Count);
-        if (!await ConfirmAsync(Loc.T("Eliminar definitivamente"), message, Loc.T("Eliminar"), owner))
+        if (paths.Count == 0
+            || !await ConfirmDeleteForeverAsync(names?.FirstOrDefault() ?? Path.GetFileName(paths[0].TrimEnd('\\')), paths.Count, owner))
             return false;
         return await DeleteAsync(paths, recycle: false, owner);
+    }
+
+    /// <summary>La pregunta de borrar para siempre (con el nombre si es uno solo).</summary>
+    public static Task<bool> ConfirmDeleteForeverAsync(string name, int count, IntPtr owner)
+    {
+        string message = count == 1
+            ? Loc.F("«{0}» se borrará para siempre. No se puede deshacer.", name)
+            : Loc.F("{0} elementos se borrarán para siempre. No se puede deshacer.", count);
+        return ConfirmAsync(Loc.T("Eliminar definitivamente"), message, Loc.T("Eliminar"), owner);
     }
 
     private static bool SameFolder(string path, string folder) =>

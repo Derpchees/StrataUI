@@ -138,6 +138,44 @@ public class FilesTests
         Assert.Null(RecycleBin.Parse(new byte[10]));
     }
 
+    [Fact]
+    public void Recycle_bin_delete_forever_removes_deep_folder_and_its_info_file()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "strata-recycle-" + Guid.NewGuid().ToString("N"));
+        string data = Path.Combine(root, "$RABC123"), info = Path.Combine(root, "$IABC123");
+        try
+        {
+            string deep = Path.Combine(data, "frontend", "node_modules", "a", "b");
+            Directory.CreateDirectory(deep);
+            for (int i = 0; i < 50; i++)
+                File.WriteAllText(Path.Combine(deep, $"f{i}.js"), "x");
+            string readOnly = Path.Combine(data, "frontend", "solo-lectura.txt");
+            File.WriteAllText(readOnly, "x");
+            File.SetAttributes(readOnly, FileAttributes.ReadOnly);
+            File.WriteAllBytes(info, new byte[8]);
+
+            var failed = RecycleBin.DeleteForever(new RecycledItem(@"C:\proyecto", DateTime.Now, 0, true, data, info));
+
+            Assert.Empty(failed);
+            Assert.False(Directory.Exists(data));
+            Assert.False(File.Exists(info));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Recycle_bin_orphan_cannot_be_restored()
+    {
+        var orphan = new RecycledItem(@"C:\$Recycle.Bin\S-1\$RXYZ", DateTime.Now, -1, true, @"C:\$Recycle.Bin\S-1\$RXYZ", "");
+
+        Assert.True(orphan.Orphan);
+        Assert.Throws<IOException>(() => RecycleBin.Restore(orphan));
+    }
+
     [Theory]
     [InlineData(@"\\nas", true)]
     [InlineData(@"\\nas\fotos", false)]
