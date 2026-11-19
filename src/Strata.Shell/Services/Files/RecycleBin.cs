@@ -43,7 +43,12 @@ public static class RecycleBin
                     string data = Path.Combine(folder, "$R" + Path.GetFileName(info)[2..]);
                     known.Add(data);
                     bool isFolder = Directory.Exists(data);
-                    if ((isFolder || File.Exists(data)) && Parse(File.ReadAllBytes(info)) is { } parsed)
+                    if (!isFolder && !File.Exists(data))
+                    {
+                        ForgetStale(info);
+                        continue;
+                    }
+                    if (Parse(File.ReadAllBytes(info)) is { } parsed)
                         items.Add(new RecycledItem(parsed.Path, parsed.Deleted, parsed.Size, isFolder, data, info));
                 }
                 // Los $R… sin ficha: se muestran con su nombre interno para poder eliminarlos (si no, ocupan sin verse).
@@ -123,13 +128,54 @@ public static class RecycleBin
     public static List<string> DeleteForever(RecycledItem item)
     {
         var failed = new List<string>();
-        if (item.IsFolder)
-            DeleteTree(item.DataPath, failed);
-        else
-            DeleteFile(item.DataPath, failed);
-        if (failed.Count == 0 && !item.Orphan)
-            DeleteFile(item.InfoPath, failed);
-        return failed;
+        // Si ya se está borrando (se pidió otra vez mientras tanto), dos borrados del mismo árbol
+        // chocan entre sí y cada uno da por fallado lo que el otro tenía abierto.
+        lock (Deleting)
+            if (!Deleting.Add(item.DataPath))
+                return failed;
+        try
+        {
+            if (item.IsFolder)
+                DeleteTree(item.DataPath, failed);
+            else
+                DeleteFile(item.DataPath, failed);
+            // Lo que ya no está (se borró igual, por otro lado) no cuenta como fallado.
+            failed.RemoveAll(p => !File.Exists(p) && !Directory.Exists(p));
+            bool gone = !File.Exists(item.DataPath) && !Directory.Exists(item.DataPath);
+            if (gone && !item.Orphan)
+                DeleteFile(item.InfoPath, failed);
+            return failed;
+        }
+        finally
+        {
+            lock (Deleting)
+                Deleting.Remove(item.DataPath);
+        }
+    }
+
+    /// <summary>
+    /// Una ficha ($I) cuyo contenido ya no está (un borrado que terminó a medias): no se ve en ninguna
+    /// Papelera, así que se quita. Solo si tiene más de un minuto, por si Windows la está escribiendo.
+    /// </summary>
+    private static void ForgetStale(string info)
+    {
+        try
+        {
+            if (DateTime.Now - File.GetLastWriteTime(info) > TimeSpan.FromMinutes(1))
+                File.Delete(info);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static readonly HashSet<string> Deleting =new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Si ya se está borrando (para no pedirlo dos veces).</summary>
+    public static bool IsDeleting(RecycledItem item)
+    {
+        lock (Deleting)
+            return Deleting.Contains(item.DataPath);
     }
 
     private static void DeleteTree(string folder, List<string> failed)

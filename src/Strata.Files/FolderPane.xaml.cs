@@ -1651,10 +1651,14 @@ public partial class FolderPane : UserControl
     /// <summary>Borra para siempre lo elegido de la Papelera (después de preguntar).</summary>
     private async Task DeleteForeverAsync(IReadOnlyList<FileEntry> entries)
     {
-        var items = entries.Select(e => e.Recycled).OfType<RecycledItem>().ToList();
+        // Lo que ya se está borrando (se volvió a pedir mientras tanto) no se pide otra vez.
+        var items = entries.Select(e => e.Recycled).OfType<RecycledItem>().Where(i => !RecycleBin.IsDeleting(i)).ToList();
         if (items.Count == 0)
             return;
         if (!await FileOperations.ConfirmDeleteForeverAsync(items[0].Name, items.Count, Handle))
+            return;
+        items.RemoveAll(RecycleBin.IsDeleting);
+        if (items.Count == 0)
             return;
         _reload.Stop();
         ShowMessageInfo(Loc.T("Eliminando…"));

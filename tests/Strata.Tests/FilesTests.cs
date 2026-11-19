@@ -168,6 +168,37 @@ public class FilesTests
     }
 
     [Fact]
+    public void Recycle_bin_delete_forever_twice_at_once_does_not_report_failures()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "strata-recycle-" + Guid.NewGuid().ToString("N"));
+        string data = Path.Combine(root, "$RTWICE1"), info = Path.Combine(root, "$ITWICE1");
+        try
+        {
+            for (int d = 0; d < 20; d++)
+            {
+                string folder = Path.Combine(data, "node_modules", $"p{d}", "lib");
+                Directory.CreateDirectory(folder);
+                for (int i = 0; i < 40; i++)
+                    File.WriteAllText(Path.Combine(folder, $"f{i}.js"), "x");
+            }
+            File.WriteAllBytes(info, new byte[8]);
+            var item = new RecycledItem(@"C:\proyecto", DateTime.Now, 0, true, data, info);
+
+            var results = new List<string>[2];
+            Parallel.For(0, 2, i => results[i] = RecycleBin.DeleteForever(item));
+
+            Assert.All(results, Assert.Empty);
+            Assert.False(Directory.Exists(data));
+            Assert.False(File.Exists(info));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Recycle_bin_orphan_cannot_be_restored()
     {
         var orphan = new RecycledItem(@"C:\$Recycle.Bin\S-1\$RXYZ", DateTime.Now, -1, true, @"C:\$Recycle.Bin\S-1\$RXYZ", "");

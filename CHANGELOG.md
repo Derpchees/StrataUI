@@ -10,6 +10,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.53.1] - 2026-11-19
+
+### Corregido
+
+- Pedir dos veces eliminar lo mismo de la Papelera (mientras se borraba) hacía que los dos borrados
+  chocaran: avisaba que miles de archivos no se pudieron eliminar y dejaba su ficha. Ahora el
+  segundo pedido se ignora, y las fichas que quedaron sin contenido se limpian solas.
+
 ## [1.53.0] - 2026-11-19
 
 ### Cambiado
