@@ -10,6 +10,16 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.54.0] - 2026-11-20
+
+### Añadido
+
+- Archivos: en la sección Red, «Uso compartido de red» abre el uso compartido avanzado de Windows (detección de redes, compartir archivos e impresoras y si las carpetas compartidas piden contraseña).
+
+### Corregido
+
+- Con Archivos reemplazando al Explorador, el Panel de control (y otras ventanas del Explorador que no son carpetas) se abría y cerraba en bucle.
+
 ## [1.53.1] - 2026-11-19
 
 ### Corregido

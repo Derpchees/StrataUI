@@ -1071,6 +1071,8 @@
   "Asigna una letra a una carpeta compartida de la red. También puedes escribir \\\\servidor en la ruta.": "Weist einem freigegebenen Netzwerkordner einen Buchstaben zu. Du kannst auch \\\\server in den Pfad eingeben.",
   "Carpeta compartida": "Freigegebener Ordner",
   "Conectar unidad de red": "Netzlaufwerk verbinden",
+  "Uso compartido de red": "Netzwerkfreigabe",
+  "Detección de redes, compartir archivos e impresoras y si las carpetas compartidas piden contraseña.": "Netzwerkerkennung, Datei- und Druckerfreigabe und ob freigegebene Ordner ein Kennwort verlangen.",
   "El archivo está dañado o Windows no tiene el códec para este formato.": "Die Datei ist beschädigt oder Windows fehlt der Codec für dieses Format.",
   "Este tipo de archivo no se puede ver aquí.": "Dieser Dateityp kann hier nicht angezeigt werden.",
   "Girar (R)": "Drehen (R)",

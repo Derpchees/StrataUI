@@ -1071,6 +1071,8 @@
   "Asigna una letra a una carpeta compartida de la red. También puedes escribir \\\\servidor en la ruta.": "Assigns a letter to a shared network folder. You can also type \\\\server in the path.",
   "Carpeta compartida": "Shared folder",
   "Conectar unidad de red": "Map network drive",
+  "Uso compartido de red": "Network sharing",
+  "Detección de redes, compartir archivos e impresoras y si las carpetas compartidas piden contraseña.": "Network discovery, file and printer sharing, and whether shared folders ask for a password.",
   "El archivo está dañado o Windows no tiene el códec para este formato.": "The file is damaged or Windows doesn't have the codec for this format.",
   "Este tipo de archivo no se puede ver aquí.": "This kind of file can't be viewed here.",
   "Girar (R)": "Rotate (R)",

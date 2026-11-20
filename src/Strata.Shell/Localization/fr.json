@@ -1071,6 +1071,8 @@
   "Asigna una letra a una carpeta compartida de la red. También puedes escribir \\\\servidor en la ruta.": "Attribue une lettre à un dossier partagé du réseau. Vous pouvez aussi taper \\\\server dans le chemin.",
   "Carpeta compartida": "Dossier partagé",
   "Conectar unidad de red": "Connecter un lecteur réseau",
+  "Uso compartido de red": "Partage réseau",
+  "Detección de redes, compartir archivos e impresoras y si las carpetas compartidas piden contraseña.": "Découverte du réseau, partage de fichiers et d'imprimantes, et si les dossiers partagés demandent un mot de passe.",
   "El archivo está dañado o Windows no tiene el códec para este formato.": "Le fichier est endommagé ou Windows n'a pas le codec pour ce format.",
   "Este tipo de archivo no se puede ver aquí.": "Ce type de fichier ne peut pas être affiché ici.",
   "Girar (R)": "Pivoter (R)",

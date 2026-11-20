@@ -204,6 +204,15 @@
                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
                     </Button>
+                    <Button Style="{StaticResource SideItem}" Click="SharingSettings_Click"
+                            ToolTip="{l:T 'Detección de redes, compartir archivos e impresoras y si las carpetas compartidas piden contraseña.'}">
+                        <StackPanel Orientation="Horizontal" Margin="0,9">
+                            <ui:SymbolIcon Symbol="Share24" FontSize="17" Margin="0,0,12,0"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="{l:T 'Uso compartido de red'}" FontSize="13"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Button>
                     </StackPanel>
                     <ToggleButton x:Name="SideServersTitle" Style="{StaticResource SideSection}" Tag="servers"
                                   Content="{l:T 'Servidores'}" Click="SideSection_Click" />

@@ -43,6 +43,8 @@ internal static class ExplorerTakeover
     private static readonly HashSet<IntPtr> Handling = [];
     // Ventanas que volvimos invisibles al crearse (antes de que se pinten) y que hay que devolver si no se atrapan.
     private static readonly HashSet<IntPtr> Faded = [];
+    // Ventanas devueltas al Explorador (Panel de control…): mostrarlas avisa otra vez y sin esto se ocultaban en bucle.
+    private static readonly HashSet<IntPtr> Released = [];
 
     /// <summary>Encendido: Archivos instalado, elegido como explorador y con el reemplazo nativo activo.</summary>
     public static bool Active => OptionalModules.Files.ReplacesExplorer && Settings.Current.FilesTakeOverExplorer;
@@ -82,6 +84,7 @@ internal static class ExplorerTakeover
             faded = [.. Faded];
             Faded.Clear();
             Handling.Clear();
+            Released.Clear();
         }
         foreach (var hwnd in faded)
             Unfade(hwnd);
@@ -210,6 +213,7 @@ internal static class ExplorerTakeover
             {
                 Faded.Remove(hwnd);
                 Handling.Remove(hwnd);
+                Released.Remove(hwnd);
             }
             return;
         }
@@ -231,7 +235,7 @@ internal static class ExplorerTakeover
             // ventana ya se mostró, se encarga el aviso de "mostrada" (y no tapamos una que se devolvió a propósito).
             bool busy;
             lock (Gate)
-                busy = Handling.Contains(hwnd);
+                busy = Handling.Contains(hwnd) || Released.Contains(hwnd);
             if (busy || IsWindowVisible(hwnd))
                 return;
             if (Fade(hwnd))
@@ -241,7 +245,7 @@ internal static class ExplorerTakeover
         }
         lock (Gate)
         {
-            if (!Handling.Add(hwnd))
+            if (Released.Contains(hwnd) || !Handling.Add(hwnd))
                 return;
             if (!Faded.Contains(hwnd) && Fade(hwnd))
                 Faded.Add(hwnd);
@@ -314,6 +318,8 @@ internal static class ExplorerTakeover
             {
                 Handling.Remove(hwnd);
                 wasFaded = !take || !Active ? Faded.Remove(hwnd) : false;
+                if (!take || !Active)
+                    Released.Add(hwnd);
             }
             if (!take || !Active)
             {

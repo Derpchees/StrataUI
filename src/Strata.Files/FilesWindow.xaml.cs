@@ -1125,6 +1125,10 @@ public partial class FilesWindow : FluentWindow
     private void ConnectDrive_Click(object sender, RoutedEventArgs e) =>
         FileOperations.ConnectNetworkDrive();
 
+    /// <summary>"Uso compartido avanzado" de Windows: ahí está también el interruptor de la contraseña.</summary>
+    private void SharingSettings_Click(object sender, RoutedEventArgs e) =>
+        FileOperations.Open("ms-settings:network-advancedsharing");
+
     private const int WmClipboardUpdate = 0x031D;
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
