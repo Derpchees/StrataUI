@@ -2484,6 +2484,9 @@ public partial class FolderPane : UserControl
             case Key.Back:
                 GoBack();
                 return true;
+            case Key.Enter when mods == ModifierKeys.Alt && SelectedEntries is { Count: > 0 } chosen:
+                Strata.Shell.Controls.PropertiesWindow.Open(chosen.Select(c => c.FullPath).ToList());
+                return true;
             case Key.Enter:
                 Open(SelectedEntries);
                 return true;

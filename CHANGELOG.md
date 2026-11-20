@@ -10,6 +10,13 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.55.0] - 2026-11-20
+
+### Añadido
+
+- Archivos: al copiar o mover elementos que ya existen en el destino aparece el diálogo «Reemplazar u omitir archivos»: reemplazar, omitir, conservar ambos (con un número en el nombre) o elegir para cada archivo, comparando fecha y tamaño y marcando el más reciente.
+- Archivos: ventana de Propiedades propia (Alt+Entrar o «Propiedades» del menú), con pestañas General (se abre con, ubicación, tamaño y tamaño en disco, fechas, atributos), Compartir (ventana Compartir de Windows para archivos y uso compartido de carpetas en la red, con dejar de compartir), Detalles (metadatos del archivo) y Seguridad (propietario y permisos). «Propiedades de Windows» sigue disponible.
+
 ## [1.54.0] - 2026-11-20
 
 ### Añadido

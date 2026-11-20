@@ -21,9 +21,9 @@ public static class FileOperations
     public static async Task<bool> CopyAsync(IReadOnlyList<string> sources, string folder, IntPtr owner,
                                              List<(string From, string To)>? placed = null)
     {
-        if (sources.Count == 0 || await ConflictAsync(sources, folder, Loc.T("Copiar"), owner) is not { } conflict)
+        if (sources.Count == 0 || await ConflictAsync(sources, folder, Loc.T("Copiar"), owner) is not { } plan)
             return false;
-        return await TransferAsync(TransferKind.Copy, sources, folder, conflict, owner, placed);
+        return await TransferAsync(TransferKind.Copy, plan, folder, owner, placed);
     }
 
     public static async Task<bool> MoveAsync(IReadOnlyList<string> sources, string folder, IntPtr owner,
@@ -31,9 +31,9 @@ public static class FileOperations
     {
         // Lo que ya está en esa carpeta no se mueve.
         var moving = sources.Where(s => !SameFolder(s, folder)).ToList();
-        if (moving.Count == 0 || await ConflictAsync(moving, folder, Loc.T("Mover"), owner) is not { } conflict)
+        if (moving.Count == 0 || await ConflictAsync(moving, folder, Loc.T("Mover"), owner) is not { } plan)
             return false;
-        return await TransferAsync(TransferKind.Move, moving, folder, conflict, owner, placed);
+        return await TransferAsync(TransferKind.Move, plan, folder, owner, placed);
     }
 
     /// <summary>Lo que llegó bien a su destino (sin lo que tuvo errores).</summary>
@@ -50,9 +50,12 @@ public static class FileOperations
     /// permiso de administrador desde el principio; si algo falla por permisos en una carpeta normal,
     /// se pregunta al terminar y se reintenta solo eso.
     /// </summary>
-    private static async Task<bool> TransferAsync(TransferKind kind, IReadOnlyList<string> sources, string folder, TransferConflict conflict,
+    private static async Task<bool> TransferAsync(TransferKind kind, ConflictPlan plan, string folder,
                                                   IntPtr owner, List<(string From, string To)>? placed)
     {
+        var (sources, conflict, targets) = plan;
+        if (sources.Count == 0)
+            return true; // se omitió todo: no hay nada que hacer
         if (!CanWrite(folder))
         {
             if (!await ElevatedFiles.AskAsync(owner, kind == TransferKind.Copy
@@ -60,9 +63,9 @@ public static class FileOperations
                     : Loc.F("Para mover a «{0}» hace falta permiso de administrador.", FileTransfers.FolderNameOf(folder))))
                 return false;
             // Con permiso de administrador no se guarda para deshacer (deshacerlo pediría permiso otra vez).
-            return await ElevatedFiles.StartTransfer(new FileTransfer(kind, sources, folder, conflict) { Elevated = true }).Finished.Task;
+            return await ElevatedFiles.StartTransfer(new FileTransfer(kind, sources, folder, conflict) { Targets = targets, Elevated = true }).Finished.Task;
         }
-        var transfer = FileTransfers.Begin(new FileTransfer(kind, sources, folder, conflict));
+        var transfer = FileTransfers.Begin(new FileTransfer(kind, sources, folder, conflict) { Targets = targets });
         if (await transfer.Finished.Task)
         {
             Collect(transfer, placed);
@@ -224,30 +227,21 @@ public static class FileOperations
         string.Equals(Path.GetDirectoryName(path.TrimEnd('\\'))?.TrimEnd('\\'), folder.TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Qué hacer si en el destino ya hay algo con el mismo nombre: reemplazar o conservar los dos
-    /// ("nombre (2)"). Null si se canceló. En la misma carpeta (copiar y pegar ahí), "nombre - copia".
+    /// Qué hacer si en el destino ya hay algo con el mismo nombre: reemplazar, omitir, conservar los
+    /// dos ("nombre (2)") o elegir uno por uno (<see cref="ConflictPrompt"/>). Null si se canceló. En la
+    /// misma carpeta (copiar y pegar ahí), "nombre - copia".
     /// </summary>
-    private static async Task<TransferConflict?> ConflictAsync(IReadOnlyList<string> sources, string folder, string title, IntPtr owner)
+    private static async Task<ConflictPlan?> ConflictAsync(IReadOnlyList<string> sources, string folder, string title, IntPtr owner)
     {
         if (sources.All(s => SameFolder(s, folder)))
-            return TransferConflict.Duplicate;
+            return new ConflictPlan(sources, TransferConflict.Duplicate);
         var repeated = sources.Where(s => !SameFolder(s, folder))
-            .Select(s => Path.GetFileName(s.TrimEnd('\\')))
-            .Where(name => name.Length > 0 && (File.Exists(Path.Combine(folder, name)) || Directory.Exists(Path.Combine(folder, name))))
+            .Where(s => Path.GetFileName(s.TrimEnd('\\')) is { Length: > 0 } name
+                        && (File.Exists(Path.Combine(folder, name)) || Directory.Exists(Path.Combine(folder, name))))
             .ToList();
         if (repeated.Count == 0)
-            return TransferConflict.KeepBoth;
-        string folderName = Path.GetFileName(folder.TrimEnd('\\')) is { Length: > 0 } n ? n : folder;
-        string message = repeated.Count == 1
-            ? Loc.F("En «{0}» ya hay algo llamado «{1}».", folderName, repeated[0])
-            : Loc.F("En «{0}» ya hay {1} elementos con los mismos nombres.", folderName, repeated.Count);
-        return await Controls.StrataDialog.ShowAsync(OwnerWindow(owner), title, message,
-                   Loc.T("Reemplazar"), Loc.T("Conservar ambos"), Loc.T("Cancelar")) switch
-        {
-            0 => TransferConflict.Replace,
-            1 => TransferConflict.KeepBoth,
-            _ => null,
-        };
+            return new ConflictPlan(sources, TransferConflict.KeepBoth);
+        return await ConflictPrompt.AskAsync(OwnerWindow(owner), title, sources, repeated, folder);
     }
 
     private static Task<bool> ConfirmAsync(string title, string message, string action, IntPtr owner) =>

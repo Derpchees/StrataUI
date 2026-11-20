@@ -204,6 +204,8 @@ public static class ElevatedFiles
                         File.Move(job.Paths[0], target);
                 }),
                 "mkdir" => Simple(Send, job.Paths[0], () => Directory.CreateDirectory(job.Paths[0])),
+                "share" => Report(Send, NetShares.Add(job.Paths[0], job.NewName!, job.Label != "change")),
+                "unshare" => Report(Send, NetShares.Remove(job.Paths[0], job.NewName!)),
                 "format" => DriveFormat.Format(job.Paths[0], job.FileSystem!, job.Label ?? "", job.Quick, message => Send("E", message)),
                 _ => 2,
             };
@@ -213,6 +215,14 @@ public static class ElevatedFiles
             Log.Error("Archivos (administrador): falló la operación", ex);
             return 1;
         }
+    }
+
+    private static int Report(Action<string[]> send, string? error)
+    {
+        if (error is null)
+            return 0;
+        send(["E", error]);
+        return 1;
     }
 
     private static int Simple(Action<string[]> send, string path, Action work)
@@ -314,6 +324,11 @@ public static class ElevatedFiles
                     ? null : "nombre";
             case "mkdir":
                 return job.Paths.Count == 1 ? null : "carpeta";
+            case "share" or "unshare":
+                // Solo carpetas que existen, nunca la raíz de una unidad ni las del sistema; nombre válido.
+                return job.Paths.Count == 1 && Directory.Exists(job.Paths[0]) && !Protected(job.Paths[0])
+                       && NetShares.ValidName(job.NewName) && (job.Op == "unshare" || job.Label is "read" or "change")
+                    ? null : "recurso";
             case "format":
                 return job.Paths.Count == 1 && DriveFormat.CanFormat(job.Paths[0]) && job.FileSystem is "NTFS" or "exFAT" or "FAT32"
                     ? null : "unidad";

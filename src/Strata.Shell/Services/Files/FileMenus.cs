@@ -238,6 +238,13 @@ public static class FileMenus
         {
             menuItem.Click += (_, _) => OpenContaining(paths[0], session, item.Id);
         }
+        else if (string.Equals(item.Verb, "properties", StringComparison.OrdinalIgnoreCase) && paths.Count > 0
+                 && paths.All(p => File.Exists(p) || Directory.Exists(p)))
+        {
+            // Las Propiedades de Strata UI (con Compartir); desde ellas se llega a las de Windows.
+            menuItem.InputGestureText = Loc.T("Alt+Entrar");
+            menuItem.Click += (_, _) => Controls.PropertiesWindow.Open(paths);
+        }
         else
         {
             menuItem.Click += (_, _) => session.Invoke(item.Id);

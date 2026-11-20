@@ -165,9 +165,13 @@ public sealed class StrataDialog : FluentWindow
     /// Con campos propios debajo del mensaje (<paramref name="content"/>, que se lee al volver) y, si
     /// <paramref name="elevate"/>, el escudo de administrador en el primer botón.
     /// </summary>
-    public static Task<int> ShowAsync(Window? owner, string title, string message, UIElement? content, bool elevate, params string[] buttons)
+    public static Task<int> ShowAsync(Window? owner, string title, string message, UIElement? content, bool elevate, params string[] buttons) =>
+        ShowAsync(owner, title, message, content, elevate, 440, buttons);
+
+    /// <summary>Igual, más ancho (<paramref name="width"/>) para contenido que lo necesita (listas a dos columnas).</summary>
+    public static Task<int> ShowAsync(Window? owner, string title, string message, UIElement? content, bool elevate, double width, params string[] buttons)
     {
-        var dialog = new StrataDialog(owner, title, message, buttons, content, elevate);
+        var dialog = new StrataDialog(owner, title, message, buttons, content, elevate) { Width = width };
         if (content != null)
             dialog.Loaded += (_, _) => dialog.Dispatcher.BeginInvoke(() => FocusFirst(content), System.Windows.Threading.DispatcherPriority.Input);
         dialog.Show();
