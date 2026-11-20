@@ -124,7 +124,10 @@ public partial class Taskbar
         if (!_combine && _pinSlots.Count == 0)
             return;
         // El título puede cambiar el sitio (y con él el grupo); el estado, el indicador del botón.
-        if (e.PropertyName is nameof(ApplicationWindow.Title) or nameof(ApplicationWindow.AppUserModelID))
+        // Al pasar de monitor (o mostrarse u ocultarse) cambia qué ventana encabeza su grupo en cada
+        // barra: el filtro en vivo solo revisa la que se movió, y la que se quedó perdía su botón.
+        if (e.PropertyName is nameof(ApplicationWindow.Title) or nameof(ApplicationWindow.AppUserModelID)
+            or nameof(ApplicationWindow.HMonitor) or nameof(ApplicationWindow.ShowInTaskbar))
             ScheduleGroupRefresh();
         else if (e.PropertyName is nameof(ApplicationWindow.State) or nameof(ApplicationWindow.IsMinimized))
             Dispatcher.BeginInvoke(() => TasksChanged?.Invoke());
