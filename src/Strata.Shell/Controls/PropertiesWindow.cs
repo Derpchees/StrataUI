@@ -24,8 +24,9 @@ namespace Strata.Shell.Controls;
 /// Propiedades de archivos y carpetas con el tema de Strata UI (Archivos y el escritorio), en pestañas:
 /// General (tipo, con qué se abre, tamaño, fechas, atributos), Compartir (con aplicaciones y personas
 /// o en la red), Detalles (lo que sabe Windows del archivo: autor, dimensiones, duración…) y Seguridad
-/// (propietario y permisos). Lo que no hace (editar permisos, versiones anteriores, uso compartido
-/// avanzado) abre las Propiedades de Windows, desde el proceso aparte del menú de Windows.
+/// (propietario y permisos). El uso compartido avanzado de carpetas es propio (<see cref="AdvancedShareWindow"/>);
+/// lo que no hace (editar permisos, versiones anteriores) abre las Propiedades de Windows, desde el
+/// proceso aparte del menú de Windows.
 /// </summary>
 public sealed class PropertiesWindow : FluentWindow
 {
@@ -40,6 +41,7 @@ public sealed class PropertiesWindow : FluentWindow
     private bool? _readOnlyStart, _hiddenStart;
     private readonly Button _apply;
     private DataTransferManager? _share;
+    private StackPanel? _network;
 
     /// <summary>Abre las propiedades de esos elementos (los que ya no existen se ignoran).</summary>
     public static void Open(IReadOnlyList<string> paths)
@@ -544,7 +546,7 @@ public sealed class PropertiesWindow : FluentWindow
         panel.Children.Add(Section(Loc.T("Compartir en la red")));
         if (_folder && !ElevatedFiles.Protected(_paths[0]))
         {
-            var network = new StackPanel();
+            var network = _network = new StackPanel();
             panel.Children.Add(network);
             FillNetwork(network);
         }
@@ -555,9 +557,22 @@ public sealed class PropertiesWindow : FluentWindow
 
         panel.Children.Add(Gap());
         panel.Children.Add(Section(Loc.T("Uso compartido avanzado")));
-        panel.Children.Add(Text(Loc.T("Permisos por usuario, límite de conexiones y archivos sin conexión, en las Propiedades de Windows."), 13));
-        var advanced = new Button { Content = Loc.T("Uso compartido avanzado…"), Icon = new SymbolIcon(SymbolRegular.WindowNew24), Margin = new Thickness(0, 10, 0, 0) };
-        advanced.Click += (_, _) => OpenWindowsProperties();
+        bool ownAdvanced = _network != null;
+        panel.Children.Add(Text(ownAdvanced ? Loc.T("Varios nombres, permisos por usuario, límite de conexiones y archivos sin conexión.")
+                                            : Loc.T("Permisos por usuario, límite de conexiones y archivos sin conexión, en las Propiedades de Windows."), 13));
+        var advanced = new Button
+        {
+            Content = Loc.T("Uso compartido avanzado…"),
+            Icon = new SymbolIcon(ownAdvanced ? SymbolRegular.Shield24 : SymbolRegular.WindowNew24),
+            Margin = new Thickness(0, 10, 0, 0),
+        };
+        advanced.Click += (_, _) =>
+        {
+            if (_network is { } network)
+                AdvancedShareWindow.Open(this, _paths[0], () => FillNetwork(network));
+            else
+                OpenWindowsProperties();
+        };
         panel.Children.Add(advanced);
         return panel;
     }
@@ -934,21 +949,21 @@ public sealed class PropertiesWindow : FluentWindow
 
     // ---------------- Piezas ----------------
 
-    private static TextBlock Text(string text, double size, bool primary = false, FontWeight? weight = null)
+    internal static TextBlock Text(string text, double size, bool primary = false, FontWeight? weight = null)
     {
         var block = new TextBlock { Text = text, FontSize = size, TextWrapping = TextWrapping.Wrap, FontWeight = weight ?? FontWeights.Normal };
         block.SetResourceReference(TextBlock.ForegroundProperty, primary ? "TextFillColorPrimaryBrush" : "TextFillColorSecondaryBrush");
         return block;
     }
 
-    private static TextBlock Section(string title)
+    internal static TextBlock Section(string title)
     {
         var block = Text(title, 14, primary: true, weight: FontWeights.SemiBold);
         block.Margin = new Thickness(0, 0, 0, 6);
         return block;
     }
 
-    private static FrameworkElement Gap() => new Border { Height = 18 };
+    internal static FrameworkElement Gap() => new Border { Height = 18 };
 
     /// <summary>Una fila "etiqueta: valor" (el valor se puede marcar y copiar).</summary>
     private static Grid Row(string label, object value)
@@ -1001,7 +1016,7 @@ public sealed class PropertiesWindow : FluentWindow
         return _plain = new ControlTemplate(typeof(TextBox)) { VisualTree = host };
     }
 
-    private static FrameworkElement Field(string label, FrameworkElement control)
+    internal static FrameworkElement Field(string label, FrameworkElement control)
     {
         var panel = new StackPanel { Margin = new Thickness(0, 8, 0, 0) };
         panel.Children.Add(Text(label, 12));
@@ -1010,7 +1025,7 @@ public sealed class PropertiesWindow : FluentWindow
         return panel;
     }
 
-    private static Button FooterButton(string text, ControlAppearance appearance) => new()
+    internal static Button FooterButton(string text, ControlAppearance appearance) => new()
     {
         Content = text,
         Appearance = appearance,

@@ -31,6 +31,7 @@ public static class ElevatedFiles
         public string? FileSystem { get; set; }
         public string? Label { get; set; }
         public bool Quick { get; set; }
+        public List<ShareEdit>? Shares { get; set; }
     }
 
     /// <summary>Pregunta si seguir con permiso de administrador (con el escudo, como Windows).</summary>
@@ -206,6 +207,7 @@ public static class ElevatedFiles
                 "mkdir" => Simple(Send, job.Paths[0], () => Directory.CreateDirectory(job.Paths[0])),
                 "share" => Report(Send, NetShares.Add(job.Paths[0], job.NewName!, job.Label != "change")),
                 "unshare" => Report(Send, NetShares.Remove(job.Paths[0], job.NewName!)),
+                "sharesave" => Report(Send, NetShares.Save(job.Paths[0], job.Shares!)),
                 "format" => DriveFormat.Format(job.Paths[0], job.FileSystem!, job.Label ?? "", job.Quick, message => Send("E", message)),
                 _ => 2,
             };
@@ -328,6 +330,9 @@ public static class ElevatedFiles
                 // Solo carpetas que existen, nunca la raíz de una unidad ni las del sistema; nombre válido.
                 return job.Paths.Count == 1 && Directory.Exists(job.Paths[0]) && !Protected(job.Paths[0])
                        && NetShares.ValidName(job.NewName) && (job.Op == "unshare" || job.Label is "read" or "change")
+                    ? null : "recurso";
+            case "sharesave":
+                return job.Paths.Count == 1 && Directory.Exists(job.Paths[0]) && !Protected(job.Paths[0]) && NetShares.ValidEdits(job.Shares)
                     ? null : "recurso";
             case "format":
                 return job.Paths.Count == 1 && DriveFormat.CanFormat(job.Paths[0]) && job.FileSystem is "NTFS" or "exFAT" or "FAT32"

@@ -10,6 +10,15 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.56.0] - 2026-11-20
+
+### Añadido
+
+- Uso compartido avanzado propio en Propiedades › Compartir (antes abría el de Windows): compartir o
+  dejar de compartir la carpeta, varios nombres de recurso, límite de usuarios simultáneos, comentario,
+  permisos del recurso por usuario o grupo (Control total, Cambiar y Lectura; permitir o denegar) y
+  archivos sin conexión. Todo se guarda con un solo permiso de administrador al aceptar.
+
 ## [1.55.0] - 2026-11-20
 
 ### Añadido
