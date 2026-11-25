@@ -103,6 +103,7 @@ public partial class FilesWindow : FluentWindow
         UpdatePinned();
         SideColumn.Width = new GridLength(Math.Clamp(Settings.Current.FilesSidebarWidth, SideColumn.MinWidth, SideColumn.MaxWidth));
         TabStrip.ItemsSource = _tabs;
+        _tabs.CollectionChanged += (_, _) => UpdateTabBar();
         TransfersList.ItemsSource = FileTransfers.Active;
         FileTransfers.Viewers++;
         Closed += (_, _) => FileTransfers.Viewers--;
@@ -152,6 +153,15 @@ public partial class FilesWindow : FluentWindow
     /// <summary>Abre una pestaña en esa carpeta (null: Este equipo) y la elige.</summary>
     public void AddTab(string? path)
     {
+        // Sin pestañas, abrir aparte es otra ventana (en el selector de archivos, la misma).
+        if (!Settings.Current.FilesTabs && _tabs.Count > 0)
+        {
+            if (_pick != null)
+                Pane.Navigate(path);
+            else
+                new FilesWindow(path).Show();
+            return;
+        }
         var tab = new FilesTab(CreatePane());
         _tabs.Add(tab);
         SelectTab(tab);
@@ -500,6 +510,46 @@ public partial class FilesWindow : FluentWindow
     // ── Controles ───────────────────────────────────────────────────────────
 
     private void NewTab_Click(object sender, RoutedEventArgs e) => AddTab(null);
+
+    /// <summary>La tira de pestañas se ve con pestañas activadas o si la ventana todavía tiene varias.</summary>
+    private void UpdateTabBar() =>
+        TabBar.Visibility = Settings.Current.FilesTabs || _tabs.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
+
+    /// <summary>Todo lo que se ajusta de Archivos, en un menú.</summary>
+    private void Options_Click(object sender, RoutedEventArgs e)
+    {
+        var s = Settings.Current;
+        var menu = new ContextMenu { PlacementTarget = OptionsButton, Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom };
+        void Check(string text, bool value, Action<bool> set, bool enabled = true)
+        {
+            var item = new System.Windows.Controls.MenuItem { Header = text, IsCheckable = true, IsChecked = value, IsEnabled = enabled, StaysOpenOnClick = true };
+            item.Checked += (_, _) => set(true);
+            item.Unchecked += (_, _) => set(false);
+            menu.Items.Add(item);
+        }
+        Check(Loc.T("Mostrar las extensiones de los archivos"), s.FilesShowExtensions, SetShowExtensions);
+        Check(Loc.T("Mostrar archivos ocultos"), s.FilesShowHidden, SetShowHidden);
+        Check(Loc.T("Vista previa (Alt+P)"), s.FilesPreviewPane, SetPreview);
+        Check(Loc.T("Archivos recientes en Este equipo"), s.FilesShowRecent, show =>
+        {
+            Settings.Update(x => x.FilesShowRecent = show);
+            foreach (var pane in AllPanes)
+                pane.RefreshRecent();
+        });
+        Check(Loc.T("Usar pestañas"), s.FilesTabs, on =>
+        {
+            Settings.Update(x => x.FilesTabs = on);
+            foreach (var window in Application.Current.Windows.OfType<FilesWindow>())
+                window.UpdateTabBar();
+        });
+        menu.Items.Add(new Separator());
+        menu.Items.Add(FolderPane.Item(Loc.T("Vista"), SymbolRegular.Grid24, () => FolderPane.ShowViewMenu(ViewButton)));
+        menu.Items.Add(new Separator());
+        Check(Loc.T("Usar Archivos de Strata UI como explorador"), s.FilesReplaceExplorer, on => Settings.Update(x => x.FilesReplaceExplorer = on));
+        Check(Loc.T("Reemplazar el Explorador en todo Windows"), s.FilesTakeOverExplorer, on => Settings.Update(x => x.FilesTakeOverExplorer = on), s.FilesReplaceExplorer);
+        Check(Loc.T("Cuadros Abrir y Guardar en Archivos"), s.FilesReplaceDialogs, on => Settings.Update(x => x.FilesReplaceDialogs = on), s.FilesReplaceExplorer);
+        menu.IsOpen = true;
+    }
 
     // ── Arrastrar pestañas: reordenarlas o sacarlas a su propia ventana ──────
 
@@ -871,7 +921,7 @@ public partial class FilesWindow : FluentWindow
             }));
             return;
         }
-        menu.Items.Add(FolderPane.Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => AddTab(place.Path)));
+        menu.Items.Add(FolderPane.Item(FolderPane.NewTabText, SymbolRegular.TabAdd24, () => AddTab(place.Path)));
         if (place == _home)
         {
             // Las carpetas del usuario que se quitaron de la barra lateral vuelven desde aquí (o desde Este equipo).

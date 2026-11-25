@@ -855,8 +855,20 @@ public partial class FolderPane : UserControl
         _ = LoadRecentAsync();
     }
 
+    /// <summary>Vuelve a leer (o esconde) los recientes de Este equipo tras cambiar la opción.</summary>
+    internal void RefreshRecent() => _ = LoadRecentAsync();
+
+    /// <summary>El texto de "abrir aparte": pestaña nueva o, sin pestañas, ventana nueva.</summary>
+    internal static string NewTabText => Settings.Current.FilesTabs ? Loc.T("Abrir en una pestaña nueva") : Loc.T("Abrir en una ventana nueva");
+
     private async Task LoadRecentAsync()
     {
+        if (!Settings.Current.FilesShowRecent)
+        {
+            HomeRecent.ItemsSource = null;
+            RecentTitle.Visibility = Visibility.Collapsed;
+            return;
+        }
         var recent = await Task.Run(() => StartMenuService.GetRecent(12));
         HomeRecent.ItemsSource = recent;
         RecentTitle.Visibility = recent.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -1946,7 +1958,7 @@ public partial class FolderPane : UserControl
                 bool files = selected.Any(s => !s.IsFolder);
                 menu.Items.Add(Item(Loc.T("Abrir"), SymbolRegular.Open24, () => Open(selected), bold: true));
                 if (selected.Count == 1 && first.IsFolder)
-                    menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(first.FullPath)));
+                    menu.Items.Add(Item(NewTabText, SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(first.FullPath)));
                 menu.Items.Add(Item(Loc.T("Descargar en…"), SymbolRegular.ArrowDownload24, () => _ = DownloadToAsync(selected)));
                 menu.Items.Add(Item(Loc.T("Copiar"), SymbolRegular.Copy24, () => _ = CopyFromRemoteAsync(selected), enabled: files || selected.Count > 0));
                 menu.Items.Add(Item(Loc.T("Copiar ruta"), SymbolRegular.Link24, () => CopyText(string.Join(Environment.NewLine, selected.Select(s => s.FullPath)))));
@@ -1994,7 +2006,7 @@ public partial class FolderPane : UserControl
             Scripts.AddMenuItems(menu, selected.Select(s => s.FullPath).ToList());
             if (selected.Count == 1 && FolderOf(first) is { } subfolder)
             {
-                menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(subfolder)));
+                menu.Items.Add(Item(NewTabText, SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(subfolder)));
                 bool pinned = Places.IsPinned(subfolder);
                 menu.Items.Add(Item(pinned ? Loc.T("Desanclar de la barra lateral") : Loc.T("Anclar a la barra lateral"),
                                     pinned ? SymbolRegular.PinOff24 : SymbolRegular.Pin24, () =>
@@ -2547,7 +2559,7 @@ public partial class FolderPane : UserControl
             return;
         }
         menu.Items.Clear();
-        menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(drive)));
+        menu.Items.Add(Item(NewTabText, SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(drive)));
         if (DriveFormat.CanFormat(drive) && Window.GetWindow(this) is FilesWindow window)
             menu.Items.Add(Item(Loc.T("Formatear…"), SymbolRegular.HardDrive20, () => _ = window.FormatAsync(drive)));
     }
@@ -2561,7 +2573,7 @@ public partial class FolderPane : UserControl
             return;
         }
         menu.Items.Clear();
-        menu.Items.Add(Item(Loc.T("Abrir en una pestaña nueva"), SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(path)));
+        menu.Items.Add(Item(NewTabText, SymbolRegular.TabAdd24, () => OpenInNewTabRequested?.Invoke(path)));
         if (!FilesWindow.IsUserFolder(path))
             return;
         bool shown = FilesWindow.InSidebar(path);

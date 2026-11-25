@@ -1653,5 +1653,9 @@
   "Todos los archivos y programas, optimizado para rendimiento": "Alle Dateien und Programme, für Leistung optimiert",
   "Un usuario o grupo de este equipo o del dominio, por ejemplo Usuarios o EQUIPO\\nombre.": "Ein Benutzer oder eine Gruppe dieses PCs oder der Domäne, z. B. Benutzer oder PC\\Name.",
   "Varios nombres, permisos por usuario, límite de conexiones y archivos sin conexión.": "Mehrere Namen, Berechtigungen pro Benutzer, Verbindungslimit und Offlinedateien.",
-  "¿A quién le das permiso sobre este recurso?": "Wem möchtest du Zugriff auf diese Freigabe geben?"
+  "¿A quién le das permiso sobre este recurso?": "Wem möchtest du Zugriff auf diese Freigabe geben?",
+  "Abrir en una ventana nueva": "In neuem Fenster öffnen",
+  "Opciones de Archivos": "Dateien-Optionen",
+  "Archivos recientes en Este equipo": "Zuletzt verwendete Dateien unter „Dieser PC“",
+  "Usar pestañas": "Tabs verwenden"
 }

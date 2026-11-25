@@ -301,6 +301,10 @@ public sealed class StrataSettings
     public List<string> FilesHiddenFolders { get; set; } = [];
     /// <summary>El explorador muestra las extensiones (".pdf") en los nombres.</summary>
     public bool FilesShowExtensions { get; set; } = true;
+    /// <summary>Este equipo muestra los archivos recientes.</summary>
+    public bool FilesShowRecent { get; set; } = true;
+    /// <summary>Archivos usa pestañas; apagado, "abrir en una pestaña nueva" abre otra ventana.</summary>
+    public bool FilesTabs { get; set; } = true;
     /// <summary>
     /// Win+E, el botón Explorador y las carpetas de Inicio y Win+X abren Archivos en lugar del
     /// Explorador de Windows (fuera de Strata UI, Windows sigue usando el suyo).

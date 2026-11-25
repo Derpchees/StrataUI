@@ -1653,5 +1653,9 @@
   "Todos los archivos y programas, optimizado para rendimiento": "Todos os arquivos e programas, otimizado para desempenho",
   "Un usuario o grupo de este equipo o del dominio, por ejemplo Usuarios o EQUIPO\\nombre.": "Um usuário ou grupo deste computador ou do domínio, por exemplo Usuários ou PC\\nome.",
   "Varios nombres, permisos por usuario, límite de conexiones y archivos sin conexión.": "Vários nomes, permissões por usuário, limite de conexões e arquivos offline.",
-  "¿A quién le das permiso sobre este recurso?": "A quem você dá permissão neste compartilhamento?"
+  "¿A quién le das permiso sobre este recurso?": "A quem você dá permissão neste compartilhamento?",
+  "Abrir en una ventana nueva": "Abrir em uma nova janela",
+  "Opciones de Archivos": "Opções de Arquivos",
+  "Archivos recientes en Este equipo": "Arquivos recentes em Este Computador",
+  "Usar pestañas": "Usar abas"
 }

@@ -150,7 +150,7 @@
                 <ui:ImageIcon Source="{x:Static files:FilesIcon.Image}" />
             </ui:TitleBar.Icon>
             <ui:TitleBar.Header>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,4,0,0">
+                <StackPanel x:Name="TabBar" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,4,0,0">
                     <ItemsControl x:Name="TabStrip" ItemTemplate="{StaticResource TabTemplate}"
                                   MouseMove="TabStrip_MouseMove" MouseLeftButtonUp="TabStrip_MouseLeftButtonUp"
                                   LostMouseCapture="TabStrip_LostMouseCapture">
@@ -327,6 +327,10 @@
                                 </files:CommandToggle>
                             </StackPanel>
                         </Border>
+                        <Button x:Name="OptionsButton" Style="{StaticResource ToolButton}" Height="34" Margin="4,0,0,0" Click="Options_Click"
+                                ToolTip="{l:T 'Opciones de Archivos'}">
+                            <ui:SymbolIcon Symbol="Settings24" FontSize="16" />
+                        </Button>
                     </StackPanel>
                 </Grid>
 

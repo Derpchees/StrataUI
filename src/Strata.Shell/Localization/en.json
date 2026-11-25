@@ -1653,5 +1653,9 @@
   "Todos los archivos y programas, optimizado para rendimiento": "All files and programs, optimized for performance",
   "Un usuario o grupo de este equipo o del dominio, por ejemplo Usuarios o EQUIPO\\nombre.": "A user or group on this PC or the domain, for example Users or PC\\name.",
   "Varios nombres, permisos por usuario, límite de conexiones y archivos sin conexión.": "Multiple names, per-user permissions, connection limit and offline files.",
-  "¿A quién le das permiso sobre este recurso?": "Who do you want to give access to this share?"
+  "¿A quién le das permiso sobre este recurso?": "Who do you want to give access to this share?",
+  "Abrir en una ventana nueva": "Open in new window",
+  "Opciones de Archivos": "Files options",
+  "Archivos recientes en Este equipo": "Recent files in This PC",
+  "Usar pestañas": "Use tabs"
 }
