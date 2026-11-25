@@ -71,8 +71,34 @@
                             <!-- Puntos, el último carácter un momento y un ojo para verla (Controls/RevealPasswordBox) -->
                             <controls:RevealPasswordBox Margin="0,0,0,8" Visibility="{Binding PasswordVisibility}"
                                                         Loaded="PasswordBox_Loaded" KeyDown="PasswordBox_KeyDown" />
+                            <!-- Red conectada: su contraseña guardada y un QR para unir otro dispositivo -->
+                            <StackPanel Margin="0,0,0,8" Visibility="{Binding KeyVisibility}">
+                                <Border HorizontalAlignment="Center" Width="168" Height="168" Padding="10" CornerRadius="8"
+                                        Background="White" ToolTip="{l:T 'Escanéalo con la cámara del teléfono para conectarte'}">
+                                    <Path Data="{Binding Qr}" Fill="Black" Stretch="Uniform" SnapsToDevicePixels="True" />
+                                </Border>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ui:SymbolIcon Symbol="Key24" FontSize="16" Margin="0,0,8,0"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBox Grid.Column="1" Style="{x:Null}" IsReadOnly="True" BorderThickness="0"
+                                             Background="Transparent" Padding="0" VerticalAlignment="Center"
+                                             FontFamily="Consolas" FontSize="14" TextWrapping="Wrap"
+                                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                             CaretBrush="{DynamicResource TextFillColorPrimaryBrush}"
+                                             Text="{Binding KeyText, Mode=OneWay}" />
+                                    <Button Grid.Column="2" Style="{StaticResource FlyoutIconButton}" ToolTip="{l:T 'Copiar contraseña'}"
+                                            Visibility="{Binding CopyVisibility}" Click="CopyKey_Click">
+                                        <ui:SymbolIcon Symbol="Copy24" FontSize="16" />
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
                             <TextBlock Style="{StaticResource FlyoutHint}" Margin="0,0,0,8" Text="{Binding Message}"
-                                       Visibility="{Binding MessageVisibility}" />
+                                       TextWrapping="Wrap" Visibility="{Binding MessageVisibility}" />
                             <ui:Button HorizontalAlignment="Right" Appearance="Primary" MinWidth="110"
                                        Content="{Binding ActionText}" Click="NetworkAction_Click" />
                         </StackPanel>

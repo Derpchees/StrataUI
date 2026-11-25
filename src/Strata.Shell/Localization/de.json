@@ -1657,5 +1657,14 @@
   "Abrir en una ventana nueva": "In neuem Fenster öffnen",
   "Opciones de Archivos": "Dateien-Optionen",
   "Archivos recientes en Este equipo": "Zuletzt verwendete Dateien unter „Dieser PC“",
-  "Usar pestañas": "Tabs verwenden"
+  "Usar pestañas": "Tabs verwenden",
+  "Copiar contraseña": "Passwort kopieren",
+  "Leyendo la contraseña…": "Passwort wird gelesen…",
+  "Se necesita permiso de administrador para ver la contraseña.": "Zum Anzeigen des Passworts sind Administratorrechte nötig.",
+  "No hay una red Wi-Fi conectada.": "Kein WLAN verbunden.",
+  "Windows no entregó la contraseña de esta red.": "Windows hat das Passwort dieses Netzwerks nicht herausgegeben.",
+  "Contraseña copiada.": "Passwort kopiert.",
+  "No se pudo copiar.": "Kopieren fehlgeschlagen.",
+  "Sin contraseña": "Kein Passwort",
+  "Escanéalo con la cámara del teléfono para conectarte": "Mit der Handykamera scannen, um sich zu verbinden"
 }

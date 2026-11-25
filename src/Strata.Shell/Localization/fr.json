@@ -1657,5 +1657,14 @@
   "Abrir en una ventana nueva": "Ouvrir dans une nouvelle fenêtre",
   "Opciones de Archivos": "Options de Fichiers",
   "Archivos recientes en Este equipo": "Fichiers récents dans Ce PC",
-  "Usar pestañas": "Utiliser les onglets"
+  "Usar pestañas": "Utiliser les onglets",
+  "Copiar contraseña": "Copier le mot de passe",
+  "Leyendo la contraseña…": "Lecture du mot de passe…",
+  "Se necesita permiso de administrador para ver la contraseña.": "L'autorisation d'administrateur est nécessaire pour voir le mot de passe.",
+  "No hay una red Wi-Fi conectada.": "Aucun réseau Wi-Fi n'est connecté.",
+  "Windows no entregó la contraseña de esta red.": "Windows n'a pas fourni le mot de passe de ce réseau.",
+  "Contraseña copiada.": "Mot de passe copié.",
+  "No se pudo copiar.": "Impossible de copier.",
+  "Sin contraseña": "Aucun mot de passe",
+  "Escanéalo con la cámara del teléfono para conectarte": "Scannez-le avec l'appareil photo du téléphone pour vous connecter"
 }

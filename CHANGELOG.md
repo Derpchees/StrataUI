@@ -10,6 +10,14 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.58.0] - 2026-11-25
+
+### Añadido
+
+- Panel de red: al abrir la red Wi-Fi conectada se ve su contraseña guardada (con botón para copiarla)
+  y un código QR para conectar el teléfono. Windows la protege, así que la primera vez pide permiso de
+  administrador; luego se recuerda solo en memoria mientras Strata UI está abierto.
+
 ## [1.57.1] - 2026-11-25
 
 ### Corregido

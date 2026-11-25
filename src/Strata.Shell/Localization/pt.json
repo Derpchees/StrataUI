@@ -1657,5 +1657,14 @@
   "Abrir en una ventana nueva": "Abrir em uma nova janela",
   "Opciones de Archivos": "Opções de Arquivos",
   "Archivos recientes en Este equipo": "Arquivos recentes em Este Computador",
-  "Usar pestañas": "Usar abas"
+  "Usar pestañas": "Usar abas",
+  "Copiar contraseña": "Copiar senha",
+  "Leyendo la contraseña…": "Lendo a senha…",
+  "Se necesita permiso de administrador para ver la contraseña.": "É necessária permissão de administrador para ver a senha.",
+  "No hay una red Wi-Fi conectada.": "Nenhuma rede Wi-Fi conectada.",
+  "Windows no entregó la contraseña de esta red.": "O Windows não forneceu a senha desta rede.",
+  "Contraseña copiada.": "Senha copiada.",
+  "No se pudo copiar.": "Não foi possível copiar.",
+  "Sin contraseña": "Sem senha",
+  "Escanéalo con la cámara del teléfono para conectarte": "Escaneie com a câmera do celular para se conectar"
 }

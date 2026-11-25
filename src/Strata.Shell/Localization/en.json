@@ -1657,5 +1657,14 @@
   "Abrir en una ventana nueva": "Open in new window",
   "Opciones de Archivos": "Files options",
   "Archivos recientes en Este equipo": "Recent files in This PC",
-  "Usar pestañas": "Use tabs"
+  "Usar pestañas": "Use tabs",
+  "Copiar contraseña": "Copy password",
+  "Leyendo la contraseña…": "Reading the password…",
+  "Se necesita permiso de administrador para ver la contraseña.": "Administrator permission is needed to see the password.",
+  "No hay una red Wi-Fi conectada.": "No Wi-Fi network is connected.",
+  "Windows no entregó la contraseña de esta red.": "Windows didn't provide the password for this network.",
+  "Contraseña copiada.": "Password copied.",
+  "No se pudo copiar.": "Couldn't copy.",
+  "Sin contraseña": "No password",
+  "Escanéalo con la cámara del teléfono para conectarte": "Scan it with your phone's camera to connect"
 }

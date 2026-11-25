@@ -51,6 +51,7 @@
     <PackageReference Include="FluentFTP" Version="55.1.0" />
     <PackageReference Include="ManagedShell" Version="0.0.374" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="SharpVectors.Wpf" Version="1.8.6" />
     <PackageReference Include="System.Management" Version="10.0.12" />
     <!-- Emojis a color en las notificaciones: DirectWrite los dibuja (WPF no sabe), ver Services/Emoji -->

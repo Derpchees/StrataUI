@@ -217,7 +217,8 @@ and everything goes back to normal.
 - **Sound**: output, input, per-app volume and device options, and **Also play on** to hear
   everything on a second output too (both monitors' speakers, for example), and paired Bluetooth
   headphones that are not connected yet (tap to connect and switch to them). **Network and Wi-Fi** with a
-  show-password button, **Bluetooth** (live connection status, battery level and pairing nearby
+  show-password button, and the saved password of the connected network with a QR code to join from a
+  phone, **Bluetooth** (live connection status, battery level and pairing nearby
   devices right from the flyout), **battery**.
 - **Brightness for every monitor** over DDC/CI, with Windows Night light.
 - **Media**: album art, title and artist on the bar for any app that reports media (Spotify,

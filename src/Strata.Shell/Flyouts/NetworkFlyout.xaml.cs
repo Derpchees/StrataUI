@@ -22,6 +22,12 @@ public partial class NetworkFlyout : FlyoutWindow
         InitializeComponent();
         UpdateConnection();
         Loaded += async (_, _) => await InitializeWifiAsync();
+        // La contraseña no se queda en pantalla para la próxima vez que se abra el panel.
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!IsVisible)
+                _rows.ForEach(r => r.Key = null);
+        };
     }
 
     private void UpdateConnection()
@@ -136,6 +142,8 @@ public partial class NetworkFlyout : FlyoutWindow
         bool expand = !row.IsExpanded;
         _rows.ForEach(r => r.IsExpanded = false);
         row.IsExpanded = expand;
+        if (expand && row.Network.Connected)
+            _ = ShowKeyAsync(row);
     }
 
     private void PasswordBox_Loaded(object sender, RoutedEventArgs e)
@@ -164,6 +172,79 @@ public partial class NetworkFlyout : FlyoutWindow
         else
         {
             await ConnectAsync(row);
+        }
+    }
+
+    /// <summary>Mientras se espera el UAC de la contraseña: el aviso de Windows le quita el foco al panel.</summary>
+    private bool _readingKey;
+    protected override bool StayOpenWhenDeactivated => _readingKey;
+
+    /// <summary>
+    /// Claves ya leídas en esta sesión (solo en memoria, por SSID): volver a abrir la red conectada
+    /// no pide otro UAC. Nunca se escriben a disco.
+    /// </summary>
+    private static readonly Dictionary<string, string> KnownKeys = new(StringComparer.Ordinal);
+
+    /// <summary>Al abrir la red conectada: su contraseña y el QR (UAC la primera vez).</summary>
+    private async Task ShowKeyAsync(WifiRow row)
+    {
+        string ssid = row.Ssid;
+        if (KnownKeys.TryGetValue(ssid, out var known))
+        {
+            row.SetKey(known);
+            return;
+        }
+        if (_readingKey)
+            return;
+        _readingKey = true;
+        row.Message = Loc.T("Leyendo la contraseña…");
+        WifiKey.Result result;
+        try
+        {
+            result = await WifiKey.GetAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo leer la contraseña del Wi-Fi", ex);
+            result = new WifiKey.Result(null);
+        }
+        finally
+        {
+            _readingKey = false;
+        }
+        if (result.Key is { } key)
+            KnownKeys[ssid] = key;
+        if (!IsVisible || !row.IsExpanded)
+            return; // se cerró o se plegó mientras tanto: no dejar la clave en una fila oculta
+        Activate();
+        if (result.Key is { } shown)
+        {
+            row.Message = null;
+            row.SetKey(shown);
+        }
+        else
+        {
+            row.Message = result switch
+            {
+                { Cancelled: true } => Loc.T("Se necesita permiso de administrador para ver la contraseña."),
+                { NotConnected: true } => Loc.T("No hay una red Wi-Fi conectada."),
+                _ => Loc.T("Windows no entregó la contraseña de esta red."),
+            };
+        }
+    }
+
+    private void CopyKey_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement { DataContext: WifiRow { Key: { Length: > 0 } key } row })
+            return;
+        try
+        {
+            Clipboard.SetText(key);
+            row.Message = Loc.T("Contraseña copiada.");
+        }
+        catch (System.Runtime.InteropServices.COMException)
+        {
+            row.Message = Loc.T("No se pudo copiar.");
         }
     }
 
@@ -230,8 +311,54 @@ public partial class NetworkFlyout : FlyoutWindow
         public bool IsExpanded
         {
             get => _expanded;
-            set { _expanded = value; Notify(nameof(ExpandedVisibility)); }
+            set
+            {
+                _expanded = value;
+                if (!value)
+                    Key = null; // al plegar la fila la clave deja de verse
+                Notify(nameof(ExpandedVisibility));
+            }
         }
+
+        private string? _key;
+        private System.Windows.Media.Geometry? _qr;
+
+        /// <summary>La contraseña guardada, una vez leída (solo en la red conectada); "" = abierta.</summary>
+        public string? Key
+        {
+            get => _key;
+            set
+            {
+                _key = value;
+                if (value is null)
+                    _qr = null;
+                Notify();
+                Notify(nameof(KeyText));
+                Notify(nameof(Qr));
+                Notify(nameof(KeyVisibility));
+                Notify(nameof(CopyVisibility));
+            }
+        }
+
+        /// <summary>Pone la clave y su QR.</summary>
+        public void SetKey(string key)
+        {
+            try
+            {
+                _qr = WifiQr.Create(Ssid, key);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("No se pudo generar el QR del Wi-Fi", ex);
+                _qr = null;
+            }
+            Key = key;
+        }
+
+        public string KeyText => _key is { Length: 0 } ? Loc.T("Sin contraseña") : _key ?? "";
+        public System.Windows.Media.Geometry? Qr => _qr;
+        public Visibility KeyVisibility => _key is null ? Visibility.Collapsed : Visibility.Visible;
+        public Visibility CopyVisibility => _key is { Length: > 0 } ? Visibility.Visible : Visibility.Collapsed;
 
         public bool NeedsPassword
         {

@@ -162,6 +162,12 @@ public partial class App : Application
             Shutdown(Services.Files.ElevatedFiles.Run(e.Args));
             return;
         }
+        // La contraseña de la red Wi-Fi actual (Windows solo la da en claro a un administrador): elevado.
+        if (e.Args.Length > 0 && e.Args[0] == Services.Network.WifiKey.Arg)
+        {
+            Shutdown(Services.Network.WifiKey.Run(e.Args));
+            return;
+        }
         // Comprimidos (listar, extraer, comprimir) con 7-Zip, en un proceso aparte.
         if (e.Args.Length > 0 && e.Args[0] == Services.Files.ArchiveHost.Arg)
         {
