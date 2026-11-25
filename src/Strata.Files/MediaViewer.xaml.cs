@@ -151,6 +151,7 @@ public partial class MediaViewer : UserControl
             return;
         _media.Player.Pause();
         _media.Player.Source = null;
+        _media.Reset();
         Video.Source = null;
     }
 

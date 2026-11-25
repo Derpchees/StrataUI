@@ -10,6 +10,10 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Corregido
+
+- Visor de Archivos: al pasar de un video a otro con las flechas, el siguiente se quedaba en negro si medía lo mismo.
+
 ## [1.56.0] - 2026-11-20
 
 ### Añadido

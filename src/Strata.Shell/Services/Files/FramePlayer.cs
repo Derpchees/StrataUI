@@ -34,7 +34,7 @@ public sealed class FramePlayer : IDisposable
     /// <summary>El fotograma actual (cambia de objeto si cambia el tamaño del video).</summary>
     public WriteableBitmap? Frame { get; private set; }
 
-    /// <summary>Hay un <see cref="Frame"/> nuevo (otro tamaño): la imagen de la ventana debe usarlo.</summary>
+    /// <summary>Hay un <see cref="Frame"/> nuevo (otro tamaño o tras <see cref="Reset"/>): la imagen de la ventana debe usarlo.</summary>
     public event Action? FrameChanged;
 
     public FramePlayer(Dispatcher ui)
@@ -103,6 +103,17 @@ public sealed class FramePlayer : IDisposable
             if (resized)
                 FrameChanged?.Invoke();
         }
+    }
+
+    /// <summary>
+    /// Olvida el fotograma mostrado (al cambiar de archivo, cuando la ventana suelta la imagen): el
+    /// primero del siguiente video crea otro <see cref="Frame"/> y avisa con <see cref="FrameChanged"/>,
+    /// aunque mida lo mismo que el anterior.
+    /// </summary>
+    public void Reset()
+    {
+        lock (_gate)
+            Frame = null;
     }
 
     private void CreateTextures(int width, int height)
