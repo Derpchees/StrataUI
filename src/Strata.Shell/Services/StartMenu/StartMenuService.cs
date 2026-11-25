@@ -33,17 +33,47 @@ public sealed class StartApp : INotifyPropertyChanged
         if (item is INotifyPropertyChanged notifier)
             notifier.PropertyChanged += (_, e) =>
             {
-                if (e.PropertyName is nameof(ShellItem.LargeIcon) or nameof(ShellItem.DisplayName))
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(e.PropertyName == nameof(ShellItem.LargeIcon) ? nameof(Icon) : nameof(Name)));
+                if (e.PropertyName == nameof(ShellItem.LargeIcon))
+                    RaiseLater(nameof(Icon));
+                else if (e.PropertyName == nameof(ShellItem.DisplayName))
+                    RaiseLater(nameof(Name));
             };
     }
+
+    // ManagedShell carga el ícono en segundo plano y avisa ANTES de congelarlo: si la lista lo leía
+    // en ese instante, WPF fallaba con "Must create DependencySource on same Thread as the
+    // DependencyObject". El aviso se pasa al hilo de la interfaz y el ícono solo se entrega congelado.
+    private void RaiseLater(string property)
+    {
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null)
+            return;
+        dispatcher.BeginInvoke(() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(property)),
+            System.Windows.Threading.DispatcherPriority.Background);
+    }
+
+    /// <summary>El ícono de Windows, solo si ya se puede usar desde este hilo (congelado).</summary>
+    private ImageSource? ShellIcon
+    {
+        get
+        {
+            var icon = _item.LargeIcon;
+            if (icon is null || icon.CheckAccess())
+                return icon;
+            // Todavía sin congelar: se vuelve a pedir en un momento.
+            if (_iconRetries++ < 20)
+                RaiseLater(nameof(Icon));
+            return null;
+        }
+    }
+    private int _iconRetries;
 
     /// <summary>Identificador estable: AppUserModelID, ruta del acceso directo o del archivo anclado.</summary>
     public string Id => _extra?.Id ?? _path ?? _item.FileName ?? _item.Path;
     // Las herramientas de Windows no traen nombre: el del Shell ya viene traducido (desktop.ini).
     public string Name => _extra is { Name.Length: > 0 } extra ? extra.Name : _item.DisplayName ?? Id;
     /// <summary>El ícono elegido con "Cambiar ícono" o, si no hay, el de Windows.</summary>
-    public ImageSource? Icon => CustomIcons.Get(Id) ?? FileIcon ?? _item.LargeIcon;
+    public ImageSource? Icon => CustomIcons.Get(Id) ?? FileIcon ?? ShellIcon;
 
     // La caché de íconos de Windows se queda con el ícono que vio cuando el archivo faltaba o era
     // provisional (una app dañada y reinstalada, el cubo gris de las apps web de Chromium): las apps

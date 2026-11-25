@@ -10,9 +10,22 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.57.1] - 2026-11-25
+
 ### Corregido
 
 - Visor de Archivos: al pasar de un video a otro con las flechas, el siguiente se quedaba en negro si medía lo mismo.
+- Menú Inicio: un ícono que Windows terminaba de cargar justo al abrir la lista podía provocar el error
+  "Must create DependencySource on same Thread as the DependencyObject" (quedaba en el registro).
+- Medidor de velocidad de internet: ya no vuelve a listar todos los adaptadores de red cada segundo
+  (~16 ms por lectura); la lista se rehace solo cuando Windows avisa que cambió la red.
+
+## [1.57.0] - 2026-11-24
+
+### Añadido
+
+- Archivos: botón de opciones en la barra de pestañas para mostrar u ocultar los archivos recientes en
+  Este equipo y para usar o no pestañas (sin pestañas, "abrir en una pestaña nueva" abre otra ventana).
 
 ## [1.56.0] - 2026-11-20
 

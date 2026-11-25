@@ -63,10 +63,8 @@ public static class NetSpeed
             var names = new List<string>();
             try
             {
-                foreach (var adapter in NetworkInterface.GetAllNetworkInterfaces())
+                foreach (var adapter in CountedAdapters())
                 {
-                    if (!Counts(adapter))
-                        continue;
                     var stats = adapter.GetIPStatistics();
                     down += stats.BytesReceived;
                     up += stats.BytesSent;
@@ -75,6 +73,7 @@ public static class NetSpeed
             }
             catch (NetworkInformationException ex)
             {
+                _adapters = null; // un adaptador que ya no está: se vuelve a listar
                 Log.Info($"No se pudo leer el tráfico de red: {ex.Message}");
             }
             System.Windows.Application.Current?.Dispatcher.BeginInvoke(() =>
@@ -94,6 +93,23 @@ public static class NetSpeed
                 Changed?.Invoke();
             });
         });
+    }
+
+    // Listar los adaptadores (y sus puertas de enlace) costaba ~16 ms cada segundo; leer los bytes de
+    // uno ya conocido, menos de 1 ms. La lista se arma una vez y se rehace cuando Windows avisa que
+    // cambió la red (conectar, desconectar, otra IP o puerta de enlace).
+    private static NetworkInterface[]? _adapters;
+    private static bool _watchingChanges;
+
+    private static NetworkInterface[] CountedAdapters()
+    {
+        if (!_watchingChanges)
+        {
+            _watchingChanges = true;
+            NetworkChange.NetworkAddressChanged += (_, _) => _adapters = null;
+            NetworkChange.NetworkAvailabilityChanged += (_, _) => _adapters = null;
+        }
+        return _adapters ??= NetworkInterface.GetAllNetworkInterfaces().Where(Counts).ToArray();
     }
 
     private static readonly string[] VirtualAdapters =
