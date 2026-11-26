@@ -177,47 +177,74 @@ public partial class AppearancePage : Page
         }
     }
 
-    /// <summary>Miniatura: fondo de colores, una ventana y una barra con los colores reales del tema.</summary>
+    private const double PreviewWidth = 168, PreviewHeight = 100;
+
+    /// <summary>
+    /// Miniatura: un escritorio pequeño con un panel y la barra, con los colores reales del tema. En los
+    /// estilos de vidrio el fondo se desenfoca de verdad detrás del panel y de la barra (con la misma
+    /// transparencia que usan), así se nota la diferencia entre Mica, Translúcido, Transparente total y
+    /// Sólido. El texto, las tarjetas y el acento salen de la paleta, así se reconoce cada esquema.
+    /// </summary>
     private FrameworkElement BuildThemeCard(ThemeInfo theme, string name, bool selected)
     {
         bool light = theme.Light ?? ThemeManager.WindowsUsesLightTheme();
         var palette = Palette.Build(theme, light, ThemeManager.Readable(ThemeManager.AccentFor(theme), light));
         Brush Res(string key) => (Brush)palette[key];
+        bool glassy = theme.Backdrop is Backdrop.Acrylic or Backdrop.Blur or Backdrop.Mica;
 
-        var wallpaper = new LinearGradientBrush(Palette.Hex("#FF5B7FFF"), Palette.Hex("#FFFF7AB6"), 35);
-        wallpaper.GradientStops.Add(new GradientStop(Palette.Hex("#FFFFC46B"), 1));
+        var preview = new Grid { Width = PreviewWidth, Height = PreviewHeight, ClipToBounds = true };
+        preview.Children.Add(Wallpaper(blur: 0));
 
-        var preview = new Grid { Height = 96, ClipToBounds = true };
-        preview.Children.Add(new Border { Background = wallpaper });
-        // Vidrio sin desenfoque real en la miniatura: se aumenta la opacidad para insinuarlo.
-        var window = new Border
+        // Panel (menú Inicio, avisos, Hub…): fondo, borde, texto, una tarjeta y un botón de acento.
+        var panelRadius = (CornerRadius)palette["StrataLargeCornerRadius"];
+        var panelRect = new Rect(12, 10, 104, 58);
+        if (glassy)
+            preview.Children.Add(Frosted(panelRect, panelRadius));
+        var lines = new StackPanel { Margin = new Thickness(8, 8, 8, 0) };
+        lines.Children.Add(Line(44, 4, Res("StrataForegroundBrush"), 0.9));
+        lines.Children.Add(Line(64, 3, Res("StrataSecondaryForegroundBrush"), 0.75, top: 5));
+        lines.Children.Add(Line(52, 3, Res("StrataSecondaryForegroundBrush"), 0.75, top: 3));
+        lines.Children.Add(new Border
         {
-            Width = 92, Height = 52, Margin = new Thickness(14, 12, 0, 0),
+            Margin = new Thickness(0, 7, 0, 0), Height = 16, CornerRadius = new CornerRadius(4),
+            Background = Res("StrataSurfaceBrush"),
+            Child = new Border
+            {
+                Width = 24, Height = 7, Margin = new Thickness(0, 0, 5, 0), CornerRadius = new CornerRadius(3.5),
+                HorizontalAlignment = HorizontalAlignment.Right, Background = Res("StrataAccentBrush"),
+            },
+        });
+        preview.Children.Add(new Border
+        {
+            Width = panelRect.Width, Height = panelRect.Height, Margin = new Thickness(panelRect.X, panelRect.Y, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
-            CornerRadius = (CornerRadius)palette["StrataLargeCornerRadius"],
-            Background = Opaque(Res("StrataFlyoutBackgroundBrush"), light, theme),
+            CornerRadius = panelRadius,
+            Background = Res("StrataFlyoutBackgroundBrush"),
             BorderBrush = theme.Glass ? Res("StrataGlassEdgeBrush") : Res("StrataFlyoutBorderBrush"),
             BorderThickness = new Thickness(1),
-            Child = new Border
-            {
-                Margin = new Thickness(8, 8, 0, 0), Width = 40, Height = 6,
-                HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
-                CornerRadius = new CornerRadius(3), Background = Res("StrataAccentBrush"),
-            },
-        };
-        preview.Children.Add(window);
-        var taskbar = new Border
+            Child = lines,
+        });
+
+        // Barra: sin fondo en Transparente total; si no, su color sobre el fondo desenfocado.
+        const double barHeight = 20;
+        var barRect = new Rect(0, PreviewHeight - barHeight, PreviewWidth, barHeight);
+        if (glassy && !theme.ClearBar)
+            preview.Children.Add(Frosted(barRect, new CornerRadius(0)));
+        var icons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        icons.Children.Add(TaskIcon(Res("StrataAccentBrush"), null, null, theme));
+        string[] appColors = { "#FF4CC2FF", "#FFFFB547", "#FF6CCB5F" };
+        for (int i = 0; i < appColors.Length; i++)
+            icons.Children.Add(TaskIcon(new SolidColorBrush(Palette.Hex(appColors[i])),
+                                        i == 0 ? Res("StrataActiveTaskBrush") : null,
+                                        i == 0 ? Res("StrataAccentBrush") : Res("StrataInactiveIndicatorBrush"), theme));
+        preview.Children.Add(new Border
         {
-            Height = 18, VerticalAlignment = VerticalAlignment.Bottom,
-            // Transparente total: la barra sin fondo, solo su ícono sobre el fondo de pantalla.
-            Background = theme.ClearBar ? Brushes.Transparent : Opaque(Res("StrataTaskbarBackgroundBrush"), light, theme),
-            Child = new Border
-            {
-                Width = 10, Height = 10, CornerRadius = new CornerRadius(theme.Radius / 3),
-                Background = Res("StrataAccentBrush"), HorizontalAlignment = HorizontalAlignment.Center,
-            },
-        };
-        preview.Children.Add(taskbar);
+            Height = barHeight, VerticalAlignment = VerticalAlignment.Bottom,
+            Background = theme.ClearBar ? Brushes.Transparent : Res("StrataTaskbarBackgroundBrush"),
+            BorderBrush = theme.ClearBar ? Brushes.Transparent : Res("StrataTaskbarBorderBrush"),
+            BorderThickness = new Thickness(0, 1, 0, 0),
+            Child = icons,
+        });
         if (theme.Glass)
             preview.Children.Add(new Border { Background = Res("StrataGlassHighlightBrush"), Opacity = 0.6, IsHitTestVisible = false });
 
@@ -240,13 +267,68 @@ public partial class AppearancePage : Page
         };
     }
 
-    private static Brush Opaque(Brush brush, bool light, ThemeInfo theme)
+    /// <summary>Renglón de texto de muestra (una barrita redondeada del color del texto).</summary>
+    private static Border Line(double width, double height, Brush brush, double opacity, double top = 0) => new()
     {
-        if (brush is not SolidColorBrush solid || theme.Backdrop is not (Backdrop.Acrylic or Backdrop.Blur))
-            return brush;
-        // En la miniatura no hay Acrylic: se mezcla con el tono que tendría el desenfoque.
-        var frosted = light ? Palette.Hex("#D8F0F0F5") : Palette.Hex("#D0202024");
-        return new SolidColorBrush(Palette.Blend(frosted, solid.Color, solid.Color.A / 255.0));
+        Width = width, Height = height, Margin = new Thickness(0, top, 0, 0), CornerRadius = new CornerRadius(height / 2),
+        HorizontalAlignment = HorizontalAlignment.Left, Background = brush, Opacity = opacity,
+    };
+
+    /// <summary>Ícono de la barra con su placa (si es la app en foco) y su punto, como en la barra real.</summary>
+    private static FrameworkElement TaskIcon(Brush icon, Brush? plate, Brush? dot, ThemeInfo theme)
+    {
+        var cell = new Grid { Width = 18, Height = 18, Margin = new Thickness(1, 1, 1, 0) };
+        if (plate != null)
+            cell.Children.Add(new Border { CornerRadius = new CornerRadius(Math.Min(theme.Radius / 2.0, 5)), Background = plate });
+        cell.Children.Add(new Border
+        {
+            Width = 9, Height = 9, Margin = new Thickness(0, 0, 0, 2), CornerRadius = new CornerRadius(Math.Min(theme.Radius / 3.0, 3)),
+            Background = icon, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+        });
+        if (dot != null)
+            cell.Children.Add(new Border
+            {
+                Width = 5, Height = 1.5, Margin = new Thickness(0, 0, 0, 1), CornerRadius = new CornerRadius(0.75),
+                Background = dot, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom,
+            });
+        return cell;
+    }
+
+    /// <summary>Fondo de pantalla de muestra: un degradado con manchas de color, para que se note el vidrio.</summary>
+    private static FrameworkElement Wallpaper(double blur)
+    {
+        var gradient = new LinearGradientBrush(Palette.Hex("#FF4F6BFF"), Palette.Hex("#FFFF6FAE"), 35);
+        gradient.GradientStops.Add(new GradientStop(Palette.Hex("#FFFFC46B"), 1));
+        var canvas = new Canvas { Width = PreviewWidth, Height = PreviewHeight, Background = gradient };
+        void Blob(double x, double y, double size, string color)
+        {
+            var e = new System.Windows.Shapes.Ellipse { Width = size, Height = size, Fill = new SolidColorBrush(Palette.Hex(color)) };
+            Canvas.SetLeft(e, x);
+            Canvas.SetTop(e, y);
+            canvas.Children.Add(e);
+        }
+        Blob(-14, 34, 54, "#FF2DE0C8");
+        Blob(70, -18, 46, "#FFFFFFFF");
+        Blob(96, 44, 40, "#FF1E1E5A");
+        Blob(132, 6, 30, "#FFFF4D6D");
+        if (blur > 0)
+            canvas.Effect = new System.Windows.Media.Effects.BlurEffect { Radius = blur, KernelType = System.Windows.Media.Effects.KernelType.Gaussian };
+        return canvas;
+    }
+
+    /// <summary>El fondo desenfocado que se ve detrás de un panel o una barra de vidrio, recortado a su forma.</summary>
+    private static FrameworkElement Frosted(Rect rect, CornerRadius radius)
+    {
+        var blurred = Wallpaper(blur: 14);
+        Canvas.SetLeft(blurred, -rect.X);
+        Canvas.SetTop(blurred, -rect.Y);
+        return new Canvas
+        {
+            Width = rect.Width, Height = rect.Height, Margin = new Thickness(rect.X, rect.Y, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+            Clip = new RectangleGeometry(new Rect(0, 0, rect.Width, rect.Height), radius.TopLeft, radius.TopLeft),
+            Children = { blurred },
+        };
     }
 
     private static ControlTemplate FlatTemplate()

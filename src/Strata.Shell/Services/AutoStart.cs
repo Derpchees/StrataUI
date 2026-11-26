@@ -66,6 +66,18 @@ public static class AutoStart
             bool runKey = RunKeyEnabled();
             var (task, arguments) = TaskCommand();
             bool sameExe = task is not null && task.Equals(ExePath, StringComparison.OrdinalIgnoreCase);
+            // La tarea abre otra copia de Strata UI que sigue instalada (p. ej. una compilación de prueba o
+            // una portátil junto a la instalada): no se le quita el inicio con Windows a la instalada.
+            if (!legacy && task is not null && !sameExe && File.Exists(task))
+                return;
+            // La tarea ya abre este Strata UI como se debe: la clave Run que deja el instalador sobra (no
+            // hace falta rehacer la tarea, que si la creó un Strata UI elevado ni siquiera se podría).
+            if (!legacy && runKey && sameExe && arguments == Arg)
+            {
+                SetRunKey(false);
+                Log.Info("Inicio automático: se quitó la clave Run repetida (ya hay una tarea)");
+                return;
+            }
             // Solo le falta el argumento y ya se vio que no se puede cambiar: no se reintenta cada vez.
             if (!legacy && !runKey && sameExe && arguments != Arg
                 && string.Equals(Settings.Current.AutoStartLockedTask, ExePath, StringComparison.OrdinalIgnoreCase))
@@ -74,7 +86,7 @@ public static class AutoStart
                 return;
             }
             // También la tarea de antes, sin el argumento de inicio automático.
-            if (legacy || runKey || (task is not null && (!sameExe || arguments != Arg)))
+            if (legacy || (runKey && !sameExe) || (task is not null && (!sameExe || arguments != Arg)))
             {
                 if (CreateTask())
                 {

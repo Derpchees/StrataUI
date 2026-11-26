@@ -10,6 +10,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.59.1] - 2026-11-26
+
+### Cambiado
+
+- Las miniaturas de la galería de Tema muestran un escritorio pequeño con un panel y la barra: el fondo
+  se desenfoca de verdad detrás del vidrio, así se nota la diferencia entre Mica, Translúcido,
+  Transparente total y Sólido, y cada esquema enseña su texto, superficies, acento e indicadores.
+
+### Corregido
+
+- El registro ya no anota «No se pudo crear la tarea de inicio automático: Access is denied» en cada
+  inicio: si la tarea ya abre Strata UI como se debe solo se quita la clave Run que deja el instalador,
+  y una copia de prueba o portátil ya no intenta quitarle el inicio con Windows a la instalada.
+
 ## [1.59.0] - 2026-11-26
 
 ### Añadido
