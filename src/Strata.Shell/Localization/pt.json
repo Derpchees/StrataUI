@@ -970,7 +970,7 @@
   "Megabits por segundo (Mb/s)": "Megabits por segundo (Mb/s)",
   "Clic para liberar RAM": "Clique para liberar RAM",
   "Clic para abrir el Administrador de tareas": "Clique para abrir o Gerenciador de Tarefas",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido.": "Barra sem fundo: só ícones e texto, claros ou escuros conforme o que está atrás. Os painéis, avisos e menus têm uma tonalidade leve e deixam ver o fundo nítido.",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús van en vidrio esmerilado para que se lean sobre cualquier fondo.": "Barra sem fundo: só ícones e texto, claros ou escuros conforme o que está atrás. Os painéis, avisos e menus usam vidro fosco para serem lidos sobre qualquer fundo.",
   "Agrupar los servicios de Windows": "Agrupar os serviços do Windows",
   "Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar.": "Com mais de 3,5 GB de RAM, o Windows divide seus serviços em dezenas de processos svchost; agrupados, usam bem menos memória. Vale após reiniciar.",
   "Desactivar SysMain (precarga de apps)": "Desativar o SysMain (pré-carregamento de apps)",
@@ -1666,5 +1666,7 @@
   "Contraseña copiada.": "Senha copiada.",
   "No se pudo copiar.": "Não foi possível copiar.",
   "Sin contraseña": "Sem senha",
-  "Escanéalo con la cámara del teléfono para conectarte": "Escaneie com a câmera do celular para se conectar"
+  "Escanéalo con la cámara del teléfono para conectarte": "Escaneie com a câmera do celular para se conectar",
+  "Sólido": "Sólido",
+  "Barra y paneles opacos en capas, con esquinas discretas: nítidos, sin transparencias y legibles sobre cualquier fondo.": "Barra e painéis opacos em camadas, com cantos discretos: nítidos, sem transparência e legíveis sobre qualquer fundo."
 }

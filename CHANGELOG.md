@@ -10,6 +10,23 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.59.0] - 2026-11-26
+
+### Añadido
+
+- Estilo **Sólido**: barra y paneles opacos, con capas neutras y esquinas discretas, sin transparencias
+  ni desenfoque. Se lee igual sobre cualquier fondo de pantalla.
+
+### Cambiado
+
+- Transparente total: solo la barra va transparente; los paneles, avisos y menús van en vidrio esmerilado
+  para que se lean sobre cualquier fondo.
+- Los esquemas de color se aplican mejor en cada estilo: más opacidad en Translúcido y Transparente total,
+  y Material conserva sus acentos tonales.
+- Barra de tareas: la placa de la app en foco ocupa todo el alto del botón (antes era un rectángulo bajito),
+  el punto de abajo mide lo mismo en todas las apps (solo cambia de color) y los bordes que asoman cuando
+  hay varias ventanas van del alto de la placa.
+
 ## [1.58.0] - 2026-11-25
 
 ### Añadido

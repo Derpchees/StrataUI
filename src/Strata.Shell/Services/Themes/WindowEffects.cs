@@ -23,11 +23,10 @@ public static class WindowEffects
     {
         if (hwnd == IntPtr.Zero)
             return;
+        // Los paneles, avisos y menús van siempre sobre vidrio esmerilado (también en Transparente
+        // total: con el fondo nítido detrás, lo que hubiera en pantalla se mezclaba con el texto).
+        // Solo la barra de Transparente total pide "clear" (Taskbar.Transparency).
         bool enabled = clear || backdrop is Backdrop.Acrylic or Backdrop.Blur;
-        // Translúcido es vidrio esmerilado (lo de detrás desenfocado). Transparente total deja ver lo
-        // de detrás tal cual, nítido, solo con el tinte de WPF.
-        if (enabled && ThemeManager.Theme.ClearBar)
-            clear = true;
 
         if (HwndSource.FromHwnd(hwnd) is { CompositionTarget: { } target })
             target.BackgroundColor = enabled ? Colors.Transparent : SystemColors.WindowColor;

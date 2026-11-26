@@ -36,10 +36,12 @@ public static class Palette
         if (theme.Scheme is { } scheme)
         {
             // Esquema de color (Nord, Dracula…) sobre el estilo elegido: opacos en los estilos sólidos y
-            // Mica; sobre vidrio o transparencia, translúcidos para que se siga viendo el efecto.
-            // (Con menos, el material de Windows lo aclaraba tanto que el esquema no se reconocía.)
-            (byte barAlpha, byte panelAlpha) = theme.Glass || theme.Backdrop == Backdrop.Blur ? ((byte)0xB3, (byte)0xCC)
-                : theme.Backdrop == Backdrop.Acrylic ? ((byte)0xE6, (byte)0xD9)
+            // Mica; sobre vidrio (Translúcido, Transparente total, Vidrio) translúcidos, para que se
+            // siga viendo el desenfoque, pero con más tinte que el estilo solo: el esquema se reconoce
+            // y el texto se lee sobre cualquier fondo. (El desenfoque es limpio, sin la luminosidad
+            // del Acrylic de Windows, que antes obligaba a dejarlos casi opacos.)
+            (byte barAlpha, byte panelAlpha) = theme.Backdrop is Backdrop.Acrylic or Backdrop.Blur
+                ? ((byte)0xC0, (byte)0xD0)
                 : ((byte)0xFF, (byte)0xFF);
             background = WithAlpha(Hex(scheme.Bar), barAlpha);
             flyout = WithAlpha(Hex(scheme.Panel), panelAlpha);
@@ -53,6 +55,17 @@ public static class Palette
             indicator = secondary;
             surface = Hex(scheme.Surface);
             hubTint = flyout;
+            if (theme.Tonal)
+            {
+                // Material con un esquema: las superficies del esquema, con el resaltado tonal del
+                // acento (el del esquema, salvo que se haya elegido otro) en lugar de uno gris.
+                hover = WithAlpha(accent, 0x26);
+                pressed = WithAlpha(accent, 0x38);
+                active = WithAlpha(accent, 0x30);
+                surface = Blend(Hex(scheme.Surface), accent, 0.10);
+                border = Blend(border, accent, 0.20);
+                flyoutBorder = Blend(flyoutBorder, accent, 0.20);
+            }
         }
         else if (theme.Tonal)
         {
@@ -67,12 +80,29 @@ public static class Palette
             surface = Blend(flyout, accent, 0.10);
             hubTint = flyout;
         }
+        else if (IsSolidStyle(theme))
+        {
+            // Sólido: superficies opacas en capas (barra, panel, tarjeta), separadas por un borde fino
+            // en lugar de por transparencia. Neutros apenas fríos, para que el acento destaque.
+            background = light ? Hex("#FCFCFD") : Hex("#1F2026");
+            flyout = light ? Hex("#FFFFFF") : Hex("#25262C");
+            border = light ? Hex("#E1E2E7") : Hex("#34363E");
+            flyoutBorder = light ? Hex("#E1E2E7") : Hex("#393B44");
+            foreground = light ? Hex("#17181C") : Hex("#F2F3F5");
+            secondary = light ? Hex("#5E6068") : Hex("#A9ABB4");
+            hover = light ? Hex("#0D000000") : Hex("#14FFFFFF");
+            pressed = light ? Hex("#08000000") : Hex("#0CFFFFFF");
+            active = light ? Hex("#12000000") : Hex("#1CFFFFFF");
+            surface = light ? Hex("#F3F4F6") : Hex("#2C2D34");
+            hubTint = light ? Hex("#F7F7F9") : Hex("#1B1C21");
+        }
         else if (theme.Glass)
         {
             // Vidrio (temas importados con "glass"): desenfoque limpio con un tinte mínimo, sin el
             // brillo lechoso de Aero. La profundidad la dan los bordes de luz (ver GlassRim).
+            // Paneles con algo más de tinte que la barra: se leen aunque detrás haya algo claro.
             background = light ? Hex("#4DF5F5FA") : Hex("#3D0A0A0C");
-            flyout = light ? Hex("#5CF5F5FA") : Hex("#4D0E0E10");
+            flyout = light ? Hex("#80F5F5FA") : Hex("#730E0E12");
             border = Colors.Transparent;
             flyoutBorder = light ? Hex("#33FFFFFF") : Hex("#1AFFFFFF");
             hover = light ? Hex("#26FFFFFF") : Hex("#1FFFFFFF");
@@ -95,16 +125,16 @@ public static class Palette
         else if (theme.Backdrop == Backdrop.Acrylic)
         {
             // Translúcido y Transparente total: el color base, semitransparente sobre el desenfoque
-            // limpio (sin la capa gris del Acrylic de Windows, que lo dejaba opaco). Translúcido es
-            // vidrio esmerilado (fondo desenfocado, ver WindowEffects); Transparente total deja el
-            // fondo nítido, con un tinte más ligero. En oscuro el gris neutro se
-            // cambia por uno casi negro: con la misma transparencia oscurece más lo de detrás y el
-            // texto se sigue leyendo sobre una ventana blanca.
+            // limpio (sin la capa gris del Acrylic de Windows, que lo dejaba opaco). Los dos llevan
+            // los paneles en vidrio esmerilado (ver WindowEffects); la diferencia es la barra, que en
+            // Transparente total va sin fondo. En oscuro el gris neutro se cambia por uno casi negro:
+            // con la misma transparencia oscurece más lo de detrás y el texto se sigue leyendo sobre
+            // una ventana blanca.
             background = WithAlpha(background, light ? (byte)0xA6 : (byte)0x8C);
             if (!light && flyout == Hex("#2B2B2B"))
                 flyout = Hex("#18181B");
-            flyout = WithAlpha(flyout, GlassAlpha(theme.ClearBar ? 65 : 55));
-            hubTint = WithAlpha(flyout, theme.ClearBar ? (byte)0x0F : (byte)0x33);
+            flyout = WithAlpha(flyout, GlassAlpha(55));
+            hubTint = WithAlpha(flyout, 0x33);
         }
 
         // Colores propios encima del tema: el texto de cada parte sale de su color para que se lea.
@@ -148,9 +178,9 @@ public static class Palette
             ["StrataPopupBackgroundBrush"] = Brush(WithAlpha(theme.Tonal || theme.Scheme != null ? flyout : light ? Hex("#F9F9F9") : Hex("#2B2B2B"), 0xF5)),
             // Avisos, OSD, la carpeta de Inicio: con los temas translúcidos van sobre vidrio
             // (Themes/GlassSurface) y llevan el tinte de los paneles; si no, el fondo opaco.
-            // (Sobre el Acrylic del aviso, un poco más de tinte que en los paneles: se lee de un vistazo.)
+            // (Un poco más de tinte que en los paneles: un aviso o un menú se lee de un vistazo.)
             ["StrataGlassPopupBrush"] = theme.Backdrop is Backdrop.Acrylic or Backdrop.Blur
-                ? Brush(flyout.A < 0x40 ? WithAlpha(flyout, 0x40) : flyout)
+                ? Brush(flyout.A < 0xA0 ? WithAlpha(flyout, 0xA0) : flyout)
                 : Brush(WithAlpha(theme.Tonal || theme.Scheme != null ? flyout : light ? Hex("#F9F9F9") : Hex("#2B2B2B"), 0xF5)),
             ["StrataSurfaceBrush"] = Brush(surface),
             ["StrataHubTintBrush"] = Brush(hubTint),
@@ -187,7 +217,48 @@ public static class Palette
     {
         Color card, cardHover, cardBorder, control, controlHover, controlPressed, input, popup, popupBorder, selected, appBackground;
 
-        if (theme.Glass || theme.Backdrop == Backdrop.Blur)
+        if (theme.Scheme is { } scheme)
+        {
+            // Esquema: tarjetas y controles un poco más claros (u oscuros) que el panel. En Material
+            // se tiñen con el acento, como sus superficies tonales; sobre vidrio dejan ver el desenfoque.
+            var panel = Hex(scheme.Panel);
+            var lift = theme.Tonal ? accent : Hex(scheme.Text);
+            double k = theme.Tonal ? 1.6 : 1;
+            card = Blend(panel, lift, 0.04 * k);
+            cardHover = Blend(panel, lift, 0.08 * k);
+            cardBorder = theme.Tonal ? Colors.Transparent : Hex(scheme.Border);
+            control = Blend(panel, lift, 0.07 * k);
+            controlHover = Blend(panel, lift, 0.11 * k);
+            controlPressed = Blend(panel, lift, 0.04 * k);
+            input = Blend(Hex(scheme.Bar), panel, 0.5);
+            popup = WithAlpha(panel, 0xF8);
+            popupBorder = theme.Tonal ? Colors.Transparent : Hex(scheme.Border);
+            selected = WithAlpha(accent, 0x40);
+            // El de la barra, con la transparencia que le dio el estilo.
+            appBackground = barColor;
+            if (theme.Backdrop is Backdrop.Acrylic or Backdrop.Blur)
+            {
+                card = WithAlpha(card, 0xB3);
+                cardHover = WithAlpha(cardHover, 0xCC);
+                control = WithAlpha(control, 0xCC);
+                controlHover = WithAlpha(controlHover, 0xE0);
+            }
+        }
+        else if (IsSolidStyle(theme))
+        {
+            card = light ? Hex("#F6F7F9") : Hex("#2A2B31");
+            cardHover = light ? Hex("#EFF0F3") : Hex("#303138");
+            cardBorder = light ? Hex("#E6E7EB") : Hex("#33353C");
+            control = light ? Hex("#FFFFFF") : Hex("#2F3037");
+            controlHover = light ? Hex("#F4F5F7") : Hex("#363740");
+            controlPressed = light ? Hex("#ECEDF0") : Hex("#2A2B31");
+            input = light ? Hex("#FFFFFF") : Hex("#1F2026");
+            popup = light ? Hex("#FFFFFF") : Hex("#25262C");
+            popupBorder = light ? Hex("#E1E2E7") : Hex("#393B44");
+            selected = WithAlpha(accent, 0x33);
+            appBackground = light ? Hex("#F7F7F9") : Hex("#1B1C21");
+        }
+        else if (theme.Glass || theme.Backdrop == Backdrop.Blur)
         {
             card = light ? Hex("#59FFFFFF") : Hex("#1FFFFFFF");
             cardHover = light ? Hex("#80FFFFFF") : Hex("#2EFFFFFF");
@@ -201,24 +272,6 @@ public static class Palette
             popupBorder = light ? Hex("#FFFFFFFF") : Hex("#33FFFFFF");
             selected = light ? Hex("#73FFFFFF") : Hex("#26FFFFFF");
             appBackground = Colors.Transparent;
-        }
-        else if (theme.Scheme is { } scheme)
-        {
-            // Esquema: tarjetas y controles un poco más claros (u oscuros) que el panel.
-            var panel = Hex(scheme.Panel);
-            var text = Hex(scheme.Text);
-            card = Blend(panel, text, 0.04);
-            cardHover = Blend(panel, text, 0.08);
-            cardBorder = Hex(scheme.Border);
-            control = Blend(panel, text, 0.07);
-            controlHover = Blend(panel, text, 0.11);
-            controlPressed = Blend(panel, text, 0.04);
-            input = Blend(Hex(scheme.Bar), panel, 0.5);
-            popup = WithAlpha(panel, 0xF8);
-            popupBorder = Hex(scheme.Border);
-            selected = WithAlpha(accent, 0x40);
-            // El de la barra, con la transparencia que le dio el estilo.
-            appBackground = barColor;
         }
         else if (theme.Tonal)
         {
@@ -282,6 +335,10 @@ public static class Palette
     /// Borde de luz del vidrio (iOS/HyperOS): un filo brillante arriba a la izquierda que se
     /// apaga hacia el centro y reaparece tenue abajo a la derecha, como luz refractada.
     /// </summary>
+    /// <summary>El estilo de fábrica «Sólido» (sin esquema: con uno, manda el esquema).</summary>
+    internal static bool IsSolidStyle(ThemeInfo theme) =>
+        theme.Kind == StrataTheme.Solid && theme.ModuleId is null;
+
     private static Brush GlassRim(bool light)
     {
         var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };

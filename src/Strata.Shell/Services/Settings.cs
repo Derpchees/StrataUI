@@ -35,7 +35,8 @@ public enum StrataTheme
 {
     // Estilos: System es Mica y Transparent, Translúcido. Light y Dark son esquemas (solo claro u
     // oscuro); LiquidGlass y LiquidGlassDark ya no existen: quedan para leer ajustes de antes.
-    System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material, Clear,
+    // (Se guardan por nombre: un estilo nuevo va aquí, antes de los esquemas, sin mover nada guardado.)
+    System, Light, Dark, Transparent, LiquidGlass, LiquidGlassDark, Material, Clear, Solid,
     // Esquemas de color (ver Themes/ThemeCatalog). Siempre al final: ver Settings.IsScheme.
     Midnight, Nord, Dracula, CatppuccinMocha, CatppuccinLatte, TokyoNight, RosePine, Gruvbox,
 }

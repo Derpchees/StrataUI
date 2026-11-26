@@ -66,10 +66,15 @@ public static class ThemeCatalog
         new(StrataTheme.Material, "Material", Loc.T("Material Design: superficies tonales con tu acento."), null, Backdrop.Solid,
             Tonal: true, Radius: 14, PanelRadius: 16),
         // Solo la barra va sin fondo (Taskbar.Transparency); los paneles, el menú Inicio, los avisos y
-        // el Hub llevan un tinte ligero sin desenfoque (Palette, WindowEffects): el fondo se ve nítido.
+        // el Hub van en vidrio esmerilado como en Translúcido (Palette, WindowEffects): sin desenfoque,
+        // lo que hubiera detrás se mezclaba con el texto y no se leía.
         new(StrataTheme.Clear, Loc.T("Transparente total"),
-            Loc.T("Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido."),
+            Loc.T("Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús van en vidrio esmerilado para que se lean sobre cualquier fondo."),
             null, Backdrop.Acrylic, Radius: 6, ClearBar: true),
+        // Sólido: barra pegada al borde y paneles opacos en capas (Palette.IsSolidStyle). Sin transparencias.
+        new(StrataTheme.Solid, Loc.T("Sólido"),
+            Loc.T("Barra y paneles opacos en capas, con esquinas discretas: nítidos, sin transparencias y legibles sobre cualquier fondo."),
+            null, Backdrop.Solid, Radius: 4, PanelRadius: 8),
 
         // ── Esquemas: claro u oscuro con los colores del estilo ────────────────
         new(StrataTheme.Light, Loc.T("Claro"), Loc.T("Siempre claro, con los colores del estilo."), true, Backdrop.Mica, Mode: true),

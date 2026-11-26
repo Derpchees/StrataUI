@@ -970,7 +970,7 @@
   "Megabits por segundo (Mb/s)": "Megabits per second (Mb/s)",
   "Clic para liberar RAM": "Click to free RAM",
   "Clic para abrir el Administrador de tareas": "Click to open Task Manager",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido.": "Bar without a background: just icons and text, light or dark depending on what's behind them. Panels, notifications and menus have a light tint and show the background sharp.",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús van en vidrio esmerilado para que se lean sobre cualquier fondo.": "Bar without a background: just icons and text, light or dark depending on what's behind them. Panels, notifications and menus use frosted glass so they stay readable over any background.",
   "Agrupar los servicios de Windows": "Group Windows services",
   "Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar.": "With more than 3.5 GB of RAM, Windows splits its services into dozens of svchost processes; grouped, they use much less memory. Applies after a restart.",
   "Desactivar SysMain (precarga de apps)": "Turn off SysMain (app preloading)",
@@ -1666,5 +1666,7 @@
   "Contraseña copiada.": "Password copied.",
   "No se pudo copiar.": "Couldn't copy.",
   "Sin contraseña": "No password",
-  "Escanéalo con la cámara del teléfono para conectarte": "Scan it with your phone's camera to connect"
+  "Escanéalo con la cámara del teléfono para conectarte": "Scan it with your phone's camera to connect",
+  "Sólido": "Solid",
+  "Barra y paneles opacos en capas, con esquinas discretas: nítidos, sin transparencias y legibles sobre cualquier fondo.": "Opaque layered bar and panels with subtle corners: crisp, no transparency and readable over any background."
 }

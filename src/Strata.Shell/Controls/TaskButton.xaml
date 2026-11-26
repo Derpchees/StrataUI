@@ -15,7 +15,9 @@
                           ToolTip="{l:T 'Termina la app sin esperar a que responda (se pierde lo que no se haya guardado)'}" />
             </ContextMenu>
         </Button.ContextMenu>
-        <Grid x:Name="Root" Width="44">
+        <!-- Del alto del botón: la plantilla centra el contenido, y sin esto la placa quedaba del alto
+             del ícono (un rectángulo bajito) en lugar del de la zona de resaltado. -->
+        <Grid x:Name="Root" Width="44" Height="{Binding ActualHeight, ElementName=MainButton}">
             <!-- Varias ventanas agrupadas: el borde de otras "tarjetas" asoma detrás (una con 2 ventanas,
                  dos con 3 o más; ver UpdateGroup). Del color del texto de la barra, que contrasta con
                  ella en cualquier tema (y en la barra transparente sigue al fondo de cada botón). -->
@@ -42,20 +44,18 @@
                        HorizontalAlignment="Right" VerticalAlignment="Bottom" RenderOptions.BitmapScalingMode="HighQuality" />
             </Grid>
 
-            <!-- Indicador junto al borde de la pantalla (abajo en la barra inferior): corto = abierta, largo con acento = activa, ámbar = pide atención -->
+            <!-- Indicador junto al borde de la pantalla (abajo en la barra inferior): siempre del mismo tamaño: gris = abierta, acento = activa, ámbar = pide atención -->
             <Border x:Name="Indicator" Height="3" CornerRadius="1.5" VerticalAlignment="Bottom" Margin="0,0,0,2"
                     RenderTransformOrigin="0.5,0.5">
                 <Border.Style>
                     <Style TargetType="Border">
-                        <Setter Property="Width" Value="6" />
+                        <Setter Property="Width" Value="10" />
                         <Setter Property="Background" Value="{DynamicResource StrataInactiveIndicatorBrush}" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding State}" Value="Active">
-                                <Setter Property="Width" Value="16" />
                                 <Setter Property="Background" Value="{DynamicResource StrataAccentBrush}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding State}" Value="Flashing">
-                                <Setter Property="Width" Value="16" />
                                 <Setter Property="Background" Value="#FFE8A33D" />
                             </DataTrigger>
                         </Style.Triggers>

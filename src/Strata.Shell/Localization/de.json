@@ -970,7 +970,7 @@
   "Megabits por segundo (Mb/s)": "Megabit pro Sekunde (Mb/s)",
   "Clic para liberar RAM": "Klicken, um RAM freizugeben",
   "Clic para abrir el Administrador de tareas": "Klicken, um den Task-Manager zu öffnen",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido.": "Leiste ohne Hintergrund: nur Symbole und Text, hell oder dunkel je nach dem, was dahinter liegt. Bereiche, Benachrichtigungen und Menüs haben eine leichte Tönung und zeigen den Hintergrund scharf.",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús van en vidrio esmerilado para que se lean sobre cualquier fondo.": "Leiste ohne Hintergrund: nur Symbole und Text, hell oder dunkel je nach dem, was dahinter liegt. Bereiche, Benachrichtigungen und Menüs sind aus Milchglas und bleiben auf jedem Hintergrund lesbar.",
   "Agrupar los servicios de Windows": "Windows-Dienste zusammenfassen",
   "Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar.": "Ab 3,5 GB RAM verteilt Windows seine Dienste auf Dutzende svchost-Prozesse; zusammengefasst brauchen sie deutlich weniger Speicher. Gilt nach einem Neustart.",
   "Desactivar SysMain (precarga de apps)": "SysMain deaktivieren (App-Vorabladen)",
@@ -1666,5 +1666,7 @@
   "Contraseña copiada.": "Passwort kopiert.",
   "No se pudo copiar.": "Kopieren fehlgeschlagen.",
   "Sin contraseña": "Kein Passwort",
-  "Escanéalo con la cámara del teléfono para conectarte": "Mit der Handykamera scannen, um sich zu verbinden"
+  "Escanéalo con la cámara del teléfono para conectarte": "Mit der Handykamera scannen, um sich zu verbinden",
+  "Sólido": "Massiv",
+  "Barra y paneles opacos en capas, con esquinas discretas: nítidos, sin transparencias y legibles sobre cualquier fondo.": "Deckende, geschichtete Leiste und Bereiche mit dezenten Ecken: scharf, ohne Transparenz und auf jedem Hintergrund lesbar."
 }

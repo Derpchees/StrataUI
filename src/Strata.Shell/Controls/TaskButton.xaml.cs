@@ -325,7 +325,6 @@ public partial class TaskButton : UserControl
             ActiveBackground.ClearValue(OpacityProperty);
             ActiveBackground.ClearValue(MarginProperty);
             IconHost.ClearValue(MarginProperty);
-            Indicator.ClearValue(WidthProperty);
             Indicator.ClearValue(Border.BackgroundProperty);
             return;
         }
@@ -341,14 +340,13 @@ public partial class TaskButton : UserControl
         ActiveBackground.Margin = _vertical ? new Thickness(0, 0, 0, offset) : new Thickness(0, 0, offset, 0);
         IconHost.Margin = ActiveBackground.Margin; // centrado sobre la placa
         UpdateStackShape();
-        Indicator.Width = active || flashing ? 16 : 6;
         if (flashing && !active)
             Indicator.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE8, 0xA3, 0x3D));
         else
             Indicator.SetResourceReference(Border.BackgroundProperty, active ? "StrataAccentBrush" : "StrataInactiveIndicatorBrush");
     }
 
-    private const double StackOffset = 4;
+    private const double StackOffset = 3;
     private bool _vertical;
     // Tarjetas que asoman detrás de la placa: 1 con dos ventanas, 2 con tres o más.
     private int _layers;
@@ -363,7 +361,7 @@ public partial class TaskButton : UserControl
         if (StackEdge.Visibility != Visibility.Visible || w <= 0 || h <= 0)
             return;
         double r = ActiveBackground.CornerRadius.TopLeft;
-        const double inset = 4;
+        const double inset = 0; // todas del alto de la placa: se leen como bordes parejos
         double front = StackOffset * _layers;
         Rect Card(int layer)
         {

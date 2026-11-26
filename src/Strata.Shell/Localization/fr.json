@@ -970,7 +970,7 @@
   "Megabits por segundo (Mb/s)": "Mégabits par seconde (Mb/s)",
   "Clic para liberar RAM": "Cliquez pour libérer la RAM",
   "Clic para abrir el Administrador de tareas": "Cliquez pour ouvrir le Gestionnaire des tâches",
-  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús llevan un tinte ligero y dejan ver el fondo nítido.": "Barre sans fond : seulement des icônes et du texte, clairs ou foncés selon ce qu'il y a derrière. Les panneaux, notifications et menus ont une légère teinte et laissent voir l'arrière-plan net.",
+  "Barra sin fondo: solo íconos y texto, claros u oscuros según lo que tengan detrás. Los paneles, avisos y menús van en vidrio esmerilado para que se lean sobre cualquier fondo.": "Barre sans fond : seulement des icônes et du texte, clairs ou foncés selon ce qu'il y a derrière. Les panneaux, notifications et menus sont en verre dépoli pour rester lisibles sur n'importe quel fond.",
   "Agrupar los servicios de Windows": "Regrouper les services de Windows",
   "Windows reparte sus servicios en decenas de procesos svchost cuando hay más de 3,5 GB de RAM; agrupados, usan bastante menos memoria. Se aplica al reiniciar.": "Avec plus de 3,5 Go de RAM, Windows répartit ses services dans des dizaines de processus svchost ; regroupés, ils utilisent bien moins de mémoire. S'applique au redémarrage.",
   "Desactivar SysMain (precarga de apps)": "Désactiver SysMain (préchargement des applications)",
@@ -1666,5 +1666,7 @@
   "Contraseña copiada.": "Mot de passe copié.",
   "No se pudo copiar.": "Impossible de copier.",
   "Sin contraseña": "Aucun mot de passe",
-  "Escanéalo con la cámara del teléfono para conectarte": "Scannez-le avec l'appareil photo du téléphone pour vous connecter"
+  "Escanéalo con la cámara del teléfono para conectarte": "Scannez-le avec l'appareil photo du téléphone pour vous connecter",
+  "Sólido": "Plein",
+  "Barra y paneles opacos en capas, con esquinas discretas: nítidos, sin transparencias y legibles sobre cualquier fondo.": "Barre et panneaux opaques en couches, aux coins discrets : nets, sans transparence et lisibles sur n'importe quel fond."
 }
