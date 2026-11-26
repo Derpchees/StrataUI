@@ -24,7 +24,12 @@ public static class FilePicker
     public static Task<string[]> PickFoldersAsync(string title, bool multiselect = false) =>
         RunAsync("folder", title, "", multiselect ? "m" : "");
 
-    private static async Task<string[]> RunAsync(string kind, string title, string filter, string flags)
+    /// <summary>Dónde guardar (null si se canceló). Pregunta antes de reemplazar un archivo.</summary>
+    /// <param name="filter">Filtro de WPF ("Texto|*.txt|Todos|*.*").</param>
+    public static async Task<string?> PickSaveAsync(string title, string filter, string? folder, string? fileName) =>
+        (await RunAsync("save", title, filter, "", folder ?? "", fileName ?? "")).FirstOrDefault();
+
+    private static async Task<string[]> RunAsync(string kind, string title, string filter, string flags, string folder = "", string fileName = "")
     {
         // Con Archivos como cuadro de archivos se usa directo, sin proceso aparte ni cuadro de Windows.
         if (Files.DialogTakeover.Active && Modules.OptionalModules.Files.Load() is { } files)
@@ -36,8 +41,13 @@ public static class FilePicker
                 for (int i = 0; i + 1 < parts.Length; i += 2)
                     filters.Add(new Modules.FilePickFilter(parts[i], parts[i + 1].Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)));
                 var owner = System.Windows.Application.Current?.Windows.OfType<System.Windows.Window>().FirstOrDefault(w => w.IsActive);
-                var request = new Modules.FilePickRequest(kind == "folder" ? Modules.FilePickMode.Folder : Modules.FilePickMode.Open,
-                    flags.Contains('m'), null, null, filters, 0, title,
+                var request = new Modules.FilePickRequest(kind switch
+                    {
+                        "folder" => Modules.FilePickMode.Folder,
+                        "save" => Modules.FilePickMode.Save,
+                        _ => Modules.FilePickMode.Open,
+                    },
+                    flags.Contains('m'), folder.Length > 0 ? folder : null, fileName.Length > 0 ? fileName : null, filters, 0, title,
                     owner is null ? IntPtr.Zero : new System.Windows.Interop.WindowInteropHelper(owner).Handle);
                 var picked = await files.PickAsync(request);
                 return picked?.Paths.ToArray() ?? [];
@@ -51,7 +61,7 @@ public static class FilePicker
         try
         {
             var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
-            foreach (var arg in new[] { Arg, kind, result, title, filter, flags })
+            foreach (var arg in new[] { Arg, kind, result, title, filter, flags, folder, fileName })
                 start.ArgumentList.Add(arg);
             using var process = Process.Start(start);
             if (process is null)
@@ -84,7 +94,7 @@ public static class FilePicker
     /// </summary>
     internal static int RunPicker(string[] args)
     {
-        if (args.Length < 6 || args[1] is not ("file" or "folder"))
+        if (args.Length < 6 || args[1] is not ("file" or "folder" or "save"))
             return 2;
         var result = Path.GetFullPath(args[2]);
         if (!result.StartsWith(Path.GetFullPath(Path.GetTempPath()), StringComparison.OrdinalIgnoreCase)
@@ -96,7 +106,19 @@ public static class FilePicker
         string[] paths = [];
         // En el monitor del puntero (donde se pidió), no en el principal de Windows.
         var anchor = DialogPlacement.PointerAnchor();
-        if (args[1] == "file")
+        if (args[1] == "save")
+        {
+            var dialog = new SaveFileDialog { Title = title, OverwritePrompt = true, AddExtension = true };
+            if (filter.Length > 0)
+                dialog.Filter = filter;
+            if (args.Length > 6 && args[6].Length > 0 && Directory.Exists(args[6]))
+                dialog.InitialDirectory = args[6];
+            if (args.Length > 7 && args[7].Length > 0)
+                dialog.FileName = args[7];
+            if (dialog.ShowDialog(anchor) == true)
+                paths = [dialog.FileName];
+        }
+        else if (args[1] == "file")
         {
             var dialog = new OpenFileDialog { Title = title, Multiselect = multiselect, DereferenceLinks = !flags.Contains('l') };
             if (filter.Length > 0)

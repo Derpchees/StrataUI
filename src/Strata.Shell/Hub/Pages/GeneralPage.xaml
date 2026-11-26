@@ -77,6 +77,20 @@
                 <ui:ToggleSwitch x:Name="DialogsSwitch" Click="Dialogs_Click" />
             </ui:CardControl>
 
+            <ui:CardControl x:Name="NotepadCard" Style="{StaticResource HubCard}">
+                <ui:CardControl.Icon><ui:SymbolIcon Symbol="DocumentText24" /></ui:CardControl.Icon>
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource CardTitle}" Text="{l:T 'Abrir los archivos de texto en el Bloc de notas de Strata UI'}" />
+                        <TextBlock Style="{StaticResource CardDescription}" Text="{l:T 'Los .txt, .log, .ini y demás textos que abras desde Strata UI, y el Bloc de notas del menú Inicio, usan el de Strata UI. Para que Windows también lo use, elígelo como predeterminado.'}" />
+                    </StackPanel>
+                </ui:CardControl.Header>
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button x:Name="NotepadDefaultButton" Content="{l:T 'Elegir como predeterminado'}" Margin="0,0,12,0" Click="NotepadDefault_Click" />
+                    <ui:ToggleSwitch x:Name="NotepadSwitch" Click="Notepad_Click" />
+                </StackPanel>
+            </ui:CardControl>
+
             <ui:CardControl Style="{StaticResource HubCard}">
                 <ui:CardControl.Icon><ui:SymbolIcon Symbol="Desktop24" /></ui:CardControl.Icon>
                 <ui:CardControl.Header>

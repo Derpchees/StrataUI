@@ -49,23 +49,41 @@ public static class AppActions
         && !command.Contains("--uninstall-app-id", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Ejecutable (o archivo) al que apunta la app; null en apps empaquetadas o direcciones web.</summary>
-    public static string? TargetPath(StartApp app)
+    public static string? TargetPath(StartApp app) => TargetFor(app.Id, app.ExtraData, app.IsFile);
+
+    // Leer el destino pide al Shell una propiedad del acceso directo: el panel de detalles de la
+    // búsqueda lo consultaba varias veces en cada tecla. Se guarda hasta que cambia el catálogo.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string?> Targets = new(StringComparer.OrdinalIgnoreCase);
+
+    internal static void ForgetTargets() => Targets.Clear();
+
+    /// <summary>Destino de la app sin tocar su ShellItem: se puede llamar desde un hilo de fondo.</summary>
+    internal static string? TargetFor(string id, ExtraApp? extraData, bool isFile)
     {
-        if (IsPackaged(app))
-            return null;
+        if (Targets.TryGetValue(id, out var known))
+            return known;
+        var target = ReadTarget(id, extraData, isFile);
+        Targets[id] = target;
+        return target;
+    }
+
+    private static string? ReadTarget(string id, ExtraApp? extraData, bool isFile)
+    {
+        if (id.Contains('!') && !id.Contains('\\'))
+            return null; // app empaquetada
         // Juego de Steam, Epic o GOG: su ejecutable principal (el del ícono).
         // Acceso directo (del escritorio o una herramienta de Windows): su destino.
-        if (app.ExtraData is { } shortcut && shortcut.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+        if (extraData is { } shortcut && shortcut.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
             return ReadString(shortcut.Id, LinkTargetParsingPath) is { } target && Path.IsPathFullyQualified(target) && File.Exists(target)
                 ? target
                 : null;
-        if (app.ExtraData is { } extra)
+        if (extraData is { } extra)
             return extra.IconSource.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) && File.Exists(extra.IconSource)
                 ? extra.IconSource
                 : null;
-        if (app.IsFile && !app.Id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
-            return File.Exists(app.Id) ? app.Id : null;
-        var path = ReadString(app.IsFile ? app.Id : "shell:AppsFolder\\" + app.Id, LinkTargetParsingPath);
+        if (isFile && !id.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            return File.Exists(id) ? id : null;
+        var path = ReadString(isFile ? id : "shell:AppsFolder\\" + id, LinkTargetParsingPath);
         return path != null && Path.IsPathFullyQualified(path) && File.Exists(path) ? path : null;
     }
 
@@ -113,16 +131,34 @@ public static class AppActions
     private static readonly object ShortcutsLock = new();
 
     // Se lee también desde hilos de fondo (íconos de StartApp).
+    // Pasado el minuto se entrega la lista que hay y se vuelve a leer en segundo plano: recorrer
+    // las carpetas de Inicio en el hilo de la interfaz trababa la búsqueda.
     private static Dictionary<string, string> Shortcuts()
     {
         lock (ShortcutsLock)
-            return ReadShortcuts();
+        {
+            if (_shortcuts is null)
+                return ReadShortcuts();
+            if (DateTime.UtcNow - _shortcutsAt >= TimeSpan.FromMinutes(1) && !_refreshingShortcuts)
+            {
+                _refreshingShortcuts = true;
+                Task.Run(() =>
+                {
+                    lock (ShortcutsLock)
+                    {
+                        _refreshingShortcuts = false;
+                        ReadShortcuts();
+                    }
+                });
+            }
+            return _shortcuts;
+        }
     }
+
+    private static bool _refreshingShortcuts;
 
     private static Dictionary<string, string> ReadShortcuts()
     {
-        if (_shortcuts != null && DateTime.UtcNow - _shortcutsAt < TimeSpan.FromMinutes(1))
-            return _shortcuts;
         var map = new Dictionary<string, string>(StringComparer.CurrentCultureIgnoreCase);
         foreach (var root in StartMenuFolders())
         {

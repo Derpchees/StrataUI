@@ -23,6 +23,9 @@ public partial class GeneralPage : Page
         DialogsSwitch.IsChecked = Settings.Current.FilesReplaceDialogs;
         DialogsCard.IsEnabled = Settings.Current.FilesReplaceExplorer;
         DesktopSwitch.IsChecked = Settings.Current.DesktopEnabled;
+        NotepadCard.Visibility = Services.Modules.OptionalModules.Notepad.IsInstalled ? Visibility.Visible : Visibility.Collapsed;
+        NotepadSwitch.IsChecked = Settings.Current.NotepadReplace;
+        NotepadDefaultButton.IsEnabled = Settings.Current.NotepadReplace;
         VersionText.Text = $"Strata UI v{App.Version}";
         DataPathText.Text = DataFolder;
         foreach (var code in Services.Localization.Loc.Translated)
@@ -82,6 +85,15 @@ public partial class GeneralPage : Page
 
     private void HubAtStartup_Click(object sender, RoutedEventArgs e) =>
         Settings.Update(s => s.HubAtStartup = HubAtStartupSwitch.IsChecked == true);
+
+    private void Notepad_Click(object sender, RoutedEventArgs e)
+    {
+        Settings.Update(s => s.NotepadReplace = NotepadSwitch.IsChecked == true);
+        NotepadDefaultButton.IsEnabled = Settings.Current.NotepadReplace;
+    }
+
+    private void NotepadDefault_Click(object sender, RoutedEventArgs e) =>
+        Services.Notepad.NotepadRegistration.OpenDefaultAppsSettings();
 
     private void ReplaceExplorer_Click(object sender, RoutedEventArgs e)
     {

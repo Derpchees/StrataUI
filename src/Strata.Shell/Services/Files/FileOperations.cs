@@ -402,6 +402,8 @@ public static class FileOperations
     /// <summary>Abre con su programa; una carpeta o un acceso directo a carpeta lo resuelve quien llama.</summary>
     public static bool Open(string path)
     {
+        if (Notepad.WindowsNotepad.TryOpenInStrata(path))
+            return true;
         try
         {
             Process.Start(new ProcessStartInfo(path)

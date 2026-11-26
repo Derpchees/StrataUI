@@ -299,6 +299,18 @@ and everything goes back to normal.
   in Hub > General). Everything else in Windows keeps using
   File Explorer. You can also open it with `StrataUI.exe --files [folder]`.
 
+<a id="notepad"></a>
+
+### Notepad
+
+- A **text editor** that matches the rest of Strata UI (optional module, Hub > Optional modules): tabs,
+  find and replace, go to line, Ctrl+wheel zoom, word wrap and drag and drop. Reads and saves UTF-8
+  (with or without BOM), UTF-16 and ANSI with any line ending, and warns about unsaved changes, files
+  changed by another program and very large or binary files.
+- Text files opened from Strata UI and Notepad in the Start menu use it (switch it off in
+  Hub > General). It also shows up in *Open with* and Default apps so Windows can use it too. Open it
+  with `StrataUI.exe --notepad [file]`.
+
 <a id="performance"></a>
 
 ### <img src="docs/icons/performance.svg" width="28" align="center" alt="" /> Performance
@@ -458,6 +470,7 @@ src/Strata.Shell/            The app (StrataUI.exe)
 src/Strata.Optimization/     Optional module with the Optimization pages
 src/Strata.Files/            Optional module with the Files windows
 src/Strata.Lyrics/           Optional module with the synced lyrics
+src/Strata.Notepad/          Optional module with the text editor
 src/Strata.Sensors/          Optional module with the temperature and FPS readers
 src/Strata.ContextMenu/      "Pin to Start" in the Windows 11 right-click menu
 tests/Strata.Tests/          xUnit tests

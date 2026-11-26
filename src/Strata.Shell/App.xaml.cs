@@ -25,6 +25,9 @@ public partial class App : Application
     /// <summary>Pedido de otra instancia: abrir el explorador de archivos (seguido de la ruta, si hay).</summary>
     private const string FilesRequest = "::files ";
     private const string FilesArg = "--files";
+    /// <summary>Pedido de otra instancia: abrir estos archivos (uno por línea) en el Bloc de notas.</summary>
+    private const string NotepadRequest = "::notepad\n";
+    public const string NotepadArg = "--notepad";
 
     private static readonly string HubRequestPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrataUI", "hub-request.txt");
@@ -168,6 +171,12 @@ public partial class App : Application
             Shutdown(Services.Network.WifiKey.Run(e.Args));
             return;
         }
+        // El desinstalador quita el Bloc de notas de "Abrir con" y Aplicaciones predeterminadas.
+        if (e.Args.Length > 0 && e.Args[0] == Services.Notepad.NotepadRegistration.UnregisterArg)
+        {
+            Shutdown(Services.Notepad.NotepadRegistration.RunUnregister());
+            return;
+        }
         // Comprimidos (listar, extraer, comprimir) con 7-Zip, en un proceso aparte.
         if (e.Args.Length > 0 && e.Args[0] == Services.Files.ArchiveHost.Arg)
         {
@@ -201,6 +210,15 @@ public partial class App : Application
             return;
         }
 
+        // Un archivo de texto abierto desde Windows con Strata UI cerrado: solo el editor, sin el shell.
+        int notepadArg = Array.FindIndex(e.Args, a => a.Equals(NotepadArg, StringComparison.OrdinalIgnoreCase));
+        string[] notepadPaths = notepadArg >= 0 ? e.Args[(notepadArg + 1)..].Where(a => a.Length > 0).ToArray() : [];
+        if (notepadArg >= 0 && !EventWaitHandle.TryOpenExisting(OpenHubEventName, out _))
+        {
+            RunNotepadAlone(notepadPaths);
+            return;
+        }
+
         _mutex = new Mutex(true, MutexName, out bool isFirstInstance);
         bool autostart = e.Args.Contains(AutoStart.Arg, StringComparer.OrdinalIgnoreCase);
         if (!isFirstInstance)
@@ -212,7 +230,8 @@ public partial class App : Application
                 // "--hub Privacy" abre directamente esa página del Hub; "--edit", el modo edición.
                 int hubArg = Array.FindIndex(e.Args, a => a.Equals("--hub", StringComparison.OrdinalIgnoreCase));
                 int filesArg = Array.FindIndex(e.Args, a => a.Equals(FilesArg, StringComparison.OrdinalIgnoreCase));
-                string? request = e.Args.Contains(EditArg, StringComparer.OrdinalIgnoreCase) ? EditRequest
+                string? request = notepadArg >= 0 ? NotepadRequest + string.Join("\n", notepadPaths)
+                    : e.Args.Contains(EditArg, StringComparer.OrdinalIgnoreCase) ? EditRequest
                     : filesArg >= 0 ? FilesRequest + (filesArg + 1 < e.Args.Length ? e.Args[filesArg + 1] : "")
                     : hubArg >= 0 && hubArg + 1 < e.Args.Length ? e.Args[hubArg + 1] : null;
                 if (request != null)
@@ -324,6 +343,12 @@ public partial class App : Application
         Services.Themes.WindowMotion.Start();
         Services.Files.ExplorerTakeover.Update();
         Services.Files.DialogTakeover.Update();
+        Services.Notepad.NotepadRegistration.Update();
+        Services.Modules.OptionalModules.Changed += module =>
+        {
+            if (module == Services.Modules.OptionalModules.Notepad)
+                Dispatcher.BeginInvoke(Services.Notepad.NotepadRegistration.Update);
+        };
         Notifications.Osd.Initialize();
         Services.Updates.UpdateService.UpdateSchedule();
         Services.Modules.OptionalModules.StartupMaintenance();
@@ -368,6 +393,8 @@ public partial class App : Application
         int filesIndex = Array.FindIndex(e.Args, a => a.Equals(FilesArg, StringComparison.OrdinalIgnoreCase));
         if (filesIndex >= 0)
             OpenFiles(filesIndex + 1 < e.Args.Length ? e.Args[filesIndex + 1] : null);
+        if (notepadArg >= 0)
+            OpenNotepad(notepadPaths);
 
         // ManagedShell termina de inicializar los estados de las ventanas de forma asíncrona.
         var activeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
@@ -674,6 +701,7 @@ public partial class App : Application
         {
             Services.Files.ExplorerTakeover.Update();
             Services.Files.DialogTakeover.Update();
+            Services.Notepad.NotepadRegistration.Update();
             Services.Notifications.WindowsBanners.Update();
             Services.Themes.WindowsAnimations.Update();
             Services.Themes.WindowsCursors.Update();
@@ -767,6 +795,12 @@ public partial class App : Application
                     EditMode.EditSession.Start();
                     return;
                 }
+                if (request.StartsWith(NotepadRequest, StringComparison.Ordinal))
+                {
+                    File.Delete(HubRequestPath);
+                    OpenNotepad(request[NotepadRequest.Length..].Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+                    return;
+                }
                 if (request.StartsWith(FilesRequest, StringComparison.Ordinal))
                 {
                     File.Delete(HubRequestPath);
@@ -826,6 +860,47 @@ public partial class App : Application
         window.Topmost = true;
         window.Activate();
         window.Topmost = false;
+    }
+
+    /// <summary>
+    /// Abre archivos (o una pestaña vacía) en el Bloc de notas de Strata UI o, sin el módulo, en el de
+    /// Windows.
+    /// </summary>
+    public void OpenNotepad(IReadOnlyList<string> paths)
+    {
+        if (_exiting)
+            return;
+        if (Services.Modules.OptionalModules.Notepad.Load() is not { } notepad)
+        {
+            Services.Notepad.WindowsNotepad.Open(paths);
+            return;
+        }
+        var window = notepad.Open(paths);
+        if (window.WindowState == WindowState.Minimized)
+            window.WindowState = WindowState.Normal;
+        window.Topmost = true;
+        window.Activate();
+        window.Topmost = false;
+    }
+
+    /// <summary>Solo el editor (Strata UI no está abierto): termina al cerrar su ventana.</summary>
+    private void RunNotepadAlone(string[] paths)
+    {
+        Services.Localization.Loc.Initialize(Settings.Current.Language);
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        if (Services.Modules.OptionalModules.Notepad.Load() is not { } notepad)
+        {
+            Services.Notepad.WindowsNotepad.Open(paths);
+            Shutdown();
+            return;
+        }
+        MainWindow = new Window { ShowInTaskbar = false, ShowActivated = false };
+        ThemeManager.Initialize();
+        DialogPlacement.Watch();
+        Services.Themes.Motion.Initialize();
+        var window = notepad.Open(paths);
+        window.Closed += (_, _) => Shutdown();
+        window.Activate();
     }
 
     private const int AsfwAny = -1;

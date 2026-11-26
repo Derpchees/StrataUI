@@ -64,7 +64,10 @@ public sealed class StartMenuModel : INotifyPropertyChanged
         set
         {
             _query = value;
+            _fileResults = [];
+            _movedSelection = false;
             Results = StartMenuService.Search(value);
+            SearchCommand(value);
             SearchFiles(value);
             Notify();
             Notify(nameof(IsSearching));
@@ -86,8 +89,8 @@ public sealed class StartMenuModel : INotifyPropertyChanged
         {
             _results = value;
             Notify();
-            // Al sumar los archivos sigue elegido el mismo; si no, el primero (como en Windows).
-            Selected = _selected is { } kept && value.Contains(kept) ? kept : value.FirstOrDefault();
+            // El primero (como en Windows); si se movió con las flechas, sigue elegido el mismo.
+            Selected = _movedSelection && _selected is { } kept && value.Contains(kept) ? kept : value.FirstOrDefault();
         }
     }
 
@@ -113,7 +116,30 @@ public sealed class StartMenuModel : INotifyPropertyChanged
     public void MoveSelection(int delta)
     {
         if (_results.Count > 0)
+        {
+            _movedSelection = true;
             Selected = _results[Math.Clamp(_results.ToList().IndexOf(_selected!) + delta, 0, _results.Count - 1)];
+        }
+    }
+
+    private bool _movedSelection;
+    private IReadOnlyList<StartApp> _fileResults = [];
+    private int _commandSearch;
+
+    /// <summary>
+    /// Si lo escrito puede ser un comando ("cmd", "regedit"), lo busca en disco en segundo plano y
+    /// rehace los resultados al tenerlo: antes se buscaba en cada tecla y la escritura se trababa.
+    /// </summary>
+    private async void SearchCommand(string query)
+    {
+        var id = ++_commandSearch;
+        if (!StartMenuService.NeedsCommandLookup(query))
+            return;
+        await StartMenuService.ResolveCommandAsync(query);
+        if (id != _commandSearch || _query != query)
+            return;
+        Results = [.. StartMenuService.Search(query), .. _fileResults];
+        Notify(nameof(NoResults));
     }
 
     private int _fileSearch;
@@ -131,7 +157,8 @@ public sealed class StartMenuModel : INotifyPropertyChanged
         var paths = await Task.Run(() => FileSearch.Find(query, 8));
         if (id != _fileSearch || paths.Count == 0)
             return;
-        Results = [.. _results, .. paths.Select(StartMenuService.FileResult).OfType<StartApp>()];
+        _fileResults = paths.Select(StartMenuService.FileResult).OfType<StartApp>().ToList();
+        Results = [.. _results, .. _fileResults];
         Notify(nameof(NoResults));
     }
 

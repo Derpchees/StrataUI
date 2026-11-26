@@ -15,7 +15,7 @@ namespace Strata.Shell.Services.StartMenu;
 /// <summary>Una app del menú Inicio (entrada de shell:AppsFolder) o un archivo o carpeta anclado.</summary>
 public sealed class StartApp : INotifyPropertyChanged
 {
-    private readonly ShellItem _item;
+    private ShellItem _item;
     private readonly string? _path;
     private readonly ExtraApp? _extra;
 
@@ -30,14 +30,47 @@ public sealed class StartApp : INotifyPropertyChanged
     {
         _item = item;
         _path = path;
+        Listen(item);
+    }
+
+    private void Listen(ShellItem item)
+    {
         if (item is INotifyPropertyChanged notifier)
-            notifier.PropertyChanged += (_, e) =>
-            {
-                if (e.PropertyName == nameof(ShellItem.LargeIcon))
-                    RaiseLater(nameof(Icon));
-                else if (e.PropertyName == nameof(ShellItem.DisplayName))
-                    RaiseLater(nameof(Name));
-            };
+            notifier.PropertyChanged += OnItemChanged;
+    }
+
+    private void OnItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender != _item)
+            return;
+        if (e.PropertyName == nameof(ShellItem.LargeIcon))
+            RaiseLater(nameof(Icon));
+        else if (e.PropertyName == nameof(ShellItem.DisplayName))
+            RaiseLater(nameof(Name));
+    }
+
+    /// <summary>Si es una app del catálogo (no un archivo anclado ni un juego o acceso de fuera).</summary>
+    internal bool IsCatalogItem => _path is null && _extra is null;
+
+    /// <summary>
+    /// Pasa la misma app a la lectura nueva del catálogo. Volver a crearlas todas al releerlo (cada
+    /// medio minuto al abrir el menú) recargaba cada ícono y rehacía la lista mientras se escribía.
+    /// </summary>
+    internal void Rebind(ShellItem item)
+    {
+        if (ReferenceEquals(item, _item))
+            return;
+        if (_item is INotifyPropertyChanged old)
+            old.PropertyChanged -= OnItemChanged;
+        var name = Name;
+        _item = item;
+        Listen(item);
+        _iconRetries = 0;
+        if (Name != name)
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+        // Ícono del Shell: el de la lectura nueva (si ya estaba en el archivo no cambia nada).
+        if (_fileIcon is null)
+            RaiseLater(nameof(Icon));
     }
 
     // ManagedShell carga el ícono en segundo plano y avisa ANTES de congelarlo: si la lista lo leía
@@ -192,6 +225,10 @@ public sealed class StartApp : INotifyPropertyChanged
             StartMenuService.OpenPath(Id);
             return;
         }
+        // El Bloc de notas de Windows (o un texto anclado) abre el de Strata UI, si se eligió.
+        if (_extra is null && (IsFile ? Notepad.WindowsNotepad.TryOpenInStrata(Id)
+                : Notepad.WindowsNotepad.IsWindowsNotepad(Id) && Notepad.WindowsNotepad.TryOpenInStrata([])))
+            return;
         try
         {
             // Sin carpeta de trabajo, el programa abría en la de Strata UI (C:\Program Files\StrataUI);
@@ -689,8 +726,21 @@ public static class StartMenuService
     {
         if (_appsFolder is null)
             return false;
+        // Las que ya estaban se conservan (con su ícono cargado): solo cambia el ShellItem de debajo.
+        var known = new Dictionary<string, StartApp>(StringComparer.OrdinalIgnoreCase);
+        foreach (var old in Apps)
+            if (old.IsCatalogItem)
+                known.TryAdd(old.Id, old);
         var catalog = _appsFolder.Files.ToList()
-            .Select(f => new StartApp(f))
+            .Select(f =>
+            {
+                if ((f.FileName ?? f.Path) is { } id && known.Remove(id, out var same))
+                {
+                    same.Rebind(f);
+                    return same;
+                }
+                return new StartApp(f);
+            })
             .Where(a => !IsNoise(a.Name))
             .ToList();
         // Lo que no está en el catálogo de Windows (juegos de Steam, Epic y GOG, accesos directos del
@@ -704,13 +754,20 @@ public static class StartMenuService
         _tools = tools.Where(t => names.Add(ExtraApps.NameKey(t.Name))).ToList();
         _toolTargets = null;
         var items = catalog.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
-        if (onlyIfChanged && items.Count == Apps.Count
+        // Las mismas apps (las mismas instancias, en el mismo orden): la lista no se toca.
+        if (items.SequenceEqual(Apps) || onlyIfChanged && items.Count == Apps.Count
             && items.Zip(Apps).All(pair => pair.First.Id == pair.Second.Id && pair.First.Name == pair.Second.Name))
+        {
+            WarmToolTargets();
             return false;
+        }
 
         Apps.Clear();
         foreach (var app in items)
             Apps.Add(app);
+        AppActions.ForgetTargets();
+        CommandPaths.Clear();
+        WarmToolTargets();
 
         // Con pocas apps el catálogo todavía se está cargando: no decidir los anclados por defecto aún.
         if (items.Count > 20)
@@ -786,7 +843,64 @@ public static class StartMenuService
         return found;
     }
 
+    // Ruta de cada comando ya buscado (null: no existe). Buscarlo recorre System32 y cada carpeta del
+    // PATH (~100 ms): se hace en segundo plano (ResolveCommandAsync) y Search solo usa lo ya sabido.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string?> CommandPaths = new(StringComparer.OrdinalIgnoreCase);
+
+    private static bool LooksLikeCommand(string query) =>
+        query.Length >= 2 && query.IndexOfAny([' ', '"', '\\', '/', ':', '*', '?']) < 0;
+
+    /// <summary>Si lo escrito puede ser un comando que todavía no se buscó en disco.</summary>
+    public static bool NeedsCommandLookup(string query)
+    {
+        query = query.Trim();
+        return LooksLikeCommand(query) && !CommandPaths.ContainsKey(query);
+    }
+
+    /// <summary>Busca el comando fuera del hilo de la interfaz; después Search ya lo incluye.</summary>
+    public static Task ResolveCommandAsync(string query)
+    {
+        query = query.Trim();
+        return Task.Run(() =>
+        {
+            if (CommandPaths.Count > 500)
+                CommandPaths.Clear();
+            string? path = null;
+            try { path = ResolveCommand(query); }
+            catch (Exception) { } // registro o carpeta inaccesible: no es un comando
+            CommandPaths[query] = path;
+        });
+    }
+
     private static Dictionary<string, StartApp>? _toolTargets;
+    private static int _toolTargetsVersion;
+
+    /// <summary>
+    /// Arma en segundo plano el mapa destino → herramienta de Windows (pide al Shell el destino de
+    /// cada acceso directo): hacerlo al escribir el primer comando trababa la búsqueda.
+    /// </summary>
+    private static void WarmToolTargets()
+    {
+        var version = ++_toolTargetsVersion;
+        var tools = Apps.Where(a => a.IsWindowsTool).Concat(_tools)
+            .Select(t => (Tool: t, t.Id, t.ExtraData, t.IsFile))
+            .ToList();
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        Task.Run(() =>
+        {
+            var map = tools.Select(t => (t.Tool, Target: AppActions.TargetFor(t.Id, t.ExtraData, t.IsFile)))
+                .Where(x => x.Target != null)
+                .GroupBy(x => x.Target!, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Tool, StringComparer.OrdinalIgnoreCase);
+            if (dispatcher is null)
+                return;
+            dispatcher.BeginInvoke(() =>
+            {
+                if (version == _toolTargetsVersion)
+                    _toolTargets = map;
+            }, System.Windows.Threading.DispatcherPriority.Background);
+        });
+    }
 
     /// <summary>
     /// Lo escrito como comando ("cmd", "regedit", "devmgmt.msc"): la herramienta de Windows que abre ese
@@ -794,7 +908,7 @@ public static class StartMenuService
     /// </summary>
     private static StartApp? CommandResult(string query)
     {
-        if (query.Length < 2 || query.IndexOfAny([' ', '"', '\\', '/', ':', '*', '?']) >= 0 || ResolveCommand(query) is not { } path)
+        if (!LooksLikeCommand(query) || !CommandPaths.TryGetValue(query, out var path) || path is null)
             return null;
         _toolTargets ??= Apps.Where(a => a.IsWindowsTool).Concat(_tools).Select(t => (Tool: t, Target: AppActions.TargetPath(t)))
             .Where(x => x.Target != null)
@@ -921,6 +1035,10 @@ public static class StartMenuService
     /// <summary>Ejecuta un comando escrito en el buscador (como Win+R) si no hay apps que coincidan.</summary>
     public static bool RunCommand(string command)
     {
+        if (Notepad.WindowsNotepad.IsWindowsNotepad(command.Trim()) && Notepad.WindowsNotepad.TryOpenInStrata([]))
+            return true;
+        if (Notepad.WindowsNotepad.TryOpenInStrata(command.Trim().Trim('"')))
+            return true;
         try
         {
             Process.Start(new ProcessStartInfo(command.Trim()) { UseShellExecute = true })?.Dispose();

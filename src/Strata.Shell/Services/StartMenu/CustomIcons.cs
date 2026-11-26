@@ -154,7 +154,12 @@ public static class CustomIcons
         image.CacheOption = BitmapCacheOption.OnLoad;
         image.EndInit();
         if (image.PixelWidth <= 256 && image.PixelHeight <= 256)
+        {
+            // Se lee en segundo plano (íconos de accesos directos): sin congelar, WPF falla al usarla
+            // en el hilo de la interfaz ("Must create DependencySource on same Thread").
+            image.Freeze();
             return image;
+        }
         double scale = 256.0 / Math.Max(image.PixelWidth, image.PixelHeight);
         var scaled = new TransformedBitmap(image, new ScaleTransform(scale, scale));
         scaled.Freeze();

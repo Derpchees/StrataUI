@@ -55,13 +55,11 @@
                     <TextBlock Style="{StaticResource StartSectionTitle}" Text="{l:T 'Todas las apps'}" />
                     <ui:Button HorizontalAlignment="Right" Padding="10,4" Click="Back_Click" Content="{l:T '‹  Atrás'}" />
                 </Grid>
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppRow}">
-                        <ItemsControl.GroupStyle>
-                            <StaticResource ResourceKey="LetterGroups" />
-                        </ItemsControl.GroupStyle>
-                    </ItemsControl>
-                </ScrollViewer>
+                <ItemsControl Grid.Row="1" Style="{StaticResource VirtualAppList}" ItemsSource="{Binding AllApps}" ItemTemplate="{StaticResource AppRow}">
+                    <ItemsControl.GroupStyle>
+                        <StaticResource ResourceKey="LetterGroups" />
+                    </ItemsControl.GroupStyle>
+                </ItemsControl>
             </Grid>
 
             <!-- Resultados de búsqueda -->

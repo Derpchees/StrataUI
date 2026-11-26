@@ -200,6 +200,12 @@ WPF-UI 4.3 + NAudio sobre .NET 10. Ver [README.md](README.md) para la estructura
     `%LOCALAPPDATA%\StrataUI\Lyrics`), `LyricsEngine` (sigue `MediaService`, marca la línea con
     `Timeline()` y la publica en `Services/Media/LyricsLine`) y `LyricsFlyout`, detrás de
     `ILyricsModule`. La barra muestra el botón de letra y, con `ShowLyricsLine`, la línea en lugar del artista.
+  - **Bloc de notas** (`src/Strata.Notepad` → `StrataUI.Notepad.dll`): solo la ventana
+    (`NotepadWindow`, `NotepadIcon`) detrás de `INotepadModule`. Leer/guardar texto (`TextFile`), el
+    registro en Windows (`NotepadRegistration`: ProgId `StrataUI.TextFile`, Abrir con, Aplicaciones
+    predeterminadas; se quita con `--unregister-notepad` al desinstalar) y a qué editor va cada archivo
+    (`WindowsNotepad.TryOpenInStrata`, desde `FileOperations.Open`, Inicio y `Scripts.Edit`) siguen en
+    `Services/Notepad`. `--notepad [archivo]` lo abre; sin Strata corriendo, abre solo el editor.
   - **Lecturas avanzadas** (`src/Strata.Sensors` → `StrataUI.Sensors.zip`, con LibreHardwareMonitor y
     TraceEvent): los lectores de temperaturas y FPS (`ISensorReaders`). Solo los carga el proceso
     elevado, desde `%ProgramFiles%\StrataUI\Lecturas\Sensors` (`SensorsModule.LoadProtected`), que
@@ -278,7 +284,7 @@ Cada tanda de cambios visibles para el usuario termina **publicada**, no en "Sin
    en una sola lista con todo lo cambiado desde la última versión publicada, aunque haya versiones
    intermedias sin publicación: nada de "también incluye lo de la X.Y.Z".
    Adjuntar también los módulos opcionales que deja `build-installer.ps1` (del mismo commit):
-   `artifacts\StrataUI.Optimization.dll`, `StrataUI.Files.dll`, `StrataUI.Lyrics.dll` y `StrataUI.Sensors.zip`. Sin ellos,
+   `artifacts\StrataUI.Optimization.dll`, `StrataUI.Files.dll`, `StrataUI.Lyrics.dll`, `StrataUI.Notepad.dll` y `StrataUI.Sensors.zip`. Sin ellos,
    "Instalar" en Módulos opcionales falla en esa versión.
 5. Commits intermedios durante el trabajo están bien; la versión se cierra al terminar la tanda,
    antes de pasar a otra cosa.

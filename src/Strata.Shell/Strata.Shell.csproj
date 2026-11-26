@@ -33,6 +33,7 @@
     <InternalsVisibleTo Include="StrataUI.Files" />
     <InternalsVisibleTo Include="StrataUI.Sensors" />
     <InternalsVisibleTo Include="StrataUI.Lyrics" />
+    <InternalsVisibleTo Include="StrataUI.Notepad" />
   </ItemGroup>
 
   <ItemGroup>

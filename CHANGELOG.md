@@ -10,6 +10,31 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.59.2] - 2026-11-26
+
+### Añadido
+
+- Módulo opcional **Bloc de notas** (Hub › Módulos opcionales): un editor de texto con el estilo de
+  Strata UI, con pestañas, abrir y guardar, deshacer y rehacer, buscar y reemplazar (mayúsculas,
+  palabras completas), ir a la línea, zoom con Ctrl+rueda, ajuste de línea y arrastrar archivos.
+  Lee y guarda en UTF-8 (con o sin BOM), UTF-16 y ANSI con cualquier salto de línea (se cambian desde
+  la barra de estado), avisa de los cambios sin guardar, de los archivos que otro programa modificó y
+  de los muy grandes o binarios. Tiene su ícono y su botón en la barra. Los .txt, .log, .ini y demás
+  textos que se abren desde Strata UI y el Bloc de notas del menú Inicio usan este (se apaga en
+  Hub › General), y queda en «Abrir con» y en Aplicaciones predeterminadas para elegirlo en Windows.
+  También se abre con `StrataUI.exe --notepad [archivo]`.
+
+### Cambiado
+
+- El menú Inicio responde más rápido al buscar y al recorrer Todas las apps: la lista se dibuja por
+  partes, los accesos directos y comandos se resuelven en segundo plano con caché, y al abrir el menú
+  el catálogo se actualiza sin rehacer las apps (no se pierde lo que estabas escribiendo).
+
+### Corregido
+
+- Los íconos de accesos directos que son imágenes (.png) ya no provocan el error «Must create
+  DependencySource on same Thread as the DependencyObject» en el menú Inicio.
+
 ## [1.59.1] - 2026-11-26
 
 ### Cambiado

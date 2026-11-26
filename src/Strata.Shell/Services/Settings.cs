@@ -328,6 +328,18 @@ public sealed class StrataSettings
     /// <summary>Servidores FTP guardados (sin contraseñas: esas van al Administrador de credenciales).</summary>
     public List<Files.Remote.RemoteSite> FilesRemoteSites { get; set; } = [];
 
+    // Bloc de notas (módulo opcional, Services/Notepad)
+    /// <summary>
+    /// Los archivos de texto que se abren desde Strata UI (Archivos, escritorio, Inicio) y el Bloc de
+    /// notas de Inicio usan el de Strata UI. También lo registra en Windows para elegirlo como predeterminado.
+    /// </summary>
+    public bool NotepadReplace { get; set; } = true;
+    public bool NotepadWordWrap { get; set; } = true;
+    public bool NotepadStatusBar { get; set; } = true;
+    /// <summary>Tamaño de letra del editor, en puntos (con el zoom en 100 %).</summary>
+    public double NotepadFontSize { get; set; } = 14;
+    public string NotepadFont { get; set; } = "Cascadia Mono, Consolas";
+
     // Escritorio de Strata UI (íconos, menú contextual y dueño de los widgets)
     /// <summary>Strata UI dibuja el escritorio (íconos y menú contextual); apagado, queda el de Windows.</summary>
     public bool DesktopEnabled { get; set; } = true;

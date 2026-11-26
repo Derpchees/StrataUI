@@ -298,8 +298,9 @@ public static class OptionalModules
     public static readonly FilesModule Files = new();
     public static readonly SensorsModule Sensors = new();
     public static readonly LyricsModule Lyrics = new();
+    public static readonly NotepadModule Notepad = new();
 
-    public static IReadOnlyList<OptionalModule> All { get; } = [Optimization, Files, Sensors, Lyrics];
+    public static IReadOnlyList<OptionalModule> All { get; } = [Optimization, Files, Sensors, Lyrics, Notepad];
 
     /// <summary>Cambió el estado de alguno.</summary>
     public static event Action<OptionalModule>? Changed;
@@ -340,6 +341,30 @@ public sealed class LyricsModule() : DownloadedModule<ILyricsModule>("Lyrics", "
 {
     public override string Title => Loc.T("Letras");
     public override string Description => Loc.T("Busca sola la letra de lo que suena en cualquier app y la muestra sincronizada en un panel y, si quieres, en la barra.");
+}
+
+/// <summary>
+/// Bloc de notas (StrataUI.Notepad.dll): editor de texto con pestañas, buscar y reemplazar,
+/// codificación y saltos de línea. Con <see cref="Settings.NotepadReplace"/> abre los archivos de
+/// texto de Strata UI y queda registrado en Windows (Services/Notepad/NotepadRegistration).
+/// </summary>
+public sealed class NotepadModule() : DownloadedModule<INotepadModule>("Notepad", "StrataUI.Notepad.dll", "Notepad", SymbolRegular.DocumentText24)
+{
+    public override string Title => Loc.T("Bloc de notas");
+    public override string Description => Loc.T("Editor de texto con pestañas, buscar y reemplazar, ir a la línea, zoom y cualquier codificación. Abre los archivos de texto en lugar del Bloc de notas de Windows.");
+
+    /// <summary>Los archivos de texto y el Bloc de notas de Inicio abren este (instalado y elegido).</summary>
+    public bool ReplacesNotepad => Settings.Current.NotepadReplace && IsInstalled;
+}
+
+/// <summary>Lo que exporta el módulo Bloc de notas para el resto de Strata UI.</summary>
+public interface INotepadModule
+{
+    /// <summary>
+    /// Abre esos archivos en pestañas de la ventana más reciente (o en una nueva); sin archivos, una
+    /// pestaña vacía. Devuelve la ventana (ya mostrada) para traerla al frente.
+    /// </summary>
+    System.Windows.Window Open(IReadOnlyList<string> paths);
 }
 
 /// <summary>Lo que exporta el módulo Letras para el resto de Strata UI.</summary>

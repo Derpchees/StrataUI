@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Módulo Bloc de notas: el editor de texto con pestañas. No viene en el instalador; se instala en
+       Hub › Módulos opcionales (Services/Modules/OptionalModule.cs). Leer y guardar texto, el registro
+       en Windows y a qué editor va cada archivo siguen en la app (Services/Notepad): este archivo solo
+       trae la ventana, porque se descarga solo (sin otras DLL). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>StrataUI.Notepad</AssemblyName>
+    <RootNamespace>Strata.Shell</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Se compila contra la app (con sus tipos internos) pero no la copia: corre dentro de ella. -->
+    <ProjectReference Include="..\Strata.Shell\Strata.Shell.csproj" Private="false" />
+  </ItemGroup>
+
+  <!-- Al compilar en desarrollo, junto a StrataUI.exe: así run.ps1 lo carga sin descargarlo. -->
+  <Target Name="CopyNextToApp" AfterTargets="Build" Condition="'$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), $(OutDir)))' == '$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), bin, $(Configuration), $(TargetFramework)))'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="..\Strata.Shell\bin\$(Configuration)\$(TargetFramework)\" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>

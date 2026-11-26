@@ -344,6 +344,8 @@ begin
     else if DirExists(ExpandConstant('{commonpf64}\StrataUI\Lecturas')) then
       ShellExec('runas', ExpandConstant('{app}\StrataUI.exe'), '--remove-sensors-task', '', SW_HIDE,
                 ewWaitUntilTerminated, Code);
+    // El Bloc de notas se registra en HKCU (Abrir con, Aplicaciones predeterminadas): se quita.
+    Exec(ExpandConstant('{app}\StrataUI.exe'), '--unregister-notepad', '', SW_HIDE, ewWaitUntilTerminated, Code);
     // El inicio automático puede haberlo activado el Hub aunque no se eligiera al instalar.
     RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'StrataUI');
     // "Anclar a Inicio de Strata UI" del menú del Explorador (lo pone la app: Services\StartMenu\ExplorerMenu.cs).

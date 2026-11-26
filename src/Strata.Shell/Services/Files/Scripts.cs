@@ -93,6 +93,8 @@ public static class Scripts
     /// <summary>Abre el script en el Bloc de notas (abrirlo con doble clic lo ejecuta o, el .ps1, lo abre).</summary>
     public static void Edit(string path)
     {
+        if (Notepad.WindowsNotepad.TryOpenInStrata(path, anyFile: true))
+            return;
         try
         {
             Process.Start(new ProcessStartInfo("notepad.exe") { ArgumentList = { path }, UseShellExecute = false })?.Dispose();
