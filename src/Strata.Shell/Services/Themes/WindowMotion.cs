@@ -42,6 +42,9 @@ public static class WindowMotion
         _minimizeHook = SetWinEventHook(EventMinimizeStart, EventMinimizeEnd, IntPtr.Zero, _callback, 0, 0, WinEventOutOfContext);
         _locationHook = SetWinEventHook(EventLocationChange, EventLocationChange, IntPtr.Zero, _callback, 0, 0, WinEventOutOfContext);
         _showHook = SetWinEventHook(EventObjectShow, EventObjectShow, IntPtr.Zero, _callback, 0, 0, WinEventOutOfContext);
+        RecoverParked();
+        // Una ventana de animación lista de antemano: la primera no espera a que se cree.
+        System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(Ghost.Warm, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         // Las ventanas que ya estaban abiertas no son "nuevas".
         EnumWindows((hwnd, _) =>
         {
@@ -57,6 +60,8 @@ public static class WindowMotion
         foreach (var ghost in Running.Values.ToList())
             ghost.Finish();
         Running.Clear();
+        foreach (var hwnd in Parked.ToList())
+            Unpark(hwnd);
         if (_minimizeHook != IntPtr.Zero)
             UnhookWinEvent(_minimizeHook);
         if (_locationHook != IntPtr.Zero)
@@ -140,6 +145,26 @@ public static class WindowMotion
     [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
     private static extern int GetClassName(IntPtr hwnd, System.Text.StringBuilder name, int max);
 
+    /// <summary>La ventana se está moviendo o cambiando de tamaño con el ratón (GUI_INMOVESIZE).</summary>
+    private static bool InMoveSize(IntPtr hwnd)
+    {
+        var info = new GuiThreadInfo { Size = System.Runtime.InteropServices.Marshal.SizeOf<GuiThreadInfo>() };
+        uint thread = GetWindowThreadProcessId(hwnd, out _);
+        return GetGUIThreadInfo(thread, ref info) && (info.Flags & 0x2) != 0;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct GuiThreadInfo
+    {
+        public int Size;
+        public uint Flags;
+        public IntPtr Active, Focus, Capture, MenuOwner, MoveSize, Caret;
+        public NativeRect CaretRect;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetGUIThreadInfo(uint thread, ref GuiThreadInfo info);
+
     private const int WsExLayeredFlag = 0x80000;
     private const int WsExTransparentFlag = 0x20;
     private const uint LwaAlphaFlag = 0x2;
@@ -148,10 +173,22 @@ public static class WindowMotion
 
     private static void OnMoved(IntPtr hwnd)
     {
+        if (Parked.Contains(hwnd) && !IsIconic(hwnd))
+            UnparkLater(hwnd);
         if (IsIconic(hwnd) || Running.ContainsKey(hwnd) || !Animatable(hwnd))
             return;
         GetWindowRect(hwnd, out var rect);
-        Known[hwnd] = (rect, IsZoomed(hwnd));
+        bool zoomed = IsZoomed(hwnd);
+        bool hadKnown = Known.TryGetValue(hwnd, out var before);
+        Known[hwnd] = (rect, zoomed);
+        // Maximizar y desmaximizar (Windows ya no los anima, ver WindowsAnimations): la ventana pasa de
+        // su tamaño anterior al nuevo. Solo cuando cambia ese estado, no al moverla ni al acoplarla.
+        // Con el botón del ratón apretado se está arrastrando la ventana (sacarla de maximizada al
+        // jalarla): esconderla dejaría el arrastre sin ventana.
+        // (No basta el botón apretado: con doble clic en la barra de título también lo está.)
+        bool dragging = InMoveSize(hwnd);
+        if (Active && hadKnown && before.Zoomed != zoomed && !dragging && before.Rect.Width > 0 && rect.Width > 0)
+            Run(hwnd, before.Rect, rect, Kind.Resize);
         if (Known.Count > 300)
             foreach (var gone in Known.Keys.Where(h => !IsWindow(h)).ToList())
                 Known.Remove(gone);
@@ -183,10 +220,16 @@ public static class WindowMotion
     private static void OnRestored(IntPtr hwnd)
     {
         if (!Active || !Animatable(hwnd))
+        {
+            Unpark(hwnd);
             return;
+        }
         GetWindowRect(hwnd, out var to);
         if (to.Width <= 0)
+        {
+            Unpark(hwnd);
             return;
+        }
         Known[hwnd] = (to, IsZoomed(hwnd));
         Run(hwnd, IconRect(hwnd, to), to, Kind.Restore);
     }
@@ -222,7 +265,109 @@ public static class WindowMotion
         };
     }
 
-    private enum Kind { Minimize, Restore, Open }
+    // ── Ventanas minimizadas, invisibles mientras lo están ──────────────────
+    // Windows avisa que una ventana se restauró cuando ya se dibujó en su lugar: ese instante se veía
+    // como un destello antes de la animación. Por eso al terminar de minimizarla queda transparente
+    // (en capas, alfa 0) y al restaurarse la muestra la animación al terminar. Las miniaturas de DWM
+    // (vista previa de la barra, Alt+Tab) no se ven afectadas: ignoran esa transparencia.
+    // La lista se guarda en disco: si Strata UI se cierra de golpe, al volver las muestra.
+
+    private static readonly HashSet<IntPtr> Parked = new();
+    private static readonly string ParkedFile = System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "StrataUI", "ventanas-ocultas.txt");
+
+    private static void Park(IntPtr hwnd)
+    {
+        int exStyle = GetWindowLong(hwnd, GwlExStyle);
+        if ((exStyle & WsExLayered) != 0 || !IsIconic(hwnd))
+            return;
+        SetWindowLong(hwnd, GwlExStyle, exStyle | WsExLayered);
+        if (!SetLayeredWindowAttributes(hwnd, 0, 0, LwaAlpha))
+        {
+            SetWindowLong(hwnd, GwlExStyle, exStyle);
+            return;
+        }
+        Parked.Add(hwnd);
+        SaveParked();
+    }
+
+    /// <summary>La ventana ya no está estacionada (la animación la mostrará): true si lo estaba.</summary>
+    private static bool TakeParked(IntPtr hwnd)
+    {
+        if (!Parked.Remove(hwnd))
+            return false;
+        SaveParked();
+        return true;
+    }
+
+    private static void Unpark(IntPtr hwnd)
+    {
+        if (TakeParked(hwnd))
+            ShowLayered(hwnd);
+    }
+
+    /// <summary>
+    /// Restaurada sin aviso de Windows (o antes de él): si en un momento no la tomó la animación, se muestra.
+    /// </summary>
+    private static void UnparkLater(IntPtr hwnd)
+    {
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (Parked.Contains(hwnd) && !IsIconic(hwnd) && !Running.ContainsKey(hwnd))
+                Unpark(hwnd);
+        };
+        timer.Start();
+    }
+
+    private static void ShowLayered(IntPtr hwnd)
+    {
+        if (!IsWindow(hwnd))
+            return;
+        SetLayeredWindowAttributes(hwnd, 0, 255, LwaAlpha);
+        SetWindowLong(hwnd, GwlExStyle, GetWindowLong(hwnd, GwlExStyle) & ~WsExLayered);
+        RedrawWindow(hwnd, IntPtr.Zero, IntPtr.Zero, RdwInvalidate | RdwFrame | RdwAllChildren);
+    }
+
+    private static void SaveParked()
+    {
+        try
+        {
+            if (Parked.Count == 0)
+                System.IO.File.Delete(ParkedFile);
+            else
+                System.IO.File.WriteAllLines(ParkedFile, Parked.Select(h => h.ToInt64().ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudo guardar la lista de ventanas ocultas", ex);
+        }
+    }
+
+    private static void RecoverParked()
+    {
+        try
+        {
+            if (!System.IO.File.Exists(ParkedFile))
+                return;
+            foreach (var line in System.IO.File.ReadAllLines(ParkedFile))
+                if (long.TryParse(line, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long value))
+                {
+                    var hwnd = new IntPtr(value);
+                    if (IsWindow(hwnd) && GetLayeredWindowAttributes(hwnd, out _, out byte alpha, out uint flags)
+                        && (flags & LwaAlphaFlag) != 0 && alpha == 0)
+                        ShowLayered(hwnd);
+                }
+            System.IO.File.Delete(ParkedFile);
+        }
+        catch (Exception ex)
+        {
+            Log.Error("No se pudieron mostrar las ventanas ocultas", ex);
+        }
+    }
+
+    private enum Kind { Minimize, Restore, Open, Resize }
 
     /// <summary>La miniatura que hace el recorrido, en una ventana encima de todo que no se activa.</summary>
     private sealed class Ghost
@@ -258,7 +403,40 @@ public static class WindowMotion
 
         public bool Begin()
         {
-            _window = new Window
+            // Lo primero, antes de preparar nada: la ventana real ya apareció (Windows avisa después)
+            // y cada milisegundo que siga visible se ve como un destello antes de la animación.
+            Hide();
+            _window = Pool.Count > 0 ? Pool.Pop() : CreateWindow();
+            var hwnd = new WindowInteropHelper(_window).Handle;
+            if (DwmRegisterThumbnail(hwnd, _target, out _thumb) != 0)
+            {
+                Show();
+                Release(_window);
+                _window = null;
+                return false;
+            }
+            Apply(0);
+            if (!_window.IsVisible)
+                _window.Show();
+            SetWindowPos(hwnd, HwndTopmost, _box.Left, _box.Top, _box.Width, _box.Height, SwpNoActivate | SwpShowWindow);
+            _clock.Start();
+            CompositionTarget.Rendering += OnFrame;
+            return true;
+        }
+
+        // Las ventanas de la animación se reusan: crear una (WPF + identificador + DWM) tarda decenas
+        // de milisegundos, justo el tiempo en que se veía la ventana real antes de animarse.
+        private static readonly Stack<Window> Pool = new();
+
+        internal static void Warm()
+        {
+            if (Pool.Count == 0)
+                Pool.Push(CreateWindow());
+        }
+
+        private static Window CreateWindow()
+        {
+            var window = new Window
             {
                 // Sin el estilo implícito de las ventanas de la app (cambia AllowsTransparency al iniciarse,
                 // y eso falla después de crear el identificador).
@@ -275,26 +453,29 @@ public static class WindowMotion
                 Width = 1,
                 Height = 1,
             };
-            var helper = new WindowInteropHelper(_window);
-            var hwnd = helper.EnsureHandle();
+            var hwnd = new WindowInteropHelper(window).EnsureHandle();
+            window.Show();
             if (HwndSource.FromHwnd(hwnd) is { CompositionTarget: { } target })
                 target.BackgroundColor = Colors.Transparent;
             // Transparente fuera de la miniatura (sin capas: DWM no dibuja miniaturas en ventanas en capas).
             var margins = new Margins { Left = -1, Right = -1, Top = -1, Bottom = -1 };
             DwmExtendFrameIntoClientArea(hwnd, ref margins);
             SetWindowLong(hwnd, GwlExStyle, GetWindowLong(hwnd, GwlExStyle) | WsExNoActivate | WsExToolWindow | WsExTransparent);
-            if (DwmRegisterThumbnail(hwnd, _target, out _thumb) != 0)
+            return window;
+        }
+
+        private static void Release(Window window)
+        {
+            if (Pool.Count >= 3)
             {
-                _window.Close();
-                return false;
+                window.Close();
+                return;
             }
-            Apply(0);
-            _window.Show();
-            SetWindowPos(hwnd, HwndTopmost, _box.Left, _box.Top, _box.Width, _box.Height, SwpNoActivate | SwpShowWindow);
-            Hide();
-            _clock.Start();
-            CompositionTarget.Rendering += OnFrame;
-            return true;
+            // Se queda mostrada fuera de la pantalla: volver a mostrarla (WPF) tarda más que un cuadro, y ese
+            // cuadro se veía vacío (la ventana real ya escondida y la miniatura todavía sin aparecer).
+            var hwnd = new WindowInteropHelper(window).Handle;
+            SetWindowPos(hwnd, HwndTopmost, -32000, -32000, 1, 1, SwpNoActivate);
+            Pool.Push(window);
         }
 
         /// <summary>Al restaurar o cambiar de tamaño, la ventana real ya está ahí: se oculta mientras.</summary>
@@ -302,6 +483,11 @@ public static class WindowMotion
         {
             if (_kind == Kind.Minimize)
                 return;
+            if (TakeParked(_target))
+            {
+                _hidden = true;
+                return;
+            }
             int exStyle = GetWindowLong(_target, GwlExStyle);
             if ((exStyle & WsExLayered) != 0)
                 return;
@@ -363,6 +549,10 @@ public static class WindowMotion
                     _ => Shift(Scale(_to, 0.96), 0, 50),
                 };
             }
+            else if (_kind == Kind.Resize)
+            {
+                // Maximizar o desmaximizar: del rectángulo anterior al nuevo, tal cual.
+            }
             else if (_style == PanelAnimation.Fade)
             {
                 // Fundido: sin recorrido, la ventana se encoge apenas en su lugar.
@@ -383,6 +573,7 @@ public static class WindowMotion
             double opacity = _kind switch
             {
                 Kind.Minimize => 1 - Math.Clamp((t - 0.35) / 0.65, 0, 1),
+                Kind.Resize => 1,
                 _ => Math.Clamp(t / 0.4, 0, 1),
             };
             var props = new DwmThumbnailProperties
@@ -453,8 +644,11 @@ public static class WindowMotion
             if (_thumb != IntPtr.Zero)
                 DwmUnregisterThumbnail(_thumb);
             _thumb = IntPtr.Zero;
-            _window?.Close();
+            if (_window is not null)
+                Release(_window);
             _window = null;
+            if (_kind == Kind.Minimize && Active)
+                Park(_target);
             Done?.Invoke();
         }
     }

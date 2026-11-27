@@ -16,6 +16,8 @@ public partial class NetworkFlyout : FlyoutWindow
     private readonly NetworkService _network = new();
     private Radio? _wifiRadio;
     private List<WifiRow> _rows = new();
+    /// <summary>La red Wi-Fi conectada: va en la tarjeta de arriba, no en la lista.</summary>
+    private WifiRow? _current;
 
     public NetworkFlyout()
     {
@@ -26,7 +28,10 @@ public partial class NetworkFlyout : FlyoutWindow
         IsVisibleChanged += (_, _) =>
         {
             if (!IsVisible)
+            {
                 _rows.ForEach(r => r.Key = null);
+                SetCurrentExpanded(false);
+            }
         };
     }
 
@@ -78,6 +83,45 @@ public partial class NetworkFlyout : FlyoutWindow
         WifiHint.Text = text;
         WifiHint.Visibility = Visibility.Visible;
         NetworkList.ItemsSource = null;
+        SetCurrent(null);
+    }
+
+    private void SetCurrent(WifiRow? row)
+    {
+        SetCurrentExpanded(false);
+        _current = row;
+        CurrentPanel.DataContext = row;
+        ConnectionButton.IsHitTestVisible = row is not null;
+        ConnectionChevron.Visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void SetCurrentExpanded(bool expand)
+    {
+        if (_current is null)
+            return;
+        _current.IsExpanded = expand;
+        // El QR ocupa el lugar de la lista de redes (que se esconde mientras tanto): el panel no crece.
+        if (expand && WifiHeader.IsVisible)
+        {
+            double freed = WifiHeader.ActualHeight + WifiHeader.Margin.Top + WifiHeader.Margin.Bottom
+                + NetworkArea.ActualHeight + NetworkArea.Margin.Top + NetworkArea.Margin.Bottom;
+            CurrentPanel.MinHeight = Math.Max(0, freed - CurrentPanel.Margin.Bottom);
+        }
+        WifiHeader.Visibility = expand ? Visibility.Collapsed : Visibility.Visible;
+        NetworkArea.Visibility = expand ? Visibility.Collapsed : Visibility.Visible;
+        CurrentPanel.Visibility = expand ? Visibility.Visible : Visibility.Collapsed;
+        ConnectionChevron.Symbol = expand ? SymbolRegular.ChevronUp24 : SymbolRegular.ChevronDown24;
+    }
+
+    private void Connection_Click(object sender, RoutedEventArgs e)
+    {
+        if (_current is null)
+            return;
+        bool expand = !_current.IsExpanded;
+        _rows.ForEach(r => r.IsExpanded = false);
+        SetCurrentExpanded(expand);
+        if (expand)
+            _ = ShowKeyAsync(_current);
     }
 
     private async Task ScanAsync()
@@ -87,9 +131,12 @@ public partial class NetworkFlyout : FlyoutWindow
         ScanButton.IsEnabled = false;
         try
         {
-            _rows = (await _network.ScanAsync()).Select(n => new WifiRow(n)).ToList();
+            var all = (await _network.ScanAsync()).Select(n => new WifiRow(n)).ToList();
+            var current = all.FirstOrDefault(r => r.Network.Connected);
+            _rows = all.Where(r => r != current).ToList();
             NetworkList.ItemsSource = _rows;
-            if (_rows.Count == 0)
+            SetCurrent(current);
+            if (all.Count == 0)
                 ShowWifiHint(Loc.T("No se encontraron redes."));
         }
         catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == unchecked((int)0x80004004))
@@ -141,9 +188,20 @@ public partial class NetworkFlyout : FlyoutWindow
             return;
         bool expand = !row.IsExpanded;
         _rows.ForEach(r => r.IsExpanded = false);
+        SetCurrentExpanded(false);
         row.IsExpanded = expand;
-        if (expand && row.Network.Connected)
-            _ = ShowKeyAsync(row);
+        if (expand && sender is FrameworkElement button && button.Parent is FrameworkElement item)
+            Dispatcher.BeginInvoke(() => item.BringIntoView(), System.Windows.Threading.DispatcherPriority.Loaded);
+    }
+
+    // La lista de redes ocupa a lo más la mitad del alto que cabe en la pantalla (el que FlyoutWindow
+    // calcula para el monitor donde se abre, en píxeles lógicos): así el panel mide lo mismo con
+    // cualquier resolución, escala o relación de aspecto, y el resto se desplaza.
+    protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.Property == MaxHeightProperty && NetworkArea is not null && !double.IsInfinity(MaxHeight))
+            NetworkArea.Height = Math.Clamp(MaxHeight * 0.3, 160, 270); // unas 5 redes a la vista
     }
 
     private void PasswordBox_Loaded(object sender, RoutedEventArgs e)
@@ -197,7 +255,8 @@ public partial class NetworkFlyout : FlyoutWindow
         if (_readingKey)
             return;
         _readingKey = true;
-        row.Message = Loc.T("Leyendo la contraseña…");
+        row.KeyStatus = null;
+        row.KeyLoading = true;
         WifiKey.Result result;
         try
         {
@@ -211,6 +270,7 @@ public partial class NetworkFlyout : FlyoutWindow
         finally
         {
             _readingKey = false;
+            row.KeyLoading = false;
         }
         if (result.Key is { } key)
             KnownKeys[ssid] = key;
@@ -219,12 +279,12 @@ public partial class NetworkFlyout : FlyoutWindow
         Activate();
         if (result.Key is { } shown)
         {
-            row.Message = null;
+            row.KeyStatus = null;
             row.SetKey(shown);
         }
         else
         {
-            row.Message = result switch
+            row.KeyStatus = result switch
             {
                 { Cancelled: true } => Loc.T("Se necesita permiso de administrador para ver la contraseña."),
                 { NotConnected: true } => Loc.T("No hay una red Wi-Fi conectada."),
@@ -337,6 +397,7 @@ public partial class NetworkFlyout : FlyoutWindow
                 Notify(nameof(Qr));
                 Notify(nameof(KeyVisibility));
                 Notify(nameof(CopyVisibility));
+                Notify(nameof(StatusVisibility));
             }
         }
 
@@ -365,6 +426,26 @@ public partial class NetworkFlyout : FlyoutWindow
             get => _needsPassword;
             set { _needsPassword = value; Notify(nameof(PasswordVisibility)); }
         }
+
+        private bool _keyLoading;
+        private string? _keyStatus;
+
+        /// <summary>Leyendo la contraseña: un círculo de carga en el lugar del QR.</summary>
+        public bool KeyLoading
+        {
+            get => _keyLoading;
+            set { _keyLoading = value; Notify(nameof(LoadingVisibility)); Notify(nameof(StatusVisibility)); }
+        }
+
+        /// <summary>Por qué no hay contraseña (permiso negado, Windows no la dio…), en el lugar del QR.</summary>
+        public string? KeyStatus
+        {
+            get => _keyStatus;
+            set { _keyStatus = value; Notify(); Notify(nameof(StatusVisibility)); }
+        }
+
+        public Visibility LoadingVisibility => _keyLoading ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility StatusVisibility => !_keyLoading && _key is null && !string.IsNullOrEmpty(_keyStatus) ? Visibility.Visible : Visibility.Collapsed;
 
         public string? Message
         {

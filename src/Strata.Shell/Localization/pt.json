@@ -1735,5 +1735,6 @@
   "Abrir los archivos de texto en el Bloc de notas de Strata UI": "Abrir arquivos de texto no Bloco de notas do Strata UI",
   "Los .txt, .log, .ini y demás textos que abras desde Strata UI, y el Bloc de notas del menú Inicio, usan el de Strata UI. Para que Windows también lo use, elígelo como predeterminado.": "Os .txt, .log, .ini e outros textos que você abrir pelo Strata UI, e o Bloco de notas do menu Iniciar, usam o do Strata UI. Para o Windows usar também, defina-o como padrão.",
   "Elegir como predeterminado": "Definir como padrão",
-  "Editor de texto con pestañas, buscar y reemplazar, ir a la línea, zoom y cualquier codificación. Abre los archivos de texto en lugar del Bloc de notas de Windows.": "Editor de texto com guias, localizar e substituir, ir para a linha, zoom e qualquer codificação. Abre arquivos de texto no lugar do Bloco de notas do Windows."
+  "Editor de texto con pestañas, buscar y reemplazar, ir a la línea, zoom y cualquier codificación. Abre los archivos de texto en lugar del Bloc de notas de Windows.": "Editor de texto com guias, localizar e substituir, ir para a linha, zoom e qualquer codificação. Abre arquivos de texto no lugar do Bloco de notas do Windows.",
+  "Escanea para conectarte": "Leia para se conectar"
 }

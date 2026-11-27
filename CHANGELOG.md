@@ -10,6 +10,21 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.59.3] - 2026-11-27
+
+### Cambiado
+
+- El panel de red mide siempre lo mismo: la lista de redes tiene un alto fijo (unas cinco a la vista,
+  con desplazamiento) y el círculo de carga y los avisos salen dentro de ese espacio.
+- La red conectada va arriba en su propia tarjeta. Al tocarla, su contraseña, el QR para conectarse y
+  «Desconectar» ocupan el lugar de la lista de redes, así que el panel no crece.
+- Las ventanas también se animan al maximizar y al restaurar desde maximizada.
+
+### Corregido
+
+- Al abrir, restaurar o maximizar una ventana ya no se ve un destello de la ventana antes de la
+  animación, ni se queda invisible tras minimizarla y restaurarla varias veces seguidas.
+
 ## [1.59.2] - 2026-11-26
 
 ### Añadido
