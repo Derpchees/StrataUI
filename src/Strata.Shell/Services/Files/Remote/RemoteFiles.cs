@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -204,6 +204,9 @@ public static class RemoteFiles
             DataConnectionConnectTimeout = timeout,
             DataConnectionReadTimeout = timeout,
             RetryAttempts = 1,
+            // Bloques grandes: menos llamadas al disco y a la red por archivo (los de serie son de 4 y 64 KB).
+            LocalFileBufferSize = 1 << 20,
+            TransferChunkSize = 1 << 20,
             // Las fechas de la lista, en la hora de este equipo.
             TimeConversion = FtpDate.LocalTime,
         };
@@ -478,8 +481,87 @@ public static class RemoteFiles
 
     private sealed record Job(string Local, string Remote, long Size);
 
+    /// <summary>
+    /// Sube al servidor preguntando antes qué hacer si allá ya hay algo con el mismo nombre (como al
+    /// copiar en el equipo). Null si se canceló.
+    /// </summary>
+    public static async Task<FileTransfer?> UploadAskingAsync(System.Windows.Window? owner, IReadOnlyList<string> sources, string folder)
+    {
+        if (Locate(folder) is not { } at)
+            return Upload(sources, folder, TransferConflict.KeepBoth);
+        Dictionary<string, FileEntry> there;
+        try
+        {
+            there = (await ListAsync(at, CancellationToken.None)).ToDictionary(e => e.Name, StringComparer.Ordinal);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Sin la lista no se sabe qué choca: se sube sin pisar nada (el error de conexión sale en la tarjeta).
+            return Upload(sources, folder, TransferConflict.KeepBoth);
+        }
+        var repeated = sources.Where(s => there.ContainsKey(ConflictPrompt.NameOf(s))).ToList();
+        if (repeated.Count == 0)
+            return Upload(sources, folder, TransferConflict.KeepBoth);
+
+        var names = there.Keys.ToHashSet(StringComparer.Ordinal);
+        var side = new ConflictSide(
+            FolderName: NameOf(folder) is { Length: > 0 } name ? name : folder,
+            NameOf: ConflictPrompt.NameOf,
+            IsFolder: Directory.Exists,
+            Incoming: ConflictPrompt.Describe,
+            Existing: n => Describe(there[n]),
+            Numbered: (n, isFolder, taken) => Numbered(n, isFolder, names, taken),
+            Target: n => n);
+        if (await ConflictPrompt.AskAsync(owner, sources, repeated, side) is not { } plan || plan.Sources.Count == 0)
+            return null;
+        return Upload(plan.Sources, folder, plan.Conflict, plan.Targets);
+    }
+
+    /// <summary>
+    /// Baja del servidor preguntando antes qué hacer si en la carpeta del equipo ya hay algo con el
+    /// mismo nombre. Null si se canceló.
+    /// </summary>
+    public static async Task<FileTransfer?> DownloadAskingAsync(System.Windows.Window? owner, IReadOnlyList<FileEntry> entries, string folder)
+    {
+        var byPath = entries.ToDictionary(e => e.FullPath, StringComparer.Ordinal);
+        var sources = entries.Select(e => e.FullPath).ToList();
+        var repeated = entries.Where(e => File.Exists(Path.Combine(folder, e.Name)) || Directory.Exists(Path.Combine(folder, e.Name)))
+                              .Select(e => e.FullPath).ToList();
+        if (repeated.Count == 0)
+            return Download(entries, folder, TransferConflict.KeepBoth);
+
+        var side = new ConflictSide(
+            FolderName: FileTransfers.FolderNameOf(folder),
+            NameOf: p => byPath[p].Name,
+            IsFolder: p => byPath[p].IsFolder,
+            Incoming: p => Describe(byPath[p]),
+            Existing: n => ConflictPrompt.Describe(Path.Combine(folder, n)),
+            Numbered: (n, isFolder, taken) => ConflictPrompt.Numbered(folder, n, isFolder, taken),
+            Target: n => Path.Combine(folder, n));
+        if (await ConflictPrompt.AskAsync(owner, sources, repeated, side) is not { } plan || plan.Sources.Count == 0)
+            return null;
+        return Download(plan.Sources.Select(p => byPath[p]).ToList(), folder, plan.Conflict, plan.Targets);
+    }
+
+    private static ConflictInfo Describe(FileEntry entry) =>
+        new(entry.IsFolder ? Loc.T("Carpeta") : FileEntry.FormatSize(entry.Size), entry.Modified);
+
+    /// <summary>"nombre (2)" que no esté en el servidor ni lo use otro de esta misma vez.</summary>
+    private static string Numbered(string name, bool folder, HashSet<string> there, HashSet<string> taken)
+    {
+        string stem = folder ? name : Path.GetFileNameWithoutExtension(name), extension = folder ? "" : Path.GetExtension(name);
+        for (int i = 2; ; i++)
+        {
+            string candidate = $"{stem} ({i}){extension}";
+            if (!there.Contains(candidate) && taken.Add(candidate))
+                return candidate;
+        }
+    }
+
     /// <summary>Sube archivos y carpetas del equipo a una carpeta del servidor.</summary>
-    public static FileTransfer Upload(IReadOnlyList<string> sources, string folder, TransferConflict conflict) =>
+    /// <param name="names">El nombre que lleva allá cada origen elegido uno a uno (los demás, según <paramref name="conflict"/>).</param>
+    public static FileTransfer Upload(IReadOnlyList<string> sources, string folder, TransferConflict conflict,
+                                      IReadOnlyDictionary<string, string>? names = null) =>
         FileTransfers.Run(new FileTransfer(TransferKind.Upload, sources, folder, conflict), async transfer =>
         {
             var at = Locate(folder) ?? throw new IOException(Loc.T("Esta carpeta ya no existe."));
@@ -493,7 +575,9 @@ public static class RemoteFiles
             foreach (var source in sources)
             {
                 string name = Path.GetFileName(source.TrimEnd('\\'));
-                if (conflict != TransferConflict.Replace)
+                if (names is not null && names.TryGetValue(source, out var chosen))
+                    name = chosen;
+                else if (conflict != TransferConflict.Replace)
                     name = FreeName(name, listing, conflict, Directory.Exists(source));
                 listing.Add(name);
                 string target = Combine(at.Path, name);
@@ -524,17 +608,13 @@ public static class RemoteFiles
                     transfer.AddError(Loc.F("{0}: {1}", directory, Translate(at.Site, ex).Message), admin: false);
                 }
             }
-            long before = 0;
-            foreach (var job in jobs)
+            // Las carpetas ya están creadas: subir sin volver a comprobarlas en cada archivo.
+            await RunJobsAsync(at.Site, client, jobs, transfer, token, async (c, job, progress) =>
             {
-                token.ThrowIfCancellationRequested();
-                transfer.CurrentName = Path.GetFileName(job.Local);
-                long start = before;
-                var progress = new Progress(p => Interlocked.Exchange(ref transfer.DoneBytes, start + p));
                 try
                 {
-                    var status = await client.UploadFile(job.Local, job.Remote, FtpRemoteExists.Overwrite, true,
-                                                         FtpVerify.None, progress, token);
+                    var status = await c.UploadFile(job.Local, job.Remote, FtpRemoteExists.Overwrite, false,
+                                                    FtpVerify.None, progress, token);
                     if (status == FtpStatus.Failed)
                         transfer.AddError(Loc.F("No se pudo subir {0}.", Path.GetFileName(job.Local)), admin: false, job.Local);
                 }
@@ -542,19 +622,18 @@ public static class RemoteFiles
                 {
                     transfer.AddError(Loc.F("{0}: {1}", Path.GetFileName(job.Local), Translate(at.Site, ex).Message), admin: false, job.Local);
                 }
-                before += job.Size;
-                Interlocked.Exchange(ref transfer.DoneBytes, before);
-                transfer.DoneFiles++;
-            }
-            try { await client.Disconnect(token); } catch { }
+            });
         });
 
     /// <summary>Baja archivos y carpetas del servidor a una carpeta del equipo.</summary>
-    public static FileTransfer Download(IReadOnlyList<FileEntry> entries, string folder, TransferConflict conflict) =>
+    /// <param name="targets">A dónde va cada uno elegido uno a uno (ruta del equipo; los demás, según <paramref name="conflict"/>).</param>
+    public static FileTransfer Download(IReadOnlyList<FileEntry> entries, string folder, TransferConflict conflict,
+                                        IReadOnlyDictionary<string, string>? targets = null) =>
         FileTransfers.Run(new FileTransfer(TransferKind.Download, entries.Select(e => e.FullPath).ToList(), folder, conflict),
-            transfer => DownloadAsync(transfer, entries, folder, conflict));
+            transfer => DownloadAsync(transfer, entries, folder, conflict, targets));
 
-    private static async Task DownloadAsync(FileTransfer transfer, IReadOnlyList<FileEntry> entries, string folder, TransferConflict conflict)
+    private static async Task DownloadAsync(FileTransfer transfer, IReadOnlyList<FileEntry> entries, string folder, TransferConflict conflict,
+                                            IReadOnlyDictionary<string, string>? targets)
     {
         if (entries.Count == 0 || Locate(entries[0].FullPath) is not { } first)
             return;
@@ -570,7 +649,8 @@ public static class RemoteFiles
         foreach (var entry in entries)
         {
             string remote = Locate(entry.FullPath)!.Value.Path;
-            string name = conflict == TransferConflict.Replace ? entry.Name : FreeName(entry.Name, taken, conflict, entry.IsFolder);
+            string name = targets is not null && targets.TryGetValue(entry.FullPath, out var chosen) ? Path.GetFileName(chosen)
+                : conflict == TransferConflict.Replace ? entry.Name : FreeName(entry.Name, taken, conflict, entry.IsFolder);
             taken.Add(name);
             string local = Path.Combine(folder, name);
             transfer.Resolved[entry.FullPath] = local;
@@ -590,16 +670,11 @@ public static class RemoteFiles
 
         foreach (var directory in folders)
             Directory.CreateDirectory(directory);
-        long before = 0;
-        foreach (var job in jobs)
+        await RunJobsAsync(site, client, jobs, transfer, token, async (c, job, progress) =>
         {
-            token.ThrowIfCancellationRequested();
-            transfer.CurrentName = Path.GetFileName(job.Local);
-            long start = before;
-            var progress = new Progress(p => Interlocked.Exchange(ref transfer.DoneBytes, start + p));
             try
             {
-                var status = await client.DownloadFile(job.Local, job.Remote, FtpLocalExists.Overwrite, FtpVerify.None, progress, token);
+                var status = await c.DownloadFile(job.Local, job.Remote, FtpLocalExists.Overwrite, FtpVerify.None, progress, token);
                 if (status == FtpStatus.Failed)
                     transfer.AddError(Loc.F("No se pudo descargar {0}.", Path.GetFileName(job.Local)), admin: false);
             }
@@ -607,11 +682,69 @@ public static class RemoteFiles
             {
                 transfer.AddError(Loc.F("{0}: {1}", Path.GetFileName(job.Local), Translate(site, ex).Message), admin: false);
             }
-            before += job.Size;
-            Interlocked.Exchange(ref transfer.DoneBytes, before);
-            transfer.DoneFiles++;
+        });
+    }
+
+    /// <summary>Conexiones a la vez como máximo para pasar varios archivos (FileZilla usa 2 de serie y deja hasta 10).</summary>
+    private const int MaxConnections = 4;
+
+    /// <summary>
+    /// Pasa los archivos repartidos entre varias conexiones: con muchos archivos chicos casi todo el
+    /// tiempo se va en abrir cada transferencia, y eso sí se puede hacer en paralelo. Si el servidor
+    /// no deja abrir más conexiones, sigue con las que haya. Cierra <paramref name="first"/> al terminar.
+    /// </summary>
+    private static async Task RunJobsAsync(RemoteSite site, AsyncFtpClient first, IReadOnlyList<Job> jobs, FileTransfer transfer,
+                                           CancellationToken token, Func<AsyncFtpClient, Job, IProgress<FtpProgress>, Task> run)
+    {
+        var queue = new System.Collections.Concurrent.ConcurrentQueue<Job>(jobs);
+        int extra = Math.Min(MaxConnections, jobs.Count) - 1;
+
+        async Task WorkAsync(AsyncFtpClient client)
+        {
+            while (queue.TryDequeue(out var job))
+            {
+                token.ThrowIfCancellationRequested();
+                transfer.CurrentName = Path.GetFileName(job.Local);
+                long reported = 0;
+                var progress = new Progress(p =>
+                {
+                    // Cada conexión suma lo suyo; FluentFTP da lo acumulado del archivo.
+                    long delta = Math.Min(p, job.Size) - reported;
+                    if (delta <= 0)
+                        return;
+                    reported += delta;
+                    Interlocked.Add(ref transfer.DoneBytes, delta);
+                });
+                await run(client, job, progress);
+                if (job.Size > reported)
+                    Interlocked.Add(ref transfer.DoneBytes, job.Size - reported);
+                Interlocked.Increment(ref transfer.DoneFiles);
+            }
         }
-        try { await client.Disconnect(token); } catch { }
+
+        async Task ExtraAsync()
+        {
+            AsyncFtpClient client;
+            try { client = await TransferClientAsync(site, token); }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                return; // límite de conexiones del servidor u otro tropiezo: las demás siguen
+            }
+            using (client)
+            {
+                await WorkAsync(client);
+                try { await client.Disconnect(token); } catch { }
+            }
+        }
+
+        try
+        {
+            await Task.WhenAll(Enumerable.Range(0, extra).Select(_ => ExtraAsync()).Prepend(WorkAsync(first)));
+        }
+        finally
+        {
+            try { await first.Disconnect(token); } catch { }
+        }
     }
 
     /// <summary>

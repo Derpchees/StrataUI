@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +11,22 @@ namespace Strata.Shell.Services.Files;
 /// <summary>Lo que se decidió para los nombres repetidos: qué se copia o mueve y a dónde.</summary>
 internal sealed record ConflictPlan(IReadOnlyList<string> Sources, TransferConflict Conflict, Dictionary<string, string>? Targets = null);
 
+/// <summary>Tamaño (o "Carpeta") y fecha de un lado del conflicto.</summary>
+internal sealed record ConflictInfo(string Size, DateTime Time);
+
+/// <summary>
+/// Cómo se ve el destino desde la pregunta: en el equipo o en un servidor. <see cref="Numbered"/> da el
+/// destino con número ("nombre (2)") que se guarda en <see cref="ConflictPlan.Targets"/>.
+/// </summary>
+internal sealed record ConflictSide(
+    string FolderName,
+    Func<string, string> NameOf,
+    Func<string, bool> IsFolder,
+    Func<string, ConflictInfo> Incoming,
+    Func<string, ConflictInfo> Existing,
+    Func<string, bool, HashSet<string>, string> Numbered,
+    Func<string, string> Target);
+
 /// <summary>
 /// La pregunta de los nombres repetidos, como la de Windows: reemplazar, omitir, conservar ambos o
 /// elegir archivo por archivo (comparando tamaño y fecha de los dos).
@@ -20,13 +36,22 @@ internal static class ConflictPrompt
     private enum Choice { None, Replace, Skip, KeepBoth, Pick }
 
     /// <param name="repeated">Los orígenes cuyo nombre ya está en <paramref name="folder"/>.</param>
-    public static async Task<ConflictPlan?> AskAsync(Window? owner, string title, IReadOnlyList<string> sources,
-                                                     IReadOnlyList<string> repeated, string folder)
+    public static Task<ConflictPlan?> AskAsync(Window? owner, string title, IReadOnlyList<string> sources,
+                                               IReadOnlyList<string> repeated, string folder) =>
+        AskAsync(owner, sources, repeated, new ConflictSide(
+            FileTransfers.FolderNameOf(folder), NameOf, Directory.Exists, Describe,
+            name => Describe(Path.Combine(folder, name)),
+            (name, isFolder, taken) => Numbered(folder, name, isFolder, taken),
+            name => Path.Combine(folder, name)));
+
+    /// <param name="repeated">Los orígenes cuyo nombre ya está en el destino.</param>
+    public static async Task<ConflictPlan?> AskAsync(Window? owner, IReadOnlyList<string> sources,
+                                                     IReadOnlyList<string> repeated, ConflictSide side)
     {
-        string folderName = FileTransfers.FolderNameOf(folder);
+        string folderName = side.FolderName;
         bool one = repeated.Count == 1;
         string message = one
-            ? Loc.F("En «{0}» ya hay algo llamado «{1}».", folderName, NameOf(repeated[0]))
+            ? Loc.F("En «{0}» ya hay algo llamado «{1}».", folderName, side.NameOf(repeated[0]))
             : Loc.F("En «{0}» ya hay {1} elementos con los mismos nombres.", folderName, repeated.Count);
 
         var choice = Choice.None;
@@ -62,22 +87,22 @@ internal static class ConflictPrompt
             Choice.Replace => new ConflictPlan(sources, TransferConflict.Replace),
             Choice.KeepBoth => new ConflictPlan(sources, TransferConflict.KeepBoth),
             Choice.Skip => new ConflictPlan(sources.Except(repeated).ToList(), TransferConflict.KeepBoth),
-            Choice.Pick => await PickAsync(owner, sources, repeated, folder, folderName),
+            Choice.Pick => await PickAsync(owner, sources, repeated, side),
             _ => null,
         };
     }
 
     /// <summary>Una fila por nombre repetido: marcar el que llega, el que ya está o los dos.</summary>
     private static async Task<ConflictPlan?> PickAsync(Window? owner, IReadOnlyList<string> sources, IReadOnlyList<string> repeated,
-                                                       string folder, string folderName)
+                                                       ConflictSide side)
     {
+        string folderName = side.FolderName;
         var rows = new List<(string Source, CheckBox Incoming, CheckBox Existing)>();
         var list = new StackPanel();
         foreach (string source in repeated)
         {
-            string name = NameOf(source);
-            string existing = Path.Combine(folder, name);
-            var (incomingInfo, existingInfo) = (Describe(source), Describe(existing));
+            string name = side.NameOf(source);
+            var (incomingInfo, existingInfo) = (side.Incoming(source), side.Existing(name));
 
             var header = new System.Windows.Controls.TextBlock
             {
@@ -126,17 +151,17 @@ internal static class ConflictPrompt
         var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows.Where(r => r.Incoming.IsChecked == true))
         {
-            string name = NameOf(row.Source);
+            string name = side.NameOf(row.Source);
             targets[row.Source] = row.Existing.IsChecked == true
-                ? Numbered(folder, name, Directory.Exists(row.Source), taken)
-                : Path.Combine(folder, name);
+                ? side.Numbered(name, side.IsFolder(row.Source), taken)
+                : side.Target(name);
         }
         var left = sources.Where(s => !skipped.Contains(s)).ToList();
         return new ConflictPlan(left, TransferConflict.Replace, targets);
     }
 
     /// <summary>"nombre (2)" libre en la carpeta (y que no use otro de esta misma vez).</summary>
-    private static string Numbered(string folder, string name, bool isFolder, HashSet<string> taken)
+    internal static string Numbered(string folder, string name, bool isFolder, HashSet<string> taken)
     {
         string stem = isFolder ? name : Path.GetFileNameWithoutExtension(name);
         string extension = isFolder ? "" : Path.GetExtension(name);
@@ -149,26 +174,24 @@ internal static class ConflictPrompt
         }
     }
 
-    private static string NameOf(string path) => Path.GetFileName(path.TrimEnd('\\'));
+    internal static string NameOf(string path) => Path.GetFileName(path.TrimEnd('\\'));
 
-    private sealed record Info(string Size, DateTime Time);
-
-    private static Info Describe(string path)
+    internal static ConflictInfo Describe(string path)
     {
         try
         {
             if (Directory.Exists(path))
-                return new Info(Loc.T("Carpeta"), Directory.GetLastWriteTime(path));
+                return new ConflictInfo(Loc.T("Carpeta"), Directory.GetLastWriteTime(path));
             var file = new FileInfo(path);
-            return new Info(FileEntry.FormatSize(file.Length), file.LastWriteTime);
+            return new ConflictInfo(FileEntry.FormatSize(file.Length), file.LastWriteTime);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return new Info("", DateTime.MinValue);
+            return new ConflictInfo("", DateTime.MinValue);
         }
     }
 
-    private static CheckBox Option(Info info, bool newer)
+    private static CheckBox Option(ConflictInfo info, bool newer)
     {
         var text = new StackPanel();
         var date = new System.Windows.Controls.TextBlock

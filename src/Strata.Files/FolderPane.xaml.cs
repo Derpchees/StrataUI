@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -1289,7 +1289,7 @@ public partial class FolderPane : UserControl
     {
         if (entries.Count == 0 || await FilePicker.PickFoldersAsync(Loc.T("Descargar en")) is not [var folder])
             return;
-        RemoteFiles.Download(entries, folder, TransferConflict.KeepBoth);
+        await RemoteFiles.DownloadAskingAsync(Window.GetWindow(this), entries, folder);
     }
 
     /// <summary>Sube archivos (o carpetas) del equipo a la carpeta del servidor.</summary>
@@ -1297,7 +1297,8 @@ public partial class FolderPane : UserControl
     {
         if (sources.Count == 0)
             return;
-        var transfer = RemoteFiles.Upload(sources, folder, TransferConflict.KeepBoth);
+        if (await RemoteFiles.UploadAskingAsync(Window.GetWindow(this), sources, folder) is not { } transfer)
+            return;
         await transfer.Finished.Task;
         if (RemoteFiles.SamePath(folder, _path))
         {

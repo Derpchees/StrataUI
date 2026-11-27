@@ -10,6 +10,20 @@ y el proyecto usa [versionado semántico](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+## [1.59.4] - 2026-11-27
+
+### Cambiado
+
+- Archivos: subir y bajar de un servidor FTP es mucho más rápido. Los archivos se reparten entre
+  hasta cuatro conexiones a la vez, ya no se revisa la carpeta de destino antes de cada archivo y se
+  usan bloques más grandes (300 archivos chicos: de 42 s a unos 10).
+
+### Corregido
+
+- Archivos: al subir a un servidor FTP o bajar de él, si ya hay algo con el mismo nombre ahora
+  pregunta qué hacer (reemplazar, omitir, conservar ambos o elegir uno por uno), como al copiar en el
+  equipo. Antes siempre conservaba ambos sin avisar.
+
 ## [1.59.3] - 2026-11-27
 
 ### Cambiado
